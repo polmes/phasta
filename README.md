@@ -1,10 +1,10 @@
-#overview
+#Overview
 
 PHASTA/phasta-next/master is a superset of PHASTA/phasta/master.  As such:
  * there will be periodic merges from PHASTA/phasta/master to PHASTA/phasta-next/master, and 
  * tests that pass in PHASTA/phasta are expected to pass in PHASTA/phasta-next/master.
 
-#development
+#Development
 
 Minor modifications to PHASTA (phSolver, phastaIO, etc...) should be made in PHASTA/phasta.  
 
@@ -18,7 +18,7 @@ git push origin foo  # push the branch to github
 
 Once the compilation of the branch is clean (no new warnings on the systems+compilers combinations we care about) and can pass the regression tests, then the feature branch should be merged into PHASTA/next/master.  Creating a tag marking the addition of the new feature will help later merges from PHASTA/next/master to PHASTA/phasta/master .
 
-#build and test
+#Build and test
 
     wget www.scorec.rpi.edu/~cwsmith/phastaChefTests.tar.gz .
     tar xzf phastaChefTests.tar.gz # use for CASES path below
