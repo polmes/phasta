@@ -4,9 +4,7 @@
 #include "ValType.h"
 #include <stdexcept>
 #include <sstream>
-//MR CHANGE
 #include <cstdlib>
-//MR CHANGE END
 
 // return a given key value (if it's in the map)
 ValType phSolver::Input::GetValue(const string &str) const

@@ -142,13 +142,11 @@ c  if we have a nonzero value then
 c  calculate the fluxes through this surface 
 c
            iface = abs(iBCB(iel,2))
-!MR CHANGE
            if(iface>MAXSURF) then
             write(*,*) 'iface>MAXSURF',iface,MAXSURF
             write(*,*) 'Increase MAXSURF or decrease surfID in geom.spj'
             stop !brutal but mpi_finalize will not work without broadcasting the information to other processors.
            endif
-!MR CHANGE END
 
            if (nsrflist(iface) .ne. 0 .and. ires.ne.2) then
               flxID(1,iface) =  flxID(1,iface) + WdetJb(iel)! measure area too

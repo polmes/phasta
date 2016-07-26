@@ -59,7 +59,6 @@ c
 c.... set up the timer
 c
 
-CAD        call timer ('Elm_Form')
 c
 c.... -------------------->   diffusive flux   <--------------------
 c
@@ -406,7 +405,6 @@ c
 c.... set up the timer
 c
 
-CAD        call timer ('Elm_Form')
 c
 c.... -------------------->   diffusive flux   <--------------------
 c
@@ -583,7 +581,6 @@ c
 c
 c.... return
 c
-CAD      call timer ('Back    ')
       return
       end
 

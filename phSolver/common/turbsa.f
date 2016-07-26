@@ -51,17 +51,14 @@ c-----------------------------------------------------------------------
       character(len=5)  cname      
       real*8, allocatable :: xwi(:,:), xw(:,:)
 
-!MR CHANGE
       integer :: ierr
       integer :: numparts, nfile, itmp2, id2wall, itwo, ifoundd2wall
       integer iarray(10)
       character(len=255) :: fnamer, fname2, temp2
       character(len=64) :: temp1
-!MR CHANGE END
 
       allocate ( d2wall(numnp) )
 
-!MR CHANGE
       if(myrank.eq.master) then
         write (*,*) 'entering initTurb'
       endif
@@ -69,7 +66,6 @@ c-----------------------------------------------------------------------
 
       ! First we try to read the d2wall field from either the restart files or the d2wall files
       call read_d2wall(myrank,numnp,d2wall,ifoundd2wall)
-!MR CHANGE END
 
       if(ifoundd2wall.eq.0) then   ! d2wall was not found so calculate the distance
         if(myrank.eq.master) then

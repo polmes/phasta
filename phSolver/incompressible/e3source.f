@@ -256,10 +256,8 @@ c used locally
      &        fv1p,   fv2p,    stp,         gp,      fwp,   rp,
      &        chiP2,  mytmp(npro),         sign_levelset(npro),
      &        sclr_ls(npro)
-!MR CHANGE
       real*8  SclrNN,qfac,dx,dy,dz,dmax
       real*8  rd,fd,dwallsqqfact,ep
-!MRCHANGE
 c    Kay-Epsilon
       real*8 Ry(npro), Rt(npro), RtP2(npro), f2(npro), f1(npro),
      &       kay(npro), epsilon(npro), fmu(npro), fmui(npro),
@@ -516,9 +514,9 @@ c
 
          elseif (isclr.eq.2) then !we are redistancing level-sets
 
-CAD   If Sclr(:,1).gt.zero, result of sign_term function 1
-CAD   If Sclr(:,1).eq.zero, result of sign_term function 0
-CAD   If Sclr(:,1).lt.zero, result of sign_term function -1
+!   If Sclr(:,1).gt.zero, result of sign_term function 1
+!   If Sclr(:,1).eq.zero, result of sign_term function 0
+!   If Sclr(:,1).lt.zero, result of sign_term function -1
 
             sclr_ls = zero      !zero out temp variable
         
@@ -552,17 +550,17 @@ CAD   If Sclr(:,1).lt.zero, result of sign_term function -1
             
             srcL =  zero   
 
-cad   The redistancing equation can be written in the following form
-cad
-cad   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
-cad
-cad   This is rewritten in the form
-cad
-cad   d_{,t} + u * d_{,i} = sign(phi)
-cad
+!   The redistancing equation can be written in the following form
+!
+!   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
+!
+!   This is rewritten in the form
+!
+!   d_{,t} + u * d_{,i} = sign(phi)
+!
 
-CAD   For the redistancing equation the "velocity" term is calculated as 
-CAD   follows
+!   For the redistancing equation the "velocity" term is calculated as 
+!   follows
 
 
 

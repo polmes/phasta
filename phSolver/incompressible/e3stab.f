@@ -67,12 +67,10 @@ c
 c...  momentum tau
 c
 
-!MR CHANGE 
          dts=  Dtgl*dtsfct ! Dtgl = (time step)^-1
 !         dts=  min(Dtgl,28800.0d0)*dtsfct      ! Dtgl = (time step)^-1 !28800 = 1600*180 / 10
 !         dts=  min(Dtgl,2880.0d0)*dtsfct      ! Dtgl = (time step)^-1 !2880 = 1600*180 / 100
 !         dts=  min(Dtgl,288.0d0)*dtsfct      ! Dtgl = (time step)^-1 !288 = 1600*180 / 1000
-!MR CHANGE
 
          tauM = ( (two*dts)**2
      3        + ( u1 * ( gijd(:,1) * u1
@@ -352,12 +350,10 @@ c
          fff = 128.0d0
       endif
 
-!MR CHANGE 
       dts  =  (Dtgl*dtsfct)
 !      dts=  min(Dtgl,28800.0d0)*dtsfct      !28800 = 1600*180 / 10
 !      dts=  min(Dtgl,2880.0d0)*dtsfct      !2880 = 1600*180 / 100
 !      dts=  min(Dtgl,288.0d0)*dtsfct        !288 = 1600*180 / 1000
-!MR CHANGE
 
       tauM = rho ** 2
      1              * ( (two*dts)**2
@@ -525,12 +521,10 @@ c
            fff = 64.0d0
         endif
 
-!MR CHANGE 
       dts  =  (Dtgl*dtsfct)
 !      dts=  min(Dtgl,28800.0d0)*dtsfct      !28800 = 1600*180 / 10
 !      dts=  min(Dtgl,2880.0d0)*dtsfct      !2880 = 1600*180 / 100
 !      dts=  min(Dtgl,288.0d0)*dtsfct        !288 = 1600*180 / 1000
-!MR CHANGE
 
 c        if(iRANS.ne.-2) srcRat=srcR
         tauT = 

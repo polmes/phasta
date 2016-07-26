@@ -433,17 +433,17 @@ c
                 
              enddo  
 c     
-c     ad   The redistancing equation can be written in the following form
-c     ad
-c     ad   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
-c     ad
-c     ad   This is rewritten in the form
-c     ad
-c     ad   d_{,t} + u * d_{,i} = sign(phi)
-c     ad
+c        The redistancing equation can be written in the following form
+c     
+c        d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
+c     
+c        This is rewritten in the form
+c     
+c        d_{,t} + u * d_{,i} = sign(phi)
+c     
 
-c$$$  CAD   For the redistancing equation the "pseudo velocity" term is
-c$$$  CAD   calculated as follows
+c   For the redistancing equation the "pseudo velocity" term is
+c   calculated as follows
 
 
 

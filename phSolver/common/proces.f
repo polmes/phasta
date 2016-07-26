@@ -226,32 +226,26 @@ c
 c
 c.... stop CPU-timer
 c
-CAD        call timer ('End     ')
 c
 c.... close echo file
 c
 
-!MR CHANGE
       if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'process - before closing iecho'
       endif
-!MR CHANGE END
 
         close (iecho)
 
-!MR CHANGE
       if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'process - after closing iecho'
       endif
-!MR CHANGE END
 
 
 c
 c.... end of the program
 c
-CAD        write(6,*) 'Life: ', second(0) - ttim(100)
         deallocate(point2iper)
         if(numpe.gt.1) then
           call Dctypes(point2ilwork(1))

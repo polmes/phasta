@@ -480,12 +480,12 @@ c
 c     
 c.... compute  source terms
 c
-cad
-cad    if we are solving the redistancing equation, the umod(:,:) are 
-CAD    modified in e3sourceSclr.  
-CAD
-CAD  if we are redistancing levelset variable we want to use a use the  
-CAD  convective term from the equation.  
+!
+!    if we are solving the redistancing equation, the umod(:,:) are 
+!    modified in e3sourceSclr.  
+!
+!  if we are redistancing levelset variable we want to use a use the  
+!  convective term from the equation.  
 
 
        if(nosource.ne.1) then

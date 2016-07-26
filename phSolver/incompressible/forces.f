@@ -16,10 +16,8 @@ c
       real*8  Forin(5), Forout(5),spmasss
       real*8  ftots(3,0:MAXSURF),ftot(3)
 
-!MR CHANGE
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
-!MR CHANGE
  
 c
 c  START OF DISTURBANCE BLOCK
@@ -188,16 +186,13 @@ c
       if(icalled.eq.0) then
         icalled = 1
 
-!MR CHANGE
         iv_rankpernode = iv_rankpercore*iv_corepernode
         iv_totnodes = numpe/iv_rankpernode
         iv_totcores = iv_corepernode*iv_totnodes
         irankfilesforce(:) = -1
-!MR CHANGE
 
         do isrf = 0,MAXSURF
 
-!MR CHANGE
           ! Compute the adequate rank which will take care of isrf
           iv_node = (iv_totnodes-1)-mod(isrf,iv_totnodes)
           iv_core = (iv_corepernode-1) - mod((isrf - 
@@ -221,7 +216,6 @@ c
      &                      ' and reset to numpe-1'
             irankfilesforce(isrf) = numpe-1
           endif
-!MR CHANGE
 
 !          if ( nsrflist(isrf).ne.0 .and. myrank.eq.master) then
           if ( nsrflist(isrf).ne.0 .and.

@@ -45,10 +45,10 @@ c
 c.... gather the data to the current block 
 c
 
-CAD      rlocal = yl={P, u, v, w, T, scalar1, ...}
-CAD	 global = y = {u, v, w, P, T, scalar1, ...}
+!      rlocal = yl={P, u, v, w, T, scalar1, ...}
+!	 global = y = {u, v, w, P, T, scalar1, ...}
 
-CAD      Put u,v,w in the slots 2,3,4 of yl 
+!      Put u,v,w in the slots 2,3,4 of yl 
 
           do j = 1, 3
             do i = 1, nshl
@@ -56,13 +56,13 @@ CAD      Put u,v,w in the slots 2,3,4 of yl
             enddo
           enddo
 
-CAD      Put Pressure in the first slot of yl
+!      Put Pressure in the first slot of yl
 
           do i = 1, nshl
              rlocal(:,i,1) = global(ien(:,i),4)
           enddo
 
-CAD      Fill in the remaining slots with T, and additional scalars
+!      Fill in the remaining slots with T, and additional scalars
           
           if(n.gt.4) then
              do j = 5, n

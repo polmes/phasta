@@ -491,9 +491,9 @@ c
 c.......********************modification for Ilset=2**********************
           if (ilset.eq.2 .and. isclr.eq.2) then !we are redistancing level-sets
 
-CAD   If Sclr(:,1).gt.zero, result of sign_term function 1
-CAD   If Sclr(:,1).eq.zero, result of sign_term function 0
-CAD   If Sclr(:,1).lt.zero, result of sign_term function -1
+!   If Sclr(:,1).gt.zero, result of sign_term function 1
+!   If Sclr(:,1).eq.zero, result of sign_term function 0
+!   If Sclr(:,1).lt.zero, result of sign_term function -1
 
             sclr_ls = zero      !zero out temp variable
 
@@ -524,17 +524,17 @@ c
 c               
             enddo  
 c
-cad   The redistancing equation can be written in the following form
-cad
-cad   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
-cad
-cad   This is rewritten in the form
-cad
-cad   d_{,t} + u * d_{,i} = sign(phi)
-cad
+!   The redistancing equation can be written in the following form
+!
+!   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
+!
+!   This is rewritten in the form
+!
+!   d_{,t} + u * d_{,i} = sign(phi)
+!
 
-c$$$CAD   For the redistancing equation the "pseudo velocity" term is
-c$$$CAD   calculated as follows
+!   For the redistancing equation the "pseudo velocity" term is
+!   calculated as follows
 
 
 

@@ -478,7 +478,6 @@ c
 c
 c.... return
 c
-CAD          call timer ('Back    ')
           return
         endif
 c

@@ -53,7 +53,6 @@ c...
 c.... start the timer
 c
         
-CAD        call timer ('PrProces')
 
 c
 c  put a barrier here so that all of the files are done reading
@@ -231,15 +230,11 @@ c
 c
 c.... close the geometry, boundary condition and material files
 c
-!MR CHANGE
-!        close (igeom)
-!MR CHANGE END
         close (ibndc)
         if (mexist) close (imat)
 c
 c.... return
 c
-CAD        call timer ('Back    ')
         return
 c
 c.... end of file error handling

@@ -22,13 +22,13 @@ c     two options exist in the interpolation 1) smooth (recommended)
 c     interpolation of nodal data, 2) discontinuous "sampling" phase at 
 c     quadrature points.
 c
-CAD
-CAD    prop_blend is a smoothing function to avoid possible large density 
-CAD   gradients, e.g., water and air flows where density ratios can approach
-CAD   1000.
-CAD
-CAD    epsilon_ls is an adjustment to control the width of the band over which
-CAD    the properties are blended. 
+!
+!    prop_blend is a smoothing function to avoid possible large density 
+!   gradients, e.g., water and air flows where density ratios can approach
+!   1000.
+!
+!    epsilon_ls is an adjustment to control the width of the band over which
+!    the properties are blended. 
 
 
 
@@ -66,9 +66,9 @@ c
 
       endif
 
-CAD	At this point we have a rho that is bounded by the two values for
-CAD 	density 1, datmat(1,1,1), the fluid,  and density 2, datmat(1,1,2)
-CAD     the gas
+!	At this point we have a rho that is bounded by the two values for
+! 	density 1, datmat(1,1,1), the fluid,  and density 2, datmat(1,1,2)
+!     the gas
 
 c
 c  The above approach evaluates all intermediate quantities at the 

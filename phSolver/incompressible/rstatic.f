@@ -162,7 +162,6 @@ c
 c     
 c.... get the CPU-time
 c
-CAD        cputme = (second(0) - ttim(100))
         rsec=TMRC()
         cputme = (rsec - ttim(100))
 c
