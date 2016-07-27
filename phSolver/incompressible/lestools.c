@@ -1264,26 +1264,28 @@ void lesApSclr ( UsrHd   usrHd,
      lhsStiffFlag = 0 ;
      sclrRegFct   = 0 ;
 
-     srcpnt      = usrPointer ( usrHd, srcId, srcOff, nSrcDims ) ;
-     dstpnt      = usrPointer ( usrHd, dstId, dstOff, nDstDims ) ;
+     srcpnt      = usrPointer ( usrHd, srcId, srcOff, nSrcDims ) ; /* find the vector we want to do mat-vec ops on */
+     dstpnt      = usrPointer ( usrHd, dstId, dstOff, nDstDims )  /* find the vector we want to put result  in */;
 
+     /* POTENTIAL DEV post receives by non-owners to eventually fill the lesP array */
 
-     fMtxVdimVecMult ( srcpnt,
+     fMtxVdimVecMult ( srcpnt, /* generic linear algebra operation on vector at srcpnt */
                        usrHd->sclrDiag+pOff,
-                       usrHd->lesP,
+                       usrHd->lesP,   /* this is the output of this "work" function */
                        &nSrcDims,
                        &nDofs,
                        &nPs,
                        &nPs,
                        &(usrHd->nNodes) ) ;
-     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
-	       usrHd->iper, usrHd->iBC, usrHd->BC  );
+     /*POTENTIAL DEV  post sends by owners and then wait for completion */
+     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,   /* first argument is going to be copied from owner/master to all non-owner/slaves */
+	       usrHd->iper, usrHd->iBC, usrHd->BC  ); /* this makes all non-owner/slaves "globally complete" ... same value as owner/master */
 
-     fLesSparseApSclr( usrHd->colm, usrHd->rowp, usrHd->lhsS, 
-		       usrHd->lesP, usrHd->lesQ, 
+     fLesSparseApSclr( usrHd->colm, usrHd->rowp, usrHd->lhsS, /* now actually hit all "globally complete" vectors with "rank-complete" matrix */
+		       usrHd->lesP, usrHd->lesQ,             /* which will produec a rank comlete but not globally comlete q=Ap vector on each rank */
 		       &(usrHd->nNodes),&(usrHd->nnz_tot));
 
-     commIn ( usrHd->lesQ, usrHd->ilwork, &nQs,
+     commIn ( usrHd->lesQ, usrHd->ilwork, &nQs,   /* first arguement will be accumulated to the owner/master so that we now have a gloablly complete q */
 	      usrHd->iper, usrHd->iBC, usrHd->BC  );
 
 
