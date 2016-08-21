@@ -1,4 +1,4 @@
-      subroutine getDiff( dwl,yl, shape, xmudmi, xl, rmu,  rho)
+      subroutine getDiff( ith, dwl,yl, shape, xmudmi, xl, rmu,  rho)
 c-----------------------------------------------------------------------
 c  compute and add the contribution of the turbulent
 c  eddy viscosity to the molecular viscosity.
@@ -83,7 +83,7 @@ c
 c.... dynamic model
 c      
       if (iLES .gt. 0 .and. iRANS.eq.0) then   ! simple LES
-         rmu = rmu + xmudmi(:,intp)
+         rmu = rmu + xmudmi(:,ith)
       else if (iRANS.lt.0) then 
          if (iRANS .eq. -1) then ! RANS (Spalart-Allmaras)
             call AddEddyViscSA(yl, shape, rmu)
@@ -113,10 +113,10 @@ c
          dz=maxval(xl(i,:,3))-minval(xl(i,:,3))
          emax=max(dx,max(dy,dz))
          if(emax.lt.eles) then  ! pure les
-            xmut(i)=xmudmi(i,intp)
+            xmut(i)=xmudmi(i,ith)
          else if(emax.lt.two*eles) then ! blend
             xi=(emax-eles)/(eles)
-            xmut(i)=xi*xmut(i)+(one-xi)*(xmudmi(1,intp)+datmat(1,2,2))
+            xmut(i)=xi*xmut(i)+(one-xi)*(xmudmi(1,ith)+datmat(1,2,2))
          endif                  ! leave at RANS value as edge is twice pure les
       enddo
  !this was made messy by the addEddyVisc routines  Must clean up later.

@@ -51,7 +51,7 @@ c
         
       do intp = 1, ngauss
 
-         call getshp(shp, shgl, sgn, shape, shdrv)
+         call getshp(intp, shp, shgl, sgn, shape, shdrv)
 
          qdi = zero
 c
@@ -63,7 +63,7 @@ c
      &                  g2yi,         g3yi,         shg,
      &                  dxidx,        WdetJ )
 
-         call getdiff(dwl,  yl, shape, xmudmi, xl,rmu, tmp)
+         call getdiff(intp,dwl,  yl, shape, xmudmi, xl,rmu, tmp)
 c
 c.... diffusive flux in x1-direction
 c
@@ -214,7 +214,7 @@ c
         
       do intp = 1, ngauss
 
-         call getshp(shp, shgl, sgn, shape, shdrv)
+         call getshp(intp, shp, shgl, sgn, shape, shdrv)
 
          qdi = zero
 c

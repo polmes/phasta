@@ -48,12 +48,12 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(shp,         shgl,         sgn, 
+         call getshp(intp,shp,         shgl,         sgn, 
      &               shape,       shdrv,        intp)
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metric( xl, shdrv,dxidx,shg,WdetJ)
+         call e3metric(intp, xl, shdrv,dxidx,shg,WdetJ)
 c     
          do iel = 1, npro
             do  na  = 1, nshl
@@ -112,12 +112,12 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(shpf,         shglf,         sgn, 
+         call getshp(intp,shpf,         shglf,         sgn, 
      &               shape,       shdrv,        intp)
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metricf( xl, shdrv,dxidx,shg,WdetJ,Qwtf)
+         call e3metricf(intp, xl, shdrv,dxidx,shg,WdetJ,Qwtf)
 c     
          do i=1,nods !nenl !nshl
             eml(:,i) = eml(:,i) + shape(:,i)*WdetJ(:)
@@ -146,13 +146,13 @@ c
 c.... for the mass matrix to be consistent shp and shgl must be
 c.... evaluated with at least higher quadrature than one-pt. quad. 
 
-         call getshp(shp,         shgl,         sgn,  
+         call getshp(intp,shp,         shgl,         sgn,  
      &               shape,       shdrv,        intp)
 
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metric( xl, shdrv,dxidx,shg,WdetJ)
+         call e3metric(intp, xl, shdrv,dxidx,shg,WdetJ)
 c     
 
          do iel = 1, npro
@@ -229,12 +229,12 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(shpf,         shglf,         sgn, 
+         call getshp(intp,shpf,         shglf,         sgn, 
      &               shape,       shdrv,        intp)
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metricf( xl, shdrv,dxidx,shg,WdetJ,Qwtf)
+         call e3metricf(intp, xl, shdrv,dxidx,shg,WdetJ,Qwtf)
 c     
          do i=1,nshl
             eml(:,i) = eml(:,i) + shape(:,i)*WdetJ(:)
@@ -263,13 +263,13 @@ c
 c.... for the mass matrix to be consistent shp and shgl must be
 c.... evaluated with at least higher quadrature than one-pt. quad. 
 
-         call getshp(shp,         shgl,         sgn,  
+         call getshp(intp,shp,         shgl,         sgn,  
      &               shape,       shdrv,        intp)
 
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metric( xl, shdrv,dxidx,shg,WdetJ)
+         call e3metric(intp, xl, shdrv,dxidx,shg,WdetJ)
 c     
 
          do iel = 1, npro

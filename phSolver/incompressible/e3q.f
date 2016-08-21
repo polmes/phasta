@@ -57,7 +57,7 @@ c
         do intp = 1, ngauss
         if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
 c     
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
         
 c
@@ -84,7 +84,7 @@ c.... compute diffusive fluxes
 c
 c.... compute the viscosity
 c
-        call getdiff(dwl, yl, shape, xmudmi, xl, rmu, tmp)
+        call getdiff(intp,dwl, yl, shape, xmudmi, xl, rmu, tmp)
 c
 c.... diffusive flux in x1-direction
 c
@@ -243,7 +243,7 @@ c
         do intp = 1, ngauss
         if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
 c     
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
         
 c

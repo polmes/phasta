@@ -130,7 +130,7 @@ c
             if ( Qwt( lcsyst, intp ) .eq. zero ) cycle
 
             gradul = zero
-            call getshp( shp, shgl, sgn, shape, shdrv )
+            call getshp(intp, shp, shgl, sgn, shape, shdrv )
             call local_gradient( yl(:,:,2:4), 3,  shdrv, xl, 
      &                           gradul , dxidx, WdetJ )
 
@@ -205,7 +205,7 @@ c
             if ( Qwt( lcsyst, intp ) .eq. zero ) cycle
 
             uhessl = zero
-            call getshp( shp, shgl, sgn, shape, shdrv )
+            call getshp(intp, shp, shgl, sgn, shape, shdrv )
             call local_gradient( gradul, 9,  shdrv, xl, 
      &                           uhessl , dxidx, WdetJ )
 

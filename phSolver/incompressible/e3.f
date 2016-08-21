@@ -43,6 +43,8 @@ c
      &            xl(npro,nenl,nsd),      dwl(npro,nenl),
      &            rl(npro,nshl,nflow),     ql(npro,nshl,idflx)
 c      
+        real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp, xG_qp
+        real*8, allocatable, dimension(:,:,:,:) :: rl_qp
 
         dimension xKebe(npro,9,nshl,nshl), xGoC(npro,4,nshl,nshl)
 c
@@ -79,23 +81,34 @@ c
 c
 c.... loop through the integration points
 c
-
-        do intp = 1, ngauss
-
-        if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
+! for now if we thread it is ngauss        nthread_qp=1
+	allocate( rl_qp(npro,nshl,nflow,ngauss))
+        allocate( xK_qp(npro,9,nshl,nshl,ngauss))
+        allocate( xG_qp(npro,4,nshl,nshl,ngauss))
+        rl_qp=zero
+        xK_qp=zero
+        xG_qp=zero
+!$OMP  parallel do 
+!$OMP& private (ith,sgn,shpfun,shdrv,rmu,rho,aci,g1yi,g2yi,g3yi)
+!$OMP& private (shg,dxidx,WdetJ,pres,u1,u2,u3,rLui,src,rlsi)
+!$OMP& private (tauC,tauM,tauBar,uBar)
+!$OMP& shared (shp,shgl,dwl,yl,xmudmi,xl,acl,rlsl)
+!$OMP& shared (rl_qp,xK_qp,xG_qp)
+        do ith = 1, ngauss
+        if (Qwt(lcsyst,ith) .eq. zero) cycle          ! precaution
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(ith, shp,          shgl,      sgn, 
      &              shpfun,       shdrv)
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho)
+        call getdiff(ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho)
 c
 c.... calculate the integration variables
 c
-        call e3ivar (yl,          acl,       shpfun,
+        call e3ivar (ith,yl,          acl,       shpfun,
      &               shdrv,       xl,
      &               aci,         g1yi,      g2yi,    
      &               g3yi,        shg,       dxidx,   
@@ -120,7 +133,7 @@ c
      &               rLui,      rmu,        rho,
      &               tauC,      tauM,       tauBar,
      &               shpfun,    shg,        src,
-     &               rl,        pres,       acl,
+     &               rl_qp(:,:,:,ith),        pres,       acl,
      &               rlsli)
 c
 c.... compute the tangent matrix contribution
@@ -130,22 +143,36 @@ c
      &                  uBar,      WdetJ,      rho,
      &                  rLui,      rmu,
      &                  tauC,      tauM,       tauBar,
-     &                  shpfun,    shg,        xKebe,
-     &                  xGoC )
+     &                  shpfun,    shg,        xK_qp(:,:,:,:,ith),
+     &                  xG_qp(:,:,:,:,ith))
         endif
 
 c
 c.... end of integration loop
 c
       enddo
+c
+c here we accumulate the thread work
+c
+      do i=1,ngauss
+       rl(1:npro,1:nshl,1:nflow)=rl(1:npro,1:nshl,1:nflow)
+     &                       +rl_qp(1:npro,1:nshl,1:nflow,i)
+       xKebe(1:npro,1:9,1:nshl,1:nshl)=xKebe(1:npro,1:9,1:nshl,1:nshl)
+     &                                +xK_qp(1:npro,1:9,1:nshl,1:nshl,i)
+       xGoC(1:npro,1:4,1:nshl,1:nshl)=xGoC(1:npro,1:4,1:nshl,1:nshl)
+     &                              +xG_qp(1:npro,1:4,1:nshl,1:nshl,i)
+      enddo
 
+      deallocate(xG_qp)
+      deallocate(xK_qp)
+      deallocate(rl_qp)
 c
 c.... symmetrize C
 c
       if (lhs .eq. 1) then
          do ib = 1, nshl
             do iaa = 1, ib-1
-               xGoC(:,4,iaa,ib) = xGoC(:,4,ib,iaa)
+               xGoC(1:npro,4,iaa,ib) = xGoC(1:npro,4,ib,iaa)
             enddo
          enddo
       endif
@@ -219,7 +246,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(intp,shp,          shgl,      sgn, 
      &              shpfun,        shdrv)
 c
 c.... get necessary fluid properties

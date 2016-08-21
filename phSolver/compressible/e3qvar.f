@@ -100,7 +100,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-        call e3metric( xl,         shgl,        dxidx,  
+        call e3metric(intp, xl,         shgl,        dxidx,  
      &                 shg,        WdetJ)
 
 c

@@ -162,7 +162,7 @@ c
       real*8   shg(npro,nshl,nsd)
 
 
-      call e3metric( xl,         shgl,       dxidx,  
+      call e3metric(intp, xl,         shgl,       dxidx,  
      &               shg,        WdetJ)
 
       gradT = zero

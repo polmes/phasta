@@ -1,4 +1,4 @@
-      subroutine e3ivar (yl,          acl,       shpfun,
+      subroutine e3ivar (ith,yl,          acl,       shpfun,
      &                   shgl,        xl,       
      &                   aci,         g1yi,      g2yi,    
      &                   g3yi,        shg,       dxidx,   
@@ -140,7 +140,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-       call e3metric( xl,         shgl,       dxidx,  
+       call e3metric(ith, xl,         shgl,       dxidx,  
      &                shg,        WdetJ)
 c
 c.... compute the global gradient of u and P
@@ -257,10 +257,12 @@ c
 c
 c.... -------------------> error calculation  <-----------------
 c     
-       if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
+! OLD WAY       if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
+! NEW WAY only one point quadrature on the error
+       if((ierrcalc.eq.1).and.(nitr.eq.iter).and.(ith.eq.ngauss)) then
           do ia=1,nshl
              tmp=shpfun(:,ia)*WdetJ(:)
-             tmp1=shpfun(:,ia)*Qwt(lcsyst,intp) 
+             tmp1=shpfun(:,ia) !Qwt(lcsyst,ith) 
              rerrl(:,ia,1) = rerrl(:,ia,1) +
      &                       tmp1(:)*rLui(:,1)*rLui(:,1)
              rerrl(:,ia,2) = rerrl(:,ia,2) +
@@ -375,7 +377,7 @@ c
 c.... --------------------->  Element Metrics  <-----------------------
 c
 
-      call e3metric( xl,         shgl,        dxidx,  
+      call e3metric(intp, xl,         shgl,        dxidx,  
      &               shg,        WdetJ)
 
 c
@@ -462,7 +464,7 @@ c
           src(:,2)=u2           ! store u in src memory
           src(:,3)=u3           !
 c         e3uBar calculates Tau_M and assembles uBar
-          call getdiff(dwl, yl, shpfun, xmudmi, xl, rmu, rho)
+          call getdiff(intp,dwl, yl, shpfun, xmudmi, xl, rmu, rho)
           call e3uBar(rho, src, dxidx, rLui, rmu, uBar)
           u1=ubar(:,1)          ! the entire scalar residual
           u2=ubar(:,2)          ! is based on the modified

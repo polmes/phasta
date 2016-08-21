@@ -111,13 +111,13 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-           call getshp(shp,          shgl,      sgn, 
+           call getshp(intp,shp,          shgl,      sgn, 
      &                 shape,        shdrv)
 
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-           call e3metric( xl,         shdrv,       dxidx,  
+           call e3metric(intp, xl,         shdrv,       dxidx,  
      &                    shg,        WdetJ)
 
 c

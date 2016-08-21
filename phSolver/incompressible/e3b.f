@@ -99,7 +99,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(shpb,        shglb,        sgn, 
+        call getshp(intp,shpb,        shglb,        sgn, 
      &              shape,       shdrv)
 c
 c     NOTE I DID NOT PASS THE lnode down.  It is not needed
@@ -118,7 +118,7 @@ c
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(dwl, yl,     shape,     xmudmi, xlb,   rmu, rho)
+        call getdiff(intp,dwl, yl,     shape,     xmudmi, xlb,   rmu, rho)
 c
 c.... calculate the integraton variables
 c
@@ -402,7 +402,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(shpb,        shglb,        sgn, 
+        call getshp(intp,shpb,        shglb,        sgn, 
      &              shape,       shdrv)
 c
 c.... calculate the integraton variables

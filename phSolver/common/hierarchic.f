@@ -27,7 +27,7 @@ c------------------------------------------------------------------------
       return 
       end
       
-      subroutine getshp(shp, shgl, sgn, shape, shdrv)
+      subroutine getshp(ith,shp, shgl, sgn, shape, shdrv)
 c------------------------------------------------------------------------
 c     returns the matrix of element shape functions with the higher
 c     order modes correctly negated at the current quadrature point.
@@ -40,16 +40,16 @@ c------------------------------------------------------------------------
       
       
       do i=1,nenl
-         shape(:,i) = shp(i,intp)
+         shape(:,i) = shp(i,ith)
          do j=1,3
-            shdrv(:,j,i) = shgl(j,i,intp)
+            shdrv(:,j,i) = shgl(j,i,ith)
          enddo
       enddo
       if ( ipord > 1 ) then
          do i=nenl+1,nshl
-            shape(:,i) = sgn(:,i) * shp(i,intp)
+            shape(:,i) = sgn(:,i) * shp(i,ith)
             do j=1,3
-               shdrv(:,j,i) = shgl(j,i,intp)*sgn(:,i) 
+               shdrv(:,j,i) = shgl(j,i,ith)*sgn(:,i) 
             enddo
          enddo
       endif
@@ -334,7 +334,7 @@ c
 c.... loop over interpolation points
 c
       do intp = 1, npts
-         call getshp(shp,          shgl,      sgn, 
+         call getshp(intp, shp,          shgl,      sgn, 
      &               shape,        shdrv)
       
 c
@@ -348,7 +348,7 @@ c
 c
 c.... viscous stress
 c
-         call e3metric( xl,         shdrv,      dxidx,  
+         call e3metric(intp, xl,         shdrv,      dxidx,  
      &                  shg,        tmp)
 
          gradV = zero

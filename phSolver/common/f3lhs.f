@@ -76,7 +76,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(shpb,        shglb,        sgn, 
+         call getshp(intp,shpb,        shglb,        sgn, 
      &               shape,       shdrv)
 c
 

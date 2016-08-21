@@ -5,7 +5,7 @@ c  coordinates and the jacobian of the mapping (weighted by
 c  the quadrature weight
 c
 c-----------------------------------------------------------------------
-      subroutine e3metric(  xl,      shgl,     dxidx,
+      subroutine e3metric(ith,  xl,      shgl,     dxidx,
      &                      shg,     WdetJ)
 
       include "common.h"
@@ -60,7 +60,7 @@ c
        dxidx(:,3,3) = (dxdxi(:,1,1) * dxdxi(:,2,2) 
      &                - dxdxi(:,1,2) * dxdxi(:,2,1)) * tmp
 c
-       WdetJ = Qwt(lcsyst,intp) / tmp
+       WdetJ = Qwt(lcsyst,ith) / tmp
 c
 c.... compute the global gradient of shape-functions
 c

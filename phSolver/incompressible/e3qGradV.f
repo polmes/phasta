@@ -42,7 +42,7 @@ c
         do intp = 1, ngauss
         if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
 c     
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
         
 c
