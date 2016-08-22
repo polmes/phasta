@@ -35,7 +35,7 @@ c K. E. Jansen,   Winter 1999.   (advective form formulation)
 c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
-      use omp_lib
+! only needed if debugging      use omp_lib
       include "common.h"
 
 c
@@ -83,7 +83,7 @@ c
 c
 c.... loop through the integration points
 c
-! for now if we thread it is ngauss        nthread_qp=1
+!HELP#ifdef HAVE_OMP
 	allocate( rl_qp(npro,nshl,nflow,ngauss))
         allocate( xK_qp(npro,9,nshl,nshl,ngauss))
         allocate( xG_qp(npro,4,nshl,nshl,ngauss))
@@ -96,12 +96,8 @@ c
 !$OMP& private (tauC,tauM,tauBar,uBar,id)
 !$OMP& shared (shp,shgl,dwl,yl,xmudmi,xl,acl,rlsl)
 !$OMP& shared (rl_qp,xK_qp,xG_qp)
+!HELP#endif
         do ith = 1, ngauss
-        if(npro.eq.-1) then
-          id = omp_get_thread_num ( )
-          write (*,*) 'HELLO from rank, process,ith ', myrank,id,ith
-        endif
-
         if (Qwt(lcsyst,ith) .eq. zero) cycle          ! precaution
 c
 c.... get the hierarchic shape functions at this int point
@@ -140,7 +136,9 @@ c
      &               rLui,      rmu,        rho,
      &               tauC,      tauM,       tauBar,
      &               shpfun,    shg,        src,
-     &               rl_qp(:,:,:,ith),        pres,       acl,
+     &               rl_qp(:,:,:,ith),      
+!HELP     &               rl,
+     &               pres,       acl,
      &               rlsli)
 c
 c.... compute the tangent matrix contribution
@@ -150,7 +148,9 @@ c
      &                  uBar,      WdetJ,      rho,
      &                  rLui,      rmu,
      &                  tauC,      tauM,       tauBar,
-     &                  shpfun,    shg,        xK_qp(:,:,:,:,ith),
+     &                  shpfun,    shg,        
+!HELP     &                  xKebe,     xGoC)
+     &                  xK_qp(:,:,:,:,ith),
      &                  xG_qp(:,:,:,:,ith))
         endif
 
@@ -158,6 +158,7 @@ c
 c.... end of integration loop
 c
       enddo
+!HELP#ifdef HAVE_OMP
 c
 c here we accumulate the thread work
 c
@@ -173,6 +174,7 @@ c
       deallocate(xG_qp)
       deallocate(xK_qp)
       deallocate(rl_qp)
+!HELP#endif
 c
 c.... symmetrize C
 c
