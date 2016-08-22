@@ -117,6 +117,7 @@ c
       call initmpistat()  ! see bottom of code to see just how easy it is
 
       call initmemstat() 
+      if(myrank.le.4) call hello()
 
 !--------------------------------------------------------------------
 !     Setting up svLS Moved down for better org

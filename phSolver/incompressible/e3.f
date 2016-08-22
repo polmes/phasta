@@ -35,7 +35,9 @@ c K. E. Jansen,   Winter 1999.   (advective form formulation)
 c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
-        include "common.h"
+      use omp_lib
+      include "common.h"
+
 c
         dimension yl(npro,nshl,ndof),
      &            acl(npro,nshl,ndof),       
@@ -91,10 +93,15 @@ c
 !$OMP  parallel do 
 !$OMP& private (ith,sgn,shpfun,shdrv,rmu,rho,aci,g1yi,g2yi,g3yi)
 !$OMP& private (shg,dxidx,WdetJ,pres,u1,u2,u3,rLui,src,rlsi)
-!$OMP& private (tauC,tauM,tauBar,uBar)
+!$OMP& private (tauC,tauM,tauBar,uBar,id)
 !$OMP& shared (shp,shgl,dwl,yl,xmudmi,xl,acl,rlsl)
 !$OMP& shared (rl_qp,xK_qp,xG_qp)
         do ith = 1, ngauss
+        if(npro.eq.-1) then
+          id = omp_get_thread_num ( )
+          write (*,*) 'HELLO from rank, process,ith ', myrank,id,ith
+        endif
+
         if (Qwt(lcsyst,ith) .eq. zero) cycle          ! precaution
 c
 c.... get the hierarchic shape functions at this int point
