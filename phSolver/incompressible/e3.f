@@ -83,7 +83,7 @@ c
 c
 c.... loop through the integration points
 c
-!HELP#ifdef HAVE_OMP
+#ifdef HAVE_OMP
 	allocate( rl_qp(npro,nshl,nflow,ngauss))
         allocate( xK_qp(npro,9,nshl,nshl,ngauss))
         allocate( xG_qp(npro,4,nshl,nshl,ngauss))
@@ -96,7 +96,7 @@ c
 !$OMP& private (tauC,tauM,tauBar,uBar,id)
 !$OMP& shared (shp,shgl,dwl,yl,xmudmi,xl,acl,rlsl)
 !$OMP& shared (rl_qp,xK_qp,xG_qp)
-!HELP#endif
+#endif
         do ith = 1, ngauss
         if (Qwt(lcsyst,ith) .eq. zero) cycle          ! precaution
 c
@@ -136,8 +136,11 @@ c
      &               rLui,      rmu,        rho,
      &               tauC,      tauM,       tauBar,
      &               shpfun,    shg,        src,
+#ifdef HAVE_OMP
      &               rl_qp(:,:,:,ith),      
-!HELP     &               rl,
+#else
+     &               rl,
+#endif
      &               pres,       acl,
      &               rlsli)
 c
@@ -149,16 +152,19 @@ c
      &                  rLui,      rmu,
      &                  tauC,      tauM,       tauBar,
      &                  shpfun,    shg,        
-!HELP     &                  xKebe,     xGoC)
+#ifdef HAVE_OMP
      &                  xK_qp(:,:,:,:,ith),
      &                  xG_qp(:,:,:,:,ith))
+#else
+     &                  xKebe,     xGoC)
+#endif
         endif
 
 c
 c.... end of integration loop
 c
       enddo
-!HELP#ifdef HAVE_OMP
+#ifdef HAVE_OMP
 c
 c here we accumulate the thread work
 c
@@ -174,7 +180,7 @@ c
       deallocate(xG_qp)
       deallocate(xK_qp)
       deallocate(rl_qp)
-!HELP#endif
+#endif
 c
 c.... symmetrize C
 c

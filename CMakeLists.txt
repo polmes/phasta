@@ -22,6 +22,11 @@ FortranCInterface_VERIFY(CXX)
 FortranCInterface_Header(FCMangle.h SYMBOLS write_restart write_error write_displ write_field write_hessian)
 include_directories("${PHASTA_BINARY_DIR}")
 
+option(HAVE_OMP "Build with OpenMP support" OFF)
+if(HAVE_OMP)
+	add_definitions(-DHAVE_OMP)
+endif(HAVE_OMP)
+
 # Force static linking
 IF(CMAKE_SYSTEM_NAME MATCHES BlueGeneQ-static)
   SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
@@ -32,31 +37,51 @@ ENDIF(CMAKE_SYSTEM_NAME MATCHES BlueGeneQ-static)
 # stuff for C/C++ calls to Fortran -- still needs to be done properly...
 IF(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
   SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffixed-form -ffixed-line-length-132 -cpp " )
+  if(HAVE_OMP)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fopenmp")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fopenmp")
+  endif(HAVE_OMP)
 ENDIF(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
 
 IF(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 
-SET(CMAKE_Fortran_FLAGS "-W0 -132 -fixed -fpp ${CMAKE_Fortran_FLAGS}" )
-if((CMAKE_BUILD_TYPE MATCHES "Release") OR 
-	(CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo"))
-	set(CMAKE_Fortran_FLAGS "-O3 -ip ${CMAKE_Fortran_FLAGS}" )
-endif()
+  SET(CMAKE_Fortran_FLAGS "-W0 -132 -fixed -fpp ${CMAKE_Fortran_FLAGS}" )
+  if((CMAKE_BUILD_TYPE MATCHES "Release") OR 
+	  (CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo"))
+	  set(CMAKE_Fortran_FLAGS "-O3 -ip ${CMAKE_Fortran_FLAGS}" )
+  endif()
+  if(HAVE_OMP)
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qopenmp")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qopenmp")
+  endif(HAVE_OMP)
 message(STATUS "Found ifort")
-message(STATUS ${CMAKE_Fortran_FLAGS})
 ENDIF(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES PGI)
 	set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend")
+  if(HAVE_OMP)
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mp")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mp")
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mp")
+  endif(HAVE_OMP)
 endif(CMAKE_Fortran_COMPILER_ID MATCHES PGI)
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES XL)
 	#set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qstrict -qnullterm -qfixed=132")
 	set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qnullterm -qfixed=132")
+  if(HAVE_OMP)
+    SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qsmp=omp")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qsmp=omp")
+    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -qsmp=omp")
+  endif(HAVE_OMP)
 endif(CMAKE_Fortran_COMPILER_ID MATCHES XL)
 
 IF(${CMAKE_BUILD_TYPE} MATCHES "Debug" )
   ADD_DEFINITIONS( -DDEBUG )
 ENDIF(${CMAKE_BUILD_TYPE} MATCHES "Debug" )
+message(STATUS ${CMAKE_Fortran_FLAGS})
 
 # set archos "like" options for things like c calling fortran bindings
 # later on we may want to do it dependent on behavior (e.g. 
