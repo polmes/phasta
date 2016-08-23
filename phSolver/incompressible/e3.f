@@ -83,6 +83,7 @@ c
 c
 c.... loop through the integration points
 c
+! natural place for rdelta = TMRC() but moved lower to time just loop 
 #ifdef HAVE_OMP
 	allocate( rl_qp(npro,nshl,nflow,ngauss))
         allocate( xK_qp(npro,9,nshl,nshl,ngauss))
@@ -90,6 +91,10 @@ c
         rl_qp=zero
         xK_qp=zero
         xG_qp=zero
+#endif
+! time just loop 
+       rdelta = TMRC() 
+#ifdef HAVE_OMP
 !$OMP  parallel do 
 !$OMP& private (ith,sgn,shpfun,shdrv,rmu,rho,aci,g1yi,g2yi,g3yi)
 !$OMP& private (shg,dxidx,WdetJ,pres,u1,u2,u3,rLui,src,rlsi)
@@ -164,6 +169,10 @@ c
 c.... end of integration loop
 c
       enddo
+!just loop for now
+      rdelta = TMRC() - rdelta
+      rthreads = rthreads + rdelta
+!just
 #ifdef HAVE_OMP
 c
 c here we accumulate the thread work
@@ -181,6 +190,7 @@ c
       deallocate(xK_qp)
       deallocate(rl_qp)
 #endif
+!natural lace for the rthreads timer when we want to capture all but moved to just loop for now
 c
 c.... symmetrize C
 c

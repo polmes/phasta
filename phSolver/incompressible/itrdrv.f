@@ -118,6 +118,7 @@ c
 
       call initmemstat() 
       if(myrank.le.4) call hello()
+      rthreads = 0.0
 
 !--------------------------------------------------------------------
 !     Setting up svLS Moved down for better org
