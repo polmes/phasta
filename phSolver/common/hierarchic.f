@@ -14,13 +14,13 @@ c     signs on all modes to be negated.
 c------------------------------------------------------------------------
       include "common.h"
 
-      dimension ien(ibksiz,blk%s),  sgn(ibksiz,blk%s)
+      dimension ien(bsz,blk%s),  sgn(bsz,blk%s)
       
       do i=nenl+1,blk%s
-         where ( ien(1:ibksiz,i) < 0 )
-            sgn(1:ibksiz,i) = -one
+         where ( ien(1:bsz,i) < 0 )
+            sgn(1:bsz,i) = -one
          elsewhere
-            sgn(1:ibksiz,i) = one
+            sgn(1:bsz,i) = one
          endwhere
       enddo
       
@@ -35,21 +35,21 @@ c------------------------------------------------------------------------
       include "common.h"
       
       dimension shp(blk%s,ngauss),   shgl(nsd,blk%s,ngauss),
-     &          sgn(ibksiz,blk%s),     shape(ibksiz,blk%s),
-     &          shdrv(ibksiz,nsd,blk%s)
+     &          sgn(bsz,blk%s),     shape(bsz,blk%s),
+     &          shdrv(bsz,nsd,blk%s)
       
       
       do i=1,nenl
-         shape(1:ibksiz,i) = shp(i,ith)
+         shape(1:bsz,i) = shp(i,ith)
          do j=1,3
-            shdrv(1:ibksiz,j,i) = shgl(j,i,ith)
+            shdrv(1:bsz,j,i) = shgl(j,i,ith)
          enddo
       enddo
       if ( ipord > 1 ) then
          do i=nenl+1,blk%s
-            shape(1:ibksiz,i) = sgn(1:ibksiz,i) * shp(i,ith)
+            shape(1:bsz,i) = sgn(1:bsz,i) * shp(i,ith)
             do j=1,3
-               shdrv(1:ibksiz,j,i) = shgl(j,i,ith)*sgn(1:ibksiz,i) 
+               shdrv(1:bsz,j,i) = shgl(j,i,ith)*sgn(1:bsz,i) 
             enddo
          enddo
       endif
@@ -65,21 +65,21 @@ c------------------------------------------------------------------------
       include "common.h"
 
       dimension shp(blk%s,ngaussb),  shgl(nsd,blk%s,ngaussb),
-     &          sgn(ibksiz,blk%s),     shape(ibksiz,blk%s),
-     &          shdrv(ibksiz,nsd,blk%s)
+     &          sgn(bsz,blk%s),     shape(bsz,blk%s),
+     &          shdrv(bsz,nsd,blk%s)
       
       
       do i=1,nenl
-         shape(1:ibksiz,i) = shp(i,intp)
+         shape(1:bsz,i) = shp(i,intp)
          do j=1,3
-            shdrv(1:ibksiz,j,i) = shgl(j,i,intp)
+            shdrv(1:bsz,j,i) = shgl(j,i,intp)
          enddo
       enddo
       if ( ipord > 1 ) then
          do i=nenl+1,blk%s
-            shape(1:ibksiz,i) = sgn(1:ibksiz,i) * shp(i,intp)
+            shape(1:bsz,i) = sgn(1:bsz,i) * shp(i,intp)
             do j=1,3
-               shdrv(1:ibksiz,j,i) = shgl(j,i,intp)*sgn(1:ibksiz,i) 
+               shdrv(1:bsz,j,i) = shgl(j,i,intp)*sgn(1:bsz,i) 
             enddo
          enddo
       endif
@@ -244,10 +244,10 @@ c-----------------------------------------------------------------------
      &        shp(blk%s,npts),      shgl(nsd,blk%s,npts),
      &        intpnt(3,npts),      x(numnp,nsd)
       
-      real*8, allocatable :: ycl(1:ibksiz,:,:)
-      real*8, allocatable :: xl(1:ibksiz,:,:)
-      real*8, allocatable :: yvl(1:ibksiz,:,:)
-      real*8, allocatable :: sgn(1:ibksiz,:)
+      real*8, allocatable :: ycl(1:bsz,:,:)
+      real*8, allocatable :: xl(1:bsz,:,:)
+      real*8, allocatable :: yvl(1:bsz,:,:)
+      real*8, allocatable :: sgn(1:bsz,:)
 
       yvals = zero
 c
@@ -255,7 +255,7 @@ c.... generate the shape functions at the interpolation points
 c
       call getIntPnts(intpnt,npts)
       do i=1,npts
-         call shpTet(ipord,intpnt(1:ibksiz,i),shp(1:ibksiz,i),shgl(1:ibksiz,:,i))
+         call shpTet(ipord,intpnt(1:bsz,i),shp(1:bsz,i),shgl(1:bsz,:,i))
       enddo
 c
 c.... loop over element blocks
@@ -267,12 +267,12 @@ c
          nenl   = lcblk(5,iblk) ! no. of vertices per element
          blk%s   = lcblk(10,iblk)
          ndofl  = lcblk(8,iblk)
-         ibksiz   = lcblk(1,iblk+1) - iel 
+         bsz   = lcblk(1,iblk+1) - iel 
 
-         allocate ( ycl(ibksiz,blk%s,ndof ) )
-         allocate ( yvl(ibksiz,blk%s,nvars) )
-         allocate ( xl(ibksiz,nenl,nsd   ) )
-         allocate ( sgn(ibksiz,blk%s)       )
+         allocate ( ycl(bsz,blk%s,ndof ) )
+         allocate ( yvl(bsz,blk%s,nvars) )
+         allocate ( xl(bsz,nenl,nsd   ) )
+         allocate ( sgn(bsz,blk%s)       )
          
          call getsgn(mien(iblk)%p,sgn)
          
@@ -322,12 +322,12 @@ c-----------------------------------------------------------------------
       
       integer nvars
 c
-      real*8  ycl(ibksiz,blk%s,ndof),   yvl(ibksiz,blk%s,nvars),
-     &        sgn(ibksiz,blk%s),        shape(ibksiz,blk%s),
-     &        shdrv(ibksiz,nsd,blk%s),  shp(blk%s,npts),
-     &        shgl(nsd,blk%s,npts),   xl(ibksiz,nenl,nsd),
-     &        shg(ibksiz,blk%s,nsd),    gradV(ibksiz,nsd,nsd),
-     &        dxidx(ibksiz,nsd,nsd),   tmp(ibksiz), wtmp
+      real*8  ycl(bsz,blk%s,ndof),   yvl(bsz,blk%s,nvars),
+     &        sgn(bsz,blk%s),        shape(bsz,blk%s),
+     &        shdrv(bsz,nsd,blk%s),  shp(blk%s,npts),
+     &        shgl(nsd,blk%s,npts),   xl(bsz,nenl,nsd),
+     &        shg(bsz,blk%s,nsd),    gradV(bsz,nsd,nsd),
+     &        dxidx(bsz,nsd,nsd),   tmp(bsz), wtmp
       
       yvl = zero
 c
@@ -342,7 +342,7 @@ c.... pressure and velocity
 c
          do i = 1, blk%s
             do j = 1, 4
-               yvl(1:ibksiz,intp,j) = yvl(1:ibksiz,intp,j) + shape(1:ibksiz,i) * ycl(1:ibksiz,i,j)
+               yvl(1:bsz,intp,j) = yvl(1:bsz,intp,j) + shape(1:bsz,i) * ycl(1:bsz,i,j)
             enddo
          enddo
 c
@@ -353,28 +353,28 @@ c
 
          gradV = zero
          do n = 1, blk%s
-            gradV(1:ibksiz,1,1) = gradV(1:ibksiz,1,1) + shg(1:ibksiz,n,1) * ycl(1:ibksiz,n,2)
-            gradV(1:ibksiz,2,1) = gradV(1:ibksiz,2,1) + shg(1:ibksiz,n,1) * ycl(1:ibksiz,n,3)
-            gradV(1:ibksiz,3,1) = gradV(1:ibksiz,3,1) + shg(1:ibksiz,n,1) * ycl(1:ibksiz,n,4)
+            gradV(1:bsz,1,1) = gradV(1:bsz,1,1) + shg(1:bsz,n,1) * ycl(1:bsz,n,2)
+            gradV(1:bsz,2,1) = gradV(1:bsz,2,1) + shg(1:bsz,n,1) * ycl(1:bsz,n,3)
+            gradV(1:bsz,3,1) = gradV(1:bsz,3,1) + shg(1:bsz,n,1) * ycl(1:bsz,n,4)
 c     
-            gradV(1:ibksiz,1,2) = gradV(1:ibksiz,1,2) + shg(1:ibksiz,n,2) * ycl(1:ibksiz,n,2)
-            gradV(1:ibksiz,2,2) = gradV(1:ibksiz,2,2) + shg(1:ibksiz,n,2) * ycl(1:ibksiz,n,3)
-            gradV(1:ibksiz,3,2) = gradV(1:ibksiz,3,2) + shg(1:ibksiz,n,2) * ycl(1:ibksiz,n,4)
+            gradV(1:bsz,1,2) = gradV(1:bsz,1,2) + shg(1:bsz,n,2) * ycl(1:bsz,n,2)
+            gradV(1:bsz,2,2) = gradV(1:bsz,2,2) + shg(1:bsz,n,2) * ycl(1:bsz,n,3)
+            gradV(1:bsz,3,2) = gradV(1:bsz,3,2) + shg(1:bsz,n,2) * ycl(1:bsz,n,4)
 c     
-            gradV(1:ibksiz,1,3) = gradV(1:ibksiz,1,3) + shg(1:ibksiz,n,3) * ycl(1:ibksiz,n,2)
-            gradV(1:ibksiz,2,3) = gradV(1:ibksiz,2,3) + shg(1:ibksiz,n,3) * ycl(1:ibksiz,n,3)
-            gradV(1:ibksiz,3,3) = gradV(1:ibksiz,3,3) + shg(1:ibksiz,n,3) * ycl(1:ibksiz,n,4)
+            gradV(1:bsz,1,3) = gradV(1:bsz,1,3) + shg(1:bsz,n,3) * ycl(1:bsz,n,2)
+            gradV(1:bsz,2,3) = gradV(1:bsz,2,3) + shg(1:bsz,n,3) * ycl(1:bsz,n,3)
+            gradV(1:bsz,3,3) = gradV(1:bsz,3,3) + shg(1:bsz,n,3) * ycl(1:bsz,n,4)
          enddo
 
          rmu = datmat(1,2,1)
             
-         yvl(1:ibksiz,intp,6 ) = two * rmu * gradV(1:ibksiz,1,1)
-         yvl(1:ibksiz,intp,7 ) = two * rmu * gradV(1:ibksiz,2,2)
-         yvl(1:ibksiz,intp,8 ) = two * rmu * gradV(1:ibksiz,3,3)
+         yvl(1:bsz,intp,6 ) = two * rmu * gradV(1:bsz,1,1)
+         yvl(1:bsz,intp,7 ) = two * rmu * gradV(1:bsz,2,2)
+         yvl(1:bsz,intp,8 ) = two * rmu * gradV(1:bsz,3,3)
 
-         yvl(1:ibksiz,intp,9 ) = rmu * ( gradV(1:ibksiz,1,2) + gradV(1:ibksiz,2,1) )
-         yvl(1:ibksiz,intp,10) = rmu * ( gradV(1:ibksiz,1,3) + gradV(1:ibksiz,3,1) )
-         yvl(1:ibksiz,intp,11) = rmu * ( gradV(1:ibksiz,2,3) + gradV(1:ibksiz,3,2) )
+         yvl(1:bsz,intp,9 ) = rmu * ( gradV(1:bsz,1,2) + gradV(1:bsz,2,1) )
+         yvl(1:bsz,intp,10) = rmu * ( gradV(1:bsz,1,3) + gradV(1:bsz,3,1) )
+         yvl(1:bsz,intp,11) = rmu * ( gradV(1:bsz,2,3) + gradV(1:bsz,3,2) )
 
 c
 c.... loop over interpolation points

@@ -10,7 +10,7 @@ c-----------------------------------------------------------------------
 
       include "common.h"
       
-      real*8     xl(ibksiz,nenl,nsd),    shgl(npro,nsd,nshl),
+      real*8     xl(bsz,nenl,nsd),    shgl(npro,nsd,nshl),
      &           dxidx(npro,nsd,nsd),  shg(npro,nshl,nsd), 
      &           WdetJ(npro)
 

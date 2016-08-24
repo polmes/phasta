@@ -380,7 +380,7 @@ extern "C" {
     int iepstm;
     double dtsfct;
     double taucfct;
-    int ibksiz;
+    int bsz;
     int iabc;
     int isurf;
     int idflx;

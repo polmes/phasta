@@ -720,7 +720,7 @@ int input_fform(phSolver::Input& inp)
 
     intdat.intg[0][0]=inp.GetValue("Quadrature Rule on Interior");
     intdat.intg[0][1]=inp.GetValue("Quadrature Rule on Boundary");
-    genpar.ibksiz = inp.GetValue("Number of Elements Per Block");
+    genpar.bsz = inp.GetValue("Number of Elements Per Block");
 
     ((string)inp.GetValue("Turn Off Source Terms for Scalars") 
          == "True") ? sclrs.nosource = 1 : sclrs.nosource = 0;

@@ -132,7 +132,7 @@ c
      &                               temper, press,  entrop
         
         if (myrank .eq. master) then
-           write (*,*) 'Element block size = ',ibksiz
+           write (*,*) 'Element block size = ',bsz
         endif
 
         if (iLSet .gt. 0 .and. myrank .eq. master)then 
@@ -240,7 +240,7 @@ c
         write (23,*) E3nsd,  I3nsd,  nsymdf, ndofBC, ndiBCB, ndBCB,
      &                  Jactyp, jump,   ires,   iprec,  ibound,
      &                  idiff,  lhs,    itau,   ipord,  ipred,  lstres,
-     &                  iepstm, dtsfct, ibksiz, iabc
+     &                  iepstm, dtsfct, bsz, iabc
         write (23,*)"  epstol(mxats),  Delt(mxats),"
         write (23,*)  epstol(mxats),  Delt(mxats),     nstep(mxats), 
      &                  impl(mxats),    rhoinf(mxats),
