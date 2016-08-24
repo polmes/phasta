@@ -46,8 +46,8 @@ c------------------------------------------------------------------------
      &          shpfun(npro,nshl),shg(npro,nshl,nsd), src(npro,nsd),
      &          pres(npro)
       
-      dimension rl(npro,nshl,nflow),
-     &          acl(npro,nshl,ndof),
+      dimension rl(ibksiz,nshl,nflow),
+     &          acl(ibksiz,nshl,ndof),
      &          rlsli(npro,6)
 c
 c.... local declarations
@@ -228,28 +228,28 @@ c
 c
 c.... continuity
 c
-         rl(:,aa,4) = rl(:,aa,4) + WdetJ
-     &              * ( shg(:,aa,1) * uBar(:,1) 
-     &                + shg(:,aa,2) * uBar(:,2) 
-     &                + shg(:,aa,3) * uBar(:,3) )
+         rl(1:npro,aa,4) = rl(1:npro,aa,4) + WdetJ
+     &              * ( shg(1:npro,aa,1) * uBar(1:npro,1) 
+     &                + shg(1:npro,aa,2) * uBar(1:npro,2) 
+     &                + shg(1:npro,aa,3) * uBar(1:npro,3) )
 c
 c.... momentum
 c
-         rl(:,aa,1) = rl(:,aa,1) - WdetJ
-     &              * ( shpfun(:,aa) * rNa(:,1)
-     &                + shg(:,aa,1) * rGNa(:,1,1)
-     &                + shg(:,aa,2) * rGNa(:,1,2)
-     &                + shg(:,aa,3) * rGNa(:,1,3) )
-         rl(:,aa,2) = rl(:,aa,2) - WdetJ
-     &              * ( shpfun(:,aa) * rNa(:,2)
-     &                + shg(:,aa,1) * rGNa(:,2,1)
-     &                + shg(:,aa,2) * rGNa(:,2,2)
-     &                + shg(:,aa,3) * rGNa(:,2,3) )
-         rl(:,aa,3) = rl(:,aa,3) - WdetJ
-     &              * ( shpfun(:,aa) * rNa(:,3)
-     &                + shg(:,aa,1) * rGNa(:,3,1)
-     &                + shg(:,aa,2) * rGNa(:,3,2)
-     &                + shg(:,aa,3) * rGNa(:,3,3) )
+         rl(1:npro,aa,1) = rl(1:npro,aa,1) - WdetJ
+     &              * ( shpfun(1:npro,aa) * rNa(1:npro,1)
+     &                + shg(1:npro,aa,1) * rGNa(1:npro,1,1)
+     &                + shg(1:npro,aa,2) * rGNa(1:npro,1,2)
+     &                + shg(1:npro,aa,3) * rGNa(1:npro,1,3) )
+         rl(1:npro,aa,2) = rl(1:npro,aa,2) - WdetJ
+     &              * ( shpfun(1:npro,aa) * rNa(1:npro,2)
+     &                + shg(1:npro,aa,1) * rGNa(1:npro,2,1)
+     &                + shg(1:npro,aa,2) * rGNa(1:npro,2,2)
+     &                + shg(1:npro,aa,3) * rGNa(1:npro,2,3) )
+         rl(1:npro,aa,3) = rl(1:npro,aa,3) - WdetJ
+     &              * ( shpfun(1:npro,aa) * rNa(1:npro,3)
+     &                + shg(1:npro,aa,1) * rGNa(1:npro,3,1)
+     &                + shg(1:npro,aa,2) * rGNa(1:npro,3,2)
+     &                + shg(1:npro,aa,3) * rGNa(1:npro,3,3) )
       
       enddo                 
 c
@@ -278,7 +278,7 @@ c
      &          Sclr(npro),       Sdot(npro),	gradS(npro,nsd),
      &          WdetJ(npro),      rLS(npro),	rho(npro),
      &          tauS(npro),       shpfun(npro,nshl), src(npro), 
-     &          shg(npro,nshl,3), rl(npro,nshl)
+     &          shg(npro,nshl,3), rl(ibksiz,nshl)
       
       real*8    diffus(npro)
 c
@@ -331,11 +331,11 @@ c.... multiply the residual pieces by the weight space
 c
       do aa = 1,nshl
 c
-         rl(:,aa) = rl(:,aa)	- WdetJ
-     &                        * ( shpfun(:,aa) * rNa(:)
-     &                        + shg(:,aa,1) * rGNa(:,1)
-     &                        + shg(:,aa,2) * rGNa(:,2)
-     &                        + shg(:,aa,3) * rGNa(:,3) )
+         rl(1:npro,aa) = rl(1:npro,aa)	- WdetJ
+     &                        * ( shpfun(1:npro,aa) * rNa(1:npro)
+     &                        + shg(1:npro,aa,1) * rGNa(1:npro,1)
+     &                        + shg(1:npro,aa,2) * rGNa(1:npro,2)
+     &                        + shg(1:npro,aa,3) * rGNa(1:npro,3) )
 
       enddo
 c

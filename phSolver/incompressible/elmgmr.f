@@ -24,6 +24,9 @@ c
         use timedata
 c
         include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),
      &            u(nshg,nsd),
@@ -48,6 +51,7 @@ c
         real*8 lhsK(9,nnz_tot), lhsP(4,nnz_tot)
 
         real*8, allocatable, dimension(:,:,:,:) :: xKebe, xGoC
+        real*8, allocatable, dimension(:,:,:) :: rl, rerrl
 
         real*8  rerr(nshg,10)
 
@@ -136,6 +140,15 @@ c
 c
 c.... loop over the element-blocks
 c
+c
+c.... allocate the element matrices
+c
+        allocate ( xKebe(ibksiz,9,nshape,nshape) )
+        allocate ( xGoC (ibksiz,4,nshape,nshape) )
+        allocate ( rl (ibksiz,nshape,ndof) )
+        allocate ( rerrl (ibksiz,nshape,6) )
+        allocate ( StsVecl (ibksiz,nshape,nResDims) )
+
         do iblk = 1, nelblk
           iblock = iblk         ! used in local mass inverse (p>2)
           iblkts = iblk         ! used in timeseries
@@ -143,19 +156,28 @@ c
           lelCat = lcblk(2,iblk)
           lcsyst = lcblk(3,iblk)
           iorder = lcblk(4,iblk)
-          nenl   = lcblk(5,iblk) ! no. of vertices per element
-          nshl   = lcblk(10,iblk)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
           mattyp = lcblk(7,iblk)
           ndofl  = lcblk(8,iblk)
           nsymdl = lcblk(9,iblk)
-          npro   = lcblk(1,iblk+1) - iel 
+          blk%e   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
-          ngauss = nint(lcsyst)
-c
-c.... allocate the element matrices
-c
-          allocate ( xKebe(npro,9,nshl,nshl) )
-          allocate ( xGoC (npro,4,nshl,nshl) )
+          blk%g = nint(lcsyst)
+          nshl= blk%s 
+          npro=blk%e
+          if(nshl.ne.nshape) then  ! never true in monotopology but makes code 
+              deallocate (xKebe)   ! below (local) easier if nshl is correct size
+              deallocate (xGoC)
+              deallocate (rl)
+              deallocate (rerrl)
+              deallocate (StsVecl)
+              allocate ( xKebe(ibksiz,9,nshl,nshl) )
+              allocate ( xGoC (ibksiz,4,nshl,nshl) )
+              allocate ( rl (ibksiz,nshl,ndof) )
+              allocate ( rerrl (ibksiz,nshl,6) )
+              allocate ( StsVecl (ibksiz,nshl,nResDims) )
+           endif
 c
 c.... compute and assemble the residual and tangent matrix
 c
@@ -165,16 +187,30 @@ c
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call AsIGMR (y,                   ac,
+          call AsIGMR (iblk, blk,   y,                   ac,
      &                 x,                   mxmudmi(iblk)%p,      
      &                 tmpshp, 
      &                 tmpshgl,
      &                 mien(iblk)%p,
-     &                 res,
+     &                 rl,
      &                 qres,                xKebe,
-     &                 xGoC,                rerr)
+     &                 xGoC,                rerrl, StsVecl)
+!threaded loop closes here
 c
-c.... satisfy the BC's on the implicit LHS
+c.... assemble the residual
+c
+           call local (res,    rl,     ien,    nflow,  'scatter ')
+c
+c.... assemble the statistics residual
+c
+        if ( stsResFlg .eq. 1 ) then 
+           call local( stsVec, StsVecl, ien, nResDims, 'scatter ')
+        endif
+
+        if ( ierrcalc .eq. 1 ) then
+           call local (rerr, rerrl,  ien, 6, 'scatter ')
+        endif
+
 c     
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
              if(ipord.eq.1) 
@@ -185,14 +221,17 @@ c
      &                 rowp,                      colm)
           endif
 
-          deallocate ( xKebe )
-          deallocate ( xGoC  )
           deallocate ( tmpshp )
           deallocate ( tmpshgl )
 c
 c.... end of interior element loop
 c
        enddo
+          deallocate ( xKebe )
+          deallocate ( xGoC  )
+          deallocate ( rl  )
+          deallocate ( rerrl  )
+          deallocate ( StsVecl  )
 c$$$       if(ibksiz.eq.20 .and. iwrote.ne.789) then
 c$$$          do i=1,nshg
 c$$$             write(789,*) 'eqn block ',i 

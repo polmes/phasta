@@ -6,10 +6,10 @@ c-----------------------------------------------------------------------
       use     turbSA
       include "common.h"
 
-      real*8  yl(npro,nshl,ndof), rmu(npro), xmudmi(npro,ngauss),
+      real*8  yl(ibksiz,nshl,ndof), rmu(npro), xmudmi(npro,ngauss),
      &        shape(npro,nshl),   rho(npro),
-     &        dwl(npro,nshl),     sclr(npro),
-     &        xl(npro,nenl,nsd)
+     &        dwl(ibksiz,nshl),     sclr(npro),
+     &        xl(ibksiz,nenl,nsd)
       integer n, e
 
       real*8  epsilon_ls, kay, epsilon
@@ -48,7 +48,7 @@ c
          Sclr = zero
          isc=abs(iRANS)+6
          do n = 1, nshl
-            Sclr = Sclr + shape(:,n) * yl(:,n,isc)
+            Sclr = Sclr + shape(1:npro,n) * yl(1:npro,n,isc)
          enddo
          do i= 1, npro
             if (sclr(i) .lt. - epsilon_ls)then
@@ -104,7 +104,7 @@ c
       subroutine EviscDESIC(xl,xmut,xmudmi)
      
       include "common.h"
-      real*8 xmut(npro),xl(npro,nenl,nsd),xmudmi(npro,ngauss)
+      real*8 xmut(npro),xl(ibksiz,nenl,nsd),xmudmi(npro,ngauss)
 
 
       do i=1,npro
@@ -133,7 +133,7 @@ c
       include "common.h"
       
       real*8   diffus(npro), rho(npro)
-      real*8   yl(npro,nshl,ndof), dwl(npro,nshl), shape(npro,nshl)
+      real*8   yl(ibksiz,nshl,ndof), dwl(ibksiz,nshl), shape(npro,nshl)
       integer n, e
       rho(:)  = datmat(1,1,1)	! single fluid model, i.e., only 1 density
       if(isclr.eq.0) then  ! solving the temperature equation

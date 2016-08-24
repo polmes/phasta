@@ -1,7 +1,7 @@
-        subroutine AsIGMR (y,       ac,      x,       xmudmi,
+        subroutine AsIGMR (iblk, blk, y,       ac,      x,       xmudmi,
      &                     shp,     shgl,    ien,     
-     &                     res,     qres,
-     &                     xKebe,   xGoC,    rerr, CFLworst)
+     &                     rl,     qres,
+     &                     xKebe,   xGoC,    rerrl)
 c
 c----------------------------------------------------------------------
 c
@@ -21,30 +21,29 @@ c
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
      &            x(numnp,nsd),              
-     &            shp(nshl,ngauss),            shgl(nsd,nshl,ngauss),
-     &            ien(npro,nshl),
-     &            res(nshg,nflow),
+     &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
+     &            ien(ibksiz,blk%s),
      &            qres(nshg,idflx)
 
 c
-        dimension yl(npro,nshl,ndofl),         acl(npro,nshl,ndofl),
-     &            xl(npro,nenl,nsd),           dwl(npro,nenl),      
-     &            rl(npro,nshl,nflow), 
-     &            ql(npro,nshl,idflx)
+        dimension yl(ibksiz,blk%s,ndofl),         acl(ibksiz,blk%s,ndofl),
+     &            xl(ibksiz,nenl,nsd),           dwl(ibksiz,nenl),      
+     &            rl(ibksiz,blk%s,nflow), 
+     &            ql(ibksiz,blk%s,idflx)
 c        
-        dimension xKebe(npro,9,nshl,nshl), 
-     &            xGoC(npro,4,nshl,nshl)
+        dimension xKebe(ibksiz,9,blk%s,blk%s), 
+     &            xGoC(ibksiz,4,blk%s,blk%s)
 c
-        dimension rlsl(npro,nshl,6) 
+        dimension rlsl(ibksiz,blk%s,6) 
 
 c
-        real*8    lStsVec(npro,nshl,nResDims)
+        real*8    StsVecl(ibksiz,blk%s,nResDims)
         
-        dimension xmudmi(npro,ngauss)
-        dimension sgn(npro,nshl)
-        dimension CFLworst(npro)
+        dimension xmudmi(ibksiz,blk%g)
+        dimension sgn(ibksiz,blk%s)
+        dimension CFLworst(ibksiz)
 c
-        real*8 rerrl(npro,nshl,6), rerr(nshg,10)
+        real*8 rerrl(ibksiz,blk%s,6)
 c
 c.... gather the variables
 c
@@ -91,21 +90,12 @@ c
 c.... assemble the statistics residual
 c
         if ( stsResFlg .eq. 1 ) then
-           call e3StsRes ( xl, rl, lStsVec )
-           call local( stsVec, lStsVec, ien, nResDims, 'scatter ')
-        else
-c
-c.... assemble the residual
-c
-           call local (res,    rl,     ien,    nflow,  'scatter ')
-           
-           if ( ierrcalc .eq. 1 ) then
-              call local (rerr, rerrl,  ien, 6, 'scatter ')
-           endif
+           call e3StsRes ( xl, rl, StsVecl )
         endif
 c
 c.... end
 c
+
         if (exts.and.ires.ne.2) then
            if ((iter.eq.1).and.(mod(lstep,freq).eq.0)) then
               call timeseries(yl,xl,ien,sgn)
@@ -139,21 +129,21 @@ c
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
      &            x(numnp,nsd),              
-     &            shp(nshl,ngauss),            shgl(nsd,nshl,ngauss),
-     &            ien(npro,nshl),
+     &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
+     &            ien(ibksiz,blk%s),
      &            res(nshg),                  qres(nshg,nsd)
 
 c
-        real*8    yl(npro,nshl,ndofl),        acl(npro,nshl,ndofl),
-     &            xl(npro,nenl,nsd),         
-     &            rl(npro,nshl),              ql(npro,nshl,nsd),
-     &            dwl(npro,nenl)            
+        real*8    yl(ibksiz,blk%s,ndofl),        acl(ibksiz,blk%s,ndofl),
+     &            xl(ibksiz,nenl,nsd),         
+     &            rl(ibksiz,blk%s),              ql(ibksiz,blk%s,nsd),
+     &            dwl(ibksiz,nenl)            
 c        
-        real*8    xSebe(npro,nshl,nshl),      xmudmi(npro,ngauss) 
+        real*8    xSebe(ibksiz,blk%s,blk%s),      xmudmi(ibksiz,blk%g) 
 c
 c.... gather the variables
 c
-        real*8 sgn(npro,nshl)
+        real*8 sgn(ibksiz,blk%s)
 c
 c.... get the matrix of mode signs for the hierarchic basis functions. 
 c

@@ -52,9 +52,9 @@ c
 c
 c  passed arrays
 c
-      dimension yl(npro,nshl,ndof),        dwl(npro,nenl),       
-     &            acl(npro,nshl,ndof),       shpfun(npro,nshl),
-     &            shgl(npro,nsd,nshl),       xl(npro,nenl,nsd),
+      dimension yl(ibksiz,nshl,ndof),        dwl(ibksiz,nenl),       
+     &            acl(ibksiz,nshl,ndof),       shpfun(npro,nshl),
+     &            shgl(npro,nsd,nshl),       xl(ibksiz,nenl,nsd),
      &            aci(npro,nsd),             g1yi(npro,ndof),
      &            g2yi(npro,ndof),           g3yi(npro,ndof),
      &            shg(npro,nshl,nsd),        dxidx(npro,nsd,nsd),
@@ -62,14 +62,14 @@ c
      &            rho(npro),                 pres(npro),
      &            u1(npro),                  u2(npro),
      &            u3(npro),                  divqi(npro,nflow-1+isurf),
-     &            ql(npro,nshl,idflx),       rLui(npro,nsd),
+     &            ql(ibksiz,nshl,idflx),       rLui(npro,nsd),
      &            src(npro,nsd), Temp(npro),xx(npro,nsd)
 c
         dimension tmp(npro), tmp1(npro), dkei(npro), dist2w(npro)
 c
-        dimension rlsl(npro,nshl,6),         rlsli(npro,6)
+        dimension rlsl(ibksiz,nshl,6),         rlsli(npro,6)
 c
-        real*8    rerrl(npro,nshl,6), omega(3), divu(npro)
+        real*8    rerrl(ibksiz,nshl,6), omega(3), divu(npro)
         dimension gyti(npro,nsd),            gradh(npro,nsd),
      &            sforce(npro,3),            weber(npro),
      &            Sclr(npro)
@@ -84,31 +84,31 @@ c
        u3   = zero
 c
        do n = 1, nshl 
-          pres = pres + shpfun(:,n) * yl(:,n,1)
-          u1   = u1   + shpfun(:,n) * yl(:,n,2)
-          u2   = u2   + shpfun(:,n) * yl(:,n,3)
-          u3   = u3   + shpfun(:,n) * yl(:,n,4)
+          pres = pres + shpfun(1:npro,n) * yl(1:npro,n,1)
+          u1   = u1   + shpfun(1:npro,n) * yl(1:npro,n,2)
+          u2   = u2   + shpfun(1:npro,n) * yl(1:npro,n,3)
+          u3   = u3   + shpfun(1:npro,n) * yl(1:npro,n,4)
        enddo
        if(matflg(5,1).eq.2) then ! boussinesq body force
           Temp = zero
           do n = 1, nshl
-             Temp = Temp + shpfun(:,n) * yl(:,n,5)
+             Temp = Temp + shpfun(1:npro,n) * yl(1:npro,n,5)
           enddo
        endif
        if(matflg(5,1).eq.3.or.matflg(6,1).eq.1) then
 c         user-specified body force or coriolis force specified
                  xx = zero
           do n  = 1,nenl
-             xx(:,1) = xx(:,1)  + shpfun(:,n) * xl(:,n,1)
-             xx(:,2) = xx(:,2)  + shpfun(:,n) * xl(:,n,2)
-             xx(:,3) = xx(:,3)  + shpfun(:,n) * xl(:,n,3)
+             xx(1:npro,1) = xx(1:npro,1)  + shpfun(1:npro,n) * xl(1:npro,n,1)
+             xx(1:npro,2) = xx(1:npro,2)  + shpfun(1:npro,n) * xl(1:npro,n,2)
+             xx(1:npro,3) = xx(1:npro,3)  + shpfun(1:npro,n) * xl(1:npro,n,3)
           enddo
        endif
 c
        if(iRANS.eq.-2) then ! kay-epsilon
           dist2w = zero
           do n = 1, nenl
-             dist2w = dist2w + shpfun(:,n) * dwl(:,n)
+             dist2w = dist2w + shpfun(1:npro,n) * dwl(1:npro,n)
           enddo
        endif
 c
@@ -117,12 +117,12 @@ c
        rlsli = zero
        do n = 1, nshl 
 
-          rlsli(:,1) = rlsli(:,1) + shpfun(:,n) * rlsl(:,n,1)
-          rlsli(:,2) = rlsli(:,2) + shpfun(:,n) * rlsl(:,n,2)
-          rlsli(:,3) = rlsli(:,3) + shpfun(:,n) * rlsl(:,n,3)
-          rlsli(:,4) = rlsli(:,4) + shpfun(:,n) * rlsl(:,n,4)
-          rlsli(:,5) = rlsli(:,5) + shpfun(:,n) * rlsl(:,n,5)
-          rlsli(:,6) = rlsli(:,6) + shpfun(:,n) * rlsl(:,n,6)
+          rlsli(1:npro,1) = rlsli(1:npro,1) + shpfun(1:npro,n) * rlsl(1:npro,n,1)
+          rlsli(1:npro,2) = rlsli(1:npro,2) + shpfun(1:npro,n) * rlsl(1:npro,n,2)
+          rlsli(1:npro,3) = rlsli(1:npro,3) + shpfun(1:npro,n) * rlsl(1:npro,n,3)
+          rlsli(1:npro,4) = rlsli(1:npro,4) + shpfun(1:npro,n) * rlsl(1:npro,n,4)
+          rlsli(1:npro,5) = rlsli(1:npro,5) + shpfun(1:npro,n) * rlsl(1:npro,n,5)
+          rlsli(1:npro,6) = rlsli(1:npro,6) + shpfun(1:npro,n) * rlsl(1:npro,n,6)
 
        enddo
        else
@@ -133,9 +133,9 @@ c.... ----------------------->  accel. at int. point  <----------------------
 c
        aci = zero
        do n = 1, nshl
-          aci(:,1) = aci(:,1) + shpfun(:,n) * acl(:,n,2)
-          aci(:,2) = aci(:,2) + shpfun(:,n) * acl(:,n,3)
-          aci(:,3) = aci(:,3) + shpfun(:,n) * acl(:,n,4)
+          aci(1:npro,1) = aci(1:npro,1) + shpfun(1:npro,n) * acl(1:npro,n,2)
+          aci(1:npro,2) = aci(1:npro,2) + shpfun(1:npro,n) * acl(1:npro,n,3)
+          aci(1:npro,3) = aci(1:npro,3) + shpfun(1:npro,n) * acl(1:npro,n,4)
        enddo
 c
 c.... --------------------->  Element Metrics  <-----------------------
@@ -150,20 +150,20 @@ c
        g2yi = zero
        g3yi = zero
        do n = 1, nshl
-          g1yi(:,1) = g1yi(:,1) + shg(:,n,1) * yl(:,n,1)
-          g1yi(:,2) = g1yi(:,2) + shg(:,n,1) * yl(:,n,2)
-          g1yi(:,3) = g1yi(:,3) + shg(:,n,1) * yl(:,n,3)
-          g1yi(:,4) = g1yi(:,4) + shg(:,n,1) * yl(:,n,4)
+          g1yi(1:npro,1) = g1yi(1:npro,1) + shg(1:npro,n,1) * yl(1:npro,n,1)
+          g1yi(1:npro,2) = g1yi(1:npro,2) + shg(1:npro,n,1) * yl(1:npro,n,2)
+          g1yi(1:npro,3) = g1yi(1:npro,3) + shg(1:npro,n,1) * yl(1:npro,n,3)
+          g1yi(1:npro,4) = g1yi(1:npro,4) + shg(1:npro,n,1) * yl(1:npro,n,4)
 c
-          g2yi(:,1) = g2yi(:,1) + shg(:,n,2) * yl(:,n,1)
-          g2yi(:,2) = g2yi(:,2) + shg(:,n,2) * yl(:,n,2)
-          g2yi(:,3) = g2yi(:,3) + shg(:,n,2) * yl(:,n,3)
-          g2yi(:,4) = g2yi(:,4) + shg(:,n,2) * yl(:,n,4)
+          g2yi(1:npro,1) = g2yi(1:npro,1) + shg(1:npro,n,2) * yl(1:npro,n,1)
+          g2yi(1:npro,2) = g2yi(1:npro,2) + shg(1:npro,n,2) * yl(1:npro,n,2)
+          g2yi(1:npro,3) = g2yi(1:npro,3) + shg(1:npro,n,2) * yl(1:npro,n,3)
+          g2yi(1:npro,4) = g2yi(1:npro,4) + shg(1:npro,n,2) * yl(1:npro,n,4)
 c
-          g3yi(:,1) = g3yi(:,1) + shg(:,n,3) * yl(:,n,1)
-          g3yi(:,2) = g3yi(:,2) + shg(:,n,3) * yl(:,n,2)
-          g3yi(:,3) = g3yi(:,3) + shg(:,n,3) * yl(:,n,3)
-          g3yi(:,4) = g3yi(:,4) + shg(:,n,3) * yl(:,n,4)
+          g3yi(1:npro,1) = g3yi(1:npro,1) + shg(1:npro,n,3) * yl(1:npro,n,1)
+          g3yi(1:npro,2) = g3yi(1:npro,2) + shg(1:npro,n,3) * yl(1:npro,n,2)
+          g3yi(1:npro,3) = g3yi(1:npro,3) + shg(1:npro,n,3) * yl(1:npro,n,3)
+          g3yi(1:npro,4) = g3yi(1:npro,4) + shg(1:npro,n,3) * yl(1:npro,n,4)
        enddo
 
        divqi = zero
@@ -174,17 +174,17 @@ c.... compute divergence of diffusive flux vector, qi,i
 c     
           if(idiff >= 1) then
              do n=1, nshl
-                divqi(:,1) = divqi(:,1) + shg(:,n,1)*ql(:,n,1 ) 
-     &                                  + shg(:,n,2)*ql(:,n,4 )
-     &                                  + shg(:,n,3)*ql(:,n,7 )
+                divqi(1:npro,1) = divqi(1:npro,1) + shg(1:npro,n,1)*ql(1:npro,n,1 ) 
+     &                                  + shg(1:npro,n,2)*ql(1:npro,n,4 )
+     &                                  + shg(1:npro,n,3)*ql(1:npro,n,7 )
 
-                divqi(:,2) = divqi(:,2) + shg(:,n,1)*ql(:,n,2 ) 
-     &                                  + shg(:,n,2)*ql(:,n,5 )
-     &                                  + shg(:,n,3)*ql(:,n,8)
+                divqi(1:npro,2) = divqi(1:npro,2) + shg(1:npro,n,1)*ql(1:npro,n,2 ) 
+     &                                  + shg(1:npro,n,2)*ql(1:npro,n,5 )
+     &                                  + shg(1:npro,n,3)*ql(1:npro,n,8)
 
-                divqi(:,3) = divqi(:,3) + shg(:,n,1)*ql(:,n,3 ) 
-     &                                  + shg(:,n,2)*ql(:,n,6 )
-     &                                  + shg(:,n,3)*ql(:,n,9 )
+                divqi(1:npro,3) = divqi(1:npro,3) + shg(1:npro,n,1)*ql(1:npro,n,3 ) 
+     &                                  + shg(1:npro,n,2)*ql(1:npro,n,6 )
+     &                                  + shg(1:npro,n,3)*ql(1:npro,n,9 )
 
           enddo
 
@@ -193,10 +193,10 @@ c
           if (isurf .eq. 1) then   
 c     .... divergence of normal calculation (curvature)
              do n=1, nshl
-                divqi(:,idflow+1) = divqi(:,idflow+1) 
-     &               + shg(:,n,1)*ql(:,n,idflx-2)
-     &               + shg(:,n,2)*ql(:,n,idflx-1)
-     &               + shg(:,n,3)*ql(:,n,idflx)
+                divqi(1:npro,idflow+1) = divqi(1:npro,idflow+1) 
+     &               + shg(1:npro,n,1)*ql(1:npro,n,idflx-2)
+     &               + shg(1:npro,n,2)*ql(1:npro,n,idflx-1)
+     &               + shg(1:npro,n,3)*ql(1:npro,n,idflx)
              enddo 
 c     .... initialization of some variables
              Sclr = zero
@@ -263,19 +263,19 @@ c
           do ia=1,nshl
              tmp=shpfun(:,ia)*WdetJ(:)
              tmp1=shpfun(:,ia) !Qwt(lcsyst,ith) 
-             rerrl(:,ia,1) = rerrl(:,ia,1) +
-     &                       tmp1(:)*rLui(:,1)*rLui(:,1)
-             rerrl(:,ia,2) = rerrl(:,ia,2) +
-     &                       tmp1(:)*rLui(:,2)*rLui(:,2)
-             rerrl(:,ia,3) = rerrl(:,ia,3) +
-     &                       tmp1(:)*rLui(:,3)*rLui(:,3)
+             rerrl(1:npro,ia,1) = rerrl(1:npro,ia,1) +
+     &                       tmp1(1:npro)*rLui(1:npro,1)*rLui(1:npro,1)
+             rerrl(1:npro,ia,2) = rerrl(1:npro,ia,2) +
+     &                       tmp1(1:npro)*rLui(1:npro,2)*rLui(1:npro,2)
+             rerrl(1:npro,ia,3) = rerrl(1:npro,ia,3) +
+     &                       tmp1(1:npro)*rLui(1:npro,3)*rLui(1:npro,3)
 
-             rerrl(:,ia,4) = rerrl(:,ia,4) +
-     &                       tmp(:)*divqi(:,1)*divqi(:,1)
-             rerrl(:,ia,5) = rerrl(:,ia,5) +
-     &                       tmp(:)*divqi(:,2)*divqi(:,2)
-             rerrl(:,ia,6) = rerrl(:,ia,6) +
-     &                       tmp(:)*divqi(:,3)*divqi(:,3)
+             rerrl(1:npro,ia,4) = rerrl(1:npro,ia,4) +
+     &                       tmp(1:npro)*divqi(1:npro,1)*divqi(1:npro,1)
+             rerrl(1:npro,ia,5) = rerrl(1:npro,ia,5) +
+     &                       tmp(1:npro)*divqi(1:npro,2)*divqi(1:npro,2)
+             rerrl(1:npro,ia,6) = rerrl(1:npro,ia,6) +
+     &                       tmp(1:npro)*divqi(1:npro,3)*divqi(1:npro,3)
           enddo
        endif
        distcalc=0  ! return to 1 if you want to compute T-S instability
@@ -291,7 +291,7 @@ c
        dkei=0.0
 c
        do n = 1, nenl 
-          dkei = dkei + shpfun(:,n) * (1.0-xl(:,n,2)**2) !u_ex^~ (in FEM space)
+          dkei = dkei + shpfun(1:npro,n) * (1.0-xl(1:npro,n,2)**2) !u_ex^~ (in FEM space)
        enddo
           dkei = (u1(:)-dkei)**2 +u2(:)**2  ! u'^2+v'^2
           dkei = dkei*WdetJ  ! mult function*W*det of jacobian to
@@ -360,10 +360,10 @@ c
 c
       id=isclr+5
       do n = 1, nshl 
-         u1   = u1   + shpfun(:,n) * yl(:,n,2)
-         u2   = u2   + shpfun(:,n) * yl(:,n,3)
-         u3   = u3   + shpfun(:,n) * yl(:,n,4)
-         Sclr = Sclr + shpfun(:,n) * yl(:,n,id)
+         u1   = u1   + shpfun(1:npro,n) * yl(1:npro,n,2)
+         u2   = u2   + shpfun(1:npro,n) * yl(1:npro,n,3)
+         u3   = u3   + shpfun(1:npro,n) * yl(1:npro,n,4)
+         Sclr = Sclr + shpfun(1:npro,n) * yl(1:npro,n,id)
       enddo
 c
 c
@@ -371,7 +371,7 @@ c.... ----------------------->  dS/dt at int. point  <----------------------
 c
       Sdot = zero
       do n = 1, nshl
-         Sdot = Sdot + shpfun(:,n) * acl(:,n,id)
+         Sdot = Sdot + shpfun(1:npro,n) * acl(1:npro,n,id)
       enddo
 c
 c.... --------------------->  Element Metrics  <-----------------------
@@ -386,9 +386,9 @@ c
 c
        gradS = zero
        do n = 1, nshl
-          gradS(:,1) = gradS(:,1) + shg(:,n,1) * yl(:,n,id)
-          gradS(:,2) = gradS(:,2) + shg(:,n,2) * yl(:,n,id)
-          gradS(:,3) = gradS(:,3) + shg(:,n,3) * yl(:,n,id)
+          gradS(1:npro,1) = gradS(1:npro,1) + shg(1:npro,n,1) * yl(1:npro,n,id)
+          gradS(1:npro,2) = gradS(1:npro,2) + shg(1:npro,n,2) * yl(1:npro,n,id)
+          gradS(1:npro,3) = gradS(1:npro,3) + shg(1:npro,n,3) * yl(1:npro,n,id)
        enddo
 
        divS = zero
@@ -397,9 +397,9 @@ c
 c.... compute divergence of diffusive flux vector, qi,i
 c
           do n=1, nshl
-             divS(:) = divS(:) + shg(:,n,1)*ql(:,n,1 ) 
-     &                         + shg(:,n,2)*ql(:,n,2 ) 
-     &                         + shg(:,n,3)*ql(:,n,3 ) 
+             divS(1:npro) = divS(1:npro) + shg(1:npro,n,1)*ql(1:npro,n,1 ) 
+     &                         + shg(1:npro,n,2)*ql(1:npro,n,2 ) 
+     &                         + shg(1:npro,n,3)*ql(1:npro,n,3 ) 
           enddo
        endif                    ! diffusive flux computation
 
@@ -410,42 +410,42 @@ c         stabilization factor and L is the momentum residual
           if(matflg(5,1).eq.2) then ! boussinesq body force
              Temp = zero
              do n = 1, nshl
-                Temp = Temp + shpfun(:,n) * yl(:,n,5)
+                Temp = Temp + shpfun(1:npro,n) * yl(1:npro,n,5)
              enddo
           endif
           if(matflg(5,1).eq.3.or.matflg(6,1).eq.1) then
 c     user-specified body force or coriolis force specified
              xx = zero
              do n  = 1,nenl
-                xx(:,1) = xx(:,1)  + shpfun(:,n) * xl(:,n,1)
-                xx(:,2) = xx(:,2)  + shpfun(:,n) * xl(:,n,2)
-                xx(:,3) = xx(:,3)  + shpfun(:,n) * xl(:,n,3)
+                xx(1:npro,1) = xx(1:npro,1)  + shpfun(1:npro,n) * xl(1:npro,n,1)
+                xx(1:npro,2) = xx(1:npro,2)  + shpfun(1:npro,n) * xl(1:npro,n,2)
+                xx(1:npro,3) = xx(1:npro,3)  + shpfun(1:npro,n) * xl(1:npro,n,3)
              enddo
           endif
           aci = zero
           do n = 1, nshl
-             aci(:,1) = aci(:,1) + shpfun(:,n) * acl(:,n,2)
-             aci(:,2) = aci(:,2) + shpfun(:,n) * acl(:,n,3)
-             aci(:,3) = aci(:,3) + shpfun(:,n) * acl(:,n,4)
+             aci(1:npro,1) = aci(1:npro,1) + shpfun(1:npro,n) * acl(1:npro,n,2)
+             aci(1:npro,2) = aci(1:npro,2) + shpfun(1:npro,n) * acl(1:npro,n,3)
+             aci(1:npro,3) = aci(1:npro,3) + shpfun(1:npro,n) * acl(1:npro,n,4)
           enddo
           g1yi = zero
           g2yi = zero
           g3yi = zero
           do n = 1, nshl
-             g1yi(:,1) = g1yi(:,1) + shg(:,n,1) * yl(:,n,1)
-             g1yi(:,2) = g1yi(:,2) + shg(:,n,1) * yl(:,n,2)
-             g1yi(:,3) = g1yi(:,3) + shg(:,n,1) * yl(:,n,3)
-             g1yi(:,4) = g1yi(:,4) + shg(:,n,1) * yl(:,n,4)
+             g1yi(1:npro,1) = g1yi(1:npro,1) + shg(1:npro,n,1) * yl(1:npro,n,1)
+             g1yi(1:npro,2) = g1yi(1:npro,2) + shg(1:npro,n,1) * yl(1:npro,n,2)
+             g1yi(1:npro,3) = g1yi(1:npro,3) + shg(1:npro,n,1) * yl(1:npro,n,3)
+             g1yi(1:npro,4) = g1yi(1:npro,4) + shg(1:npro,n,1) * yl(1:npro,n,4)
 c     
-             g2yi(:,1) = g2yi(:,1) + shg(:,n,2) * yl(:,n,1)
-             g2yi(:,2) = g2yi(:,2) + shg(:,n,2) * yl(:,n,2)
-             g2yi(:,3) = g2yi(:,3) + shg(:,n,2) * yl(:,n,3)
-             g2yi(:,4) = g2yi(:,4) + shg(:,n,2) * yl(:,n,4)
+             g2yi(1:npro,1) = g2yi(1:npro,1) + shg(1:npro,n,2) * yl(1:npro,n,1)
+             g2yi(1:npro,2) = g2yi(1:npro,2) + shg(1:npro,n,2) * yl(1:npro,n,2)
+             g2yi(1:npro,3) = g2yi(1:npro,3) + shg(1:npro,n,2) * yl(1:npro,n,3)
+             g2yi(1:npro,4) = g2yi(1:npro,4) + shg(1:npro,n,2) * yl(1:npro,n,4)
 c     
-             g3yi(:,1) = g3yi(:,1) + shg(:,n,3) * yl(:,n,1)
-             g3yi(:,2) = g3yi(:,2) + shg(:,n,3) * yl(:,n,2)
-             g3yi(:,3) = g3yi(:,3) + shg(:,n,3) * yl(:,n,3)
-             g3yi(:,4) = g3yi(:,4) + shg(:,n,3) * yl(:,n,4)
+             g3yi(1:npro,1) = g3yi(1:npro,1) + shg(1:npro,n,3) * yl(1:npro,n,1)
+             g3yi(1:npro,2) = g3yi(1:npro,2) + shg(1:npro,n,3) * yl(1:npro,n,2)
+             g3yi(1:npro,3) = g3yi(1:npro,3) + shg(1:npro,n,3) * yl(1:npro,n,3)
+             g3yi(1:npro,4) = g3yi(1:npro,4) + shg(1:npro,n,3) * yl(1:npro,n,4)
           enddo
 c          
           if (iLSet .eq. 0)then

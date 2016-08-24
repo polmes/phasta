@@ -39,11 +39,11 @@ c
       include "common.h"
 
 c
-        dimension yl(npro,nshl,ndof),
-     &            acl(npro,nshl,ndof),       
+        dimension yl(ibksiz,nshl,ndof),
+     &            acl(ibksiz,nshl,ndof),       
      &            shp(nshl,ngauss),       shgl(nsd,nshl,ngauss),
-     &            xl(npro,nenl,nsd),      dwl(npro,nenl),
-     &            rl(npro,nshl,nflow),     ql(npro,nshl,idflx)
+     &            xl(ibksiz,nenl,nsd),      dwl(ibksiz,nenl),
+     &            rl(ibksiz,nshl,nflow),     ql(ibksiz,nshl,idflx)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp, xG_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
@@ -65,9 +65,9 @@ c
      &            tauM(npro),             tauBar(npro),
      &            src(npro,3)
 
-        dimension rlsl(npro,nshl,6),      rlsli(npro,6)
+        dimension rlsl(ibksiz,nshl,6),      rlsli(npro,6)
 
-        real*8    rerrl(npro,nshl,6)
+        real*8    rerrl(ibksiz,nshl,6)
         integer   aa
 
 c
@@ -84,7 +84,7 @@ c
 c.... loop through the integration points
 c
 ! natural place for rdelta = TMRC() but moved lower to time just loop 
-#ifdef HAVE_OMP
+#ifdef HAVE_OMP_QP  
 	allocate( rl_qp(npro,nshl,nflow,ngauss))
         allocate( xK_qp(npro,9,nshl,nshl,ngauss))
         allocate( xG_qp(npro,4,nshl,nshl,ngauss))
@@ -94,7 +94,7 @@ c
 #endif
 ! time just loop 
        rdelta = TMRC() 
-#ifdef HAVE_OMP
+#ifdef HAVE_OMP_QP
 !$OMP  parallel do 
 !$OMP& private (ith,sgn,shpfun,shdrv,rmu,rho,aci,g1yi,g2yi,g3yi)
 !$OMP& private (shg,dxidx,WdetJ,pres,u1,u2,u3,rLui,src,rlsi)
@@ -141,7 +141,7 @@ c
      &               rLui,      rmu,        rho,
      &               tauC,      tauM,       tauBar,
      &               shpfun,    shg,        src,
-#ifdef HAVE_OMP
+#ifdef HAVE_OMP_QP
      &               rl_qp(:,:,:,ith),      
 #else
      &               rl,
@@ -157,7 +157,7 @@ c
      &                  rLui,      rmu,
      &                  tauC,      tauM,       tauBar,
      &                  shpfun,    shg,        
-#ifdef HAVE_OMP
+#ifdef HAVE_OMP_QP
      &                  xK_qp(:,:,:,:,ith),
      &                  xG_qp(:,:,:,:,ith))
 #else
@@ -173,7 +173,7 @@ c
       rdelta = TMRC() - rdelta
       rthreads = rthreads + rdelta
 !just
-#ifdef HAVE_OMP
+#ifdef HAVE_OMP_QP
 c
 c here we accumulate the thread work
 c
