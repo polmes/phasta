@@ -46,8 +46,8 @@ c------------------------------------------------------------------------
      &          shpfun(npro,nshl),shg(npro,nshl,nsd), src(npro,nsd),
      &          pres(npro)
       
-      dimension rl(ibksiz,nshl,nflow),
-     &          acl(ibksiz,nshl,ndof),
+      dimension rl(bsz,nshl,nflow),
+     &          acl(bsz,nshl,ndof),
      &          rlsli(npro,6)
 c
 c.... local declarations
@@ -278,7 +278,7 @@ c
      &          Sclr(npro),       Sdot(npro),	gradS(npro,nsd),
      &          WdetJ(npro),      rLS(npro),	rho(npro),
      &          tauS(npro),       shpfun(npro,nshl), src(npro), 
-     &          shg(npro,nshl,3), rl(ibksiz,nshl)
+     &          shg(npro,nshl,3), rl(bsz,nshl)
       
       real*8    diffus(npro)
 c

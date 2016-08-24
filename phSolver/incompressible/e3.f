@@ -39,11 +39,11 @@ c
       include "common.h"
 
 c
-        dimension yl(ibksiz,nshl,ndof),
-     &            acl(ibksiz,nshl,ndof),       
+        dimension yl(bsz,nshl,ndof),
+     &            acl(bsz,nshl,ndof),       
      &            shp(nshl,ngauss),       shgl(nsd,nshl,ngauss),
-     &            xl(ibksiz,nenl,nsd),      dwl(ibksiz,nenl),
-     &            rl(ibksiz,nshl,nflow),     ql(ibksiz,nshl,idflx)
+     &            xl(bsz,nenl,nsd),      dwl(bsz,nenl),
+     &            rl(bsz,nshl,nflow),     ql(bsz,nshl,idflx)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp, xG_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
@@ -65,9 +65,9 @@ c
      &            tauM(npro),             tauBar(npro),
      &            src(npro,3)
 
-        dimension rlsl(ibksiz,nshl,6),      rlsli(npro,6)
+        dimension rlsl(bsz,nshl,6),      rlsli(npro,6)
 
-        real*8    rerrl(ibksiz,nshl,6)
+        real*8    rerrl(bsz,nshl,6)
         integer   aa
 
 c

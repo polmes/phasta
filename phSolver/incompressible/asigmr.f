@@ -22,28 +22,28 @@ c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
      &            x(numnp,nsd),              
      &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
-     &            ien(ibksiz,blk%s),
+     &            ien(bsz,blk%s),
      &            qres(nshg,idflx)
 
 c
-        dimension yl(ibksiz,blk%s,ndofl),         acl(ibksiz,blk%s,ndofl),
-     &            xl(ibksiz,nenl,nsd),           dwl(ibksiz,nenl),      
-     &            rl(ibksiz,blk%s,nflow), 
-     &            ql(ibksiz,blk%s,idflx)
+        dimension yl(bsz,blk%s,ndofl),         acl(bsz,blk%s,ndofl),
+     &            xl(bsz,nenl,nsd),           dwl(bsz,nenl),      
+     &            rl(bsz,blk%s,nflow), 
+     &            ql(bsz,blk%s,idflx)
 c        
-        dimension xKebe(ibksiz,9,blk%s,blk%s), 
-     &            xGoC(ibksiz,4,blk%s,blk%s)
+        dimension xKebe(bsz,9,blk%s,blk%s), 
+     &            xGoC(bsz,4,blk%s,blk%s)
 c
-        dimension rlsl(ibksiz,blk%s,6) 
+        dimension rlsl(bsz,blk%s,6) 
 
 c
-        real*8    StsVecl(ibksiz,blk%s,nResDims)
+        real*8    StsVecl(bsz,blk%s,nResDims)
         
-        dimension xmudmi(ibksiz,blk%g)
-        dimension sgn(ibksiz,blk%s)
-        dimension CFLworst(ibksiz)
+        dimension xmudmi(bsz,blk%g)
+        dimension sgn(bsz,blk%s)
+        dimension CFLworst(bsz)
 c
-        real*8 rerrl(ibksiz,blk%s,6)
+        real*8 rerrl(bsz,blk%s,6)
 c
 c.... gather the variables
 c
@@ -130,20 +130,20 @@ c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
      &            x(numnp,nsd),              
      &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
-     &            ien(ibksiz,blk%s),
+     &            ien(bsz,blk%s),
      &            res(nshg),                  qres(nshg,nsd)
 
 c
-        real*8    yl(ibksiz,blk%s,ndofl),        acl(ibksiz,blk%s,ndofl),
-     &            xl(ibksiz,nenl,nsd),         
-     &            rl(ibksiz,blk%s),              ql(ibksiz,blk%s,nsd),
-     &            dwl(ibksiz,nenl)            
+        real*8    yl(bsz,blk%s,ndofl),        acl(bsz,blk%s,ndofl),
+     &            xl(bsz,nenl,nsd),         
+     &            rl(bsz,blk%s),              ql(bsz,blk%s,nsd),
+     &            dwl(bsz,nenl)            
 c        
-        real*8    xSebe(ibksiz,blk%s,blk%s),      xmudmi(ibksiz,blk%g) 
+        real*8    xSebe(bsz,blk%s,blk%s),      xmudmi(bsz,blk%g) 
 c
 c.... gather the variables
 c
-        real*8 sgn(ibksiz,blk%s)
+        real*8 sgn(bsz,blk%s)
 c
 c.... get the matrix of mode signs for the hierarchic basis functions. 
 c

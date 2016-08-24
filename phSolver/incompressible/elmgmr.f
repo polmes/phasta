@@ -143,11 +143,11 @@ c
 c
 c.... allocate the element matrices
 c
-        allocate ( xKebe(ibksiz,9,nshape,nshape) )
-        allocate ( xGoC (ibksiz,4,nshape,nshape) )
-        allocate ( rl (ibksiz,nshape,ndof) )
-        allocate ( rerrl (ibksiz,nshape,6) )
-        allocate ( StsVecl (ibksiz,nshape,nResDims) )
+        allocate ( xKebe(bsz,9,nshape,nshape) )
+        allocate ( xGoC (bsz,4,nshape,nshape) )
+        allocate ( rl (bsz,nshape,ndof) )
+        allocate ( rerrl (bsz,nshape,6) )
+        allocate ( StsVecl (bsz,nshape,nResDims) )
 
         do iblk = 1, nelblk
           iblock = iblk         ! used in local mass inverse (p>2)
@@ -172,11 +172,11 @@ c
               deallocate (rl)
               deallocate (rerrl)
               deallocate (StsVecl)
-              allocate ( xKebe(ibksiz,9,nshl,nshl) )
-              allocate ( xGoC (ibksiz,4,nshl,nshl) )
-              allocate ( rl (ibksiz,nshl,ndof) )
-              allocate ( rerrl (ibksiz,nshl,6) )
-              allocate ( StsVecl (ibksiz,nshl,nResDims) )
+              allocate ( xKebe(bsz,9,nshl,nshl) )
+              allocate ( xGoC (bsz,4,nshl,nshl) )
+              allocate ( rl (bsz,nshl,ndof) )
+              allocate ( rerrl (bsz,nshl,6) )
+              allocate ( StsVecl (bsz,nshl,nResDims) )
            endif
 c
 c.... compute and assemble the residual and tangent matrix
@@ -232,7 +232,7 @@ c
           deallocate ( rl  )
           deallocate ( rerrl  )
           deallocate ( StsVecl  )
-c$$$       if(ibksiz.eq.20 .and. iwrote.ne.789) then
+c$$$       if(bsz.eq.20 .and. iwrote.ne.789) then
 c$$$          do i=1,nshg
 c$$$             write(789,*) 'eqn block ',i 
 c$$$             do j=colm(i),colm(i+1)-1

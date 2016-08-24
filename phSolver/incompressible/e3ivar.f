@@ -52,9 +52,9 @@ c
 c
 c  passed arrays
 c
-      dimension yl(ibksiz,nshl,ndof),        dwl(ibksiz,nenl),       
-     &            acl(ibksiz,nshl,ndof),       shpfun(npro,nshl),
-     &            shgl(npro,nsd,nshl),       xl(ibksiz,nenl,nsd),
+      dimension yl(bsz,nshl,ndof),        dwl(bsz,nenl),       
+     &            acl(bsz,nshl,ndof),       shpfun(npro,nshl),
+     &            shgl(npro,nsd,nshl),       xl(bsz,nenl,nsd),
      &            aci(npro,nsd),             g1yi(npro,ndof),
      &            g2yi(npro,ndof),           g3yi(npro,ndof),
      &            shg(npro,nshl,nsd),        dxidx(npro,nsd,nsd),
@@ -62,14 +62,14 @@ c
      &            rho(npro),                 pres(npro),
      &            u1(npro),                  u2(npro),
      &            u3(npro),                  divqi(npro,nflow-1+isurf),
-     &            ql(ibksiz,nshl,idflx),       rLui(npro,nsd),
+     &            ql(bsz,nshl,idflx),       rLui(npro,nsd),
      &            src(npro,nsd), Temp(npro),xx(npro,nsd)
 c
         dimension tmp(npro), tmp1(npro), dkei(npro), dist2w(npro)
 c
-        dimension rlsl(ibksiz,nshl,6),         rlsli(npro,6)
+        dimension rlsl(bsz,nshl,6),         rlsli(npro,6)
 c
-        real*8    rerrl(ibksiz,nshl,6), omega(3), divu(npro)
+        real*8    rerrl(bsz,nshl,6), omega(3), divu(npro)
         dimension gyti(npro,nsd),            gradh(npro,nsd),
      &            sforce(npro,3),            weber(npro),
      &            Sclr(npro)

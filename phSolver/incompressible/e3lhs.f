@@ -38,7 +38,7 @@ c------------------------------------------------------------------------
      &          tauC(npro),       tauM(npro),     tauBar(npro),
      &          shpfun(npro,nshl),shg(npro,nshl,3)
       
-      dimension xKebe(ibksiz,9,nshl,nshl), xGoC(ibksiz,4,nshl,nshl)
+      dimension xKebe(bsz,9,nshl,nshl), xGoC(bsz,4,nshl,nshl)
 c
 c.... local declarations
 c
@@ -282,7 +282,7 @@ c
      &          WdetJ(npro),      rLS(npro),        rho(npro), 
      &          tauS(npro),       shpfun(npro,nshl),  
      &          srcL(npro),        shg(npro,nshl,3),
-     &			xSebe(ibksiz,nshl,nshl)
+     &			xSebe(bsz,nshl,nshl)
       
       real*8    diffus(npro),  cp,  kptmp(npro),tauSo(npro)
 
