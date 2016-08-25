@@ -50,8 +50,8 @@ c
 
         real*8 lhsK(9,nnz_tot), lhsP(4,nnz_tot)
 
-        real*8, allocatable, dimension(:,:,:,:) :: xKebe, xGoC
-        real*8, allocatable, dimension(:,:,:) :: rl, rerrl,StsVecl
+        real*8, allocatable, dimension(:,:,:,:,:) :: xKebe, xGoC
+        real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
         real*8  rerr(nshg,10)
 
@@ -130,34 +130,45 @@ c
 c
 c.... -------------------->   interior elements   <--------------------
 c
-        res    = zero
-        if (stsResFlg .ne. 1) then
-           flxID = zero
-        endif
+      res    = zero
+      if (stsResFlg .ne. 1) then
+        flxID = zero
+      endif
 
-        if (lhs .eq. 1) then
-           lhsp   = zero
-           lhsk   = zero
-        endif
+      if (lhs .eq. 1) then
+        lhsp   = zero
+        lhsk   = zero
+      endif
 c
 c.... loop over the element-blocks
 c
 c
 c.... allocate the element matrices
 c
-        nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
-        allocate ( rl (bsz,nshl,ndof) )
-        if (lhs .eq. 1) then
-          allocate ( xKebe(bsz,9,nshl,nshl) )
-          allocate ( xGoC (bsz,4,nshl,nshl) )
-        endif
-        if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshl,6) )
-        if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims) )
-#ifdef HAVE_OMP_BLK
-!$OMP parallel do
-!$OMP& private (iblk,blk)
+#ifdef HAVE_OMP
+      nthreadBLK=8
+#else
+      nthreadBLK=1
 #endif
-        do iblk = 1, nelblk
+      nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
+      allocate ( rl (bsz,nshl,ndof,nthreadBLK) )
+      if (lhs .eq. 1) then
+        allocate ( xKebe(bsz,9,nshl,nshl,nthreadBLK) )
+        allocate ( xGoC (bsz,4,nshl,nshl,nthreadBLK) )
+      endif
+      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshl,6,nthreadBLK) )
+      if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims,nthreadBLK) )
+#ifdef HAVE_OMP
+      do iblko = 1, nelblk, nthreadBLK
+!$OMP parallel do
+!$OMP& private (ith,iblk,blk,nshc)
+        do iblk = iblko,iblk0+nthreadBLK
+         if(iblk.le.nelblk) then
+          ith=1+iblk-iblko
+# else
+      do iblk = 1, nelblk
+          ith=1
+#endif
           iblock = iblk         ! used in local mass inverse (p>2)
           iblkts = iblk         ! used in timeseries
           iel    = lcblk(1,iblk)
@@ -170,99 +181,103 @@ c
           inum   = iel + npro - 1
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
           blk%s   = lcblk(10,iblk)
-          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%e   = lcblk(1,iblk+1) - lcblk(1,iblk) 
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (rl)
-            allocate ( rl (bsz,nshl,ndof) )
+            allocate ( rl (bsz,blk%s,ndof,nthreadBLK) )
             if (lhs .eq. 1) then
               deallocate (xKebe)   ! below (local) easier if blk%s is correct size
               deallocate (xGoC)
-              allocate ( xKebe(bsz,9,nshl,nshl) )
-              allocate ( xGoC (bsz,4,nshl,nshl) )
+              allocate ( xKebe(bsz,9,blk%s,blk%s,nthreadBLK) )
+              allocate ( xGoC (bsz,4,blk%s,blk%s,nthreadBLK) )
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
-              allocate ( rerrl (bsz,nshl,6) )
+              allocate ( rerrl (bsz,blk%s,6,nthreadBLK) )
             endif
             if ( stsResFlg .eq. 1 ) then
               deallocate(StsVecl)
-              allocate ( StsVecl (bsz,nshl,nResDims) )
+              allocate ( StsVecl (bsz,blk%s,nResDims,nthreadBLK) )
             endif
           endif   ! different topology endif
 c
 c.... compute and assemble the residual and tangent matrix
 c
-          allocate (tmpshp(nshl,MAXQPT))
-          allocate (tmpshgl(nsd,nshl,MAXQPT))
-
-          tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
-          tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
-
           call AsIGMR (blk, y,                   ac,
      &                 x,                   mxmudmi(iblk)%p,      
-     &                 tmpshp, 
-     &                 tmpshgl,
+     &                 shp(blk%l,1:blk%s,:),
+     &                 shgl(blk%l,:,1:blk%s,:),
      &                 mien(iblk)%p,
-     &                 rl,
-     &                 qres,                xKebe,
-     &                 xGoC,                rerrl, StsVecl)
-!threaded loop closes here
+     &                 rl(:,:,:,ith),
+     &                 qres,                xKebe(:,:,:,:,ith),
+     &                 xGoC(:,:,:,:,ith),   rerrl(:,:,:,ith), 
+     &                 StsVecl(:,:,:,ith) )
+#ifdef HAVE_OMP
+         endif ! this is the skip if threads available but blocks finished
+        enddo !threaded loop closes here
+        iblkStop=min(nelblk, iblko+nthreadBLK
+        do iblk = iblko,iblkStop
+          ith=1+iblk-iblko
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - lcblk(1,iblk) 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+#endif
 c
 c.... assemble the residual
 c
-          call local (blk,res,    rl,     mien(iblk)%p,    nflow,  'scatter ')
+          call local (blk,res,    rl(:,:,:,ith),     mien(iblk)%p,    nflow,  'scatter ')
 c
 c.... assemble the statistics residual
 c
           if ( stsResFlg .eq. 1 ) then 
-            call local( blk, stsVec, StsVecl, mien(iblk)%p, nResDims, 'scatter ')
+            call local( blk, stsVec, StsVecl(:,:,:,ith), mien(iblk)%p, nResDims, 'scatter ')
           endif
-
           if ( ierrcalc .eq. 1 ) then
-            call local (blk, rerr, rerrl,  mien(iblk)%p, 6, 'scatter ')
+            call local (blk, rerr, rerrl(:,:,:,ith),  mien(iblk)%p, 6, 'scatter ')
           endif
-
-          npro=blk%e
-c     
+          npro=blk%e  !npro still used in these arrays
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
              if(ipord.eq.1) 
-     &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe)  
+     &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
              call fillsparseI (mien(iblk)%p, 
-     &                 xKebe,            lhsK,
-     &                 xGoC,             lhsP,
+     &                 xKebe(:,:,:,:,ith) ,            lhsK,
+     &                 xGoC(:,:,:,:,ith) ,             lhsP,
      &                 rowp,                      colm)
           endif
-
-          deallocate ( tmpshp )
-          deallocate ( tmpshgl )
 c
-c.... end of interior element loop
+c.... end of interior element loop assembly
 c
-       enddo
-       deallocate ( rl  )
-       if(lhs.eq.1) then
-          deallocate ( xKebe )
-          deallocate ( xGoC  )
-       endif
-       if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
-       if ( stsResFlg .eq. 1 )          deallocate ( StsVecl  )
+#ifdef HAVE_OMP
+        enddo ! inner thread assembly loop
+#endif
+      enddo ! outer loop (only if flat MPI
+      deallocate ( rl  )
+      if(lhs.eq.1) then
+        deallocate ( xKebe )
+        deallocate ( xGoC  )
+      endif
+      if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
+      if ( stsResFlg .eq. 1 )          deallocate ( StsVecl  )
 c
 c.... add in lumped mass contributions if needed
 c
-       if((flmpr.ne.0).or.(flmpl.ne.0)) then
-          write(*,*) 'not checked for blk'
-          call lmassadd(ac,res,rowp,colm,lhsK,gmass)
-       endif
+      if((flmpr.ne.0).or.(flmpl.ne.0)) then
+        write(*,*) 'not checked for blk'
+        call lmassadd(ac,res,rowp,colm,lhsK,gmass)
+      endif
 
-       have_local_mass = 1
+      have_local_mass = 1
 c
 c.... time average statistics
 c       
-       if ( stsResFlg .eq. 1 ) then
+      if ( stsResFlg .eq. 1 ) then
 
           if (numpe > 1) then
              call commu (stsVec, ilwork, nResDims  , 'in ')
