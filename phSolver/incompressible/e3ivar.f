@@ -1,4 +1,4 @@
-      subroutine e3ivar (ith,yl,          acl,       shpfun,
+      subroutine e3ivar (blk, ith,yl,          acl,       shpfun,
      &                   shgl,        xl,       
      &                   aci,         g1yi,      g2yi,    
      &                   g3yi,        shg,       dxidx,   
@@ -13,33 +13,33 @@ c
 c  This routine computes the variables at integration point.
 c
 c input:
-c  yl     (npro,nshl,ndof)      : primitive variables
-c  acl    (npro,nshl,ndof)      : prim.var. accel. 
+c  yl     (bsz,blk%s,ndof)      : primitive variables
+c  acl    (bsz,blk%s,ndof)      : prim.var. accel. 
 c  shp    (nen)                 : element shape-functions
 c  shgl   (nsd,nen)             : element local-grad-shape-functions
-c  xl     (npro,nenl,nsd)       : nodal coordinates at current step
-c  ql     (npro,nshl,nsd*nsd) : diffusive flux vector
-c  rlsl   (npro,nshl,6)       : resolved Leonard stresses
+c  xl     (bsz,blk%n,nsd)       : nodal coordinates at current step
+c  ql     (bsz,blk%s,nsd*nsd) : diffusive flux vector
+c  rlsl   (bsz,blk%s,6)       : resolved Leonard stresses
 c
 c output:
-c  aci    (npro,3)              : primvar accel. variables 
-c  g1yi   (npro,ndof)           : grad-y in direction 1
-c  g2yi   (npro,ndof)           : grad-y in direction 2
-c  g3yi   (npro,ndof)           : grad-y in direction 3
-c  shg    (npro,nshl,nsd)       : element global grad-shape-functions
-c  dxidx  (npro,nsd,nsd)        : inverse of deformation gradient
-c  WdetJ  (npro)                : weighted Jacobian
-c  rho    (npro)                : density
-c  pres   (npro)                : pressure
-c  u1     (npro)                : x1-velocity component
-c  u2     (npro)                : x2-velocity component
-c  u3     (npro)                : x3-velocity component
-c  rLui   (npro,nsd)            : xi-momentum residual
-c  src    (npro,nsd)            : body force term (not density weighted)
-c  rlsli  (npro,6)              : resolved Leonard stresses at quad pt
+c  aci    (blk%e,3)              : primvar accel. variables 
+c  g1yi   (blk%e,ndof)           : grad-y in direction 1
+c  g2yi   (blk%e,ndof)           : grad-y in direction 2
+c  g3yi   (blk%e,ndof)           : grad-y in direction 3
+c  shg    (blk%e,blk%s,nsd)       : element global grad-shape-functions
+c  dxidx  (blk%e,nsd,nsd)        : inverse of deformation gradient
+c  WdetJ  (blk%e)                : weighted Jacobian
+c  rho    (blk%e)                : density
+c  pres   (blk%e)                : pressure
+c  u1     (blk%e)                : x1-velocity component
+c  u2     (blk%e)                : x2-velocity component
+c  u3     (blk%e)                : x3-velocity component
+c  rLui   (blk%e,nsd)            : xi-momentum residual
+c  src    (blk%e,nsd)            : body force term (not density weighted)
+c  rlsli  (blk%e,6)              : resolved Leonard stresses at quad pt
 c
 c locally calculated and used
-c  divqi  (npro,nsd+isurf)      : divergence of reconstructed quantity
+c  divqi  (blk%e,nsd+isurf)      : divergence of reconstructed quantity
 c
 c Zdenek Johan, Summer 1990. (Modified from e2ivar.f)
 c Zdenek Johan, Winter 1991. (Fortran 90)
@@ -49,30 +49,33 @@ c
 c----------------------------------------------------------------------
 c
       include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
+
 c
 c  passed arrays
 c
-      dimension yl(bsz,nshl,ndof),        dwl(bsz,nenl),       
-     &            acl(bsz,nshl,ndof),       shpfun(npro,nshl),
-     &            shgl(npro,nsd,nshl),       xl(bsz,nenl,nsd),
-     &            aci(npro,nsd),             g1yi(npro,ndof),
-     &            g2yi(npro,ndof),           g3yi(npro,ndof),
-     &            shg(npro,nshl,nsd),        dxidx(npro,nsd,nsd),
-     &            WdetJ(npro),               
-     &            rho(npro),                 pres(npro),
-     &            u1(npro),                  u2(npro),
-     &            u3(npro),                  divqi(npro,nflow-1+isurf),
-     &            ql(bsz,nshl,idflx),       rLui(npro,nsd),
-     &            src(npro,nsd), Temp(npro),xx(npro,nsd)
+      dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),       
+     &            acl(bsz,blk%s,ndof),       shpfun(blk%e,blk%s),
+     &            shgl(blk%e,nsd,blk%s),       xl(bsz,blk%n,nsd),
+     &            aci(blk%e,nsd),             g1yi(blk%e,ndof),
+     &            g2yi(blk%e,ndof),           g3yi(blk%e,ndof),
+     &            shg(blk%e,blk%s,nsd),        dxidx(blk%e,nsd,nsd),
+     &            WdetJ(blk%e),               
+     &            rho(blk%e),                 pres(blk%e),
+     &            u1(blk%e),                  u2(blk%e),
+     &            u3(blk%e),                  divqi(blk%e,nflow-1+isurf),
+     &            ql(bsz,blk%s,idflx),       rLui(blk%e,nsd),
+     &            src(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd)
 c
-        dimension tmp(npro), tmp1(npro), dkei(npro), dist2w(npro)
+        dimension tmp(blk%e), tmp1(blk%e), dkei(blk%e), dist2w(blk%e)
 c
-        dimension rlsl(bsz,nshl,6),         rlsli(npro,6)
+        dimension rlsl(bsz,blk%s,6),         rlsli(blk%e,6)
 c
-        real*8    rerrl(bsz,nshl,6), omega(3), divu(npro)
-        dimension gyti(npro,nsd),            gradh(npro,nsd),
-     &            sforce(npro,3),            weber(npro),
-     &            Sclr(npro)
+        real*8    rerrl(bsz,blk%s,6), omega(3), divu(blk%e)
+        dimension gyti(blk%e,nsd),            gradh(blk%e,nsd),
+     &            sforce(blk%e,3),            weber(blk%e),
+     &            Sclr(blk%e)
 c
 c.... ------------->  Primitive variables at int. point  <--------------
 c
@@ -83,46 +86,46 @@ c
        u2   = zero
        u3   = zero
 c
-       do n = 1, nshl 
-          pres = pres + shpfun(1:npro,n) * yl(1:npro,n,1)
-          u1   = u1   + shpfun(1:npro,n) * yl(1:npro,n,2)
-          u2   = u2   + shpfun(1:npro,n) * yl(1:npro,n,3)
-          u3   = u3   + shpfun(1:npro,n) * yl(1:npro,n,4)
+       do n = 1, blk%s 
+          pres = pres + shpfun(1:blk%e,n) * yl(1:blk%e,n,1)
+          u1   = u1   + shpfun(1:blk%e,n) * yl(1:blk%e,n,2)
+          u2   = u2   + shpfun(1:blk%e,n) * yl(1:blk%e,n,3)
+          u3   = u3   + shpfun(1:blk%e,n) * yl(1:blk%e,n,4)
        enddo
        if(matflg(5,1).eq.2) then ! boussinesq body force
           Temp = zero
-          do n = 1, nshl
-             Temp = Temp + shpfun(1:npro,n) * yl(1:npro,n,5)
+          do n = 1, blk%s
+             Temp = Temp + shpfun(1:blk%e,n) * yl(1:blk%e,n,5)
           enddo
        endif
        if(matflg(5,1).eq.3.or.matflg(6,1).eq.1) then
 c         user-specified body force or coriolis force specified
                  xx = zero
-          do n  = 1,nenl
-             xx(1:npro,1) = xx(1:npro,1)  + shpfun(1:npro,n) * xl(1:npro,n,1)
-             xx(1:npro,2) = xx(1:npro,2)  + shpfun(1:npro,n) * xl(1:npro,n,2)
-             xx(1:npro,3) = xx(1:npro,3)  + shpfun(1:npro,n) * xl(1:npro,n,3)
+          do n  = 1,blk%n
+             xx(1:blk%e,1) = xx(1:blk%e,1)  + shpfun(1:blk%e,n) * xl(1:blk%e,n,1)
+             xx(1:blk%e,2) = xx(1:blk%e,2)  + shpfun(1:blk%e,n) * xl(1:blk%e,n,2)
+             xx(1:blk%e,3) = xx(1:blk%e,3)  + shpfun(1:blk%e,n) * xl(1:blk%e,n,3)
           enddo
        endif
 c
        if(iRANS.eq.-2) then ! kay-epsilon
           dist2w = zero
-          do n = 1, nenl
-             dist2w = dist2w + shpfun(1:npro,n) * dwl(1:npro,n)
+          do n = 1, blk%n
+             dist2w = dist2w + shpfun(1:blk%e,n) * dwl(1:blk%e,n)
           enddo
        endif
 c
  
        if( (iLES.gt.10).and.(iLES.lt.20))  then  ! bardina
        rlsli = zero
-       do n = 1, nshl 
+       do n = 1, blk%s 
 
-          rlsli(1:npro,1) = rlsli(1:npro,1) + shpfun(1:npro,n) * rlsl(1:npro,n,1)
-          rlsli(1:npro,2) = rlsli(1:npro,2) + shpfun(1:npro,n) * rlsl(1:npro,n,2)
-          rlsli(1:npro,3) = rlsli(1:npro,3) + shpfun(1:npro,n) * rlsl(1:npro,n,3)
-          rlsli(1:npro,4) = rlsli(1:npro,4) + shpfun(1:npro,n) * rlsl(1:npro,n,4)
-          rlsli(1:npro,5) = rlsli(1:npro,5) + shpfun(1:npro,n) * rlsl(1:npro,n,5)
-          rlsli(1:npro,6) = rlsli(1:npro,6) + shpfun(1:npro,n) * rlsl(1:npro,n,6)
+          rlsli(1:blk%e,1) = rlsli(1:blk%e,1) + shpfun(1:blk%e,n) * rlsl(1:blk%e,n,1)
+          rlsli(1:blk%e,2) = rlsli(1:blk%e,2) + shpfun(1:blk%e,n) * rlsl(1:blk%e,n,2)
+          rlsli(1:blk%e,3) = rlsli(1:blk%e,3) + shpfun(1:blk%e,n) * rlsl(1:blk%e,n,3)
+          rlsli(1:blk%e,4) = rlsli(1:blk%e,4) + shpfun(1:blk%e,n) * rlsl(1:blk%e,n,4)
+          rlsli(1:blk%e,5) = rlsli(1:blk%e,5) + shpfun(1:blk%e,n) * rlsl(1:blk%e,n,5)
+          rlsli(1:blk%e,6) = rlsli(1:blk%e,6) + shpfun(1:blk%e,n) * rlsl(1:blk%e,n,6)
 
        enddo
        else
@@ -132,15 +135,15 @@ c
 c.... ----------------------->  accel. at int. point  <----------------------
 c
        aci = zero
-       do n = 1, nshl
-          aci(1:npro,1) = aci(1:npro,1) + shpfun(1:npro,n) * acl(1:npro,n,2)
-          aci(1:npro,2) = aci(1:npro,2) + shpfun(1:npro,n) * acl(1:npro,n,3)
-          aci(1:npro,3) = aci(1:npro,3) + shpfun(1:npro,n) * acl(1:npro,n,4)
+       do n = 1, blk%s
+          aci(1:blk%e,1) = aci(1:blk%e,1) + shpfun(1:blk%e,n) * acl(1:blk%e,n,2)
+          aci(1:blk%e,2) = aci(1:blk%e,2) + shpfun(1:blk%e,n) * acl(1:blk%e,n,3)
+          aci(1:blk%e,3) = aci(1:blk%e,3) + shpfun(1:blk%e,n) * acl(1:blk%e,n,4)
        enddo
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-       call e3metric(ith, xl,         shgl,       dxidx,  
+       call e3metric(blk,ith, xl,         shgl,       dxidx,  
      &                shg,        WdetJ)
 c
 c.... compute the global gradient of u and P
@@ -149,21 +152,21 @@ c
        g1yi = zero
        g2yi = zero
        g3yi = zero
-       do n = 1, nshl
-          g1yi(1:npro,1) = g1yi(1:npro,1) + shg(1:npro,n,1) * yl(1:npro,n,1)
-          g1yi(1:npro,2) = g1yi(1:npro,2) + shg(1:npro,n,1) * yl(1:npro,n,2)
-          g1yi(1:npro,3) = g1yi(1:npro,3) + shg(1:npro,n,1) * yl(1:npro,n,3)
-          g1yi(1:npro,4) = g1yi(1:npro,4) + shg(1:npro,n,1) * yl(1:npro,n,4)
+       do n = 1, blk%s
+          g1yi(1:blk%e,1) = g1yi(1:blk%e,1) + shg(1:blk%e,n,1) * yl(1:blk%e,n,1)
+          g1yi(1:blk%e,2) = g1yi(1:blk%e,2) + shg(1:blk%e,n,1) * yl(1:blk%e,n,2)
+          g1yi(1:blk%e,3) = g1yi(1:blk%e,3) + shg(1:blk%e,n,1) * yl(1:blk%e,n,3)
+          g1yi(1:blk%e,4) = g1yi(1:blk%e,4) + shg(1:blk%e,n,1) * yl(1:blk%e,n,4)
 c
-          g2yi(1:npro,1) = g2yi(1:npro,1) + shg(1:npro,n,2) * yl(1:npro,n,1)
-          g2yi(1:npro,2) = g2yi(1:npro,2) + shg(1:npro,n,2) * yl(1:npro,n,2)
-          g2yi(1:npro,3) = g2yi(1:npro,3) + shg(1:npro,n,2) * yl(1:npro,n,3)
-          g2yi(1:npro,4) = g2yi(1:npro,4) + shg(1:npro,n,2) * yl(1:npro,n,4)
+          g2yi(1:blk%e,1) = g2yi(1:blk%e,1) + shg(1:blk%e,n,2) * yl(1:blk%e,n,1)
+          g2yi(1:blk%e,2) = g2yi(1:blk%e,2) + shg(1:blk%e,n,2) * yl(1:blk%e,n,2)
+          g2yi(1:blk%e,3) = g2yi(1:blk%e,3) + shg(1:blk%e,n,2) * yl(1:blk%e,n,3)
+          g2yi(1:blk%e,4) = g2yi(1:blk%e,4) + shg(1:blk%e,n,2) * yl(1:blk%e,n,4)
 c
-          g3yi(1:npro,1) = g3yi(1:npro,1) + shg(1:npro,n,3) * yl(1:npro,n,1)
-          g3yi(1:npro,2) = g3yi(1:npro,2) + shg(1:npro,n,3) * yl(1:npro,n,2)
-          g3yi(1:npro,3) = g3yi(1:npro,3) + shg(1:npro,n,3) * yl(1:npro,n,3)
-          g3yi(1:npro,4) = g3yi(1:npro,4) + shg(1:npro,n,3) * yl(1:npro,n,4)
+          g3yi(1:blk%e,1) = g3yi(1:blk%e,1) + shg(1:blk%e,n,3) * yl(1:blk%e,n,1)
+          g3yi(1:blk%e,2) = g3yi(1:blk%e,2) + shg(1:blk%e,n,3) * yl(1:blk%e,n,2)
+          g3yi(1:blk%e,3) = g3yi(1:blk%e,3) + shg(1:blk%e,n,3) * yl(1:blk%e,n,3)
+          g3yi(1:blk%e,4) = g3yi(1:blk%e,4) + shg(1:blk%e,n,3) * yl(1:blk%e,n,4)
        enddo
 
        divqi = zero
@@ -173,18 +176,18 @@ c
 c.... compute divergence of diffusive flux vector, qi,i
 c     
           if(idiff >= 1) then
-             do n=1, nshl
-                divqi(1:npro,1) = divqi(1:npro,1) + shg(1:npro,n,1)*ql(1:npro,n,1 ) 
-     &                                  + shg(1:npro,n,2)*ql(1:npro,n,4 )
-     &                                  + shg(1:npro,n,3)*ql(1:npro,n,7 )
+             do n=1, blk%s
+                divqi(1:blk%e,1) = divqi(1:blk%e,1) + shg(1:blk%e,n,1)*ql(1:blk%e,n,1 ) 
+     &                                  + shg(1:blk%e,n,2)*ql(1:blk%e,n,4 )
+     &                                  + shg(1:blk%e,n,3)*ql(1:blk%e,n,7 )
 
-                divqi(1:npro,2) = divqi(1:npro,2) + shg(1:npro,n,1)*ql(1:npro,n,2 ) 
-     &                                  + shg(1:npro,n,2)*ql(1:npro,n,5 )
-     &                                  + shg(1:npro,n,3)*ql(1:npro,n,8)
+                divqi(1:blk%e,2) = divqi(1:blk%e,2) + shg(1:blk%e,n,1)*ql(1:blk%e,n,2 ) 
+     &                                  + shg(1:blk%e,n,2)*ql(1:blk%e,n,5 )
+     &                                  + shg(1:blk%e,n,3)*ql(1:blk%e,n,8)
 
-                divqi(1:npro,3) = divqi(1:npro,3) + shg(1:npro,n,1)*ql(1:npro,n,3 ) 
-     &                                  + shg(1:npro,n,2)*ql(1:npro,n,6 )
-     &                                  + shg(1:npro,n,3)*ql(1:npro,n,9 )
+                divqi(1:blk%e,3) = divqi(1:blk%e,3) + shg(1:blk%e,n,1)*ql(1:blk%e,n,3 ) 
+     &                                  + shg(1:blk%e,n,2)*ql(1:blk%e,n,6 )
+     &                                  + shg(1:blk%e,n,3)*ql(1:blk%e,n,9 )
 
           enddo
 
@@ -192,19 +195,19 @@ c
 c     
           if (isurf .eq. 1) then   
 c     .... divergence of normal calculation (curvature)
-             do n=1, nshl
-                divqi(1:npro,idflow+1) = divqi(1:npro,idflow+1) 
-     &               + shg(1:npro,n,1)*ql(1:npro,n,idflx-2)
-     &               + shg(1:npro,n,2)*ql(1:npro,n,idflx-1)
-     &               + shg(1:npro,n,3)*ql(1:npro,n,idflx)
+             do n=1, blk%s
+                divqi(1:blk%e,idflow+1) = divqi(1:blk%e,idflow+1) 
+     &               + shg(1:blk%e,n,1)*ql(1:blk%e,n,idflx-2)
+     &               + shg(1:blk%e,n,2)*ql(1:blk%e,n,idflx-1)
+     &               + shg(1:blk%e,n,3)*ql(1:blk%e,n,idflx)
              enddo 
 c     .... initialization of some variables
              Sclr = zero
              gradh= zero
              gyti = zero
              sforce=zero
-             do i = 1, npro
-                do n = 1, nshl      
+             do i = 1, blk%e
+                do n = 1, blk%s      
                    Sclr(i) = Sclr(i) + shpfun(i,n) * yl(i,n,6) !scalar
 c     
 c     .... compute the global gradient of Scalar variable
@@ -223,7 +226,7 @@ c
                    gradh(i,3) = 0.5/epsilon_ls * (1.0 
      &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,3)
                 endif
-             enddo              !end of the loop over npro
+             enddo              !end of the loop over blk%e
 c     
 c .. surface tension force calculation
 c .. divide by density now as it gets multiplied in e3res.f, as surface
@@ -242,7 +245,7 @@ c
 c
 c Calculate strong form of pde as well as the source term
 c      
-       call e3resStrongPDE(
+       call e3resStrongPDE(blk,
      &      aci,  u1,   u2,   u3,   Temp, rho,  xx,
      &            g1yi, g2yi, g3yi,
      &      rLui, src, divqi)
@@ -260,22 +263,22 @@ c
 ! OLD WAY       if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
 ! NEW WAY only one point quadrature on the error
        if((ierrcalc.eq.1).and.(nitr.eq.iter).and.(ith.eq.ngauss)) then
-          do ia=1,nshl
+          do ia=1,blk%s
              tmp=shpfun(:,ia)*WdetJ(:)
              tmp1=shpfun(:,ia) !Qwt(lcsyst,ith) 
-             rerrl(1:npro,ia,1) = rerrl(1:npro,ia,1) +
-     &                       tmp1(1:npro)*rLui(1:npro,1)*rLui(1:npro,1)
-             rerrl(1:npro,ia,2) = rerrl(1:npro,ia,2) +
-     &                       tmp1(1:npro)*rLui(1:npro,2)*rLui(1:npro,2)
-             rerrl(1:npro,ia,3) = rerrl(1:npro,ia,3) +
-     &                       tmp1(1:npro)*rLui(1:npro,3)*rLui(1:npro,3)
+             rerrl(1:blk%e,ia,1) = rerrl(1:blk%e,ia,1) +
+     &                       tmp1(1:blk%e)*rLui(1:blk%e,1)*rLui(1:blk%e,1)
+             rerrl(1:blk%e,ia,2) = rerrl(1:blk%e,ia,2) +
+     &                       tmp1(1:blk%e)*rLui(1:blk%e,2)*rLui(1:blk%e,2)
+             rerrl(1:blk%e,ia,3) = rerrl(1:blk%e,ia,3) +
+     &                       tmp1(1:blk%e)*rLui(1:blk%e,3)*rLui(1:blk%e,3)
 
-             rerrl(1:npro,ia,4) = rerrl(1:npro,ia,4) +
-     &                       tmp(1:npro)*divqi(1:npro,1)*divqi(1:npro,1)
-             rerrl(1:npro,ia,5) = rerrl(1:npro,ia,5) +
-     &                       tmp(1:npro)*divqi(1:npro,2)*divqi(1:npro,2)
-             rerrl(1:npro,ia,6) = rerrl(1:npro,ia,6) +
-     &                       tmp(1:npro)*divqi(1:npro,3)*divqi(1:npro,3)
+             rerrl(1:blk%e,ia,4) = rerrl(1:blk%e,ia,4) +
+     &                       tmp(1:blk%e)*divqi(1:blk%e,1)*divqi(1:blk%e,1)
+             rerrl(1:blk%e,ia,5) = rerrl(1:blk%e,ia,5) +
+     &                       tmp(1:blk%e)*divqi(1:blk%e,2)*divqi(1:blk%e,2)
+             rerrl(1:blk%e,ia,6) = rerrl(1:blk%e,ia,6) +
+     &                       tmp(1:blk%e)*divqi(1:blk%e,3)*divqi(1:blk%e,3)
           enddo
        endif
        distcalc=0  ! return to 1 if you want to compute T-S instability
@@ -290,8 +293,8 @@ c calc exact velocity for a channel at quadrature points.
 c
        dkei=0.0
 c
-       do n = 1, nenl 
-          dkei = dkei + shpfun(1:npro,n) * (1.0-xl(1:npro,n,2)**2) !u_ex^~ (in FEM space)
+       do n = 1, blk%n 
+          dkei = dkei + shpfun(1:blk%e,n) * (1.0-xl(1:blk%e,n,2)**2) !u_ex^~ (in FEM space)
        enddo
           dkei = (u1(:)-dkei)**2 +u2(:)**2  ! u'^2+v'^2
           dkei = dkei*WdetJ  ! mult function*W*det of jacobian to
@@ -313,7 +316,7 @@ c     Calculate the variables for the scalar advection-diffusion
 c     equation.
 c
 c-----------------------------------------------------------------------
-      subroutine e3ivarSclr (yl,          acl,       shpfun,
+      subroutine e3ivarSclr (blk, yl,          acl,       shpfun,
      &                      shgl,        xl,        xmudmi,
      &                      Sclr,        Sdot,      gradS,  
      &                      shg,         dxidx,     WdetJ,
@@ -323,30 +326,33 @@ c-----------------------------------------------------------------------
      &                      diffus,      srcRat)
 c
       include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
+
 c
 c  passed arrays
 c
-      dimension yl(npro,nshl,ndof),        acl(npro,nshl,ndof), 
-     &          Sclr(npro),                Sdot(npro),
-     &          gradS(npro,nsd),           shpfun(npro,nshl),
-     &          shgl(npro,nsd,nshl),       xl(npro,nenl,nsd),
-     &          shg(npro,nshl,nsd),        dxidx(npro,nsd,nsd),
-     &          WdetJ(npro),              
-     &          u1(npro),                  u2(npro),
-     &          u3(npro),                  divS(npro),
-     &          ql(npro,nshl,nsd),         rLS(npro),
-     &          SrcR(npro),                 SrcL(npro),
-     &          dwl(npro,nshl),            diffus(npro),
-     &          umod(npro,nsd), Temp(npro),xx(npro,nsd),
-     &          divqi(npro)   
+      dimension yl(bsz,blk%s,ndof),        acl(bsz,blk%s,ndof), 
+     &          Sclr(blk%e),                Sdot(blk%e),
+     &          gradS(blk%e,nsd),           shpfun(blk%e,blk%s),
+     &          shgl(blk%e,nsd,blk%s),       xl(bsz,blk%n,nsd),
+     &          shg(blk%e,blk%s,nsd),        dxidx(blk%e,nsd,nsd),
+     &          WdetJ(blk%e),              
+     &          u1(blk%e),                  u2(blk%e),
+     &          u3(blk%e),                  divS(blk%e),
+     &          ql(bsz,blk%s,nsd),         rLS(blk%e),
+     &          SrcR(blk%e),                 SrcL(blk%e),
+     &          dwl(bsz,blk%s),            diffus(blk%e),
+     &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
+     &          divqi(blk%e)   
 c
-      dimension tmp(npro), srcRat(npro)
-      real*8 rLui(npro,nsd),     aci(npro,nsd),
-     &       g1yi(npro,nflow),   g2yi(npro,nflow),
-     &       g3yi(npro,nflow),
-     &       src(npro,nsd),      rho(npro),
-     &       rmu(npro)
-      real*8 uBar(npro,nsd), xmudmi(npro,ngauss)
+      dimension tmp(blk%e), srcRat(blk%e)
+      real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),
+     &       g1yi(blk%e,nflow),   g2yi(blk%e,nflow),
+     &       g3yi(blk%e,nflow),
+     &       src(blk%e,nsd),      rho(blk%e),
+     &       rmu(blk%e)
+      real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
 
 c
 c.... ------------->  Primitive variables at int. point  <--------------
@@ -359,19 +365,19 @@ c
       Sclr = zero
 c
       id=isclr+5
-      do n = 1, nshl 
-         u1   = u1   + shpfun(1:npro,n) * yl(1:npro,n,2)
-         u2   = u2   + shpfun(1:npro,n) * yl(1:npro,n,3)
-         u3   = u3   + shpfun(1:npro,n) * yl(1:npro,n,4)
-         Sclr = Sclr + shpfun(1:npro,n) * yl(1:npro,n,id)
+      do n = 1, blk%s 
+         u1   = u1   + shpfun(1:blk%e,n) * yl(1:blk%e,n,2)
+         u2   = u2   + shpfun(1:blk%e,n) * yl(1:blk%e,n,3)
+         u3   = u3   + shpfun(1:blk%e,n) * yl(1:blk%e,n,4)
+         Sclr = Sclr + shpfun(1:blk%e,n) * yl(1:blk%e,n,id)
       enddo
 c
 c
 c.... ----------------------->  dS/dt at int. point  <----------------------
 c
       Sdot = zero
-      do n = 1, nshl
-         Sdot = Sdot + shpfun(1:npro,n) * acl(1:npro,n,id)
+      do n = 1, blk%s
+         Sdot = Sdot + shpfun(1:blk%e,n) * acl(1:blk%e,n,id)
       enddo
 c
 c.... --------------------->  Element Metrics  <-----------------------
@@ -385,10 +391,10 @@ c.... compute the global gradient of u and P
 c
 c
        gradS = zero
-       do n = 1, nshl
-          gradS(1:npro,1) = gradS(1:npro,1) + shg(1:npro,n,1) * yl(1:npro,n,id)
-          gradS(1:npro,2) = gradS(1:npro,2) + shg(1:npro,n,2) * yl(1:npro,n,id)
-          gradS(1:npro,3) = gradS(1:npro,3) + shg(1:npro,n,3) * yl(1:npro,n,id)
+       do n = 1, blk%s
+          gradS(1:blk%e,1) = gradS(1:blk%e,1) + shg(1:blk%e,n,1) * yl(1:blk%e,n,id)
+          gradS(1:blk%e,2) = gradS(1:blk%e,2) + shg(1:blk%e,n,2) * yl(1:blk%e,n,id)
+          gradS(1:blk%e,3) = gradS(1:blk%e,3) + shg(1:blk%e,n,3) * yl(1:blk%e,n,id)
        enddo
 
        divS = zero
@@ -396,10 +402,10 @@ c
 c
 c.... compute divergence of diffusive flux vector, qi,i
 c
-          do n=1, nshl
-             divS(1:npro) = divS(1:npro) + shg(1:npro,n,1)*ql(1:npro,n,1 ) 
-     &                         + shg(1:npro,n,2)*ql(1:npro,n,2 ) 
-     &                         + shg(1:npro,n,3)*ql(1:npro,n,3 ) 
+          do n=1, blk%s
+             divS(1:blk%e) = divS(1:blk%e) + shg(1:blk%e,n,1)*ql(1:blk%e,n,1 ) 
+     &                         + shg(1:blk%e,n,2)*ql(1:blk%e,n,2 ) 
+     &                         + shg(1:blk%e,n,3)*ql(1:blk%e,n,3 ) 
           enddo
        endif                    ! diffusive flux computation
 
@@ -409,43 +415,43 @@ c         stabilization factor and L is the momentum residual
 
           if(matflg(5,1).eq.2) then ! boussinesq body force
              Temp = zero
-             do n = 1, nshl
-                Temp = Temp + shpfun(1:npro,n) * yl(1:npro,n,5)
+             do n = 1, blk%s
+                Temp = Temp + shpfun(1:blk%e,n) * yl(1:blk%e,n,5)
              enddo
           endif
           if(matflg(5,1).eq.3.or.matflg(6,1).eq.1) then
 c     user-specified body force or coriolis force specified
              xx = zero
-             do n  = 1,nenl
-                xx(1:npro,1) = xx(1:npro,1)  + shpfun(1:npro,n) * xl(1:npro,n,1)
-                xx(1:npro,2) = xx(1:npro,2)  + shpfun(1:npro,n) * xl(1:npro,n,2)
-                xx(1:npro,3) = xx(1:npro,3)  + shpfun(1:npro,n) * xl(1:npro,n,3)
+             do n  = 1,blk%n
+                xx(1:blk%e,1) = xx(1:blk%e,1)  + shpfun(1:blk%e,n) * xl(1:blk%e,n,1)
+                xx(1:blk%e,2) = xx(1:blk%e,2)  + shpfun(1:blk%e,n) * xl(1:blk%e,n,2)
+                xx(1:blk%e,3) = xx(1:blk%e,3)  + shpfun(1:blk%e,n) * xl(1:blk%e,n,3)
              enddo
           endif
           aci = zero
-          do n = 1, nshl
-             aci(1:npro,1) = aci(1:npro,1) + shpfun(1:npro,n) * acl(1:npro,n,2)
-             aci(1:npro,2) = aci(1:npro,2) + shpfun(1:npro,n) * acl(1:npro,n,3)
-             aci(1:npro,3) = aci(1:npro,3) + shpfun(1:npro,n) * acl(1:npro,n,4)
+          do n = 1, blk%s
+             aci(1:blk%e,1) = aci(1:blk%e,1) + shpfun(1:blk%e,n) * acl(1:blk%e,n,2)
+             aci(1:blk%e,2) = aci(1:blk%e,2) + shpfun(1:blk%e,n) * acl(1:blk%e,n,3)
+             aci(1:blk%e,3) = aci(1:blk%e,3) + shpfun(1:blk%e,n) * acl(1:blk%e,n,4)
           enddo
           g1yi = zero
           g2yi = zero
           g3yi = zero
-          do n = 1, nshl
-             g1yi(1:npro,1) = g1yi(1:npro,1) + shg(1:npro,n,1) * yl(1:npro,n,1)
-             g1yi(1:npro,2) = g1yi(1:npro,2) + shg(1:npro,n,1) * yl(1:npro,n,2)
-             g1yi(1:npro,3) = g1yi(1:npro,3) + shg(1:npro,n,1) * yl(1:npro,n,3)
-             g1yi(1:npro,4) = g1yi(1:npro,4) + shg(1:npro,n,1) * yl(1:npro,n,4)
+          do n = 1, blk%s
+             g1yi(1:blk%e,1) = g1yi(1:blk%e,1) + shg(1:blk%e,n,1) * yl(1:blk%e,n,1)
+             g1yi(1:blk%e,2) = g1yi(1:blk%e,2) + shg(1:blk%e,n,1) * yl(1:blk%e,n,2)
+             g1yi(1:blk%e,3) = g1yi(1:blk%e,3) + shg(1:blk%e,n,1) * yl(1:blk%e,n,3)
+             g1yi(1:blk%e,4) = g1yi(1:blk%e,4) + shg(1:blk%e,n,1) * yl(1:blk%e,n,4)
 c     
-             g2yi(1:npro,1) = g2yi(1:npro,1) + shg(1:npro,n,2) * yl(1:npro,n,1)
-             g2yi(1:npro,2) = g2yi(1:npro,2) + shg(1:npro,n,2) * yl(1:npro,n,2)
-             g2yi(1:npro,3) = g2yi(1:npro,3) + shg(1:npro,n,2) * yl(1:npro,n,3)
-             g2yi(1:npro,4) = g2yi(1:npro,4) + shg(1:npro,n,2) * yl(1:npro,n,4)
+             g2yi(1:blk%e,1) = g2yi(1:blk%e,1) + shg(1:blk%e,n,2) * yl(1:blk%e,n,1)
+             g2yi(1:blk%e,2) = g2yi(1:blk%e,2) + shg(1:blk%e,n,2) * yl(1:blk%e,n,2)
+             g2yi(1:blk%e,3) = g2yi(1:blk%e,3) + shg(1:blk%e,n,2) * yl(1:blk%e,n,3)
+             g2yi(1:blk%e,4) = g2yi(1:blk%e,4) + shg(1:blk%e,n,2) * yl(1:blk%e,n,4)
 c     
-             g3yi(1:npro,1) = g3yi(1:npro,1) + shg(1:npro,n,3) * yl(1:npro,n,1)
-             g3yi(1:npro,2) = g3yi(1:npro,2) + shg(1:npro,n,3) * yl(1:npro,n,2)
-             g3yi(1:npro,3) = g3yi(1:npro,3) + shg(1:npro,n,3) * yl(1:npro,n,3)
-             g3yi(1:npro,4) = g3yi(1:npro,4) + shg(1:npro,n,3) * yl(1:npro,n,4)
+             g3yi(1:blk%e,1) = g3yi(1:blk%e,1) + shg(1:blk%e,n,3) * yl(1:blk%e,n,1)
+             g3yi(1:blk%e,2) = g3yi(1:blk%e,2) + shg(1:blk%e,n,3) * yl(1:blk%e,n,2)
+             g3yi(1:blk%e,3) = g3yi(1:blk%e,3) + shg(1:blk%e,n,3) * yl(1:blk%e,n,3)
+             g3yi(1:blk%e,4) = g3yi(1:blk%e,4) + shg(1:blk%e,n,3) * yl(1:blk%e,n,4)
           enddo
 c          
           if (iLSet .eq. 0)then

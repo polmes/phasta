@@ -47,6 +47,9 @@ c----------------------------------------------------------------------
 c
       use        turbsa
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
       dimension yl(npro,nshl,ndof),        rmu(npro),
      &            shpb(npro,nshl),           shglb(npro,nsd,nshl),
@@ -96,8 +99,8 @@ c
      &            rKwall_glob32(npro,nsd,nsd),
      &            rKwall_glob33(npro,nsd,nsd)
 c     
-      dimension   rKwall_glob(npro,9,nshl,nshl),
-     &            xKebe(npro,9,nshl,nshl)
+!disable      dimension   rKwall_glob(npro,9,nshl,nshl),
+!disable     &            xKebe(npro,9,nshl,nshl)
 c     
       real*8      lhmFctvw, tsFctvw(npro)
 
@@ -383,7 +386,9 @@ c     situations of flow reversal
         rKwall_glob = zero
       endif
 
+#ifdef HAVE_DEFORMWALL
       if(ideformwall.eq.1) then
+      write(*,*) 'this has been disabled....look for !disable in routines above'
       do n = 1, nshlb
          nodlcl = lnode(n)
 c     
@@ -398,7 +403,7 @@ c.... --------------------->  Stiffness matrix & residual  <-----------------
 c     
 c.... B^t * D * B formulation for plane stress enhanced membrane
 c
-c
+c     
 c.... rotation matrix
 c     
       v1 = xlb(:,ipt2,:) - xlb(:,1,:)
@@ -780,6 +785,7 @@ c....   nothing happens
 123   continue
 
       endif
+#endif 
 c     
 c.... return
 c     
@@ -791,11 +797,14 @@ c
 c     variables for boundary elements
 c
 c---------------------------------------------------------------------
-        subroutine e3bvarSclr (yl,        shdrv,    xlb,
+        subroutine e3bvarSclr (blk,yl,        shdrv,    xlb,
      &                         shape,     WdetJb,   bnorm,
      &                         flux,      dwl )
 
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension yl(npro,nshl,ndof),        shdrv(npro,nsd,nshl),
      &            xlb(npro,nenl,nsd),        shape(npro,nshl),
@@ -811,7 +820,7 @@ c
 
         real*8    diffus(npro),              dwl(npro,nshl)
         
-        call getdiffsclr(shape,dwl,yl,diffus)
+        call getdiffsclr(blk,shape,dwl,yl,diffus)
 c
 c.... ---------------------->  Element Metrics  <-----------------------
 c

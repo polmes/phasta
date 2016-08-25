@@ -1,4 +1,4 @@
-      subroutine e3stab (rho,          u1,       u2,
+      subroutine e3stab (blk,rho,          u1,       u2,
      &                   u3,           dxidx,    rLui,   
      &                   rmu,          tauC,     tauM,   
      &                   tauBar,       uBar )  
@@ -9,34 +9,37 @@ c This routine computes the diagonal Tau for least-squares operator.
 c Diagonal tau proposed by Shakib.
 c
 c input:
-c  u1     (npro)           : x1-velocity component
-c  u2     (npro)           : x2-velocity component
-c  u3     (npro)           : x3-velocity component
-c  dxidx  (npro,nsd,nsd)   : inverse of deformation gradient
-c  rLui   (npro,nsd)      : least-squares residual vector
+c  u1     (blk%e)           : x1-velocity component
+c  u2     (blk%e)           : x2-velocity component
+c  u3     (blk%e)           : x3-velocity component
+c  dxidx  (blk%e,nsd,nsd)   : inverse of deformation gradient
+c  rLui   (blk%e,nsd)      : least-squares residual vector
 c
 c output:
-c  tauC    (npro)          : continuity tau
-c  tauM    (npro)          : momentum tau
-c  tauBar  (npro)          : additional tau
-c  uBar    (npro,nsd)      : modified velocity
+c  tauC    (blk%e)          : continuity tau
+c  tauM    (blk%e)          : momentum tau
+c  tauBar  (blk%e)          : additional tau
+c  uBar    (blk%e,nsd)      : modified velocity
 c
 c Zdenek Johan, Summer 1990.  (Modified from e2tau.f)
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
         include "common.h"
-c
-        dimension rho(npro),                 u1(npro),
-     &            u2(npro),                  u3(npro),
-     &            dxidx(npro,nsd,nsd), 
-     &            rLui(npro,nsd),
-     &            tauC(npro),    tauM(npro), tauBar(npro),
-     &            rmu(npro),     uBar(npro,3), unorm(npro)
+        include "eblock.h"
+        type (LocalBlkData) blk
 
 c
-        dimension gijd(npro,6),       fact(npro), rnu(npro),
-     &       rhoinv(npro)
+        dimension rho(blk%e),                 u1(blk%e),
+     &            u2(blk%e),                  u3(blk%e),
+     &            dxidx(blk%e,nsd,nsd), 
+     &            rLui(blk%e,nsd),
+     &            tauC(blk%e),    tauM(blk%e), tauBar(blk%e),
+     &            rmu(blk%e),     uBar(blk%e,3), unorm(blk%e)
+
+c
+        dimension gijd(blk%e,6),       fact(blk%e), rnu(blk%e),
+     &       rhoinv(blk%e)
 c
 c
 c.... get the metric tensor
@@ -329,11 +332,11 @@ c-----------------------------------------------------------------------
 
       include "common.h"
 
-      real*8     rho(npro),            ui(npro,nsd),
-     &           dxidx(npro,nsd,nsd),  rLui(npro,nsd),
-     &           rmu(npro),            uBar(npro,nsd)
+      real*8     rho(blk%e),            ui(blk%e,nsd),
+     &           dxidx(blk%e,nsd,nsd),  rLui(blk%e,nsd),
+     &           rmu(blk%e),            uBar(blk%e,nsd)
 
-      real*8     gijd(npro,6),         tauM(npro)
+      real*8     gijd(blk%e,6),         tauM(blk%e)
 
 c
 c.... get the metric tensor
@@ -393,9 +396,9 @@ c-----------------------------------------------------------------------
       
       include "common.h"
       
-      real*8  dxidx(npro,nsd,nsd),  gijd(npro,6),
-     &        tmp1(npro),           tmp2(npro),
-     &        tmp3(npro)
+      real*8  dxidx(blk%e,nsd,nsd),  gijd(blk%e,6),
+     &        tmp1(blk%e),           tmp2(blk%e),
+     &        tmp3(blk%e)
 c
 c  form metric tensor g_{ij}=xi_{k,i} xi_{k,j}.  It is a symmetric
 c  tensor so we only form 6 components and use symmetric matrix numbering.
@@ -482,21 +485,24 @@ c
 c     calculate the stabilization for the advection-diffusion equation
 c
 c------------------------------------------------------------------------
-      subroutine e3StabSclr (uMod,  dxidx,  tauT, diffus, srcR, giju,
+      subroutine e3StabSclr (blk,uMod,  dxidx,  tauT, diffus, srcR, giju,
      &                       srcRat )
 c
 c
         include "common.h"
-c
-        real*8    rho(npro),                 uMod(npro,nsd),
-     &            dxidx(npro,nsd,nsd),       diffus(npro),
-     &            tauT(npro),                srcR(npro)
+        include "eblock.h"
+        type (LocalBlkData) blk
 
 c
-        real*8    gijd(npro,6),       giju(npro,6),   
-     &            tmp1(npro),         tmp2(npro),
-     &            tmp3(npro),         fact(npro),
-     &            srcRat(npro)
+        real*8    rho(blk%e),                 uMod(blk%e,nsd),
+     &            dxidx(blk%e,nsd,nsd),       diffus(blk%e),
+     &            tauT(blk%e),                srcR(blk%e)
+
+c
+        real*8    gijd(blk%e,6),       giju(blk%e,6),   
+     &            tmp1(blk%e),         tmp2(blk%e),
+     &            tmp3(blk%e),         fact(blk%e),
+     &            srcRat(blk%e)
 
         real*8     fff
         if(ivart.eq.1) then

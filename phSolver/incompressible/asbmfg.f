@@ -1,4 +1,4 @@
-      subroutine AsBMFG (u,       y,       ac,      x,       
+      subroutine AsBMFG (blk,u,       y,       ac,      x,       
      &                   shpb,    shglb,
      &                   ienb,    materb,  iBCB,    BCB,
      &                   res,     xKebe)
@@ -15,6 +15,9 @@ c----------------------------------------------------------------------
 c
       use turbSA                ! access to d2wall
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),
      &            ac(nshg,ndofl),          u(nshg,nsd),
@@ -28,31 +31,31 @@ c
      &            rl(npro,nshl,nflow),     sgn(npro,nshl),
      &            ul(npro,nshl,nsd),       acl(npro,nshl,ndofl)
 c
-        dimension xKebe(npro,9,nshl,nshl) 
+!disable        dimension xKebe(npro,9,nshl,nshl) 
      
 c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk,ienb,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localy(y,      yl,     ienb,   ndofl,  'gather  ')
-        call localy(ac,     acl,    ienb,   ndofl,  'gather  ')
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
-        call localx(u,      ul,     ienb,   nsd,    'gather  ')
+        call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
+        call localy(blk,ac,     acl,    ienb,   ndofl,  'gather  ')
+        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+        call localx(blk,u,      ul,     ienb,   nsd,    'gather  ')
         if(iRANS.eq.-2) then
-           call local(d2wall, dwl, ienb, 1, 'gather  ')
+           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
 
 c
 c.... zero the matrices if they are being recalculated
 c
-       if (lhs. eq. 1)  then
-           xKebe = zero
-        endif   
+!disable       if (lhs. eq. 1)  then
+!disable           xKebe = zero
+!disable        endif   
 
 c
 c.... get the boundary element residuals
@@ -61,13 +64,13 @@ c
 c
 c.... 3D
 c
-        call e3b  (ul,      yl,      acl,     iBCB,    BCB,     
+        call e3b  (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &             shpb,    shglb,
      &             xlb,     rl,      sgn,     dwl,     xKebe)
 c
 c.... assemble the residual and the modified residual
 c
-        call local (res,    rl,     ienb,   nflow,  'scatter ')
+        call local (blk,res,    rl,     ienb,   nflow,  'scatter ')
 
 c     
 c.... end
@@ -84,11 +87,14 @@ c     boundary elements for the temperature equation
 c
 c----------------------------------------------------------------------
 c
-      subroutine AsBSclr (y,       x,       shpb,    shglb,
+      subroutine AsBSclr (blk,y,       x,       shpb,    shglb,
      &                   ienb,    materb,  iBCB,    BCB,
      &                   res)
       use turbSA ! access to d2wall
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),
      &            shpb(nshl,*),
@@ -104,27 +110,27 @@ c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk,ienb,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localy(y,      yl,     ienb,   ndofl,  'gather  ')
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
+        call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
+        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
         if(iRANS.eq.-2) then
-           call local(d2wall, dwl, ienb, 1, 'gather  ')
+           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
 c
 c.... get the boundary element residuals
 c
         rl  = zero
 
-        call e3bSclr  (yl,      iBCB,    BCB,     shpb,    shglb,
+        call e3bSclr  (blk,yl,      iBCB,    BCB,     shpb,    shglb,
      &                 xlb,     rl,      sgn,     dwl)
 c
 c.... assemble the residual and the modified residual
 c
-        call local (res,    rl,     ienb,   1,  'scatter ')
+        call local (blk,res,    rl,     ienb,   1,  'scatter ')
 c     
 c.... end
 c

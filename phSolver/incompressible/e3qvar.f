@@ -1,4 +1,4 @@
-        subroutine e3qvar (yl,          shgl,    
+        subroutine e3qvar (blk,yl,          shgl,    
      &                     xl,          g1yi,
      &                     g2yi,        g3yi,        shg,
      &                     dxidx,       WdetJ )
@@ -31,6 +31,9 @@ c Kenneth Jansen, Winter 1997. Primitive Variables
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
 c  passed arrays
 c
@@ -145,10 +148,14 @@ c
 c     compute the variables for the local scalar diffusion
 c
 c-----------------------------------------------------------------------
-      subroutine e3qvarSclr  (yl,       shgl,         xl, 
+      subroutine e3qvarSclr  (blk,yl,       shgl,         xl, 
      &                        gradT,    dxidx,        WdetJ )
 
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
+
 c
 c  passed arrays
 c
@@ -162,7 +169,7 @@ c
       real*8   shg(npro,nshl,nsd)
 
 
-      call e3metric(intp, xl,         shgl,       dxidx,  
+      call e3metric(blk,intp, xl,         shgl,       dxidx,  
      &               shg,        WdetJ)
 
       gradT = zero

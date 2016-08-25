@@ -1,4 +1,4 @@
-        subroutine genblk (IBKSZ)
+        subroutine genblk 
 c
 c----------------------------------------------------------------------
 c

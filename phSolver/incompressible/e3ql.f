@@ -1,4 +1,4 @@
-      subroutine e3ql (yl,      dwl,     shp,     shgl,
+      subroutine e3ql (blk,yl,      dwl,     shp,     shgl,
      &                 xl,      ql,      xmudmi,
      &                 sgn )
 c                                                                      
@@ -8,40 +8,43 @@ c This routine computes the local diffusive flux vector using a
 c local projection algorithm
 c
 c input: 
-c  yl     (npro,nshl,ndof)       : Y variables
+c  yl     (bsz,blk%s,ndof)       : Y variables
 c  shp    (nen,ngauss)           : element shape-functions
 c  shgl   (nsd,nen,ngauss)       : element local-grad-shape-functions
-c  xl     (npro,nshape,nsd)      : nodal coordinates at current step
-c  sgn    (npro,nshl)            : signs for reversed shape functions
+c  xl     (bsz,nshape,nsd)      : nodal coordinates at current step
+c  sgn    (blk%e,blk%s)            : signs for reversed shape functions
 c  
 c output:
-c  ql     (npro,nshl,nsd*nsd) : element RHS diffusion residual 
+c  ql     (bsz,blk%s,nsd*nsd) : element RHS diffusion residual 
 c
 c----------------------------------------------------------------------
 c
       use local_mass
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
-      dimension yl(npro,nshl,ndof),        dwl(npro,nshl),
-     &          shp(nshl,ngauss),          shgl(nsd,nshl,ngauss),
-     &          xl(npro,nenl,nsd),         sgn(npro,nshl),
-     &          ql(npro,nshl,idflx), xmudmi(npro,ngauss)
+      dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),
+     &          shp(blk%s,ngauss),          shgl(nsd,blk%s,ngauss),
+     &          xl(bsz,blk%n,nsd),         sgn(blk%e,blk%s),
+     &          ql(bsz,blk%s,idflx), xmudmi(blk%e,ngauss)
 c
 c local arrays
 c
-      dimension g1yi(npro,ndof),           g2yi(npro,ndof),
-     &          g3yi(npro,ndof),           shg(npro,nshl,nsd),
-     &          dxidx(npro,nsd,nsd),       WdetJ(npro),
-     &          rmu(npro),
-     &          rminv(npro,nshl,nshl),
-     &          qrl(npro,nshl,nsd*nsd)
+      dimension g1yi(blk%e,ndof),           g2yi(blk%e,ndof),
+     &          g3yi(blk%e,ndof),           shg(blk%e,blk%s,nsd),
+     &          dxidx(blk%e,nsd,nsd),       WdetJ(blk%e),
+     &          rmu(blk%e),
+     &          rminv(blk%e,blk%s,blk%s),
+     &          qrl(blk%e,blk%s,nsd*nsd)
 c
-      dimension qdi(npro,nsd*nsd),    shape(npro,nshl),
-     &          shdrv(npro,nsd,nshl),      indx(nshl),
-     &          rmass(npro,nshl,nshl)
+      dimension qdi(blk%e,nsd*nsd),    shape(blk%e,blk%s),
+     &          shdrv(blk%e,nsd,blk%s),      indx(blk%s),
+     &          rmass(blk%e,blk%s,blk%s)
 
 
-        real*8 tmp(npro)
+        real*8 tmp(blk%e)
 c
 c.... loop through the integration points
 c
@@ -87,15 +90,15 @@ c
 c.... assemble contribution of qdi to qrl,i.e., contribution to 
 c     each element shape function
 c
-         tmp = Qwt(lcsyst,intp)
-         if (lcsyst .eq. 1) then 
+         tmp = Qwt(blk%l,intp)
+         if (blk%l .eq. 1) then 
             tmp = tmp*(three/four)
          endif
 c
 c reconsider this when hierarchic wedges come into code WDGCHECK
 c
         
-         do i=1,nshl
+         do i=1,blk%s
             qrl(:,i,1 ) = qrl(:,i,1 )+ shape(:,i)*tmp*qdi(:,1 )
             qrl(:,i,2 ) = qrl(:,i,2 )+ shape(:,i)*tmp*qdi(:,2 )
             qrl(:,i,3 ) = qrl(:,i,3 )+ shape(:,i)*tmp*qdi(:,3 )
@@ -113,8 +116,8 @@ c.... add contribution to local mass matrix
 c
 
          if (have_local_mass .eq. 0) then
-            do i=1,nshl
-               do j=1,nshl
+            do i=1,blk%s
+               do j=1,blk%s
                   rmass(:,i,j) = rmass(:,i,j)+shape(:,i)*shape(:,j)*tmp
               enddo
            enddo
@@ -129,11 +132,11 @@ c.... find the inverse of the local mass matrix for each element
 
 
          if (have_local_mass .eq. 0) then
-            allocate (lmassinv(iblock)%p(npro,nshl,nshl))
+            allocate (lmassinv(iblock)%p(blk%e,blk%s,blk%s))
 
-            do iel=1,npro
-               do i=1,nshl      ! form the identy matrix
-                  do j=1,nshl
+            do iel=1,blk%e
+               do i=1,blk%s      ! form the identy matrix
+                  do j=1,blk%s
                      lmassinv(iblock)%p(iel,i,j) = 0.0
                   enddo
                   lmassinv(iblock)%p(iel,i,i)=1.0
@@ -141,13 +144,13 @@ c.... find the inverse of the local mass matrix for each element
 c     
 c.... LU factor the mass matrix
 c
-               call ludcmp(rmass(iel,:,:),nshl,nshl,indx,d)
+               call ludcmp(rmass(iel,:,:),blk%s,blk%s,indx,d)
 c     
 c.... back substitute with the identy matrix to find the
 c     matrix inverse
 c          
-               do j=1,nshl
-                  call lubksb(rmass(iel,:,:),nshl,nshl,indx,
+               do j=1,blk%s
+                  call lubksb(rmass(iel,:,:),blk%s,blk%s,indx,
      &                        lmassinv(iblock)%p(iel,:,j))
                enddo
             enddo
@@ -159,7 +162,7 @@ c
 c.... find the modal coefficients of ql by multiplying by the inverse of
 c     the local mass matrix
 c
-      do iel=1,npro
+      do iel=1,blk%e
         do j=1,9
 c         do j=1, 3*nsd
             ql(iel,:,j) = matmul( rminv(iel,:,:),qrl(iel,:,j) )
@@ -174,7 +177,7 @@ c
 
 
 
-      subroutine e3qlSclr (yl,      dwl,     shp,     shgl,
+      subroutine e3qlSclr (blk, yl,      dwl,     shp,     shgl,
      &                     xl,      ql,      sgn )
 c                                                                      
 c----------------------------------------------------------------------
@@ -187,23 +190,25 @@ c----------------------------------------------------------------------
 c
       use local_mass
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c
-      dimension yl(npro,nshl,ndof),        dwl(npro,nshl),
-     &          shp(nshl,ngauss),          shgl(nsd,nshl,ngauss),
-     &          xl(npro,nenl,nsd),         sgn(npro,nshl),
-     &          ql(npro,nshl,nsd)
+      dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),
+     &          shp(blk%s,ngauss),          shgl(nsd,blk%s,ngauss),
+     &          xl(bsz,blk%n,nsd),         sgn(blk%e,blk%s),
+     &          ql(bsz,blk%s,nsd)
 c
 c local arrays
 c
-      dimension dxidx(npro,nsd,nsd),       WdetJ(npro),
-     &          diffus(npro),
-     &          rminv(npro,nshl,nshl),
-     &          qrl(npro,nshl,nsd)
+      dimension dxidx(blk%e,nsd,nsd),       WdetJ(blk%e),
+     &          diffus(blk%e),
+     &          rminv(blk%e,blk%s,blk%s),
+     &          qrl(blk%e,blk%s,nsd)
 c
-      dimension qdi(npro,nsd),    shape(npro,nshl),
-     &          shdrv(npro,nsd,nshl),      indx(nshl),
-     &          rmass(npro,nshl,nshl),     gradT(npro,nsd),
-     &          eviscv(npro)
+      dimension qdi(blk%e,nsd),    shape(blk%e,blk%s),
+     &          shdrv(blk%e,nsd,blk%s),      indx(blk%s),
+     &          rmass(blk%e,blk%s,blk%s),     gradT(blk%e,nsd),
+     &          eviscv(blk%e)
 
 c
 c.... loop through the integration points
@@ -238,12 +243,12 @@ c
 c.... assemble contribution of qdi to qrl,i.e., contribution to 
 c     each element shape function
 c
-         tmp = Qwt(lcsyst,intp)
-         if (lcsyst .eq. 1) then 
+         tmp = Qwt(blk%l,intp)
+         if (blk%l .eq. 1) then 
             tmp = tmp*(three/four)
          endif
         
-         do i=1,nshl
+         do i=1,blk%s
             qrl(:,i,1 ) = qrl(:,i,1 )+ shape(:,i)*tmp*qdi(:,1 )
             qrl(:,i,2 ) = qrl(:,i,2 )+ shape(:,i)*tmp*qdi(:,2 )
             qrl(:,i,3 ) = qrl(:,i,3 )+ shape(:,i)*tmp*qdi(:,3 )
@@ -252,8 +257,8 @@ c
 c.... add contribution to local mass matrix
 c
          if (have_local_mass .eq. 0) then
-            do i=1,nshl
-               do j=1,nshl
+            do i=1,blk%s
+               do j=1,blk%s
                   rmass(:,i,j)=rmass(:,i,j)+shape(:,i)*shape(:,j)*tmp
                enddo
             enddo
@@ -276,11 +281,11 @@ c.... for cubics, it cannot be precomputed, so compute and
 c     save it the first time it is needed
 c
          if (have_local_mass .eq. 0) then
-            allocate (lmassinv(iblock)%p(npro,nshl,nshl))
+            allocate (lmassinv(iblock)%p(blk%e,blk%s,blk%s))
 
-            do iel=1,npro
-               do i=1,nshl      ! form the identy matrix
-                  do j=1,nshl
+            do iel=1,blk%e
+               do i=1,blk%s      ! form the identy matrix
+                  do j=1,blk%s
                      lmassinv(iblock)%p(iel,i,j) = 0.0
                   enddo
                   lmassinv(iblock)%p(iel,i,i)=1.0
@@ -288,13 +293,13 @@ c
 c     
 c.... LU factor the mass matrix
 c
-               call ludcmp(rmass(iel,:,:),nshl,nshl,indx,d)
+               call ludcmp(rmass(iel,:,:),blk%s,blk%s,indx,d)
 c     
 c.... back substitute with the identy matrix to find the
 c     matrix inverse
 c          
-               do j=1,nshl
-                  call lubksb(rmass(iel,:,:),nshl,nshl,indx,
+               do j=1,blk%s
+                  call lubksb(rmass(iel,:,:),blk%s,blk%s,indx,
      &                        lmassinv(iblock)%p(iel,:,j))
                enddo
             enddo
@@ -306,7 +311,7 @@ c
 c.... find the modal coefficients of ql by multiplying by the inverse of
 c     the local mass matrix
 c
-      do iel=1,npro
+      do iel=1,blk%e
          do j=1,nsd
             ql(iel,:,j) = matmul( rminv(iel,:,:),qrl(iel,:,j) )
          enddo

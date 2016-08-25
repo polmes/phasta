@@ -1,17 +1,20 @@
 
-      subroutine timeseries(ycl, xl, ien, sgn)
+      subroutine timeseries(blk,ycl, xl, ien, sgn)
 
       use timedata
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
-      dimension shape(nshl), ycl(npro,nshl,ndofl),
-     &     ien(npro,nshl), xl(npro,nenl,nsd),         
-     &     sgn(npro,nshl)
-      real*8 al(npro,nenl,nsd), 
-     &     zi0(npro,nsd), detaij(npro), dzi0(npro,nsd),
-     &     m11(npro), m12(npro), m13(npro), m21(npro), m22(npro),
-     &     m23(npro), m31(npro), m32(npro), m33(npro), 
-     &     r1(npro), r2(npro), r3(npro), shgradl(nshl,nsd)
+
+      dimension shape(blk%s), ycl(bsz,blk%s,ndofl),
+     &     ien(blk%e,blk%s), xl(bsz,blk%n,nsd),         
+     &     sgn(blk%e,blk%s)
+      real*8 al(blk%e,blk%n,nsd), 
+     &     zi0(blk%e,nsd), detaij(blk%e), dzi0(blk%e,nsd),
+     &     m11(blk%e), m12(blk%e), m13(blk%e), m21(blk%e), m22(blk%e),
+     &     m23(blk%e), m31(blk%e), m32(blk%e), m33(blk%e), 
+     &     r1(blk%e), r2(blk%e), r3(blk%e), shgradl(blk%s,nsd)
      
       real*8 xts1, xts2, xts3
       real*8 soln(ndof)
@@ -21,11 +24,11 @@
          founde = 0
          if(statptts(jj,1).gt.0) then
             if(statptts(jj,1).eq.iblkts) then
-               if(lcsyst.eq.2) then ! hex
-                  call shphex (ipord, parptts(jj,:),shape(:),
+               if(blk%l.eq.2) then ! hex
+                  call shphex (blk%o, parptts(jj,:),shape(:),
      &                 shgradl(:,:))
-               elseif(lcsyst.eq.1) then
-                  call shptet (ipord, parptts(jj,:),shape(:),
+               elseif(blk%l.eq.1) then
+                  call shptet (blk%o, parptts(jj,:),shape(:),
      &                 shgradl(:,:))
                endif
                founde=statptts(jj,2)
@@ -35,7 +38,7 @@
             xts2 = ptts(jj,2)
             xts3 = ptts(jj,3)
 
-            if(lcsyst.eq.2) then ! hex
+            if(blk%l.eq.2) then ! hex
 
                call get_a_not_hex(xl,al) ! get mapping poly. coeff.
          
@@ -141,12 +144,12 @@ c...  get solution
                
                enddo
             
-               do e = 1, npro
+               do e = 1, blk%e
                   if ((abs(zi0(e,1)).lt.(one+tolpt)).and.
      &                 (abs(zi0(e,2)).lt.(one+tolpt)).and.
      &                 (abs(zi0(e,3)).lt.(one+tolpt))) then ! got the element
 
-                     call shphex (ipord, zi0(e,:),shape(:),
+                     call shphex (blk%o, zi0(e,:),shape(:),
      &                    shgradl(:,:))
                   
                      founde=e
@@ -154,14 +157,14 @@ c...  get solution
                   endif
             
                enddo
-            elseif (lcsyst.eq.1) then !tet
+            elseif (blk%l.eq.1) then !tet
 
                call get_a_not_tet(xl,al)
                        
 c
 c solve for r, s, t  for each elements
 c 
-               do e = 1, npro
+               do e = 1, blk%e
                   detaij(e) = al(e,2,1)*(-al(e,3,2)*al(e,4,3) + 
      &                 al(e,4,2)*al(e,3,3)) + al(e,2,2)*
      &                 (al(e,3,1)*al(e,4,3) - al(e,4,1)*
@@ -199,7 +202,7 @@ c
      &                 zi0(e,3).lt.(one +tolpt).and.    !should not be necessary 
      &                 zi0(e,3).gt.(zero-tolpt)) then
                      
-                     call shptet (ipord, zi0(e,:), shape(:),
+                     call shptet (blk%o, zi0(e,:), shape(:),
      &                    shgradl(:,:))
 
                      founde=e
@@ -222,11 +225,11 @@ c
          if(founde.ne.0) then
             soln(1:ndofl) = zero
 
-            do i = 1,nenl
+            do i = 1,blk%n
                soln(1:ndofl) = soln(1:ndofl)
      &              +ycl(founde,i,1:ndofl)*shape(i)
             enddo
-            do i = 1+nenl,nshl
+            do i = 1+blk%n,blk%s
                soln(1:ndofl) = soln(1:ndofl)
      &              +ycl(founde,i,1:ndofl)*shape(i)*sgn(founde,i)
             enddo

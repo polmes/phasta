@@ -1,4 +1,4 @@
-      subroutine f3lhs (shpb,   shglb,  xlb,    flhsl,
+      subroutine f3lhs (blk,shpb,   shglb,  xlb,    flhsl,
      &                  fnrml,  sgn )
 c
 c----------------------------------------------------------------------
@@ -32,6 +32,9 @@ c Zdenek Johan, Summer 1991.
 c----------------------------------------------------------------------
 c
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
       dimension shpb(nshl,ngaussb),        shglb(nsd,nshl,ngaussb),
      &          xlb(npro,nenl,nsd),
@@ -76,7 +79,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(intp,shpb,        shglb,        sgn, 
+         call getshp(blk,intp,shpb,        shglb,        sgn, 
      &               shape,       shdrv)
 c
 

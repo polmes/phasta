@@ -1,4 +1,7 @@
-        subroutine local (global, rlocal, ientmp, n, code)
+!
+! new threaded blocks only node for local and local x
+!
+      subroutine local (blk,global, rlocal, ientmp, n, code)
 c
 c----------------------------------------------------------------------
 c
@@ -6,8 +9,8 @@ c This subroutine performs a vector gather/scatter operation.
 c
 c input:
 c  global (nshg,n)             : global array
-c  rlocal (npro,nshl,n)         : local array
-c  ien    (npro,nshl)      : nodal connectivity
+c  rlocal (bsz,blk%s,n)         : local array
+c  ien    (blk%e,blk%s)      : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -19,16 +22,19 @@ c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
-        dimension global(nshg,n),           rlocal(npro,nshl,n),
-     &            ien(npro,nshl),           ientmp(npro,nshl)
+
+        dimension global(nshg,n),           rlocal(bsz,blk%s,n),
+     &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s)
 c
         character*8 code
         
 c
 c.... cubic basis has negatives in ien
 c
-        if (ipord > 2) then
+        if (blk%o > 2) then
            ien = abs(ientmp)
         else
            ien = ientmp
@@ -42,8 +48,8 @@ c.... gather the data
 c
 
           do j = 1, n
-            do i = 1, nshl
-              rlocal(:,i,j) = global(ien(:,i),j)
+            do i = 1, blk%s
+              rlocal(1:blk%e,i,j) = global(ien(1:blk%e,i),j)
             enddo
           enddo
 
@@ -51,7 +57,7 @@ c
 c
 c.... transfer count
 c
-          gbytes = gbytes + n*nshl*npro
+          gbytes = gbytes + n*blk%s*blk%e
 c
 c.... return
 c
@@ -65,8 +71,8 @@ c
 c.... scatter the data (possible collisions)
 c
           do j = 1, n
-            do i = 1, nshl
-              do nel = 1,npro
+            do i = 1, blk%s
+              do nel = 1,blk%e
                 global(ien(nel,i),j) = global(ien(nel,i),j) 
      &                               + rlocal(nel,i,j)
               enddo
@@ -76,8 +82,8 @@ c
 c
 c.... transfer and flop counts
 c
-          sbytes = sbytes + n*nshl*npro
-          flops  = flops  + n*nshl*npro
+          sbytes = sbytes + n*blk%s*blk%e
+          flops  = flops  + n*blk%s*blk%e
 c
 c.... return
 c
@@ -91,8 +97,8 @@ c
 c.... scatter the data (possible collisions)
 c
           do j = 1, n
-            do i = 1, nshl
-              do nel = 1,npro
+            do i = 1, blk%s
+              do nel = 1,blk%e
                 global(ien(nel,i),j) = rlocal(nel,i,j)
               enddo
             enddo
@@ -120,8 +126,8 @@ c nodal coordinates array.
 c
 c input:
 c  global (numnp,n)             : global array
-c  rlocal (npro,nenl,n)         : local array
-c  ien    (npro,nshl)      : nodal connectivity
+c  rlocal (bsz,blk%s,n)         : local array
+c  ien    (blk%e,blk%s)      : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -132,9 +138,12 @@ c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
         include "common.h"
+       include "eblock.h"
+       type (LocalBlkData) blk
 
-        dimension global(numnp,n),           rlocal(npro,nenl,n),
-     &            ien(npro,nshl)
+
+        dimension global(numnp,n),           rlocal(bsz,blk%s,n),
+     &            ien(blk%e,blk%s)
 c
         character*8 code
 c
@@ -145,8 +154,8 @@ c
 c.... gather the data
 c
           do j = 1, n
-            do i = 1, nenl
-              rlocal(:,i,j) = global(ien(:,i),j)
+            do i = 1, blk%s
+              rlocal(1:blk%e,i,j) = global(ien(1:blk%e,i),j)
             enddo
           enddo
 
@@ -154,7 +163,7 @@ c
 c
 c.... transfer count
 c
-          gbytes = gbytes + n*nenl*npro
+          gbytes = gbytes + n*blk%s*blk%e
 c
 c.... return
 c
@@ -169,8 +178,8 @@ c.... scatter the data (possible collisions)
 c
 
           do j = 1, n
-            do i = 1, nenl
-              do nel = 1,npro
+            do i = 1, blk%s
+              do nel = 1,blk%e
                 global(ien(nel,i),j) = global(ien(nel,i),j) 
      &                               + rlocal(nel,i,j)
               enddo
@@ -181,8 +190,8 @@ c
 c
 c.... transfer and flop counts
 c
-          sbytes = sbytes + n*nenl*npro
-          flops  = flops  + n*nenl*npro
+          sbytes = sbytes + n*blk%s*blk%e
+          flops  = flops  + n*blk%s*blk%e
 c
 c.... return
 c
@@ -198,147 +207,6 @@ c
         end
 c
 
-c        subroutine localM (global, xKebe, xGoC, ien)
-cc
-cc----------------------------------------------------------------------
-cc This routine assembles a global tangent matrix from the element
-cc matrices.
-cc
-cc
-cc 
-cc
-cc
-cc                         |  C      G^T |
-cc           globalK   =   |             |
-cc                         |  G      K   |   
-cc
-cc
-cc
-cc
-cc Chris Whiting,  Winter '98
-cc----------------------------------------------------------------------
-cc
-c        include "common.h"
-c
-c        dimension global(nshg*4,nshg*4),xKebe(npro,3*nshl,3*nshl),
-c     &            xGoC(npro,4*nshl,nshl),
-c     &            ien(npro,nshape)
-cc
-c        character*8 code
-cc
-cc.... ------------------------->  'assembling '  <----------------------
-cc
-c
-cc     
-cc.... scatter the data (possible collisions)
-cc
-c
-cc
-cc.... k
-cc          
-c          do iel = 1, numel
-c
-c             do i = 1, nshl
-c                i0 = (i-1)*3
-cc                
-c                do j = 1, nshl
-c                   j0 = (j-1)*3 
-cc
-c                   ia = (ien(iel,i)-1)*4 + 1
-c                   ib = (ien(iel,j)-1)*4 + 1 
-cc                      
-c                   global(ia+1,ib+1) = global(ia+1,ib+1) 
-c     &                                       + xKebe(iel,i0+1,j0+1)
-c                   global(ia+1,ib+2) = global(ia+1,ib+2) 
-c     &                                       + xKebe(iel,i0+1,j0+2)
-c                   global(ia+1,ib+3) = global(ia+1,ib+3) 
-c     &                                       + xKebe(iel,i0+1,j0+3)
-c                   global(ia+2,ib+1) = global(ia+2,ib+1) 
-c     &                                       + xKebe(iel,i0+2,j0+1)
-c                   global(ia+2,ib+2) = global(ia+2,ib+2) 
-c     &                                       + xKebe(iel,i0+2,j0+2)
-c                   global(ia+2,ib+3) = global(ia+2,ib+3) 
-c     &                                       + xKebe(iel,i0+2,j0+3)
-c                   global(ia+3,ib+1) = global(ia+3,ib+1) 
-c     &                                       + xKebe(iel,i0+3,j0+1)
-c                   global(ia+3,ib+2) = global(ia+3,ib+2) 
-c     &                                       + xKebe(iel,i0+3,j0+2)
-c                   global(ia+3,ib+3) = global(ia+3,ib+3) 
-c     &                                       + xKebe(iel,i0+3,j0+3)
-cc                   
-c                enddo
-cc
-c             enddo
-cc
-c          enddo
-c
-cc
-cc.... G and G^T
-cc          
-c          do iel = 1, numel
-c
-c             do i = 1, nshl
-c                i0 = (i-1)*3
-c                do j = 1, nshl 
-c                
-c                   ia = (ien(iel,i)-1)*4 + 1
-c                   ib = (ien(iel,j)-1)*4 + 1 
-cc                      
-c                global(ia+1,ib  ) = global(ia+1,ib  )+ xGoC(iel,i0+1,j)
-c                global(ia+2,ib  ) = global(ia+2,ib  )+ xGoC(iel,i0+2,j)
-c                global(ia+3,ib  ) = global(ia+3,ib  )+ xGoC(iel,i0+3,j)
-c                global(ia  ,ib+1) = global(ia  ,ib+1)+ xGoC(iel,i0+1,j)
-c                global(ia  ,ib+2) = global(ia  ,ib+2)+ xGoC(iel,i0+2,j)
-c                global(ia  ,ib+3) = global(ia  ,ib+3)+ xGoC(iel,i0+3,j)
-c
-cc
-c             enddo
-cc
-c          enddo
-c       enddo
-c       
-cc
-cc.... C
-cc
-c          do iel = 1, numel
-c             do i = 1, nshl
-c                i0 = 3*nshl + i
-c                do j = 1, nshl
-c                   ia = (ien(iel,i)-1)*4 + 1
-c                   ib = (ien(iel,j)-1)*4 + 1
-cc                      
-c                   global(ia,ib) = global(ia,ib) + xGoC(iel,i0,j)
-cc
-c                enddo
-c             enddo
-c             
-cc
-c          enddo
-c       
-c          
-c       
-ccad	  ttim(4) = ttim(4) + secs(0.0)
-c
-cc
-cc.... transfer and flop counts
-cc
-c          sbytes = sbytes + nshl*nenl*npro
-c          flops  = flops  + nshl*nenl*npro
-cc
-cc.... return
-cc
-ccad          call timer ('Back    ')
-c          return
-cc
-cc.... --------------------------->  error  <---------------------------
-cc
-c        call error ('local   ', code, 0)
-cc
-cc.... end
-cc
-c        end
-cc
-c
 
 
         subroutine localSum (global, rlocal, ientmp, nHits, n)
@@ -353,7 +221,7 @@ c----------------------------------------------------------------------
 c
         include "common.h"
 
-        dimension global(nshg,n),           rlocal(npro,nshl,n),
+        dimension global(nshg,n),           rlocal(bsz,nshl,n),
      &            ien(npro,nshl),           ientmp(npro,nshl),
      &            nHits(nshg)
 c
@@ -394,8 +262,8 @@ c This subroutine performs a vector gather/scatter operation on boundary only.
 c
 c input:
 c  global (nshg,n)             : global array
-c  rlocal (npro,nshl,n)         : local array
-c  ien    (npro,nshl)      : nodal connectivity
+c  rlocal (bsz,nshl,n)         : local array
+c  ien    (bsz,nshl)      : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -408,8 +276,8 @@ c----------------------------------------------------------------------
 c
         include "common.h"
 
-        dimension global(nshg,n),           rlocal(npro,nshlb,n),
-     &            ien(npro,nshl),           ientmp(npro,nshl)
+        dimension global(nshg,n),           rlocal(bsz,nshlb,n),
+     &            ien(bsz,nshl),           ientmp(bsz,nshl)
 c
         character*8 code
         
@@ -435,7 +303,7 @@ c
 
           do j = 1, n
             do i = 1, nshlb
-              rlocal(:,i,j) = global(ien(:,i),j)
+              rlocal(1:blk%e,i,j) = global(ien(1:blk%e,i),j)
             enddo
           enddo
 

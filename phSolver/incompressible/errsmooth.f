@@ -152,6 +152,8 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
         if (ipord .gt. 1) then
+           write(*,*) 'blk not plumbed this far'
+
            call getsgn(ien,sgn)
         endif
 c

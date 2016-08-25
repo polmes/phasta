@@ -1,4 +1,4 @@
-      subroutine e3LHS ( u1,        u2,         u3,
+      subroutine e3LHS ( blk, u1,        u2,         u3,
      &                   uBar,      WdetJ,      rho,
      &                   rLui,      rmu,       
      &                   tauC,      tauM,       tauBar,
@@ -10,45 +10,48 @@ c  This routine computes the left hand side tangent matrix at an
 c  integration point.
 c
 c  input:
-c     u1(npro)                  : x1-velocity
-c     u2(npro)                  : x2-velocity
-c     u3(npro)                  : x3-velocity
-c     uBar(npro,3)              : u - tauM * Li
-c     WdetJ(npro)               : weighted jacobian determinant
-c     rLui(npro,3)              : total residual of NS equations
-c     rmu(npro)                 : fluid viscosity
-c     rho(npro)				  : fluid density
-c     tauC(npro)                : continuity tau
-c     tauM(npro)                : momentum tau
-c     tauBar(npro)              : additional tau
-c     shpfun(npro,nshl)         : element shpfun functions
-c     shg(npro,nshl,3)          : global grad of element shape functions
+c     u1(blk%e)                  : x1-velocity
+c     u2(blk%e)                  : x2-velocity
+c     u3(blk%e)                  : x3-velocity
+c     uBar(blk%e,3)              : u - tauM * Li
+c     WdetJ(blk%e)               : weighted jacobian determinant
+c     rLui(blk%e,3)              : total residual of NS equations
+c     rmu(blk%e)                 : fluid viscosity
+c     rho(blk%e)				  : fluid density
+c     tauC(blk%e)                : continuity tau
+c     tauM(blk%e)                : momentum tau
+c     tauBar(blk%e)              : additional tau
+c     shpfun(blk%e,blk%s)         : element shpfun functions
+c     shg(blk%e,blk%s,3)          : global grad of element shape functions
 c
 c  output:
-c     xKebe(npro,9,nshl,nshl) : left hand side
-c     xGoC(npro,4,nshl,nshl)    : left hand side
+c     xKebe(blk%e,9,blk%s,blk%s) : left hand side
+c     xGoC(blk%e,4,blk%s,blk%s)    : left hand side
 c
 c
 c------------------------------------------------------------------------
       include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
 
-      dimension u1(npro),         u2(npro),       u3(npro),
-     &          uBar(npro,3),     WdetJ(npro),    rho(npro),
-     &          rLui(npro,3),     rmu(npro),   
-     &          tauC(npro),       tauM(npro),     tauBar(npro),
-     &          shpfun(npro,nshl),shg(npro,nshl,3)
+
+      dimension u1(blk%e),         u2(blk%e),       u3(blk%e),
+     &          uBar(blk%e,3),     WdetJ(blk%e),    rho(blk%e),
+     &          rLui(blk%e,3),     rmu(blk%e),   
+     &          tauC(blk%e),       tauM(blk%e),     tauBar(blk%e),
+     &          shpfun(blk%e,blk%s),shg(blk%e,blk%s,3)
       
-      dimension xKebe(bsz,9,nshl,nshl), xGoC(bsz,4,nshl,nshl)
+      dimension xKebe(bsz,9,blk%s,blk%s), xGoC(bsz,4,blk%s,blk%s)
 c
 c.... local declarations
 c
-      dimension t1(npro,3),       t2(npro,3),      t3(npro,3),
-     &          tmp1(npro),       tmp2(npro),    
-     &          tmp(npro),        tlW(npro)
+      dimension t1(blk%e,3),       t2(blk%e,3),      t3(blk%e,3),
+     &          tmp1(blk%e),       tmp2(blk%e),    
+     &          tmp(blk%e),        tlW(blk%e)
 
       integer   aa, b
       
-      real*8    lhmFct, lhsFct,           tsFct(npro)
+      real*8    lhmFct, lhsFct,           tsFct(blk%e)
       
       lhsFct = alfi * gami * Delt(itseq)
       lhmFct = almi * (one - flmpl) 
@@ -76,14 +79,14 @@ c
 c
 c.... compute mass and convection terms
 c
-      do b = 1, nshl
+      do b = 1, blk%s
          t1(:,1) = uBar(:,1) * shg(:,b,1)
      &           + uBar(:,2) * shg(:,b,2)
      &           + uBar(:,3) * shg(:,b,3)
 c
 c t1=ubar_k N^b,k*rho*alpha_f*gamma*deltat*WdetJ  
 c
-         do aa = 1, nshl
+         do aa = 1, blk%s
             tmp1 = tsFct * shpfun(:,aa) * shpfun(:,b)
             tmp2 = tmp1 + t1(:,1) * shpfun(:,aa)
 c
@@ -91,15 +94,15 @@ c tmp1=alpha_m*(1-lmp)*WdetJ*N^aN^b*rho   the time term CORRECT
 c tmp2=tmp1+N^a*ubar_k N^b,k*rho*alpha_f*gamma*deltat*WdetJ   the 
 c    second term is convective term CORRECT
 c            
-            xKebe(1:npro,1,aa,b) = xKebe(1:npro,1,aa,b) + tmp2
-            xKebe(1:npro,5,aa,b) = xKebe(1:npro,5,aa,b) + tmp2
-            xKebe(1:npro,9,aa,b) = xKebe(1:npro,9,aa,b) + tmp2
+            xKebe(1:blk%e,1,aa,b) = xKebe(1:blk%e,1,aa,b) + tmp2
+            xKebe(1:blk%e,5,aa,b) = xKebe(1:blk%e,5,aa,b) + tmp2
+            xKebe(1:blk%e,9,aa,b) = xKebe(1:blk%e,9,aa,b) + tmp2
          enddo
       enddo
 c
 c.... compute the rest of K (symmetric terms)
 c      
-      do b = 1, nshl
+      do b = 1, blk%s
          
          t1(:,1) = tauC * shg(:,b,1)
          t1(:,2) = tauC * shg(:,b,2)
@@ -139,34 +142,34 @@ c
      &       + t3(:,3) * shg(:,aa,3)
 c previous command is the N^a_{i,k} dot product with t3 defined above
 
-         xKebe(1:npro,1,aa,b) = xKebe(1:npro,1,aa,b) + tmp
-     &                      + t1(1:npro,1) * shg(1:npro,aa,1)
-     &                      + t2(1:npro,1) * shg(1:npro,aa,1)
-         xKebe(1:npro,5,aa,b) = xKebe(1:npro,5,aa,b) + tmp
-     &                      + t1(1:npro,2) * shg(1:npro,aa,2)
-     &                      + t2(1:npro,2) * shg(1:npro,aa,2)
-         xKebe(1:npro,9,aa,b) = xKebe(1:npro,9,aa,b) + tmp
-     &                      + t1(1:npro,3) * shg(1:npro,aa,3)
-     &                      + t2(1:npro,3) * shg(1:npro,aa,3)
+         xKebe(1:blk%e,1,aa,b) = xKebe(1:blk%e,1,aa,b) + tmp
+     &                      + t1(1:blk%e,1) * shg(1:blk%e,aa,1)
+     &                      + t2(1:blk%e,1) * shg(1:blk%e,aa,1)
+         xKebe(1:blk%e,5,aa,b) = xKebe(1:blk%e,5,aa,b) + tmp
+     &                      + t1(1:blk%e,2) * shg(1:blk%e,aa,2)
+     &                      + t2(1:blk%e,2) * shg(1:blk%e,aa,2)
+         xKebe(1:blk%e,9,aa,b) = xKebe(1:blk%e,9,aa,b) + tmp
+     &                      + t1(1:blk%e,3) * shg(1:blk%e,aa,3)
+     &                      + t2(1:blk%e,3) * shg(1:blk%e,aa,3)
 c
          tmp1               = t1(:,1) * shg(:,aa,2)
      &                      + t2(:,2) * shg(:,aa,1)
-         xKebe(1:npro,2,aa,b) = xKebe(1:npro,2,aa,b) + tmp1 
-         xKebe(1:npro,4,b,aa) = xKebe(1:npro,4,b,aa) + tmp1 
+         xKebe(1:blk%e,2,aa,b) = xKebe(1:blk%e,2,aa,b) + tmp1 
+         xKebe(1:blk%e,4,b,aa) = xKebe(1:blk%e,4,b,aa) + tmp1 
 c
          tmp1               = t1(:,1) * shg(:,aa,3)
      &                      + t2(:,3) * shg(:,aa,1)
-         xKebe(1:npro,3,aa,b) = xKebe(1:npro,3,aa,b) + tmp1 
-         xKebe(1:npro,7,b,aa) = xKebe(1:npro,7,b,aa) + tmp1 
+         xKebe(1:blk%e,3,aa,b) = xKebe(1:blk%e,3,aa,b) + tmp1 
+         xKebe(1:blk%e,7,b,aa) = xKebe(1:blk%e,7,b,aa) + tmp1 
 c
          tmp1               = t1(:,2) * shg(:,aa,3)
      &                      + t2(:,3) * shg(:,aa,2)
-         xKebe(1:npro,6,aa,b) = xKebe(1:npro,6,aa,b) + tmp1 
-         xKebe(1:npro,8,b,aa) = xKebe(1:npro,8,b,aa) + tmp1 
+         xKebe(1:blk%e,6,aa,b) = xKebe(1:blk%e,6,aa,b) + tmp1 
+         xKebe(1:blk%e,8,b,aa) = xKebe(1:blk%e,8,b,aa) + tmp1 
 c
 c.... now the off-diagonal (nodal) blocks
 c
-         do aa = b+1, nshl
+         do aa = b+1, blk%s
             tmp             = t3(:,1) * shg(:,aa,1)
      &                      + t3(:,2) * shg(:,aa,2)
      &                      + t3(:,3) * shg(:,aa,3)
@@ -174,52 +177,52 @@ c
             tmp1            = tmp
      &                      + t1(:,1) * shg(:,aa,1)
      &                      + t2(:,1) * shg(:,aa,1)
-            xKebe(1:npro,1,aa,b) = xKebe(1:npro,1,aa,b) + tmp1
-            xKebe(1:npro,1,b,aa) = xKebe(1:npro,1,b,aa) + tmp1
+            xKebe(1:blk%e,1,aa,b) = xKebe(1:blk%e,1,aa,b) + tmp1
+            xKebe(1:blk%e,1,b,aa) = xKebe(1:blk%e,1,b,aa) + tmp1
 c
             tmp1            = tmp
-     &                      + t1(1:npro,2) * shg(:,aa,2)
+     &                      + t1(1:blk%e,2) * shg(:,aa,2)
      &                      + t2(:,2) * shg(:,aa,2)
-            xKebe(1:npro,5,aa,b) = xKebe(1:npro,5,aa,b) + tmp1
-            xKebe(1:npro,5,b,aa) = xKebe(1:npro,5,b,aa) + tmp1
+            xKebe(1:blk%e,5,aa,b) = xKebe(1:blk%e,5,aa,b) + tmp1
+            xKebe(1:blk%e,5,b,aa) = xKebe(1:blk%e,5,b,aa) + tmp1
 c
             tmp1            = tmp
      &                      + t1(:,3) * shg(:,aa,3)
      &                      + t2(:,3) * shg(:,aa,3)
-            xKebe(1:npro,9,aa,b) = xKebe(1:npro,9,aa,b) + tmp1
-            xKebe(1:npro,9,b,aa) = xKebe(1:npro,9,b,aa) + tmp1
+            xKebe(1:blk%e,9,aa,b) = xKebe(1:blk%e,9,aa,b) + tmp1
+            xKebe(1:blk%e,9,b,aa) = xKebe(1:blk%e,9,b,aa) + tmp1
 c
 c.... ( i != j )
 c
             tmp1               = t1(:,1) * shg(:,aa,2)
      &                         + t2(:,2) * shg(:,aa,1)
-            xKebe(1:npro,2,aa,b) = xKebe(1:npro,2,aa,b) + tmp1
-            xKebe(1:npro,4,b,aa) = xKebe(1:npro,4,b,aa) + tmp1
+            xKebe(1:blk%e,2,aa,b) = xKebe(1:blk%e,2,aa,b) + tmp1
+            xKebe(1:blk%e,4,b,aa) = xKebe(1:blk%e,4,b,aa) + tmp1
 c
             tmp1               = t1(:,1) * shg(:,aa,3)
      &                         + t2(:,3) * shg(:,aa,1)
-            xKebe(1:npro,3,aa,b) = xKebe(1:npro,3,aa,b) + tmp1
-            xKebe(1:npro,7,b,aa) = xKebe(1:npro,7,b,aa) + tmp1
+            xKebe(1:blk%e,3,aa,b) = xKebe(1:blk%e,3,aa,b) + tmp1
+            xKebe(1:blk%e,7,b,aa) = xKebe(1:blk%e,7,b,aa) + tmp1
 c
             tmp1               = t1(:,2) * shg(:,aa,1)
      &                         + t2(:,1) * shg(:,aa,2)
-            xKebe(1:npro,4,aa,b) = xKebe(1:npro,4,aa,b) + tmp1
-            xKebe(1:npro,2,b,aa) = xKebe(1:npro,2,b,aa) + tmp1
+            xKebe(1:blk%e,4,aa,b) = xKebe(1:blk%e,4,aa,b) + tmp1
+            xKebe(1:blk%e,2,b,aa) = xKebe(1:blk%e,2,b,aa) + tmp1
 c
             tmp1               = t1(:,2) * shg(:,aa,3)
      &                         + t2(:,3) * shg(:,aa,2)
-            xKebe(1:npro,6,aa,b) = xKebe(1:npro,6,aa,b) + tmp1
-            xKebe(1:npro,8,b,aa) = xKebe(1:npro,8,b,aa) + tmp1
+            xKebe(1:blk%e,6,aa,b) = xKebe(1:blk%e,6,aa,b) + tmp1
+            xKebe(1:blk%e,8,b,aa) = xKebe(1:blk%e,8,b,aa) + tmp1
 c
             tmp1               = t1(:,3) * shg(:,aa,1)
      &                         + t2(:,1) * shg(:,aa,3)
-            xKebe(1:npro,7,aa,b) = xKebe(1:npro,7,aa,b) + tmp1
-            xKebe(1:npro,3,b,aa) = xKebe(1:npro,3,b,aa) + tmp1
+            xKebe(1:blk%e,7,aa,b) = xKebe(1:blk%e,7,aa,b) + tmp1
+            xKebe(1:blk%e,3,b,aa) = xKebe(1:blk%e,3,b,aa) + tmp1
 c
             tmp1               = t1(:,3) * shg(:,aa,2)
      &                         + t2(:,2) * shg(:,aa,3)
-            xKebe(1:npro,8,aa,b) = xKebe(1:npro,8,aa,b) + tmp1
-            xKebe(1:npro,6,b,aa) = xKebe(1:npro,6,b,aa) + tmp1
+            xKebe(1:blk%e,8,aa,b) = xKebe(1:blk%e,8,aa,b) + tmp1
+            xKebe(1:blk%e,6,b,aa) = xKebe(1:blk%e,6,b,aa) + tmp1
 c
          enddo
       enddo
@@ -227,14 +230,14 @@ c
 c.... compute G   Nai Nbp,j
 c
       
-      do b = 1, nshl
+      do b = 1, blk%s
          t1(:,1) = tlW * shg(:,b,1)
          t1(:,2) = tlW * shg(:,b,2)
          t1(:,3) = tlW * shg(:,b,3)
-         do aa = 1, nshl
-            xGoC(1:npro,1,aa,b) = xGoC(1:npro,1,aa,b) + t1(1:npro,1) * shpfun(1:npro,aa)  
-            xGoC(1:npro,2,aa,b) = xGoC(1:npro,2,aa,b) + t1(1:npro,2) * shpfun(1:npro,aa)  
-            xGoC(1:npro,3,aa,b) = xGoC(1:npro,3,aa,b) + t1(1:npro,3) * shpfun(1:npro,aa)  
+         do aa = 1, blk%s
+            xGoC(1:blk%e,1,aa,b) = xGoC(1:blk%e,1,aa,b) + t1(1:blk%e,1) * shpfun(1:blk%e,aa)  
+            xGoC(1:blk%e,2,aa,b) = xGoC(1:blk%e,2,aa,b) + t1(1:blk%e,2) * shpfun(1:blk%e,aa)  
+            xGoC(1:blk%e,3,aa,b) = xGoC(1:blk%e,3,aa,b) + t1(1:blk%e,3) * shpfun(1:blk%e,aa)  
          enddo
       enddo
 c
@@ -243,15 +246,15 @@ c we divide by rho because the L on the weight space is density divided
 c      form
 c
       tauM=tauM/rho
-      do b = 1, nshl
+      do b = 1, blk%s
          t1(:,1) = tauM * shg(:,b,1)
          t1(:,2) = tauM * shg(:,b,2)
          t1(:,3) = tauM * shg(:,b,3)
-         do aa = b, nshl
-            xGoC(1:npro,4,aa,b) = xGoC(1:npro,4,aa,b) 
-     &                      + t1(1:npro,1) * shg(1:npro,aa,1)
-     &                      + t1(1:npro,2) * shg(1:npro,aa,2)
-     &                      + t1(1:npro,3) * shg(1:npro,aa,3)
+         do aa = b, blk%s
+            xGoC(1:blk%e,4,aa,b) = xGoC(1:blk%e,4,aa,b) 
+     &                      + t1(1:blk%e,1) * shg(1:blk%e,aa,1)
+     &                      + t1(1:blk%e,2) * shg(1:blk%e,aa,2)
+     &                      + t1(1:blk%e,3) * shg(1:blk%e,aa,3)
          enddo
       enddo
       
@@ -267,7 +270,7 @@ c
 c     calculate the tangent matrix for the advection-diffusion equation
 c
 c------------------------------------------------------------------------
-      subroutine e3LHSSclr ( uMod,      giju,       dcFct,
+      subroutine e3LHSSclr ( blk,uMod,      giju,       dcFct,
      &                       Sclr,      Sdot,       gradS,  
      &                       WdetJ,     rLS,        tauS,
      &                       shpfun,    shg,        srcL,
@@ -276,25 +279,28 @@ c------------------------------------------------------------------------
 
 c
       include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
 
-      real*8    uMod(npro,nsd),
-     &          Sclr(npro),       Sdot(npro),   gradS(npro,nsd),
-     &          WdetJ(npro),      rLS(npro),        rho(npro), 
-     &          tauS(npro),       shpfun(npro,nshl),  
-     &          srcL(npro),        shg(npro,nshl,3),
-     &			xSebe(bsz,nshl,nshl)
+
+      real*8    uMod(blk%e,nsd),
+     &          Sclr(blk%e),       Sdot(blk%e),   gradS(blk%e,nsd),
+     &          WdetJ(blk%e),      rLS(blk%e),        rho(blk%e), 
+     &          tauS(blk%e),       shpfun(blk%e,blk%s),  
+     &          srcL(blk%e),        shg(blk%e,blk%s,3),
+     &			xSebe(bsz,blk%s,blk%s)
       
-      real*8    diffus(npro),  cp,  kptmp(npro),tauSo(npro)
+      real*8    diffus(blk%e),  cp,  kptmp(blk%e),tauSo(blk%e)
 
 c
 c.... local declarations
 c
-      dimension t1(npro,3),       tmp1(npro),       tmp2(npro),
-     &          tmp(npro),        dcFct(npro),      giju(npro,6)
+      dimension t1(blk%e,3),       tmp1(blk%e),       tmp2(blk%e),
+     &          tmp(blk%e),        dcFct(blk%e),      giju(blk%e,6)
 
       integer   aa, b
       
-      real*8    lhsFct,           tsFct(npro)
+      real*8    lhsFct,           tsFct(blk%e)
       
       lhsFct = alfi * gami * Delt(itseq)
 c
@@ -308,27 +314,27 @@ c
 c
 c.... compute mass and convection terms
 c
-      do b = 1, nshl
+      do b = 1, blk%s
          t1(:,1) = WdetJ * ( uMod(:,1) * shg(:,b,1)
      &                     + uMod(:,2) * shg(:,b,2)
      &                     + uMod(:,3) * shg(:,b,3) )
          t1(:,2) = t1(:,1) * tauSo
-         do aa = 1, nshl
+         do aa = 1, blk%s
             tmp1 = shpfun(:,aa) * shpfun(:,b)
             tmp2 = shpfun(:,aa) * lhsFct
-            xSebe(1:npro,aa,b) = xSebe(1:npro,aa,b) + tmp1 * (tsFct + srcL)
-     &                                    + tmp2 * t1(1:npro,1)
+            xSebe(1:blk%e,aa,b) = xSebe(1:blk%e,aa,b) + tmp1 * (tsFct + srcL)
+     &                                    + tmp2 * t1(1:blk%e,1)
 c
 c.... compute mass term for stab u_j N_{a,j} tau N_b (note that a and b
 c            flipped on both sides below)
 c
-            xSebe(1:npro,b,aa) = xSebe(1:npro,b,aa) + t1(1:npro,2)*shpfun(1:npro,aa)
+            xSebe(1:blk%e,b,aa) = xSebe(1:blk%e,b,aa) + t1(1:blk%e,2)*shpfun(1:blk%e,aa)
          enddo
       enddo
 c
 c.... compute the rest of S (symmetric terms)
 c      
-      do b = 1, nshl
+      do b = 1, blk%s
          tmp     = tauS(:) 
      &             * ( uMod(:,1) * shg(:,b,1)
      &               + uMod(:,2) * shg(:,b,2)
@@ -366,20 +372,20 @@ c.... first do the (nodal) diagonal blocks
 c
          aa  = b
          
-         xSebe(1:npro,aa,b) = xSebe(1:npro,aa,b) + t1(1:npro,1) * shg(1:npro,aa,1)
-     &                                 + t1(1:npro,2) * shg(1:npro,aa,2)
-     &                                 + t1(1:npro,3) * shg(1:npro,aa,3)
+         xSebe(1:blk%e,aa,b) = xSebe(1:blk%e,aa,b) + t1(1:blk%e,1) * shg(1:blk%e,aa,1)
+     &                                 + t1(1:blk%e,2) * shg(1:blk%e,aa,2)
+     &                                 + t1(1:blk%e,3) * shg(1:blk%e,aa,3)
 
 c
 c.... now the off-diagonal (nodal) blocks
 c
-         do aa = b+1, nshl
+         do aa = b+1, blk%s
             tmp             = t1(:,1) * shg(:,aa,1)
      &                      + t1(:,2) * shg(:,aa,2)
      &                      + t1(:,3) * shg(:,aa,3)
 c
-            xSebe(1:npro,aa,b) = xSebe(1:npro,aa,b) + tmp
-            xSebe(1:npro,b,aa) = xSebe(1:npro,b,aa) + tmp
+            xSebe(1:blk%e,aa,b) = xSebe(1:blk%e,aa,b) + tmp
+            xSebe(1:blk%e,b,aa) = xSebe(1:blk%e,b,aa) + tmp
 c
          enddo
       enddo

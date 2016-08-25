@@ -1,4 +1,4 @@
-        subroutine genblkSyncIO (IBKSZ)
+        subroutine genblkSyncIO 
 c
 c----------------------------------------------------------------------
 c

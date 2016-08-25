@@ -1,4 +1,4 @@
-        subroutine genblkPosix (IBKSZ)
+        subroutine genblkPosix 
 c
 c----------------------------------------------------------------------
 c

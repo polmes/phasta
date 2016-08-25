@@ -1,4 +1,4 @@
-      subroutine AsBFlx (u,           y,           ac,      
+      subroutine AsBFlx (blk,u,           y,           ac,      
      &                   x,           shpb,    
      &                   shglb,       ienb,        iBCB,    
      &                   BCB,         invflx,      flxres,
@@ -14,6 +14,9 @@ c----------------------------------------------------------------------
 c
       use turbSA ! access to d2wall
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),
      &            ac(nshg,ndofl),          u(nshg,nsd),
@@ -41,17 +44,17 @@ c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk,ienb,sgn)
         endif
 c     
 c.... gather the variables
 c
-        call localy(y,      yl,     ienb,   ndofl,  'gather  ')
-        call localy(ac,     acl,    ienb,   ndofl,  'gather  ')
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
-        call localx(u,      ul,     ienb,   nsd,    'gather  ')
+        call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
+        call localy(blk,ac,     acl,    ienb,   ndofl,  'gather  ')
+        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+        call localx(blk,u,      ul,     ienb,   nsd,    'gather  ')
         if(iRANS.eq.-2) then
-           call local(d2wall, dwl, ienb, 1, 'gather  ')
+           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
 
         rl    = zero
@@ -66,12 +69,12 @@ c
 c
 c.... assemble the residuals
 c
-        call local (flxres, rl,     ienb,   nflow,  'scatter ')
+        call local (blk,flxres, rl,     ienb,   nflow,  'scatter ')
 c
 c.... compute the LHS for the flux computation (should only be done
 c     once)
 c
-        call f3lhs (shpb,       shglb,      xlb,
+        call f3lhs (blk,shpb,       shglb,      xlb,
      &              flhsl,      fnrml,      sgn )
 
 c     
@@ -91,8 +94,8 @@ c
 c
 c.... assemble the boundary LHS and normal
 c
-        call local (flxLHS, flhsl,  ienb,   1,      'scatter ')
-        call local (flxnrm, fnrml,  ienb,   nsd,    'scatter ')
+        call local (blk,flxLHS, flhsl,  ienb,   1,      'scatter ')
+        call local (blk,flxnrm, fnrml,  ienb,   nsd,    'scatter ')
 c     
 c.... end
 c

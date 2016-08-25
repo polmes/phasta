@@ -1,4 +1,4 @@
-        subroutine genbkb (ibksz)
+        subroutine genbkb 
 c
 c----------------------------------------------------------------------
 c

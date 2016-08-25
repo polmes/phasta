@@ -1,4 +1,4 @@
-        subroutine ElmGMR (u,         y,         ac,        x,     
+      subroutine ElmGMR (u,         y,         ac,        x,     
      &                     shp,       shgl,      iBC,
      &                     BC,        shpb,      shglb,
      &                     res,       iper,      ilwork,
@@ -17,15 +17,15 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004.
 c----------------------------------------------------------------------
 c
-        use pvsQbi  ! brings in NABI
-        use stats   !  
-        use pointer_data  ! brings in the pointers for the blocked arrays
-        use local_mass
-        use timedata
+      use pvsQbi  ! brings in NABI
+      use stats   !  
+      use pointer_data  ! brings in the pointers for the blocked arrays
+      use local_mass
+      use timedata
 c
-        include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),
@@ -76,55 +76,57 @@ c
 c loop over element blocks for the global reconstruction
 c of the diffusive flux vector, q, and lumped mass matrix, rmass
 c
-           qres = zero
-           if(iter == nitr .and. icomputevort == 1 ) then
-             !write(*,*) 'iter:',iter,' - nitr:',nitr
-             !write(*,*) 'Setting GradV to zero'
-             GradV = zero
-           endif
-           rmass = zero
-        
-           do iblk = 1, nelblk
-              iel    = lcblk(1,iblk)
-              lelCat = lcblk(2,iblk)
-              lcsyst = lcblk(3,iblk)
-              iorder = lcblk(4,iblk)
-              nenl   = lcblk(5,iblk) ! no. of vertices per element
-              nshl   = lcblk(10,iblk)
-              mattyp = lcblk(7,iblk)
-              ndofl  = lcblk(8,iblk)
-              nsymdl = lcblk(9,iblk)
-              npro   = lcblk(1,iblk+1) - iel 
-              ngauss = nint(lcsyst)
+        qres = zero
+        if(iter == nitr .and. icomputevort == 1 ) then
+          GradV = zero
+        endif
+        rmass = zero
+      
+        do iblk = 1, nelblk
+          iel    = lcblk(1,iblk)
+          lelCat = lcblk(2,iblk)
+          lcsyst = lcblk(3,iblk)
+          iorder = lcblk(4,iblk)
+          nenl   = lcblk(5,iblk) ! no. of vertices per element
+          nshl   = lcblk(10,iblk)
+          mattyp = lcblk(7,iblk)
+          ndofl  = lcblk(8,iblk)
+          nsymdl = lcblk(9,iblk)
+          npro   = lcblk(1,iblk+1) - iel 
+          ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 c     
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
 
-            if(iter == nitr .and. icomputevort == 1 ) then
-               !write(*,*) 'Calling AsIqGradV'
-               call AsIqGradV (y,                x,
+          if(iter == nitr .and. icomputevort == 1 ) then
+            call AsIqGradV (blk,y,                x,
      &                   shp(lcsyst,1:nshl,:), 
      &                   shgl(lcsyst,:,1:nshl,:),
      &                   mien(iblk)%p,
      &                   GradV)
-             endif
-              call AsIq (y,                x,                       
+          endif
+          call AsIq (blk,y,                x,                       
      &                   shp(lcsyst,1:nshl,:), 
      &                   shgl(lcsyst,:,1:nshl,:),
      &                   mien(iblk)%p,     mxmudmi(iblk)%p,  
      &                   qres,             rmass )
-           enddo
+        enddo
        
 c
 c.... form the diffusive flux approximation
 c
-           call qpbc( rmass, qres, iBC, iper, ilwork )       
-           if(iter == nitr .and. icomputevort == 1 ) then
-             !write(*,*) 'Calling solveGradV'
-             call solveGradV( rmass, GradV, iBC, iper, ilwork )
-           endif
+        call qpbc( rmass, qres, iBC, iper, ilwork )       
+        if(iter == nitr .and. icomputevort == 1 ) then
+          call solveGradV( rmass, GradV, iBC, iper, ilwork )
+        endif
 c
-        endif 
+      endif 
 c
 c.... -------------------->   interior elements   <--------------------
 c
@@ -143,12 +145,18 @@ c
 c
 c.... allocate the element matrices
 c
-        allocate ( xKebe(bsz,9,nshape,nshape) )
-        allocate ( xGoC (bsz,4,nshape,nshape) )
-        allocate ( rl (bsz,nshape,ndof) )
-        allocate ( rerrl (bsz,nshape,6) )
-        allocate ( StsVecl (bsz,nshape,nResDims) )
-
+        nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
+        allocate ( rl (bsz,nshl,ndof) )
+        if (lhs .eq. 1) then
+          allocate ( xKebe(bsz,9,nshl,nshl) )
+          allocate ( xGoC (bsz,4,nshl,nshl) )
+        endif
+        if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshl,6) )
+        if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims) )
+#ifdef HAVE_OMP_BLK
+!$OMP parallel do
+!$OMP& private (iblk,blk)
+#endif
         do iblk = 1, nelblk
           iblock = iblk         ! used in local mass inverse (p>2)
           iblkts = iblk         ! used in timeseries
@@ -156,38 +164,45 @@ c
           lelCat = lcblk(2,iblk)
           lcsyst = lcblk(3,iblk)
           iorder = lcblk(4,iblk)
-          blk%n   = lcblk(5,iblk) ! no. of vertices per element
-          blk%s   = lcblk(10,iblk)
           mattyp = lcblk(7,iblk)
           ndofl  = lcblk(8,iblk)
           nsymdl = lcblk(9,iblk)
-          blk%e   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
           blk%g = nint(lcsyst)
-          nshl= blk%s 
-          npro=blk%e
-          if(nshl.ne.nshape) then  ! never true in monotopology but makes code 
-              deallocate (xKebe)   ! below (local) easier if nshl is correct size
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+          if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
+            nshlc=blk%s
+            deallocate (rl)
+            allocate ( rl (bsz,nshl,ndof) )
+            if (lhs .eq. 1) then
+              deallocate (xKebe)   ! below (local) easier if blk%s is correct size
               deallocate (xGoC)
-              deallocate (rl)
-              deallocate (rerrl)
-              deallocate (StsVecl)
               allocate ( xKebe(bsz,9,nshl,nshl) )
               allocate ( xGoC (bsz,4,nshl,nshl) )
-              allocate ( rl (bsz,nshl,ndof) )
+            endif
+            if ( ierrcalc .eq. 1 ) then
+              deallocate (rerrl)
               allocate ( rerrl (bsz,nshl,6) )
+            endif
+            if ( stsResFlg .eq. 1 ) then
+              deallocate(StsVecl)
               allocate ( StsVecl (bsz,nshl,nResDims) )
-           endif
+            endif
+          endif   ! different topology endif
 c
 c.... compute and assemble the residual and tangent matrix
 c
           allocate (tmpshp(nshl,MAXQPT))
           allocate (tmpshgl(nsd,nshl,MAXQPT))
 
-          tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
-          tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
+          tmpshp(1:%blks,:) = shp(blk%l,1:blk%s,:)
+          tmpshgl(:,1:%blks,:) = shgl(blk%l,:,1:blk%s,:)
 
-          call AsIGMR (iblk, blk,   y,                   ac,
+          call AsIGMR (blk, y,                   ac,
      &                 x,                   mxmudmi(iblk)%p,      
      &                 tmpshp, 
      &                 tmpshgl,
@@ -199,22 +214,22 @@ c
 c
 c.... assemble the residual
 c
-           call local (res,    rl,     ien,    nflow,  'scatter ')
+          call local (blk,res,    rl,     ien,    nflow,  'scatter ')
 c
 c.... assemble the statistics residual
 c
-        if ( stsResFlg .eq. 1 ) then 
-           call local( stsVec, StsVecl, ien, nResDims, 'scatter ')
-        endif
+          if ( stsResFlg .eq. 1 ) then 
+            call local( blk, stsVec, StsVecl, ien, nResDims, 'scatter ')
+          endif
 
-        if ( ierrcalc .eq. 1 ) then
-           call local (rerr, rerrl,  ien, 6, 'scatter ')
-        endif
+          if ( ierrcalc .eq. 1 ) then
+            call local (blk, rerr, rerrl,  ien, 6, 'scatter ')
+          endif
 
 c     
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
              if(ipord.eq.1) 
-     &         call bc3lhs (iBC, BC,mien(iblk)%p, xKebe)  
+     &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe)  
              call fillsparseI (mien(iblk)%p, 
      &                 xKebe,            lhsK,
      &                 xGoC,             lhsP,
@@ -227,30 +242,18 @@ c
 c.... end of interior element loop
 c
        enddo
+       deallocate ( rl  )
+       if(lhs.eq.1) then
           deallocate ( xKebe )
           deallocate ( xGoC  )
-          deallocate ( rl  )
-          deallocate ( rerrl  )
-          deallocate ( StsVecl  )
-c$$$       if(bsz.eq.20 .and. iwrote.ne.789) then
-c$$$          do i=1,nshg
-c$$$             write(789,*) 'eqn block ',i 
-c$$$             do j=colm(i),colm(i+1)-1
-c$$$                write(789,*) 'var block',rowp(j)
-c$$$
-c$$$                do ii=1,3
-c$$$                   write(789,111) (lhsK((ii-1)*3+jj,j),jj=1,3)
-c$$$                enddo
-c$$$             enddo
-c$$$          enddo
-c$$$          close(789)
-c$$$          iwrote=789
-c$$$       endif
-c$$$ 111   format(3(e14.7,2x))
-c$$$c
+       endif
+       if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
+       if ( stsResFlg .eq. 1 )          deallocate ( StsVecl  )
+c
 c.... add in lumped mass contributions if needed
 c
        if((flmpr.ne.0).or.(flmpl.ne.0)) then
+          write(*,*) 'not checked for blk'
           call lmassadd(ac,res,rowp,colm,lhsK,gmass)
        endif
 
@@ -309,11 +312,22 @@ c
           else
              ngaussb = nintb(lcsyst)
           endif
+! note the following is the volumen element characteristics as needed for 
+! routines like getdiff, getdiffsclr, getshpb which were already converted for
+! threading and thus need to dimension based on this data.  
+! debug to confirm
+
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(9,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nintb(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 c
 c.... allocate the element matrices
 c
-          allocate ( xKebe(npro,9,nshl,nshl) )
-          allocate ( xGoC (npro,4,nshl,nshl) )
+!disable          allocate ( xKebe(npro,9,nshl,nshl) )
+!disable          allocate ( xGoC (npro,4,nshl,nshl) )
           
 c
 c.... compute and assemble the residuals corresponding to the 
@@ -325,7 +339,7 @@ c
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
           tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
 
-          call AsBMFG (u,                       y,
+          call AsBMFG (blk,u,                       y,
      &                 ac,                      x,
      &                 tmpshpb,
      &                 tmpshglb,
@@ -339,19 +353,19 @@ c
 c.... first, we need to make xGoC zero, since it doesn't have contributions from the 
 c.... vessel wall elements
 
-          xGoC = zero
+!disable          xGoC = zero
+!disable
+!disable          if (impl(1) .ne. 9 .and. lhs .eq. 1) then
+!disable             if(ipord.eq.1)
+!disable     &         call bc3lhs (iBC, BC,mienb(iblk)%p, xKebe)
+!disable             call fillsparseI (mienb(iblk)%p,
+!disable     &                 xKebe,           lhsK,
+!disable     &                 xGoC,             lhsP,
+!disable     &                 rowp,                      colm)
+!disable          endif
 
-          if (impl(1) .ne. 9 .and. lhs .eq. 1) then
-             if(ipord.eq.1)
-     &         call bc3lhs (iBC, BC,mienb(iblk)%p, xKebe)
-             call fillsparseI (mienb(iblk)%p,
-     &                 xKebe,           lhsK,
-     &                 xGoC,             lhsP,
-     &                 rowp,                      colm)
-          endif
-
-          deallocate ( xKebe )
-          deallocate ( xGoC )
+!disable          deallocate ( xKebe )
+!disable          deallocate ( xGoC )
           deallocate (tmpshpb)
           deallocate (tmpshglb)
 c

@@ -1,4 +1,4 @@
-        subroutine e3b (ul,      yl,      acl,     iBCB,    BCB,     
+        subroutine e3b (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &                  shpb,    shglb,
      &                  xlb,     rl,      sgn,     dwl,     xKebe)
 c
@@ -50,6 +50,9 @@ c Irene Vignon, Spring 2004
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,ngaussb),
@@ -78,7 +81,7 @@ c
 
         real*8    xmudmi(npro,ngauss),      dwl(npro,nshl)
 c
-      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
+!disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
 
 
@@ -99,7 +102,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(intp,shpb,        shglb,        sgn, 
+        call getshp(blk,intp,shpb,        shglb,        sgn, 
      &              shape,       shdrv)
 c
 c     NOTE I DID NOT PASS THE lnode down.  It is not needed
@@ -118,7 +121,7 @@ c
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(intp,dwl, yl,     shape,     xmudmi, xlb,   rmu, rho)
+        call getdiff(blk,intp,dwl, yl,     shape,     xmudmi, xlb,   rmu, rho)
 c
 c.... calculate the integraton variables
 c
@@ -216,8 +219,8 @@ c
            else
               rlKwall(iel,:,:) = zero                       ! this is not a deformable element
               vdot(iel,:) = zero
-              xKebe(iel,:,:,:) = zero
-              rKwall_glob(iel,:,:,:) = zero                 ! no stiffness: not a wall element
+!disable              xKebe(iel,:,:,:) = zero
+!disable              rKwall_glob(iel,:,:,:) = zero                 ! no stiffness: not a wall element
            endif
 !KJ CHANGE      endif
 
@@ -225,7 +228,7 @@ c
 c
 c$$$c.... if we are computing the bdry for the consistent
 c$$$c     boundary forces, we must not include the surface elements
-c$$$c     in the computataion (could be done MUCH more efficiently!)--->
+c$$$c     in the computation (could be done MUCH more efficiently!)--->
                                                                   !this
                                                                   !comment should read as for the consistent flux calculation rather than boundary forces
 c$$$c
@@ -341,6 +344,7 @@ c.... end of integration loop
 c
         enddo
         if(ideformwall.eq.1) then
+        write(*,*) 'disabled   see !disable here and above'
 c     
 c.... -----> Wall Stiffness and Mass matrices for implicit LHS  <-----------
 c     
@@ -352,9 +356,10 @@ c.... this line is going to destroy the mass matrix contribution
 
 c      xKebe = zero
 
+#ifdef HAVE_DEFORMWALL
          xKebe(:,:,:,:) = ( xKebe(:,:,:,:)*iwallmassfactor
      &           + rKwall_glob(:,:,:,:)*iwallstiffactor )
-
+#endif
          endif
 c$$$        ttim(40) = ttim(40) + tmr()
 c
@@ -369,9 +374,12 @@ c*********************************************************************
 c*********************************************************************
 
 
-        subroutine e3bSclr (yl,      iBCB,    BCB,     shpb,    shglb,
+        subroutine e3bSclr (blk,yl,      iBCB,    BCB,     shpb,    shglb,
      &                      xlb,     rl,      sgn,     dwl)
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,*),
@@ -402,12 +410,12 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(intp,shpb,        shglb,        sgn, 
+        call getshp(blk,intp,shpb,        shglb,        sgn, 
      &              shape,       shdrv)
 c
 c.... calculate the integraton variables
 c
-        call e3bvarSclr (yl,          shdrv,   xlb,
+        call e3bvarSclr (blk,yl,          shdrv,   xlb,
      &                   shape,       WdetJb,  bnorm,
      &                   flux,        dwl )
 c        

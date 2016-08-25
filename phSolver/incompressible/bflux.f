@@ -22,6 +22,9 @@ c
       use pointer_data
       
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
       include "mpif.h"
 
       character*10  cname2
@@ -115,6 +118,13 @@ c
          allocate ( ien2(npro,nshl) )
          allocate ( xmu2(npro,maxsh))
          allocate ( map(npro) )
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+
 c
 c.... get the elements touching the boundary
 c         
@@ -137,7 +147,7 @@ c
 c     
 c.... compute and assemble the residuals
 c     
-            call AsIGMR (y,                    ac,
+            call AsIGMR (blk,y,                    ac,
      &                   x,                    xmu2(1:npro,:),
      &                   shp(lcsyst,1:nshl,:),
      &                   shgl(lcsyst,:,1:nshl,:),
@@ -169,6 +179,12 @@ c
          nenbl  = lcblkb(6,iblk)
          nshlb  = lcblkb(10,iblk)
          npro   = lcblkb(1,iblk+1) - iel 
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
  
          if(lcsyst.eq.3) lcsyst=nenbl
 c     
@@ -183,7 +199,7 @@ c
             allocate ( xKebe(npro,9,nshl,nshl) )   
 c.... compute and assemble the residuals
 c
-         call AsBFlx (u,                      y,
+         call AsBFlx (blk,u,                      y,
      &                ac,                     x,
      &                shpb(lcsyst,1:nshl,:),
      &                shglb(lcsyst,:,1:nshl,:),

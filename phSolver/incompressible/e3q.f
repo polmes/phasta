@@ -1,4 +1,4 @@
-        subroutine e3q (yl,      dwl,     shp,     shgl,
+        subroutine e3q (blk,yl,      dwl,     shp,     shgl,
      &                  xl,      ql,      rmassl, 
      &                  xmudmi,  sgn )
 c                                                                      
@@ -20,6 +20,9 @@ c
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension yl(npro,nshl,ndof),     dwl(npro,nenl),
      &            shp(nshl,ngauss),      shgl(nsd,nshl,ngauss),
@@ -57,7 +60,7 @@ c
         do intp = 1, ngauss
         if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
 c     
-        call getshp(intp, shp,          shgl,      sgn, 
+        call getshp(blk,intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
         
 c
@@ -70,7 +73,7 @@ c.... calculate the integration variables necessary for the
 c     formation of q
 c
 
-        call e3qvar   (yl,        shdrv,   
+        call e3qvar   (blk,yl,        shdrv,   
      &                 xl,           g1yi,
      &                 g2yi,      g3yi,         shg,
      &                 dxidx,     WdetJ )      
@@ -84,7 +87,7 @@ c.... compute diffusive fluxes
 c
 c.... compute the viscosity
 c
-        call getdiff(intp,dwl, yl, shape, xmudmi, xl, rmu, tmp)
+        call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp)
 c
 c.... diffusive flux in x1-direction
 c
@@ -203,7 +206,7 @@ c
        end
 
 
-        subroutine e3qSclr (yl,      dwl,     shp,     shgl,
+        subroutine e3qSclr (blk,yl,      dwl,     shp,     shgl,
      &                      xl,      ql,      rmassl, 
      &                      sgn )
 c                                                                      
@@ -215,6 +218,9 @@ c
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension yl(npro,nshl,ndof),    dwl(npro,nshl),
      &            shp(nshl,ngauss),      shgl(nsd,nshl,ngauss),
@@ -243,7 +249,7 @@ c
         do intp = 1, ngauss
         if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
 c     
-        call getshp(intp, shp,          shgl,      sgn, 
+        call getshp(blk,intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
         
 c
@@ -255,7 +261,7 @@ c
 c.... calculate the integration variables necessary for the
 c     formation of q 
 c
-        call e3qvarSclr   (yl,        shdrv,   
+        call e3qvarSclr   (blk,yl,        shdrv,   
      &                     xl,        gradT,
      &                     dxidx,     WdetJ )        
 

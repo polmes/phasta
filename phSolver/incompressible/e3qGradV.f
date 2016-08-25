@@ -1,4 +1,4 @@
-        subroutine e3qGradV (yl,      shp,     shgl,
+        subroutine e3qGradV (blk,yl,      shp,     shgl,
      &                  xl,      ql,      
      &                  sgn )
 c                                                                      
@@ -19,6 +19,9 @@ c
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension yl(npro,nshl,ndof),
      &            shp(nshl,ngauss),      shgl(nsd,nshl,ngauss),
@@ -42,7 +45,7 @@ c
         do intp = 1, ngauss
         if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
 c     
-        call getshp(intp, shp,          shgl,      sgn, 
+        call getshp(blk,intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
         
 c
@@ -51,7 +54,7 @@ c.... calculate the integration variables necessary for the
 c     formation of q
 c
 
-        call e3qvar   (yl,        shdrv,   
+        call e3qvar   (blk,yl,        shdrv,   
      &                 xl,           g1yi,
      &                 g2yi,      g3yi,         shg,
      &                 dxidx,     WdetJ )      
