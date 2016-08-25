@@ -286,7 +286,7 @@ c
 c
 c.... calculate the integration variables
 c
-        call e3ivarSclr(blk,  yl,          acl,       shpfun,
+        call e3ivarSclr(blk, intqp, yl,          acl,       shpfun,
      &                  shdrv,       xl,        xmudmi,
      &                  Sclr,        Sdot,      gradS,
      &                  shg,         dxidx,     WdetJ,       

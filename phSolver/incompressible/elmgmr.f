@@ -543,11 +543,11 @@ c
 c
 c.... allocate the element matrices
 c
-          allocate ( xSebe(npro,nshl,nshl) )
+          allocate ( xSebe(bsz,nshl,nshl) )
 c
 c.... compute and assemble the residual and tangent matrix
 c
-          call AsIGMRSclr(blky,                   ac,
+          call AsIGMRSclr(blk,y,                   ac,
      &                 x,
      &                 shp(lcsyst,1:nshl,:), 
      &                 shgl(lcsyst,:,1:nshl,:),

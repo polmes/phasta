@@ -316,7 +316,7 @@ c     Calculate the variables for the scalar advection-diffusion
 c     equation.
 c
 c-----------------------------------------------------------------------
-      subroutine e3ivarSclr (blk, yl,          acl,       shpfun,
+      subroutine e3ivarSclr (blk, ith, yl,          acl,       shpfun,
      &                      shgl,        xl,        xmudmi,
      &                      Sclr,        Sdot,      gradS,  
      &                      shg,         dxidx,     WdetJ,
@@ -383,7 +383,7 @@ c
 c.... --------------------->  Element Metrics  <-----------------------
 c
 
-      call e3metric(blk,intp, xl,         shgl,        dxidx,  
+      call e3metric(blk,ith, xl,         shgl,        dxidx,  
      &               shg,        WdetJ)
 
 c

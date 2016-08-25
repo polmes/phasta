@@ -195,7 +195,7 @@ c
      1                         row,    col)
       
       include "common.h"
-      real*8    xSebe(npro,nshl,nshl)
+      real*8    xSebe(bsz,nshl,nshl)
       integer    ien(npro,nshl),    col(nshg+1), row(nshg*nnz)
       real*8    lhsS(nnz_tot)    
 

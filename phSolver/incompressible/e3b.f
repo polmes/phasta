@@ -79,7 +79,7 @@ c
      &            shape(npro,nshl),        shdrv(npro,nsd,nshl),
      &            rNa(npro,4)
 
-        real*8    xmudmi(npro,ngauss),      dwl(npro,nenl)
+        real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl)
 c
 !disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
@@ -392,7 +392,7 @@ c
         dimension lnode(27),                   sgn(npro,nshl),
      &            shape(npro,nshl),            shdrv(npro,nsd,nshl),
      &            rNa(npro),                   flux(npro)
-        real*8    dwl(npro,nenl)
+        real*8    dwl(bsz,nenl)
 
 c
 c.... compute the nodes which lie on the boundary (hierarchic)
