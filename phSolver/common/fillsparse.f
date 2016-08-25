@@ -5,7 +5,7 @@ c
 c
 c
 	include "common.h"
-	real*8	xKebe(npro,9,nshl,nshl), xGoC(npro,4,nshl,nshl)
+	real*8	xKebe(bsz,9,nshl,nshl), xGoC(bsz,4,nshl,nshl)
 	integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
 	real*8	lhsK(9,nnz_tot),	lhsP(4,nnz_tot)
 c

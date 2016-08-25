@@ -30,8 +30,8 @@ c
      &            ien(npro,nshl),  
      &            qres(nshg,nsdsq)
 c
-        dimension yl(npro,nshl,ndof),          xl(npro,nenl,nsd),
-     &            ql(npro,nshl,nsdsq)
+        dimension yl(bsz,nshl,ndof),          xl(bsz,nenl,nsd),
+     &            ql(bsz,nshl,nsdsq)
 c
         dimension sgn(npro,nshl)
 c

@@ -9,10 +9,10 @@ c input:
 c  iBC   (nshg)             : boundary condition code
 c  BC    (nshg,ndofBC)      : Dirichlet BC constraint parameters
 c  ien   (npro,nshape)      : ien array for this element
-c  xKebe (npro,9,nshl,nshl) : element consistent mass matrix before BC
+c  xKebe (bsz,9,nshl,nshl) : element consistent mass matrix before BC
 c
 c output:
-c  xKebe (npro,9,nshl,nshl) : LHS mass matrix after BC is satisfied
+c  xKebe (bsz,9,nshl,nshl) : LHS mass matrix after BC is satisfied
 c
 c
 c Farzin Shakib, Winter 1987.
@@ -23,7 +23,7 @@ c
         include "common.h"
 c
       dimension iBC(nshg),      ien(npro,nshl),
-     & BC(nshg,ndofBC), xKebe(npro,9,nshl,nshl)
+     & BC(nshg,ndofBC), xKebe(bsz,9,nshl,nshl)
       integer iens(npro,nshl)
 c
 c prefer to show explicit absolute value needed for cubic modes and

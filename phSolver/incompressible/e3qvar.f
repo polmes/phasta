@@ -9,15 +9,15 @@ c  This routine computes the variables at integration point
 c  necessary for the computation of the diffusive flux vector.
 c
 c input:
-c  yl     (npro,nshl,ndof)      : primitive variables
-c  shgl   (npro,nsd,nshl)     : element local-grad-shape-functions
-c  xl     (npro,nenl,nsd)       : nodal coordinates at current step
+c  yl     (npro,blk%s,ndof)      : primitive variables
+c  shgl   (npro,nsd,blk%s)     : element local-grad-shape-functions
+c  xl     (npro,blk%n,nsd)       : nodal coordinates at current step
 c
 c output:
 c  g1yi   (npro,ndof)           : grad-y in direction 1
 c  g2yi   (npro,ndof)           : grad-y in direction 2
 c  g3yi   (npro,ndof)           : grad-y in direction 3
-c  shg    (npro,nshl,nsd)       : element global grad-shape-functions
+c  shg    (npro,blk%s,nsd)       : element global grad-shape-functions
 c  dxidx  (npro,nsd,nsd)        : inverse of deformation gradient
 c  WdetJ  (npro)                : weighted Jacobian
 c  u1     (npro)                : x1-velocity component
@@ -37,31 +37,31 @@ c
 c
 c  passed arrays
 c
-        dimension yl(npro,nshl,ndof), 
-     &            shgl(npro,nsd,nshl), xl(npro,nenl,nsd),
-     &            g1yi(npro,nflow),       g2yi(npro,nflow),
-     &            g3yi(npro,nflow),       shg(npro,nshl,nsd), 
-     &            dxidx(npro,nsd,nsd),   WdetJ(npro)
+        dimension yl(bsz,blk%s,ndof), 
+     &            shgl(blk%e,nsd,blk%s), xl(bsz,blk%n,nsd),
+     &            g1yi(blk%e,nflow),       g2yi(blk%e,nflow),
+     &            g3yi(blk%e,nflow),       shg(blk%e,blk%s,nsd), 
+     &            dxidx(blk%e,nsd,nsd),   WdetJ(blk%e)
 c
 c  local arrays
 c
-        dimension tmp(npro),           dxdxi(npro,nsd,nsd)
+        dimension tmp(blk%e),           dxdxi(blk%e,nsd,nsd)
 
 c
 c.... compute the deformation gradient
 c
         dxdxi = zero
 c
-          do n = 1, nenl
-            dxdxi(:,1,1) = dxdxi(:,1,1) + xl(:,n,1) * shgl(:,1,n)
-            dxdxi(:,1,2) = dxdxi(:,1,2) + xl(:,n,1) * shgl(:,2,n)
-            dxdxi(:,1,3) = dxdxi(:,1,3) + xl(:,n,1) * shgl(:,3,n)
-            dxdxi(:,2,1) = dxdxi(:,2,1) + xl(:,n,2) * shgl(:,1,n)
-            dxdxi(:,2,2) = dxdxi(:,2,2) + xl(:,n,2) * shgl(:,2,n)
-            dxdxi(:,2,3) = dxdxi(:,2,3) + xl(:,n,2) * shgl(:,3,n)
-            dxdxi(:,3,1) = dxdxi(:,3,1) + xl(:,n,3) * shgl(:,1,n)
-            dxdxi(:,3,2) = dxdxi(:,3,2) + xl(:,n,3) * shgl(:,2,n)
-            dxdxi(:,3,3) = dxdxi(:,3,3) + xl(:,n,3) * shgl(:,3,n)
+          do n = 1, blk%n
+            dxdxi(:,1,1) = dxdxi(:,1,1) + xl(1:blk%e,n,1) * shgl(:,1,n)
+            dxdxi(:,1,2) = dxdxi(:,1,2) + xl(1:blk%e,n,1) * shgl(:,2,n)
+            dxdxi(:,1,3) = dxdxi(:,1,3) + xl(1:blk%e,n,1) * shgl(:,3,n)
+            dxdxi(:,2,1) = dxdxi(:,2,1) + xl(1:blk%e,n,2) * shgl(:,1,n)
+            dxdxi(:,2,2) = dxdxi(:,2,2) + xl(1:blk%e,n,2) * shgl(:,2,n)
+            dxdxi(:,2,3) = dxdxi(:,2,3) + xl(1:blk%e,n,2) * shgl(:,3,n)
+            dxdxi(:,3,1) = dxdxi(:,3,1) + xl(1:blk%e,n,3) * shgl(:,1,n)
+            dxdxi(:,3,2) = dxdxi(:,3,2) + xl(1:blk%e,n,3) * shgl(:,2,n)
+            dxdxi(:,3,3) = dxdxi(:,3,3) + xl(1:blk%e,n,3) * shgl(:,3,n)
           enddo
 c
 c.... compute the inverse of deformation gradient
@@ -91,7 +91,7 @@ c
         dxidx(:,3,3) = (dxdxi(:,1,1) * dxdxi(:,2,2) 
      &                - dxdxi(:,1,2) * dxdxi(:,2,1)) * tmp
 c
-        WdetJ = Qwt(lcsyst,intp)/ tmp
+        WdetJ = Qwt(blk%l,intp)/ tmp
 
 c
 c.... --------------------->  Global Gradients  <-----------------------
@@ -101,7 +101,7 @@ c
         g3yi = zero
 c
 c
-        do n = 1, nshl
+        do n = 1, blk%s
 c
 c.... compute the global gradient of shape-function
 c
@@ -120,19 +120,19 @@ c
 c.... compute the global gradient of Y-variables
 c
 c
-c  Y_{,x_i}=SUM_{a=1}^nenl (N_{a,x_i}(int) Ya)
+c  Y_{,x_i}=SUM_{a=1}^blk%n (N_{a,x_i}(int) Ya)
 c
-          g1yi(:,2) = g1yi(:,2) + shg(:,n,1) * yl(:,n,2)
-          g1yi(:,3) = g1yi(:,3) + shg(:,n,1) * yl(:,n,3)
-          g1yi(:,4) = g1yi(:,4) + shg(:,n,1) * yl(:,n,4)
+          g1yi(:,2) = g1yi(:,2) + shg(:,n,1) * yl(1:blk%e,n,2)
+          g1yi(:,3) = g1yi(:,3) + shg(:,n,1) * yl(1:blk%e,n,3)
+          g1yi(:,4) = g1yi(:,4) + shg(:,n,1) * yl(1:blk%e,n,4)
 c
-          g2yi(:,2) = g2yi(:,2) + shg(:,n,2) * yl(:,n,2)
-          g2yi(:,3) = g2yi(:,3) + shg(:,n,2) * yl(:,n,3)
-          g2yi(:,4) = g2yi(:,4) + shg(:,n,2) * yl(:,n,4)
+          g2yi(:,2) = g2yi(:,2) + shg(:,n,2) * yl(1:blk%e,n,2)
+          g2yi(:,3) = g2yi(:,3) + shg(:,n,2) * yl(1:blk%e,n,3)
+          g2yi(:,4) = g2yi(:,4) + shg(:,n,2) * yl(1:blk%e,n,4)
 c
-          g3yi(:,2) = g3yi(:,2) + shg(:,n,3) * yl(:,n,2)
-          g3yi(:,3) = g3yi(:,3) + shg(:,n,3) * yl(:,n,3)
-          g3yi(:,4) = g3yi(:,4) + shg(:,n,3) * yl(:,n,4)
+          g3yi(:,2) = g3yi(:,2) + shg(:,n,3) * yl(1:blk%e,n,2)
+          g3yi(:,3) = g3yi(:,3) + shg(:,n,3) * yl(1:blk%e,n,3)
+          g3yi(:,4) = g3yi(:,4) + shg(:,n,3) * yl(1:blk%e,n,4)
 
        enddo
 
@@ -159,14 +159,14 @@ c-----------------------------------------------------------------------
 c
 c  passed arrays
 c
-      real*8   yl(npro,nshl,ndof),    shp(npro,nshl),
-     &         shgl(npro,nsd,nshl),   xl(npro,nenl,nsd),
-     &         dxidx(npro,nsd,nsd),   WdetJ(npro),
-     &         gradT(npro,nsd)
+      real*8   yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
+     &         shgl(blk%e,nsd,blk%s),   xl(bsz,blk%n,nsd),
+     &         dxidx(blk%e,nsd,nsd),   WdetJ(blk%e),
+     &         gradT(blk%e,nsd)
 c
 c  local arrays
 c
-      real*8   shg(npro,nshl,nsd)
+      real*8   shg(blk%e,blk%s,nsd)
 
 
       call e3metric(blk,intp, xl,         shgl,       dxidx,  
@@ -178,10 +178,10 @@ c
 c  later, when there are more models than SA we will need a 
 c  more general function to calculate evisc at a quadrature point
 c
-      do n = 1, nshl
-         gradT(:,1) = gradT(:,1) + shg(:,n,1) * yl(:,n,id)
-         gradT(:,2) = gradT(:,2) + shg(:,n,2) * yl(:,n,id)
-         gradT(:,3) = gradT(:,3) + shg(:,n,3) * yl(:,n,id)
+      do n = 1, blk%s
+         gradT(:,1) = gradT(:,1) + shg(:,n,1) * yl(1:blk%e,n,id)
+         gradT(:,2) = gradT(:,2) + shg(:,n,2) * yl(1:blk%e,n,id)
+         gradT(:,3) = gradT(:,3) + shg(:,n,3) * yl(1:blk%e,n,id)
       enddo
 c
 c.... return

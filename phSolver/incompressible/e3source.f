@@ -242,7 +242,7 @@ c coming in
      &        yl(npro,nshl,ndof),  dxidx(npro,nsd,nsd),
      &        rmu(npro),           u1(npro),
      &        u2(npro),            u3(npro),
-     &        xl(npro,nenl,nsd)
+     &        xl(bsz,nenl,nsd)
 c going out
       real*8  srcR(npro),          srcL(npro),
      &        uMod(npro,nsd)
