@@ -268,7 +268,7 @@ c
 c
 c.... compute diffusive flux vector at this integration point
 c
-        call getdiffsclr(shape, dwl, yl, diffus)
+        call getdiffsclr(blk,shape, dwl, yl, diffus)
 
 c
 c.... diffusive flux 

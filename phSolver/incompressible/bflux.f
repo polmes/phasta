@@ -147,6 +147,7 @@ c
 c     
 c.... compute and assemble the residuals
 c     
+            blk%e=npro
             call AsIGMR (blk,y,                    ac,
      &                   x,                    xmu2(1:npro,:),
      &                   shp(lcsyst,1:nshl,:),

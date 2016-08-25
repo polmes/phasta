@@ -226,6 +226,7 @@ c
             call local (blk, rerr, rerrl,  mien(iblk)%p, 6, 'scatter ')
           endif
 
+          npro=blk%e
 c     
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
              if(ipord.eq.1) 

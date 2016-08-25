@@ -147,7 +147,7 @@ c
          diffus(:) = datmat(1,4,1)
       else if(iRANS.eq.-1) then ! solving SA model
          diffus(:) = datmat(1,2,1)
-         call AddSAVar(bl,yl, shape, diffus)
+         call AddSAVar(blk,yl, shape, diffus)
       else if(iRANS.eq.-2)then ! solving KE model
          diffus(:) = datmat(1,2,1)
          if(isclr.eq.2) then
