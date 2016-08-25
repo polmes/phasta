@@ -352,7 +352,7 @@ c in all these cases, the S-A variable is calculated normally
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
-      double precision, intent(in), dimension(blk%e,blk%n) ::
+      double precision, intent(in), dimension(bsz,blk%n) ::
      &     shape, dwl
       double precision, intent(in), dimension(blk%e) ::
      &     rho

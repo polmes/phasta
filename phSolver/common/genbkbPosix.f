@@ -108,7 +108,7 @@ c
 
            do n=1,neltp,bsz 
               nelblb=nelblb+1
-              npro= min(IBKSZ, neltp - n + 1)
+              npro= min(bsz, neltp - n + 1)
 c
               lcblkb(1,nelblb)  = iel
 c              lcblkb(2,nelblb)  = iopen ! available for later use

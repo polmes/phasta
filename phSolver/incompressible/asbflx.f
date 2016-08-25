@@ -27,12 +27,12 @@ c
      &            invflx(nshg),            flxres(nshg,nflow),
      &            flxLHS(nshg,1),          flxnrm(nshg,nsd)
 c
-        dimension yl(npro,nshl,ndofl),     xlb(npro,nenl,nsd),
-     &            rl(npro,nshl,nflow),     sgn(npro,nshl),
-     &            flhsl(npro,nshl,1),      fnrml(npro,nshl,nsd),
+        dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
+     &            rl(bsz,nshl,nflow),     sgn(npro,nshl),
+     &            flhsl(bsz,nshl,1),      fnrml(bsz,nshl,nsd),
      &            lnflx(npro),             lnode(27),
-     &            ul(npro,nshl,nsd),       acl(npro,nshl,ndofl)
-        real*8 dwl(npro,nshl)
+     &            ul(bsz,nshl,nsd),       acl(bsz,nshl,ndofl)
+        real*8 dwl(bsz,nenl)
         
         dimension xKebe(npro,9,nshl,nshl) 
 
@@ -62,7 +62,7 @@ c
         fnrml = zero
 c
         ires = 2
-        call e3b  (ul,      yl,      acl,     iBCB,    BCB,     
+        call e3b  (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &             shpb,    shglb,
      &             xlb,     rl,      sgn,     dwl,     xKebe)
         ires = 1

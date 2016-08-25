@@ -8,7 +8,7 @@ c   This routine calculates the 3D RHS residual of the fluid boundary
 c   elements.
 c
 c input:
-c  yl     (npro,nshl,ndof)      : Y variables
+c  yl     (bsz,nshl,ndof)      : Y variables
 c  iBCB   (npro,ndiBCB)         : boundary condition code (iBCB(:,1) is
 c      a bit tested boundary integral flag i.e.
 c                  if set to value of BCB      if set to floating value
@@ -32,10 +32,10 @@ c                                  BCB (5) : viscous flux in x3-direc.
 c                                  BCB (6) : heat flux
 c  shpb   (nen,ngaussb)           : boundary element shape-functions
 c  shglb  (nsd,nen,ngaussb)       : boundary element grad-shape-functions
-c  xlb    (npro,nenl,nsd)       : nodal coordinates at current step
+c  xlb    (bsz,nenl,nsd)       : nodal coordinates at current step
 c
 c output:
-c  rl     (npro,nshl,nflow)      : element residual
+c  rl     (bsz,nshl,nflow)      : element residual
 c
 c Note: Always the first side of the element is on the boundary.  
 c       However, note that for higher-order elements the nodes on 
@@ -54,12 +54,12 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),
+        dimension yl(bsz,nshl,ndof),          iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,ngaussb),
      &            shglb(nsd,nshl,ngaussb),           
-     &            xlb(npro,nenl,nsd),          ul(npro,nshl,nsd),
-     &            acl(npro,nshl,ndof),
-     &            rl(npro,nshl,nflow)
+     &            xlb(bsz,nenl,nsd),          ul(bsz,nshl,nsd),
+     &            acl(bsz,nshl,ndof),
+     &            rl(bsz,nshl,nflow)
 c
         dimension g1yi(npro,ndof),             g2yi(npro,ndof),
      &            g3yi(npro,ndof),             WdetJb(npro),
@@ -79,7 +79,7 @@ c
      &            shape(npro,nshl),        shdrv(npro,nsd,nshl),
      &            rNa(npro,4)
 
-        real*8    xmudmi(npro,ngauss),      dwl(npro,nshl)
+        real*8    xmudmi(npro,ngauss),      dwl(npro,nenl)
 c
 !disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
@@ -125,7 +125,7 @@ c
 c
 c.... calculate the integraton variables
 c
-        call e3bvar (yl,              acl,             ul,              
+        call e3bvar (blk, yl,              acl,             ul,              
      &               shape,
      &               shdrv,           xlb,
      &               lnode,           WdetJb,
@@ -292,24 +292,24 @@ c
         do n = 1, nshlb
            nodlcl = lnode(n)
 
-           rl(:,nodlcl,1) = rl(:,nodlcl,1) - shape(:,nodlcl) * rNa(:,1)
-           rl(:,nodlcl,2) = rl(:,nodlcl,2) - shape(:,nodlcl) * rNa(:,2)
-           rl(:,nodlcl,3) = rl(:,nodlcl,3) - shape(:,nodlcl) * rNa(:,3)
-           rl(:,nodlcl,4) = rl(:,nodlcl,4) - shape(:,nodlcl) * rNa(:,4)
+           rl(1:npro,nodlcl,1) = rl(1:npro,nodlcl,1) - shape(:,nodlcl) * rNa(:,1)
+           rl(1:npro,nodlcl,2) = rl(1:npro,nodlcl,2) - shape(:,nodlcl) * rNa(:,2)
+           rl(1:npro,nodlcl,3) = rl(1:npro,nodlcl,3) - shape(:,nodlcl) * rNa(:,3)
+           rl(1:npro,nodlcl,4) = rl(1:npro,nodlcl,4) - shape(:,nodlcl) * rNa(:,4)
 
         enddo
         if(ideformwall.eq.1) then
-           rl(:,1,1) = rl(:,1,1) - rlKwall(:,1,1)
-           rl(:,1,2) = rl(:,1,2) - rlKwall(:,1,2)
-           rl(:,1,3) = rl(:,1,3) - rlKwall(:,1,3)
+           rl(1:npro,1,1) = rl(1:npro,1,1) - rlKwall(1:npro,1,1)
+           rl(1:npro,1,2) = rl(1:npro,1,2) - rlKwall(1:npro,1,2)
+           rl(1:npro,1,3) = rl(1:npro,1,3) - rlKwall(1:npro,1,3)
            
-           rl(:,2,1) = rl(:,2,1) - rlKwall(:,2,1)
-           rl(:,2,2) = rl(:,2,2) - rlKwall(:,2,2)
-           rl(:,2,3) = rl(:,2,3) - rlKwall(:,2,3)
+           rl(1:npro,2,1) = rl(1:npro,2,1) - rlKwall(1:npro,2,1)
+           rl(1:npro,2,2) = rl(1:npro,2,2) - rlKwall(1:npro,2,2)
+           rl(1:npro,2,3) = rl(1:npro,2,3) - rlKwall(1:npro,2,3)
         
-           rl(:,3,1) = rl(:,3,1) - rlKwall(:,3,1)
-           rl(:,3,2) = rl(:,3,2) - rlKwall(:,3,2)
-           rl(:,3,3) = rl(:,3,3) - rlKwall(:,3,3)
+           rl(1:npro,3,1) = rl(1:npro,3,1) - rlKwall(1:npro,3,1)
+           rl(1:npro,3,2) = rl(1:npro,3,2) - rlKwall(1:npro,3,2)
+           rl(1:npro,3,3) = rl(1:npro,3,3) - rlKwall(1:npro,3,3)
         endif 
 c
 c.... -------------------->  Aerodynamic Forces  <---------------------
@@ -392,7 +392,7 @@ c
         dimension lnode(27),                   sgn(npro,nshl),
      &            shape(npro,nshl),            shdrv(npro,nsd,nshl),
      &            rNa(npro),                   flux(npro)
-        real*8    dwl(npro,nshl)
+        real*8    dwl(npro,nenl)
 
 c
 c.... compute the nodes which lie on the boundary (hierarchic)
@@ -464,7 +464,7 @@ c
         do n = 1, nshlb
            nodlcl = lnode(n)
  
-           rl(:,nodlcl) = rl(:,nodlcl) - shape(:,nodlcl) * rNa(:)
+           rl(1:npro,nodlcl) = rl(1:npro,nodlcl) - shape(:,nodlcl) * rNa(:)
         enddo
 c
 c.... -------------------->  Aerodynamic Forces  <---------------------

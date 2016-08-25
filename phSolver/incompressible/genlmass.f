@@ -3,6 +3,9 @@ c
         use pointer_data
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
         include "mpif.h"
 c
         real*8 x(numnp,nsd)
@@ -33,6 +36,14 @@ c
           npro   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+
+
 c
 c
 c.... compute and assemble the residual and tangent matrix
@@ -43,7 +54,7 @@ c
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
          
 
-          call AsImass (x,       tmpshp,     
+          call AsImass (blk,x,       tmpshp,     
      &                  tmpshgl, mien(iblk)%p,
      &                  gmass)
 
@@ -57,7 +68,7 @@ c
       return
       end
 
-        subroutine AsImass (x,      shp,
+        subroutine AsImass (blk,x,      shp,
      &                     shgl,    ien,     
      &                     gmass)
 c
@@ -70,6 +81,8 @@ c Ken Jansen, Winter 2000.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c
         real*8 x(numnp,nsd),              
      &         shp(nshl,maxsh),       shgl(nsd,nshl,ngauss),
@@ -78,9 +91,9 @@ c
         integer ien(npro,nshl)
 
 c
-        real*8    xl(npro,nenl,nsd),    WdetJ(npro), 
+        real*8    xl(bsz,nenl,nsd),    WdetJ(npro), 
      &            sgn(npro,nshl),       shape(npro,nshl),          
-     &            locmass(npro,nshl),   shg(npro,nshl,nsd),
+     &            locmass(bsz,nshl),   shg(npro,nshl,nsd),
      &            fmstot(npro),         temp(npro),
      &            dxidx(npro,nsd,nsd),  shdrv(npro,nsd,nshl)
 
@@ -96,10 +109,10 @@ c
         if (ipord .gt. 1) then
            write(*,*) 'blk not plumbed this far'
 
-           call getsgn(ien,sgn)
+           call getsgn(blk,ien,sgn)
         endif
         
-        call localx(x,      xl,     ien,    nsd,    'gather  ')
+        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... zero the matrices if they are being recalculated
 c
@@ -113,13 +126,13 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-           call getshp(intp,shp,          shgl,      sgn, 
+           call getshp(blk,intp,shp,          shgl,      sgn, 
      &                 shape,        shdrv)
 
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-           call e3metric(intp, xl,         shdrv,       dxidx,  
+           call e3metric(blk,intp, xl,         shdrv,       dxidx,  
      &                    shg,        WdetJ)
 
 c
@@ -127,7 +140,7 @@ c  get this quad points contribution to the integral of the square of  the
 c  shape function
 c
            do aa = 1,nshl
-              locmass(:,aa)= locmass(:,aa) 
+              locmass(1:blk%e,aa)= locmass(1:blk%e,aa) 
      &             + shape(:,aa)*shape(:,aa)*WdetJ
            enddo
 c
@@ -150,7 +163,7 @@ c  The first term we collect is the trace of integral Na^2 d Omega
 c
         temp = zero
         do aa = 1, nshl
-           temp = temp + locmass(:,aa) !reusing temp to save memory
+           temp = temp + locmass(1:blk%e,aa) !reusing temp to save memory
         enddo
 
 c
@@ -158,12 +171,12 @@ c scale the diagonal so that the trace will still yield Omega^e (the volume
 c of the element)
 c
         do aa = 1, nshl
-           locmass(:,aa) = locmass(:,aa) * fmstot / temp
+           locmass(1:blk%e,aa) = locmass(1:blk%e,aa) * fmstot / temp
         enddo
 c
 c.... assemble the residual
 c
-        call local (gmass,    locmass,     ien,    1,  'scatter ')
+        call local (blk,gmass,    locmass,     ien,    1,  'scatter ')
 
 c
 c.... end

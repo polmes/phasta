@@ -179,12 +179,12 @@ c
          nenbl  = lcblkb(6,iblk)
          nshlb  = lcblkb(10,iblk)
          npro   = lcblkb(1,iblk+1) - iel 
-          blk%n   = lcblk(5,iblk) ! no. of vertices per element
-          blk%s   = lcblk(10,iblk)
-          blk%e   = lcblk(1,iblk+1) - iel
-          blk%g = nint(lcsyst)
-          blk%l = lcblk(3,iblk)
-          blk%o = lcblk(4,iblk)
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(10,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
  
          if(lcsyst.eq.3) lcsyst=nenbl
 c     

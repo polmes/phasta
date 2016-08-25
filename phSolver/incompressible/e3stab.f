@@ -44,7 +44,7 @@ c
 c
 c.... get the metric tensor
 c      
-      call e3gijd( dxidx, gijd )
+      call e3gijd(blk, dxidx, gijd )
 c
 c... higher order element diffusive correction
 c
@@ -343,7 +343,7 @@ c-----------------------------------------------------------------------
 c
 c.... get the metric tensor
 c      
-      call e3gijd( dxidx, gijd )
+      call e3gijd(blk, dxidx, gijd )
 c
 c.... higher order element diffusive correction
 c
@@ -516,7 +516,7 @@ c
 c
 c.... get the metric tensor
 c      
-      call e3gijd( dxidx, gijd )
+      call e3gijd(blk, dxidx, gijd )
 c
 c...  momentum tau
 c 

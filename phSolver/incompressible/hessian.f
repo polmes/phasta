@@ -5,6 +5,9 @@
         use pointer_data  ! brings in the pointers for the blocked arrays
 
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndof),      
      &            x(numnp,nsd),         iBC(nshg),           
@@ -36,8 +39,15 @@ c
               nsymdl = lcblk(9,iblk)
               npro   = lcblk(1,iblk+1) - iel 
               ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+
 c     
-              call velocity_gradient ( y,                
+              call velocity_gradient ( blk, y,                
      &                                 x,                       
      &                                 shp(lcsyst,1:nshl,:), 
      &                                 shgl(lcsyst,:,1:nshl,:),
@@ -65,9 +75,15 @@ c
               nsymdl = lcblk(9,iblk)
               npro   = lcblk(1,iblk+1) - iel 
               ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 c     
 
-              call velocity_hessian (  gradu,                
+              call velocity_hessian (  blk,gradu,                
      &                                 x,                       
      &                                 shp(lcsyst,1:nshl,:), 
      &                                 shgl(lcsyst,:,1:nshl,:),
@@ -84,10 +100,12 @@ c
 
 c-----------------------------------------------------------------------------
 
-        subroutine velocity_gradient ( y,       x,       shp,     shgl, 
+        subroutine velocity_gradient (blk, y,       x,       shp,     shgl, 
      &                                 ien,     gradu,   rmass    )
 
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
@@ -95,9 +113,9 @@ c
      &            shdrv(npro,nsd,nshl),       shape( npro, nshl ),      
      &            gradul(npro,9) ,            rmass( nshg ) 
 c
-        dimension yl(npro,nshl,ndof),          xl(npro,nenl,nsd),
-     &            ql(npro,nshl,9),             dxidx(npro,nsd,nsd),
-     &            WdetJ(npro),		       rmassl(npro,nshl)
+        dimension yl(bsz,nshl,ndof),          xl(bsz,nenl,nsd),
+     &            ql(bsz,nshl,9),             dxidx(npro,nsd,nsd),
+     &            WdetJ(npro),		       rmassl(bsz,nshl)
 c
 c
         dimension sgn(npro,nshl)
@@ -105,6 +123,7 @@ c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
 c
+        if(ipord.gt.1) then
         do i=1,nshl
            where ( ien(:,i) < 0 )
               sgn(:,i) = -one
@@ -112,13 +131,14 @@ c
               sgn(:,i) = one
            endwhere
         enddo
+        endif
 
 c
 c.... gather the variables
 c
 
-        call localy (y,    yl,     ien,    ndof,   'gather  ')
-        call localx (x,    xl,     ien,    nsd,    'gather  ')
+        call localy (blk,y,    yl,     ien,    ndof,   'gather  ')
+        call localx (blk,x,    xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
 c
@@ -130,26 +150,26 @@ c
             if ( Qwt( lcsyst, intp ) .eq. zero ) cycle
 
             gradul = zero
-            call getshp(intp, shp, shgl, sgn, shape, shdrv )
-            call local_gradient( yl(:,:,2:4), 3,  shdrv, xl, 
+            call getshp(blk,intp, shp, shgl, sgn, shape, shdrv )
+            call local_gradient(blk, yl(:,:,2:4), 3,  shdrv, xl, 
      &                           gradul , dxidx, WdetJ )
 
 c.... assemble contribution of gradu to each element node
 c     
             do i=1,nshl
                 do j = 1, 9
-                    ql(:,i,j) = ql(:,i,j)+shape(:,i)*WdetJ*gradul(:,j)
+                    ql(1:blk%e,i,j) = ql(1:blk%e,i,j)+shape(:,i)*WdetJ*gradul(:,j)
                 end do
                 
-                rmassl(:,i) = rmassl(:,i) + shape(:,i)*WdetJ
+                rmassl(1:blk%e,i) = rmassl(1:blk%e,i) + shape(:,i)*WdetJ
 
              end do
 
         end do
 c
 c
-        call local (gradu,  ql,     ien,  9,  'scatter ')
-        call local (rmass,  rmassl, ien,  1,  'scatter ')
+        call local (blk,gradu,  ql,     ien,  9,  'scatter ')
+        call local (blk,rmass,  rmassl, ien,  1,  'scatter ')
 c
 c.... end
 c
@@ -159,19 +179,21 @@ c
 
 c-----------------------------------------------------------------------------
 
-        subroutine velocity_hessian ( gradu,   x,     shp,   shgl, 
+        subroutine velocity_hessian ( blk,gradu,   x,     shp,   shgl, 
      &                                ien,     uhess, rmass  )
 
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c
         dimension gradu(nshg,9),              x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),             uhess(nshg,27), 
      &            shdrv(npro,nsd,nshl),       shape( npro, nshl ),
-     &            uhessl(npro,27),            rmass( nshg ) 
+     &            uhessl(bsz,27),            rmass( nshg ) 
 c
-        dimension gradul(npro,nshl,9),          xl(npro,nenl,nsd),         
-     &            ql(npro,nshl,27),             dxidx(npro,nsd,nsd),    
+        dimension gradul(npro,nshl,9),          xl(bsz,nenl,nsd),         
+     &            ql(bsz,nshl,27),             dxidx(npro,nsd,nsd),    
      &            WdetJ(npro),                  rmassl(npro, nshl)
 c
 c
@@ -180,6 +202,7 @@ c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
 c
+       if (ipord.gt.1) then
         do i=1,nshl
            where ( ien(:,i) < 0 )
               sgn(:,i) = -one
@@ -187,13 +210,14 @@ c
               sgn(:,i) = one
            endwhere
         enddo
+        endif
 
 c
 c.... gather the variables
 c
 
-        call local  (gradu,  gradul, ien,    9 ,   'gather  ')
-        call localx (x,      xl,     ien,    nsd,  'gather  ')
+        call local  (blk,gradu,  gradul, ien,    9 ,   'gather  ')
+        call localx (blk,x,      xl,     ien,    nsd,  'gather  ')
 c
 c.... get the element residuals 
 c
@@ -205,25 +229,25 @@ c
             if ( Qwt( lcsyst, intp ) .eq. zero ) cycle
 
             uhessl = zero
-            call getshp(intp, shp, shgl, sgn, shape, shdrv )
-            call local_gradient( gradul, 9,  shdrv, xl, 
+            call getshp(blk,intp, shp, shgl, sgn, shape, shdrv )
+            call local_gradient(blk, gradul, 9,  shdrv, xl, 
      &                           uhessl , dxidx, WdetJ )
 
 c.... assemble contribution of gradu .,
 c     
             do i=1,nshl
                 do j = 1,27 
-                    ql(:,i,j)=ql(:,i,j)+shape(:,i)*WdetJ*uhessl(:,j )
+                    ql(1:blk%e,i,j)=ql(1:blk%e,i,j)+shape(:,i)*WdetJ*uhessl(:,j )
                 end do
 
-                rmassl(:,i) = rmassl(:,i) + shape(:,i)*WdetJ
+                rmassl(1:blk%e,i) = rmassl(1:blk%e,i) + shape(:,i)*WdetJ
              end do
 
         end do
 c
 c
-        call local (uhess,  ql,     ien,  27,     'scatter ')
-        call local (rmass,  rmassl, ien,   1,     'scatter ')
+        call local (blk,uhess,  ql,     ien,  27,     'scatter ')
+        call local (blk,rmass,  rmassl, ien,   1,     'scatter ')
 c
 c.... end
 c
@@ -285,18 +309,20 @@ c
 
 c-------------------------------------------------------------------------
 
-        subroutine local_gradient ( vector,   vsize, shgl,   xl, 
+        subroutine local_gradient (blk, vector,   vsize, shgl,   xl, 
      &                              gradient, dxidx,   WdetJ )
 c
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c
 c  passed arrays
 
         integer vsize
 c
         dimension vector(npro,nshl,vsize), 
-     &            shgl(npro,nsd,nshl),        xl(npro,nenl,nsd),
+     &            shgl(npro,nsd,nshl),        xl(bsz,nenl,nsd),
      &            gradient(npro,vsize*3),     shg(npro,nshl,nsd), 
      &            dxidx(npro,nsd,nsd),        WdetJ(npro)
 c
@@ -310,15 +336,15 @@ c
         dxdxi = zero
 c
           do n = 1, nenl
-            dxdxi(:,1,1) = dxdxi(:,1,1) + xl(:,n,1) * shgl(:,1,n)
-            dxdxi(:,1,2) = dxdxi(:,1,2) + xl(:,n,1) * shgl(:,2,n)
-            dxdxi(:,1,3) = dxdxi(:,1,3) + xl(:,n,1) * shgl(:,3,n)
-            dxdxi(:,2,1) = dxdxi(:,2,1) + xl(:,n,2) * shgl(:,1,n)
-            dxdxi(:,2,2) = dxdxi(:,2,2) + xl(:,n,2) * shgl(:,2,n)
-            dxdxi(:,2,3) = dxdxi(:,2,3) + xl(:,n,2) * shgl(:,3,n)
-            dxdxi(:,3,1) = dxdxi(:,3,1) + xl(:,n,3) * shgl(:,1,n)
-            dxdxi(:,3,2) = dxdxi(:,3,2) + xl(:,n,3) * shgl(:,2,n)
-            dxdxi(:,3,3) = dxdxi(:,3,3) + xl(:,n,3) * shgl(:,3,n)
+            dxdxi(:,1,1) = dxdxi(:,1,1) + xl(1:blk%e,n,1) * shgl(:,1,n)
+            dxdxi(:,1,2) = dxdxi(:,1,2) + xl(1:blk%e,n,1) * shgl(:,2,n)
+            dxdxi(:,1,3) = dxdxi(:,1,3) + xl(1:blk%e,n,1) * shgl(:,3,n)
+            dxdxi(:,2,1) = dxdxi(:,2,1) + xl(1:blk%e,n,2) * shgl(:,1,n)
+            dxdxi(:,2,2) = dxdxi(:,2,2) + xl(1:blk%e,n,2) * shgl(:,2,n)
+            dxdxi(:,2,3) = dxdxi(:,2,3) + xl(1:blk%e,n,2) * shgl(:,3,n)
+            dxdxi(:,3,1) = dxdxi(:,3,1) + xl(1:blk%e,n,3) * shgl(:,1,n)
+            dxdxi(:,3,2) = dxdxi(:,3,2) + xl(1:blk%e,n,3) * shgl(:,2,n)
+            dxdxi(:,3,3) = dxdxi(:,3,3) + xl(1:blk%e,n,3) * shgl(:,3,n)
           enddo
 c
 c.... compute the inverse of deformation gradient

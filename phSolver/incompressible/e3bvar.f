@@ -1,4 +1,4 @@
-      subroutine e3bvar (yl,      acl,     ul,
+      subroutine e3bvar (blk, yl,      acl,     ul,
      &                   shpb,    shglb,
      &                   xlb,     lnode,  
      &                   WdetJb,  bnorm,   pres,    
@@ -13,13 +13,13 @@ c   This routine computes the variables at integration points for
 c the boundary element routine.
 c
 c input:
-c  yl     (npro,nshl,ndof)      : primitive variables (local)
+c  yl     (bsz,nshl,ndof)      : primitive variables (local)
 c          ndof: 5[p,v1,v2,v3,T]+number of scalars solved 
-c  acl    (npro,nshl,ndof)      : acceleration (local)
-c  ul     (npro,nshlb,nsd)       : displacement (local)
+c  acl    (bsz,nshl,ndof)      : acceleration (local)
+c  ul     (bsz,nshlb,nsd)       : displacement (local)
 c  shpb   (nen)                 : boundary element shape-functions
 c  shglb  (nsd,nen)             : boundary element grad-shape-functions
-c  xlb    (npro,nenl,nsd)       : nodal coordinates at current step
+c  xlb    (bsz,nenl,nsd)       : nodal coordinates at current step
 c  lnode  (nenb)                : local nodes on the boundary
 c
 c output:
@@ -51,9 +51,9 @@ c
       type (LocalBlkData) blk
 
 c
-      dimension yl(npro,nshl,ndof),        rmu(npro),
+      dimension yl(bsz,nshl,ndof),        rmu(npro),
      &            shpb(npro,nshl),           shglb(npro,nsd,nshl),
-     &            xlb(npro,nenl,nsd),        
+     &            xlb(bsz,nenl,nsd),        
      &            lnode(27),                 g1yi(npro,ndof),
      &            g2yi(npro,ndof),           g3yi(npro,ndof),
      &            WdetJb(npro),              bnorm(npro,nsd),
@@ -63,7 +63,7 @@ c
      &            unm(npro),                 
      &            tau1n(npro),               tau2n(npro),
      &            tau3n(npro),
-     &            acl(npro,nshl,ndof),       ul(npro,nshl,nsd),
+     &            acl(bsz,nshl,ndof),       ul(bsz,nshl,nsd),
      &            vdot(npro,nsd),            rlKwall(npro,nshlb,nsd)
 c
       dimension gl1yi(npro,ndof),          gl2yi(npro,ndof),
@@ -128,10 +128,10 @@ c
       do n = 1, nshlb
          nodlcl = lnode(n)
 c     
-         pres = pres + shpb(:,nodlcl) * yl(:,nodlcl,1)
-         u1   = u1   + shpb(:,nodlcl) * yl(:,nodlcl,2)
-         u2   = u2   + shpb(:,nodlcl) * yl(:,nodlcl,3)
-         u3   = u3   + shpb(:,nodlcl) * yl(:,nodlcl,4)
+         pres = pres + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,1)
+         u1   = u1   + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,2)
+         u2   = u2   + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,3)
+         u3   = u3   + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,4)
 
       enddo
 c
@@ -142,15 +142,15 @@ c
       dxdxib = zero
 c
       do n = 1, nenl
-         dxdxib(:,1,1) = dxdxib(:,1,1) + xlb(:,n,1) * shglb(:,1,n)
-         dxdxib(:,1,2) = dxdxib(:,1,2) + xlb(:,n,1) * shglb(:,2,n)
-         dxdxib(:,1,3) = dxdxib(:,1,3) + xlb(:,n,1) * shglb(:,3,n)
-         dxdxib(:,2,1) = dxdxib(:,2,1) + xlb(:,n,2) * shglb(:,1,n)
-         dxdxib(:,2,2) = dxdxib(:,2,2) + xlb(:,n,2) * shglb(:,2,n)
-         dxdxib(:,2,3) = dxdxib(:,2,3) + xlb(:,n,2) * shglb(:,3,n)
-         dxdxib(:,3,1) = dxdxib(:,3,1) + xlb(:,n,3) * shglb(:,1,n)
-         dxdxib(:,3,2) = dxdxib(:,3,2) + xlb(:,n,3) * shglb(:,2,n)
-         dxdxib(:,3,3) = dxdxib(:,3,3) + xlb(:,n,3) * shglb(:,3,n)
+         dxdxib(:,1,1) = dxdxib(:,1,1) + xlb(1:npro,n,1) * shglb(:,1,n)
+         dxdxib(:,1,2) = dxdxib(:,1,2) + xlb(1:npro,n,1) * shglb(:,2,n)
+         dxdxib(:,1,3) = dxdxib(:,1,3) + xlb(1:npro,n,1) * shglb(:,3,n)
+         dxdxib(:,2,1) = dxdxib(:,2,1) + xlb(1:npro,n,2) * shglb(:,1,n)
+         dxdxib(:,2,2) = dxdxib(:,2,2) + xlb(1:npro,n,2) * shglb(:,2,n)
+         dxdxib(:,2,3) = dxdxib(:,2,3) + xlb(1:npro,n,2) * shglb(:,3,n)
+         dxdxib(:,3,1) = dxdxib(:,3,1) + xlb(1:npro,n,3) * shglb(:,1,n)
+         dxdxib(:,3,2) = dxdxib(:,3,2) + xlb(1:npro,n,3) * shglb(:,2,n)
+         dxdxib(:,3,3) = dxdxib(:,3,3) + xlb(1:npro,n,3) * shglb(:,3,n)
       enddo
 c
 c.... compute the normal to the boundary
@@ -216,8 +216,8 @@ c
          ipt2=2
          ipt3=5
       endif
-      v1 = xlb(:,ipt2,:) - xlb(:,1,:)
-      v2 = xlb(:,ipt3,:) - xlb(:,1,:)
+      v1 = xlb(1:npro,ipt2,:) - xlb(1:npro,1,:)
+      v2 = xlb(1:npro,ipt3,:) - xlb(1:npro,1,:)
 c
 c compute cross product
 c
@@ -287,20 +287,20 @@ c
          gl3yi = zero
 c     
          do n = 1, nshl
-            gl1yi(:,1) = gl1yi(:,1) + shglb(:,1,n) * yl(:,n,1)
-            gl1yi(:,2) = gl1yi(:,2) + shglb(:,1,n) * yl(:,n,2)
-            gl1yi(:,3) = gl1yi(:,3) + shglb(:,1,n) * yl(:,n,3)
-            gl1yi(:,4) = gl1yi(:,4) + shglb(:,1,n) * yl(:,n,4)
+            gl1yi(:,1) = gl1yi(:,1) + shglb(:,1,n) * yl(1:npro,n,1)
+            gl1yi(:,2) = gl1yi(:,2) + shglb(:,1,n) * yl(1:npro,n,2)
+            gl1yi(:,3) = gl1yi(:,3) + shglb(:,1,n) * yl(1:npro,n,3)
+            gl1yi(:,4) = gl1yi(:,4) + shglb(:,1,n) * yl(1:npro,n,4)
 c     
-            gl2yi(:,1) = gl2yi(:,1) + shglb(:,2,n) * yl(:,n,1)
-            gl2yi(:,2) = gl2yi(:,2) + shglb(:,2,n) * yl(:,n,2)
-            gl2yi(:,3) = gl2yi(:,3) + shglb(:,2,n) * yl(:,n,3)
-            gl2yi(:,4) = gl2yi(:,4) + shglb(:,2,n) * yl(:,n,4)
+            gl2yi(:,1) = gl2yi(:,1) + shglb(:,2,n) * yl(1:npro,n,1)
+            gl2yi(:,2) = gl2yi(:,2) + shglb(:,2,n) * yl(1:npro,n,2)
+            gl2yi(:,3) = gl2yi(:,3) + shglb(:,2,n) * yl(1:npro,n,3)
+            gl2yi(:,4) = gl2yi(:,4) + shglb(:,2,n) * yl(1:npro,n,4)
 c     
-            gl3yi(:,1) = gl3yi(:,1) + shglb(:,3,n) * yl(:,n,1)
-            gl3yi(:,2) = gl3yi(:,2) + shglb(:,3,n) * yl(:,n,2)
-            gl3yi(:,3) = gl3yi(:,3) + shglb(:,3,n) * yl(:,n,3)
-            gl3yi(:,4) = gl3yi(:,4) + shglb(:,3,n) * yl(:,n,4)
+            gl3yi(:,1) = gl3yi(:,1) + shglb(:,3,n) * yl(1:npro,n,1)
+            gl3yi(:,2) = gl3yi(:,2) + shglb(:,3,n) * yl(1:npro,n,2)
+            gl3yi(:,3) = gl3yi(:,3) + shglb(:,3,n) * yl(1:npro,n,3)
+            gl3yi(:,4) = gl3yi(:,4) + shglb(:,3,n) * yl(1:npro,n,4)
          enddo
 c     
 c.... convert local-grads to global-grads
@@ -392,9 +392,9 @@ c     situations of flow reversal
       do n = 1, nshlb
          nodlcl = lnode(n)
 c     
-         vdot(:,1) = vdot(:,1) + shpb(:,nodlcl) * acl(:,nodlcl,2)
-         vdot(:,2) = vdot(:,2) + shpb(:,nodlcl) * acl(:,nodlcl,3)
-         vdot(:,3) = vdot(:,3) + shpb(:,nodlcl) * acl(:,nodlcl,4)
+         vdot(:,1) = vdot(:,1) + shpb(:,nodlcl) * acl(1:blk%e,nodlcl,2)
+         vdot(:,2) = vdot(:,2) + shpb(:,nodlcl) * acl(1:blk%e,nodlcl,3)
+         vdot(:,3) = vdot(:,3) + shpb(:,nodlcl) * acl(1:blk%e,nodlcl,4)
 
       enddo
       vdot = vdot * thicknessvw * rhovw
@@ -406,13 +406,13 @@ c
 c     
 c.... rotation matrix
 c     
-      v1 = xlb(:,ipt2,:) - xlb(:,1,:)
+      v1 = xlb(1:blk%e,ipt2,:) - xlb(1:blk%e,1,:)
       temp       = one / sqrt ( v1(:,1)**2 + v1(:,2)**2 + v1(:,3)**2 )
       v1(:,1) = v1(:,1) * temp
       v1(:,2) = v1(:,2) * temp
       v1(:,3) = v1(:,3) * temp
       
-      v2 = xlb(:,ipt3,:) - xlb(:,1,:)
+      v2 = xlb(1:blk%e,ipt3,:) - xlb(1:blk%e,1,:)
       
 c     compute cross product
       temp1 = v1(:,2) * v2(:,3) - v2(:,2) * v1(:,3)
@@ -449,9 +449,9 @@ c
       
       do i = 1, nsd
          do j = 1, nsd 
-            x1rot(:,i) = x1rot(:,i)+rotnodallocal(:,i,j)*xlb(:,1,j)
-            x2rot(:,i) = x2rot(:,i)+rotnodallocal(:,i,j)*xlb(:,ipt2,j)
-            x3rot(:,i) = x3rot(:,i)+rotnodallocal(:,i,j)*xlb(:,ipt3,j)
+            x1rot(:,i) = x1rot(:,i)+rotnodallocal(:,i,j)*xlb(1:blk%e,1,j)
+            x2rot(:,i) = x2rot(:,i)+rotnodallocal(:,i,j)*xlb(1:blk%e,ipt2,j)
+            x3rot(:,i) = x3rot(:,i)+rotnodallocal(:,i,j)*xlb(1:blk%e,ipt3,j)
          enddo
       enddo
       
@@ -601,41 +601,41 @@ c.... Final K * u product (in global coordinates) to get the residual
 c
       do i = 1, 3               ! now i is a spatial index: i=1, nsd=3
          rlKwall(:,1,1) = rlKwall(:,1,1) 
-     &                  + rKwall_glob11(:,1,i) * ul(:,1,i) 
-     &                  + rKwall_glob12(:,1,i) * ul(:,2,i) 
-     &                  + rKwall_glob13(:,1,i) * ul(:,3,i) 
+     &                  + rKwall_glob11(:,1,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob12(:,1,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob13(:,1,i) * ul(1:blk%e,3,i) 
          rlKwall(:,1,2) = rlKwall(:,1,2)
-     &                  + rKwall_glob11(:,2,i) * ul(:,1,i) 
-     &                  + rKwall_glob12(:,2,i) * ul(:,2,i) 
-     &                  + rKwall_glob13(:,2,i) * ul(:,3,i) 
+     &                  + rKwall_glob11(:,2,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob12(:,2,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob13(:,2,i) * ul(1:blk%e,3,i) 
          rlKwall(:,1,3) = rlKwall(:,1,3) 
-     &                  + rKwall_glob11(:,3,i) * ul(:,1,i) 
-     &                  + rKwall_glob12(:,3,i) * ul(:,2,i) 
-     &                  + rKwall_glob13(:,3,i) * ul(:,3,i) 
+     &                  + rKwall_glob11(:,3,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob12(:,3,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob13(:,3,i) * ul(1:blk%e,3,i) 
          rlKwall(:,2,1) = rlKwall(:,2,1) 
-     &                  + rKwall_glob21(:,1,i) * ul(:,1,i) 
-     &                  + rKwall_glob22(:,1,i) * ul(:,2,i) 
-     &                  + rKwall_glob23(:,1,i) * ul(:,3,i) 
+     &                  + rKwall_glob21(:,1,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob22(:,1,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob23(:,1,i) * ul(1:blk%e,3,i) 
          rlKwall(:,2,2) = rlKwall(:,2,2)
-     &                  + rKwall_glob21(:,2,i) * ul(:,1,i) 
-     &                  + rKwall_glob22(:,2,i) * ul(:,2,i) 
-     &                  + rKwall_glob23(:,2,i) * ul(:,3,i) 
+     &                  + rKwall_glob21(:,2,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob22(:,2,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob23(:,2,i) * ul(1:blk%e,3,i) 
          rlKwall(:,2,3) = rlKwall(:,2,3) 
-     &                  + rKwall_glob21(:,3,i) * ul(:,1,i) 
-     &                  + rKwall_glob22(:,3,i) * ul(:,2,i) 
-     &                  + rKwall_glob23(:,3,i) * ul(:,3,i)
+     &                  + rKwall_glob21(:,3,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob22(:,3,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob23(:,3,i) * ul(1:blk%e,3,i)
          rlKwall(:,3,1) = rlKwall(:,3,1) 
-     &                  + rKwall_glob31(:,1,i) * ul(:,1,i) 
-     &                  + rKwall_glob32(:,1,i) * ul(:,2,i) 
-     &                  + rKwall_glob33(:,1,i) * ul(:,3,i) 
+     &                  + rKwall_glob31(:,1,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob32(:,1,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob33(:,1,i) * ul(1:blk%e,3,i) 
          rlKwall(:,3,2) = rlKwall(:,3,2)
-     &                  + rKwall_glob31(:,2,i) * ul(:,1,i) 
-     &                  + rKwall_glob32(:,2,i) * ul(:,2,i) 
-     &                  + rKwall_glob33(:,2,i) * ul(:,3,i) 
+     &                  + rKwall_glob31(:,2,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob32(:,2,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob33(:,2,i) * ul(1:blk%e,3,i) 
          rlKwall(:,3,3) = rlKwall(:,3,3) 
-     &                  + rKwall_glob31(:,3,i) * ul(:,1,i) 
-     &                  + rKwall_glob32(:,3,i) * ul(:,2,i) 
-     &                  + rKwall_glob33(:,3,i) * ul(:,3,i)
+     &                  + rKwall_glob31(:,3,i) * ul(1:blk%e,1,i) 
+     &                  + rKwall_glob32(:,3,i) * ul(1:blk%e,2,i) 
+     &                  + rKwall_glob33(:,3,i) * ul(1:blk%e,3,i)
       enddo
 c     
 c.... --------------> End of Stiffness matrix & residual  <-----------------
@@ -806,8 +806,8 @@ c---------------------------------------------------------------------
       type (LocalBlkData) blk
 
 c
-        dimension yl(npro,nshl,ndof),        shdrv(npro,nsd,nshl),
-     &            xlb(npro,nenl,nsd),        shape(npro,nshl),
+        dimension yl(bsz,nshl,ndof),        shdrv(npro,nsd,nshl),
+     &            xlb(bsz,nenl,nsd),        shape(npro,nshl),
      &            WdetJb(npro),              bnorm(npro,nsd),
      &            flux(npro)
 c
@@ -818,7 +818,7 @@ c
      &            v1(npro,nsd),              v2(npro,nsd),
      &            gradSl(npro,nsd),          gradS(npro,nsd)
 
-        real*8    diffus(npro),              dwl(npro,nshl)
+        real*8    diffus(npro),              dwl(bsz,nenl)
         
         call getdiffsclr(blk,shape,dwl,yl,diffus)
 c
@@ -829,23 +829,23 @@ c
         dxdxib = zero
 c
         do n = 1, nenl
-           dxdxib(:,1,1) = dxdxib(:,1,1) + xlb(:,n,1) * shdrv(:,1,n)
-           dxdxib(:,1,2) = dxdxib(:,1,2) + xlb(:,n,1) * shdrv(:,2,n)
-           dxdxib(:,1,3) = dxdxib(:,1,3) + xlb(:,n,1) * shdrv(:,3,n)
-           dxdxib(:,2,1) = dxdxib(:,2,1) + xlb(:,n,2) * shdrv(:,1,n)
-           dxdxib(:,2,2) = dxdxib(:,2,2) + xlb(:,n,2) * shdrv(:,2,n)
-           dxdxib(:,2,3) = dxdxib(:,2,3) + xlb(:,n,2) * shdrv(:,3,n)
-           dxdxib(:,3,1) = dxdxib(:,3,1) + xlb(:,n,3) * shdrv(:,1,n)
-           dxdxib(:,3,2) = dxdxib(:,3,2) + xlb(:,n,3) * shdrv(:,2,n)
-           dxdxib(:,3,3) = dxdxib(:,3,3) + xlb(:,n,3) * shdrv(:,3,n)
+           dxdxib(:,1,1) = dxdxib(:,1,1) + xlb(1:blk%e,n,1) * shdrv(:,1,n)
+           dxdxib(:,1,2) = dxdxib(:,1,2) + xlb(1:blk%e,n,1) * shdrv(:,2,n)
+           dxdxib(:,1,3) = dxdxib(:,1,3) + xlb(1:blk%e,n,1) * shdrv(:,3,n)
+           dxdxib(:,2,1) = dxdxib(:,2,1) + xlb(1:blk%e,n,2) * shdrv(:,1,n)
+           dxdxib(:,2,2) = dxdxib(:,2,2) + xlb(1:blk%e,n,2) * shdrv(:,2,n)
+           dxdxib(:,2,3) = dxdxib(:,2,3) + xlb(1:blk%e,n,2) * shdrv(:,3,n)
+           dxdxib(:,3,1) = dxdxib(:,3,1) + xlb(1:blk%e,n,3) * shdrv(:,1,n)
+           dxdxib(:,3,2) = dxdxib(:,3,2) + xlb(1:blk%e,n,3) * shdrv(:,2,n)
+           dxdxib(:,3,3) = dxdxib(:,3,3) + xlb(1:blk%e,n,3) * shdrv(:,3,n)
         enddo
 c     
 c.... compute the normal to the boundary. This is achieved by taking
 c     the cross product of two vectors in the plane of the 2-d 
 c     boundary face.
 c
-        v1 = xlb(:,2,:) - xlb(:,1,:)
-        v2 = xlb(:,3,:) - xlb(:,1,:)
+        v1 = xlb(1:blk%e,2,:) - xlb(1:blk%e,1,:)
+        v2 = xlb(1:blk%e,3,:) - xlb(1:blk%e,1,:)
         
 c     
 c.....The following are done in order to correct temp1..3  

@@ -214,16 +214,16 @@ c
 c
 c.... assemble the residual
 c
-          call local (blk,res,    rl,     ien,    nflow,  'scatter ')
+          call local (blk,res,    rl,     mien(iblk)%p,    nflow,  'scatter ')
 c
 c.... assemble the statistics residual
 c
           if ( stsResFlg .eq. 1 ) then 
-            call local( blk, stsVec, StsVecl, ien, nResDims, 'scatter ')
+            call local( blk, stsVec, StsVecl, mien(iblk)%p, nResDims, 'scatter ')
           endif
 
           if ( ierrcalc .eq. 1 ) then
-            call local (blk, rerr, rerrl,  ien, 6, 'scatter ')
+            call local (blk, rerr, rerrl,  mien(iblk)%p, 6, 'scatter ')
           endif
 
 c     
@@ -317,12 +317,12 @@ c
 ! threading and thus need to dimension based on this data.  
 ! debug to confirm
 
-          blk%n   = lcblk(5,iblk) ! no. of vertices per element
-          blk%s   = lcblk(9,iblk)
-          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(9,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel 
           blk%g = nintb(lcsyst)
-          blk%l = lcblk(3,iblk)
-          blk%o = lcblk(4,iblk)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
 c
 c.... allocate the element matrices
 c
@@ -435,6 +435,8 @@ c
         use local_mass
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
         include "mpif.h"
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),
@@ -461,31 +463,37 @@ c
 c
 c.... -------------------->   diffusive flux   <--------------------
 c
-        ires   = 1
+      ires   = 1
 
-        if (idiff==1 .or. idiff==3) then ! global reconstruction of qdiff
+      if (idiff==1 .or. idiff==3) then ! global reconstruction of qdiff
 c
 c loop over element blocks for the global reconstruction
 c of the diffusive flux vector, q, and lumped mass matrix, rmass
 c
-           qres = zero
-           rmass = zero
+        qres = zero
+        rmass = zero
         
-           do iblk = 1, nelblk
-              iel    = lcblk(1,iblk)
-              lcsyst = lcblk(3,iblk)
-              nenl   = lcblk(5,iblk) ! no. of vertices per element
-              nshl   = lcblk(10,iblk)
-              mattyp = lcblk(7,iblk)
-              ndofl  = lcblk(8,iblk)
-              npro   = lcblk(1,iblk+1) - iel 
+        do iblk = 1, nelblk
+          iel    = lcblk(1,iblk)
+          lcsyst = lcblk(3,iblk)
+          nenl   = lcblk(5,iblk) ! no. of vertices per element
+          nshl   = lcblk(10,iblk)
+          mattyp = lcblk(7,iblk)
+          ndofl  = lcblk(8,iblk)
+          npro   = lcblk(1,iblk+1) - iel 
+          ngauss = nint(lcsyst)
               
-              ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 c     
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
 
-              call AsIqSclr (y,                   x,                       
+              call AsIqSclr (blk,y,                   x,                       
      &                       shp(lcsyst,1:nshl,:), 
      &                       shgl(lcsyst,:,1:nshl,:),
      &                       mien(iblk)%p,     qres,                   
@@ -525,6 +533,12 @@ c
           npro   = lcblk(1,iblk+1) - iel
 
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 c
 c.... allocate the element matrices
 c
@@ -532,7 +546,7 @@ c
 c
 c.... compute and assemble the residual and tangent matrix
 c
-          call AsIGMRSclr(y,                   ac,
+          call AsIGMRSclr(blky,                   ac,
      &                 x,
      &                 shp(lcsyst,1:nshl,:), 
      &                 shgl(lcsyst,:,1:nshl,:),
@@ -595,6 +609,17 @@ c
           else
              ngaussb = nintb(lcsyst)
           endif
+! note the following is the volumen element characteristics as needed for 
+! routines like getdiff, getdiffsclr, getshpb which were already converted for
+! threading and thus need to dimension based on this data.  
+! debug to confirm
+
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(9,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel 
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
 c
 c localize the dtn boundary condition
 c
@@ -606,7 +631,7 @@ c
 c.... compute and assemble the residuals corresponding to the 
 c     boundary integral
 c
-          call AsBSclr (y,                       x,
+          call AsBSclr (blk,y,                       x,
      &                  shpb(lcsyst,1:nshl,:),
      &                  shglb(lcsyst,:,1:nshl,:),
      &                  mienb(iblk)%p,           mmatb(iblk)%p,

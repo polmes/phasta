@@ -25,11 +25,11 @@ c
      &            shglb(nsd,nshl,ngaussb),         
      &            ienb(npro,nshl),         materb(npro),
      &            iBCB(npro,ndiBCB),       BCB(npro,nshlb,ndBCB),
-     &            res(nshg,nflow),        dwl(npro,nenl)        
+     &            res(nshg,nflow),        dwl(bsz,nenl)        
 c
-        dimension yl(npro,nshl,ndofl),     xlb(npro,nenl,nsd),
-     &            rl(npro,nshl,nflow),     sgn(npro,nshl),
-     &            ul(npro,nshl,nsd),       acl(npro,nshl,ndofl)
+        dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
+     &            rl(bsz,nshl,nflow),     sgn(npro,nshl),
+     &            ul(bsz,nshl,nsd),       acl(bsz,nshl,ndofl)
 c
 !disable        dimension xKebe(npro,9,nshl,nshl) 
      
@@ -103,9 +103,9 @@ c
      &            iBCB(npro,ndiBCB),       BCB(npro,nshlb,ndBCB),
      &            res(nshg)         
 c
-        dimension yl(npro,nshl,ndofl),     xlb(npro,nenl,nsd),
-     &            rl(npro,nshl),     sgn(npro,nshl)
-        real*8 dwl(npro,nshl)
+        dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
+     &            rl(bsz,nshl),     sgn(npro,nshl)
+        real*8 dwl(bsz,nshl)
 c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c

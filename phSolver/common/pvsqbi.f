@@ -40,6 +40,9 @@ c-----------------------------------------------------------------------
       use     pointer_data
       use     pvsQbi
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
       
       real*8   x(numnp,nsd)
 c
@@ -85,6 +88,13 @@ c
           ndofl  = lcblkb(8,iblk)
           npro   = lcblkb(1,iblk+1) - iel 
 
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(10,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
+
 
           if(lcsyst.eq.3) lcsyst=nenbl
 c
@@ -102,12 +112,12 @@ c
           
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
 
-          call AsBNABI (                       x,
+          call AsBNABI (blk,                       x,
      &                 tmpshpb,
      &                 mienb(iblk)%p,
      &                 miBCB(iblk)%p)
 
-          call AsBNASC(                       x,
+          call AsBNASC(blk,                       x,
      &                 tmpshpb,
      &                 mienb(iblk)%p,
      &                 miBCB(iblk)%p)

@@ -274,9 +274,9 @@ c
          ndofl  = lcblk(8,iblk)
          npro   = lcblk(1,iblk+1) - iel 
 
-         allocate ( ycl(npro,nshl,ndof ) )
+         allocate ( ycl(bsz,nshl,ndof ) )
          allocate ( yvl(npro,nshl,nvars) )
-         allocate ( xl(npro,nenl,nsd   ) )
+         allocate ( xl(bsz,nenl,nsd   ) )
          allocate ( sgn(npro,nshl)       )
  
          write(*,*) 'blk not plumbed this far'

@@ -166,7 +166,7 @@ c
               
               do n=1,neltp,bsz 
                  nelblb=nelblb+1
-                 npro= min(IBKSZ, neltp - n + 1)
+                 npro= min(bsz, neltp - n + 1)
                  lcblkb(1,nelblb)  = iel
                  lcblkb(3,nelblb)  = lcsyst
                  lcblkb(4,nelblb)  = ipordl

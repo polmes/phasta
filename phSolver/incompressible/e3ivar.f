@@ -342,7 +342,7 @@ c
      &          u3(blk%e),                  divS(blk%e),
      &          ql(bsz,blk%s,nsd),         rLS(blk%e),
      &          SrcR(blk%e),                 SrcL(blk%e),
-     &          dwl(bsz,blk%s),            diffus(blk%e),
+     &          dwl(bsz,blk%n),            diffus(blk%e),
      &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
      &          divqi(blk%e)   
 c

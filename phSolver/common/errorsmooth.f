@@ -5,14 +5,18 @@ c
 c
         include "common.h"
         include "mpif.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension shp(MAXTOP,maxsh,MAXQPT),  
      &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
      &            shpb(MAXTOP,maxsh,MAXQPT),
-     &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
+     &            shglb(MAXTOP,nsd,maxsh,MAXQPT),
+     &            x(numnp,nsd)
+
 c
-        dimension rerrsm(nshg, 10), rerr(nshg,10), rmass(nshg),
-     &            x(nshg,3)
+        dimension rerrsm(nshg, 10), rerr(nshg,10), rmass(nshg)
 c
         dimension ilwork(nlwork), iBC(nshg), iper(nshg)
 
@@ -42,6 +46,13 @@ c
           nsymdl = lcblk(9,iblk)
           npro   = lcblk(1,iblk+1) - iel
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+
 c
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
@@ -52,7 +63,7 @@ c     and lumped mass matrix, rmass
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call smooth (rerr,                x,                       
+          call smooth (blk,rerr,                x,                       
      &               tmpshp,              
      &               tmpshgl,
      &               mien(iblk)%p,
@@ -105,7 +116,7 @@ c
        return
        end
 
-        subroutine smooth (rerr,       x,       shp,
+        subroutine smooth (blk,rerr,       x,       shp,
      &                     shgl,       ien,          
      &                     rerrsm,     rmass    )
 c
@@ -129,6 +140,9 @@ c
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension rerr(nshg,10),               x(numnp,nsd),     
      &            shp(nshl,maxsh),  
@@ -138,8 +152,8 @@ c
 c
 c.... element level declarations
 c
-        dimension rerrl(npro,nshl,10),        xl(npro,nenl,nsd),         
-     &            rerrsml(npro,nshl,10),       rmassl(npro,nshl)
+        dimension rerrl(bsz,nshl,10),        xl(bsz,nenl,nsd),         
+     &            rerrsml(bsz,nshl,10),       rmassl(bsz,nshl)
 c
         dimension sgn(npro,nshl),          shape(npro,nshl),
      &            shdrv(npro,nsd,nshl),    WdetJ(npro),
@@ -151,15 +165,14 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
         if (ipord .gt. 1) then
-           write(*,*) 'blk not plumbed this far'
-           call getsgn(ien,sgn)
+           call getsgn(blk,ien,sgn)
         endif
 c
 c.... gather the variables
 c
 
-        call local(rerr,   rerrl,  ien,    10,   'gather  ')
-        call localx(x,      xl,     ien,    nsd,    'gather  ')
+        call local(blk,rerr,   rerrl,  ien,    10,   'gather  ')
+        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
 c
@@ -178,24 +191,24 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c
-        call getshp(intp,shp,          shgl,      sgn, 
+        call getshp(blk,intp,shp,          shgl,      sgn, 
      &              shape,        shdrv)
 c
-        call e3metric(intp, xl,         shdrv,        dxidx,  
+        call e3metric(blk, xl,         shdrv,        dxidx,  
      &                 shg,        WdetJ)
         error=zero
         do n = 1, nshl
            do i=1,10
-              error(:,i)=error(:,i) + shape(:,n) * rerrl(:,n,i)
+              error(:,i)=error(:,i) + shape(:,n) * rerrl(1:blk%e,n,i)
            enddo
         enddo
         do i=1,nshl
            do j=1,10
-              rerrsml(:,i,j)  = rerrsml(:,i,j)  
+              rerrsml(1:blk%e,i,j)  = rerrsml(1:blk%e,i,j)  
      &                       + shape(:,i)*WdetJ*error(:,j)
            enddo
 
-           rmassl(:,i) = rmassl(:,i) + shape(:,i)*WdetJ
+           rmassl(1:blk%e,i) = rmassl(1:blk%e,i) + shape(:,i)*WdetJ
         enddo
  
 c.... end of the loop over integration points
@@ -204,8 +217,8 @@ c
 c
 c.... assemble the diffusive flux residual 
 c
-        call local (rerrsm,   rerrsml,  ien,  10,'scatter ')
-        call local (rmass,   rmassl,  ien,  1,  'scatter ')
+        call local (blk,rerrsm,   rerrsml,  ien,  10,'scatter ')
+        call local (blk,rmass,   rmassl,  ien,  1,  'scatter ')
 c
 
       return

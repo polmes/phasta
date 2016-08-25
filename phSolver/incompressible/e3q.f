@@ -222,7 +222,7 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension yl(npro,nshl,ndof),    dwl(npro,nshl),
+        dimension yl(npro,nshl,ndof),    dwl(npro,nenl),
      &            shp(nshl,ngauss),      shgl(nsd,nshl,ngauss),
      &            xl(npro,nenl,nsd),
      &            ql(npro,nshl,nsd),     rmassl(npro,nshl)

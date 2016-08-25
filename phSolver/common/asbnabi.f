@@ -1,4 +1,4 @@
-      subroutine AsBNABI ( x,       shpb,
+      subroutine AsBNABI (blk, x,       shpb,
      &                   ienb,  iBCB)
 c
 c----------------------------------------------------------------------
@@ -11,9 +11,12 @@ c----------------------------------------------------------------------
 c
       use pvsQbi
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
-        dimension xlb(npro,nenl,nsd),    bnorm(npro,nsd),
-     &            rl(npro,nshl,nsd),     WdetJb(npro),
+        dimension xlb(bsz,nenl,nsd),    bnorm(npro,nsd),
+     &            rl(bsz,nshl,nsd),     WdetJb(npro),
      &            Wfactor(npro)
 
         dimension x(numnp,nsd),
@@ -34,13 +37,12 @@ c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
         if (ipord .gt. 1) then
-           write(*,*) 'blk not plumbed this far'
-           call getsgn(ienb,sgn)
+           call getsgn(blk,ienb,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
+        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
 c
 c.... get the boundary element residuals
 c
@@ -73,8 +75,8 @@ c
   	   ipt2=2
   	   ipt3=5
   	endif
-  	v1 = xlb(:,ipt2,:) - xlb(:,1,:)
-  	v2 = xlb(:,ipt3,:) - xlb(:,1,:)
+  	v1 = xlb(1:blk%e,ipt2,:) - xlb(1:blk%e,1,:)
+  	v2 = xlb(1:blk%e,ipt3,:) - xlb(1:blk%e,1,:)
 c
 c compute cross product
 c
@@ -127,11 +129,11 @@ c  Now lets calculate Integral N_(a:e)^i n_i d Gamma
 c
            do n = 1, nshlb
               nodlcl = lnode(n)
-              rl(:,nodlcl,1) = rl(:,nodlcl,1) + 
+              rl(1:blk%e,nodlcl,1) = rl(1:blk%e,nodlcl,1) + 
      &             shpfun(:,nodlcl) * bnorm(:,1) * WdetJb(:)
-              rl(:,nodlcl,2) = rl(:,nodlcl,2) + 
+              rl(1:blk%e,nodlcl,2) = rl(1:blk%e,nodlcl,2) + 
      &             shpfun(:,nodlcl) * bnorm(:,2) * WdetJb(:)
-              rl(:,nodlcl,3) = rl(:,nodlcl,3) + 
+              rl(1:blk%e,nodlcl,3) = rl(1:blk%e,nodlcl,3) + 
      &             shpfun(:,nodlcl) * bnorm(:,3) * WdetJb(:)
            enddo
 
@@ -139,7 +141,7 @@ c
 c
 c.... assemble the NABI vector
 c
-        call local (NABI,    rl,     ienb,   3,  'scatter ')
+        call local (blk,NABI,    rl,     ienb,   3,  'scatter ')
 c
 c     push the surf number which we have associated with boundary
 C     elements up to the global level in the array ndsurf
@@ -157,7 +159,7 @@ c
         end
 
 
-      subroutine AsBNASC ( x,       shpb,
+      subroutine AsBNASC (blk, x,       shpb,
      &                   ienb,  iBCB)
 c
 c----------------------------------------------------------------------
@@ -170,9 +172,12 @@ c----------------------------------------------------------------------
 c
       use pvsQbi
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
-        dimension xlb(npro,nenl,nsd),
-     &            rl(npro,nshl),         WdetJb(npro),
+        dimension xlb(bsz,nenl,nsd),
+     &            rl(bsz,nshl),         WdetJb(npro),
      &            Wfactor(npro)
 
         dimension x(numnp,nsd),
@@ -193,12 +198,12 @@ c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk,ienb,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
+        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
 c
 c.... get the boundary element residuals
 c
@@ -231,8 +236,8 @@ c
   	   ipt2=2
   	   ipt3=5
   	endif
-  	v1 = xlb(:,ipt2,:) - xlb(:,1,:)
-  	v2 = xlb(:,ipt3,:) - xlb(:,1,:)
+  	v1 = xlb(1:blk%e,ipt2,:) - xlb(1:blk%e,1,:)
+  	v2 = xlb(1:blk%e,ipt3,:) - xlb(1:blk%e,1,:)
 c
 c compute cross product
 c
@@ -284,14 +289,14 @@ c  Now lets calculate Integral N_(a:e) d Gamma
 c
            do n = 1, nshlb
               nodlcl = lnode(n)
-              rl(:,nodlcl) = rl(:,nodlcl) + shpfun(:,nodlcl) * WdetJb(:)         
+              rl(1:blk%e,nodlcl) = rl(1:blk%e,nodlcl) + shpfun(:,nodlcl) * WdetJb(:)         
            enddo
 
         enddo  ! quadrature point loop
 c
 c.... assemble the NASC vector
 c
-        call local (NASC,    rl,     ienb,   1,  'scatter ')
+        call local (blk,NASC,    rl,     ienb,   1,  'scatter ')
 c
 c     push the surf number which we have associated with boundary
 C     elements up to the global level in the array ndsurf

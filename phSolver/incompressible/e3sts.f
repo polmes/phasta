@@ -1,5 +1,4 @@
-! Lhs not converted as it is called from a differernt route than elmgmr....later
-      subroutine e3StsLhs( xl,  lStsVec )
+      subroutine e3StsLhs( blk,xl,  lStsVec )
 c-----------------------------------------------------------------------
 c 
 c  compute the terms needed for the left hand side matrices 
@@ -8,28 +7,30 @@ c
 c-----------------------------------------------------------------------
       use     stats
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
       
       integer i
-      real*8  lDir(npro,nshl,3), lStsVec(npro,nshl,nResDims),
-     &        xl(npro,nenl,3)
+      real*8  lDir(blk%e,nshl,3), lStsVec(bsz,nshl,nResDims),
+     &        xl(bsz,nenl,3)
 
       call e3StsDir(blk, xl,  lDir )
       
       do i = 1, nshl
-         lStsVec(:,i,1) = lDir(:,i,1) * lDir(:,i,1)
-         lStsVec(:,i,2) = lDir(:,i,2) * lDir(:,i,2)
-         lStsVec(:,i,3) = lDir(:,i,3) * lDir(:,i,3)
+         lStsVec(1:blk%e,i,1) = lDir(:,i,1) * lDir(:,i,1)
+         lStsVec(1:blk%e,i,2) = lDir(:,i,2) * lDir(:,i,2)
+         lStsVec(1:blk%e,i,3) = lDir(:,i,3) * lDir(:,i,3)
 
-         lStsVec(:,i,4) = lDir(:,i,1) * lDir(:,i,2)
-         lStsVec(:,i,5) = lDir(:,i,2) * lDir(:,i,3)
-         lStsVec(:,i,6) = lDir(:,i,3) * lDir(:,i,1)
+         lStsVec(1:blk%e,i,4) = lDir(:,i,1) * lDir(:,i,2)
+         lStsVec(1:blk%e,i,5) = lDir(:,i,2) * lDir(:,i,3)
+         lStsVec(1:blk%e,i,6) = lDir(:,i,3) * lDir(:,i,1)
 
-         lStsVec(:,i,7) = 0.0
-         lStsVec(:,i,8) = 0.0
-         lStsVec(:,i,9) = 0.0
-         lStsVec(:,i,10) = 0.0
-         lStsVec(:,i,11) = 0.0
+         lStsVec(1:blk%e,i,7) = 0.0
+         lStsVec(1:blk%e,i,8) = 0.0
+         lStsVec(1:blk%e,i,9) = 0.0
+         lStsVec(1:blk%e,i,10) = 0.0
+         lStsVec(1:blk%e,i,11) = 0.0
       enddo
       
       return
@@ -50,25 +51,25 @@ c-----------------------------------------------------------------------
       real*8  xl(bsz,blk%n,3),  rl(bsz,blk%s,ndof)
       real*8  lDir(blk%e,blk%s,3), lStsVec(bsz,blk%s,nResDims)
       
-      call e3StsDir( xl,  lDir )
+      call e3StsDir(blk, xl,  lDir )
       
       do i = 1, blk%s
-         lStsVec(:,i,1) = lDir(:,i,1) * rl(:,i,4)
-         lStsVec(:,i,2) = lDir(:,i,2) * rl(:,i,4)
-         lStsVec(:,i,3) = lDir(:,i,3) * rl(:,i,4)
+         lStsVec(1:blk%e,i,1) = lDir(:,i,1) * rl(1:blk%e,i,4)
+         lStsVec(1:blk%e,i,2) = lDir(:,i,2) * rl(1:blk%e,i,4)
+         lStsVec(1:blk%e,i,3) = lDir(:,i,3) * rl(1:blk%e,i,4)
       
-         lStsVec(:,i,4) = lDir(:,i,1) * rl(:,i,1)
-         lStsVec(:,i,5) = lDir(:,i,2) * rl(:,i,2)
-         lStsVec(:,i,6) = lDir(:,i,3) * rl(:,i,3)
+         lStsVec(1:blk%e,i,4) = lDir(:,i,1) * rl(1:blk%e,i,1)
+         lStsVec(1:blk%e,i,5) = lDir(:,i,2) * rl(1:blk%e,i,2)
+         lStsVec(1:blk%e,i,6) = lDir(:,i,3) * rl(1:blk%e,i,3)
       
-         lStsVec(:,i,7) = lDir(:,i,1) * rl(:,i,2)
-     &                  + lDir(:,i,2) * rl(:,i,1)
-         lStsVec(:,i,8) = lDir(:,i,2) * rl(:,i,3)
-     &                  + lDir(:,i,3) * rl(:,i,2)
-         lStsVec(:,i,9) = lDir(:,i,3) * rl(:,i,1)
-     &        + lDir(:,i,1) * rl(:,i,3)
-         lStsVec(:,i,10) = 0
-         lStsVec(:,i,11) = 0
+         lStsVec(1:blk%e,i,7) = lDir(:,i,1) * rl(1:blk%e,i,2)
+     &                  + lDir(:,i,2) * rl(1:blk%e,i,1)
+         lStsVec(1:blk%e,i,8) = lDir(:,i,2) * rl(1:blk%e,i,3)
+     &                  + lDir(:,i,3) * rl(1:blk%e,i,2)
+         lStsVec(1:blk%e,i,9) = lDir(:,i,3) * rl(1:blk%e,i,1)
+     &        + lDir(:,i,1) * rl(1:blk%e,i,3)
+         lStsVec(1:blk%e,i,10) = 0
+         lStsVec(1:blk%e,i,11) = 0
       enddo
       
 

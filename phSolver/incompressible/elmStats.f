@@ -7,6 +7,8 @@ c-----------------------------------------------------------------------
       use     pointer_data
       
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
       real*8  x(numnp,3)
       integer iBC(nshg), iper(nshg), ilwork(nlwork)
@@ -26,21 +28,27 @@ c
          nshl   = lcblk(10,iblk)
          ndofl  = lcblk(8,iblk)
          npro   = lcblk(1,iblk+1) - iel 
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 
-         allocate ( xl(npro,nenl,3)             )
-         allocate ( lStsVec(npro,nshl,nResDims) )
+         allocate ( xl(bsz,nenl,3)             )
+         allocate ( lStsVec(bsz,nshl,nResDims) )
 c
 c.... localize needed data
 c
-         call localx ( x,    xl,  mien(iblk)%p, nsd,   'gather  ' )
+         call localx (blk, x,    xl,  mien(iblk)%p, nsd,   'gather  ' )
 c
 c.... form the Lhs
 c
-         call e3StsLhs( xl, lStsVec )
+         call e3StsLhs(blk, xl, lStsVec )
 c
 c.... assemble
 c
-         call local (stsVec, lStsVec, mien(iblk)%p,
+         call local (blk,stsVec, lStsVec, mien(iblk)%p,
      &               nResDims, 'scatter ' ) 
 
          deallocate ( xl       )
