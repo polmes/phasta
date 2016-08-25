@@ -25,15 +25,15 @@ c
       dxdxi = zero
 c
        do n = 1, blk%n
-          dxdxi(1:blk%eblk%e,1,1) = dxdxi(1:blk%eblk%e,1,1) + xl(1:blk%eblk%e,n,1) * shgl(1:blk%eblk%e,1,n)
-          dxdxi(1:blk%eblk%e,1,2) = dxdxi(1:blk%eblk%e,1,2) + xl(1:blk%eblk%e,n,1) * shgl(1:blk%eblk%e,2,n)
-          dxdxi(1:blk%eblk%e,1,3) = dxdxi(1:blk%eblk%e,1,3) + xl(1:blk%eblk%e,n,1) * shgl(1:blk%eblk%e,3,n)
-          dxdxi(1:blk%eblk%e,2,1) = dxdxi(1:blk%eblk%e,2,1) + xl(1:blk%eblk%e,n,2) * shgl(1:blk%eblk%e,1,n)
-          dxdxi(1:blk%eblk%e,2,2) = dxdxi(1:blk%eblk%e,2,2) + xl(1:blk%eblk%e,n,2) * shgl(1:blk%eblk%e,2,n)
-          dxdxi(1:blk%eblk%e,2,3) = dxdxi(1:blk%eblk%e,2,3) + xl(1:blk%eblk%e,n,2) * shgl(1:blk%eblk%e,3,n)
-          dxdxi(1:blk%eblk%e,3,1) = dxdxi(1:blk%eblk%e,3,1) + xl(1:blk%eblk%e,n,3) * shgl(1:blk%eblk%e,1,n)
-          dxdxi(1:blk%eblk%e,3,2) = dxdxi(1:blk%eblk%e,3,2) + xl(1:blk%eblk%e,n,3) * shgl(1:blk%eblk%e,2,n)
-          dxdxi(1:blk%eblk%e,3,3) = dxdxi(1:blk%eblk%e,3,3) + xl(1:blk%eblk%e,n,3) * shgl(1:blk%eblk%e,3,n)
+          dxdxi(1:blk%e,1,1) = dxdxi(1:blk%e,1,1) + xl(1:blk%e,n,1) * shgl(1:blk%e,1,n)
+          dxdxi(1:blk%e,1,2) = dxdxi(1:blk%e,1,2) + xl(1:blk%e,n,1) * shgl(1:blk%e,2,n)
+          dxdxi(1:blk%e,1,3) = dxdxi(1:blk%e,1,3) + xl(1:blk%e,n,1) * shgl(1:blk%e,3,n)
+          dxdxi(1:blk%e,2,1) = dxdxi(1:blk%e,2,1) + xl(1:blk%e,n,2) * shgl(1:blk%e,1,n)
+          dxdxi(1:blk%e,2,2) = dxdxi(1:blk%e,2,2) + xl(1:blk%e,n,2) * shgl(1:blk%e,2,n)
+          dxdxi(1:blk%e,2,3) = dxdxi(1:blk%e,2,3) + xl(1:blk%e,n,2) * shgl(1:blk%e,3,n)
+          dxdxi(1:blk%e,3,1) = dxdxi(1:blk%e,3,1) + xl(1:blk%e,n,3) * shgl(1:blk%e,1,n)
+          dxdxi(1:blk%e,3,2) = dxdxi(1:blk%e,3,2) + xl(1:blk%e,n,3) * shgl(1:blk%e,2,n)
+          dxdxi(1:blk%e,3,3) = dxdxi(1:blk%e,3,3) + xl(1:blk%e,n,3) * shgl(1:blk%e,3,n)
        enddo
 c
 c.... compute the inverse of deformation gradient

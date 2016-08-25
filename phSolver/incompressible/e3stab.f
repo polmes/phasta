@@ -327,10 +327,12 @@ c
 c  Momentum tau
 c
 c-----------------------------------------------------------------------
-      subroutine e3uBar (rho,          ui,         dxidx,     
+      subroutine e3uBar (blk,rho,          ui,         dxidx,     
      &                   rLui,         rmu,        uBar )         
 
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
       real*8     rho(blk%e),            ui(blk%e,nsd),
      &           dxidx(blk%e,nsd,nsd),  rLui(blk%e,nsd),
@@ -392,9 +394,11 @@ c
 c-----------------------------------------------------------------------
 c get the metric tensor g_{ij}=xi_{k,i} xi_{k,j}.  
 c-----------------------------------------------------------------------
-      subroutine e3gijd( dxidx,  gijd )
+      subroutine e3gijd(blk, dxidx,  gijd )
       
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
       
       real*8  dxidx(blk%e,nsd,nsd),  gijd(blk%e,6),
      &        tmp1(blk%e),           tmp2(blk%e),
@@ -403,7 +407,7 @@ c
 c  form metric tensor g_{ij}=xi_{k,i} xi_{k,j}.  It is a symmetric
 c  tensor so we only form 6 components and use symmetric matrix numbering.
 c
-      if (lcsyst .ge. 2) then  ! note this makes wedges like hexs..should
+      if (blk%l .ge. 2) then  ! note this makes wedges like hexs..should
 c                                be corrected later
 
          gijd(:,1) = dxidx(:,1,1) * dxidx(:,1,1)
@@ -430,7 +434,7 @@ c
      &             + dxidx(:,2,3) * dxidx(:,2,3)
      &             + dxidx(:,3,3) * dxidx(:,3,3)
 c
-      else   if (lcsyst .eq. 1) then
+      else   if (blk%l .eq. 1) then
 c
 c  There is an invariance problem with tets 
 c  It is fixed by the following modifications to gijd 
@@ -473,7 +477,7 @@ c
      2             + dxidx(:,3,1) * tmp3
 c
       else
-         write(*,*) 'lcsyst eq',lcsyst,'not supported'
+         write(*,*) 'blk%l eq',blk%l,'not supported'
          stop
       endif
 

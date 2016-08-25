@@ -51,7 +51,7 @@ c
         real*8 lhsK(9,nnz_tot), lhsP(4,nnz_tot)
 
         real*8, allocatable, dimension(:,:,:,:) :: xKebe, xGoC
-        real*8, allocatable, dimension(:,:,:) :: rl, rerrl
+        real*8, allocatable, dimension(:,:,:) :: rl, rerrl,StsVecl
 
         real*8  rerr(nshg,10)
 
@@ -199,8 +199,8 @@ c
           allocate (tmpshp(nshl,MAXQPT))
           allocate (tmpshgl(nsd,nshl,MAXQPT))
 
-          tmpshp(1:%blks,:) = shp(blk%l,1:blk%s,:)
-          tmpshgl(:,1:%blks,:) = shgl(blk%l,:,1:blk%s,:)
+          tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
+          tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
 
           call AsIGMR (blk, y,                   ac,
      &                 x,                   mxmudmi(iblk)%p,      

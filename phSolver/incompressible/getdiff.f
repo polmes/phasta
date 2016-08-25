@@ -147,7 +147,7 @@ c
          diffus(:) = datmat(1,4,1)
       else if(iRANS.eq.-1) then ! solving SA model
          diffus(:) = datmat(1,2,1)
-         call AddSAVar(yl, shape, diffus)
+         call AddSAVar(bl,yl, shape, diffus)
       else if(iRANS.eq.-2)then ! solving KE model
          diffus(:) = datmat(1,2,1)
          if(isclr.eq.2) then
@@ -201,7 +201,7 @@ c
       include "eblock.h"
       type (LocalBlkData) blk
 c     INPUTS
-      double precision, intent(in), dimension(bks,blk%s,ndof) ::
+      double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
       double precision, intent(in), dimension(blk%e,blk%s) ::
      &     shape
@@ -284,13 +284,13 @@ c in all of these cases, eddy viscosity is calculated normally
 
 
 
-      subroutine AddSAVar(yl,shape,rmu)
+      subroutine AddSAVar(blk,yl,shape,rmu)
       use turbSA
       include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
 c     INPUTS
-      double precision, intent(in), dimension(bks,blk%s,ndof) ::
+      double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
       double precision, intent(in), dimension(blk%e,blk%s) ::
      &     shape
@@ -350,7 +350,7 @@ c in all these cases, the S-A variable is calculated normally
       include "eblock.h"
       type (LocalBlkData) blk
 c     INPUTS
-      double precision, intent(in), dimension(bks,blk%s,ndof) ::
+      double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
       double precision, intent(in), dimension(blk%e,blk%n) ::
      &     shape, dwl

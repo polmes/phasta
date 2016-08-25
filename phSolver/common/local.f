@@ -117,7 +117,7 @@ c.... end
 c
         end
 c
-        subroutine localx (global, rlocal, ien, n, code)
+        subroutine localx (blk,global, rlocal, ien, n, code)
 c
 c----------------------------------------------------------------------
 c
@@ -262,8 +262,8 @@ c This subroutine performs a vector gather/scatter operation on boundary only.
 c
 c input:
 c  global (nshg,n)             : global array
-c  rlocal (bsz,nshl,n)         : local array
-c  ien    (bsz,nshl)      : nodal connectivity
+c  rlocal (npro,nshl,n)         : local array
+c  ien    (npro,nshl)      : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -276,8 +276,8 @@ c----------------------------------------------------------------------
 c
         include "common.h"
 
-        dimension global(nshg,n),           rlocal(bsz,nshlb,n),
-     &            ien(bsz,nshl),           ientmp(bsz,nshl)
+        dimension global(nshg,n),           rlocal(npro,nshlb,n),
+     &            ien(npro,nshl),           ientmp(npro,nshl)
 c
         character*8 code
         
@@ -303,7 +303,7 @@ c
 
           do j = 1, n
             do i = 1, nshlb
-              rlocal(1:blk%e,i,j) = global(ien(1:blk%e,i),j)
+              rlocal(:,i,j) = global(ien(:,i),j)
             enddo
           enddo
 

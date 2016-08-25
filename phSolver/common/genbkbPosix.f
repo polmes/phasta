@@ -17,7 +17,7 @@ c
 
         integer, target, allocatable :: ientp(:,:),iBCBtp(:,:)
         real*8, target, allocatable :: BCBtp(:,:)
-        integer materb(ibksz)
+        integer materb(bsz)
         integer, target :: intfromfile(50) ! integers read from headers
         character*255 fname1
         integer :: descriptor, descriptorG, GPID, color, nfields
@@ -106,7 +106,7 @@ c
            endwhere
 
 
-           do n=1,neltp,ibksz 
+           do n=1,neltp,bsz 
               nelblb=nelblb+1
               npro= min(IBKSZ, neltp - n + 1)
 c

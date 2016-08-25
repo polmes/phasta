@@ -16,7 +16,7 @@ c-----------------------------------------------------------------------
 
       call e3StsDir(blk, xl,  lDir )
       
-      do i = 1, blk%s
+      do i = 1, nshl
          lStsVec(:,i,1) = lDir(:,i,1) * lDir(:,i,1)
          lStsVec(:,i,2) = lDir(:,i,2) * lDir(:,i,2)
          lStsVec(:,i,3) = lDir(:,i,3) * lDir(:,i,3)

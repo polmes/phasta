@@ -49,8 +49,8 @@ c
 c----------------------------------------------------------------------
 c
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      include "eblock.h"
+      type (LocalBlkData) blk
 
 c
 c  passed arrays
@@ -383,7 +383,7 @@ c
 c.... --------------------->  Element Metrics  <-----------------------
 c
 
-      call e3metric(intp, xl,         shgl,        dxidx,  
+      call e3metric(blk,intp, xl,         shgl,        dxidx,  
      &               shg,        WdetJ)
 
 c
@@ -462,7 +462,7 @@ c
              write(*,*) '(different uMods? correct value of rho?)'
           endif
           divqi=zero  ! until we reconstruct q_flow for scalar solve
-          call e3resStrongPDE(
+          call e3resStrongPDE( blk,
      &         aci,  u1,   u2,   u3,   Temp, rho,  x,
      &               g1yi, g2yi, g3yi,
      &         rLui, src, divqi)
@@ -470,8 +470,8 @@ c
           src(:,2)=u2           ! store u in src memory
           src(:,3)=u3           !
 c         e3uBar calculates Tau_M and assembles uBar
-          call getdiff(intp,dwl, yl, shpfun, xmudmi, xl, rmu, rho)
-          call e3uBar(rho, src, dxidx, rLui, rmu, uBar)
+          call getdiff(blk,ntp,dwl, yl, shpfun, xmudmi, xl, rmu, rho)
+          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
           u1=ubar(:,1)          ! the entire scalar residual
           u2=ubar(:,2)          ! is based on the modified
           u3=ubar(:,3)          ! velocity for conservation
