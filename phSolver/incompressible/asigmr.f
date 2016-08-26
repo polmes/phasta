@@ -15,6 +15,9 @@ c
       use rlssave  ! Use the resolved Leonard stresses at the nodes.
       use timedata    ! time series
       use turbsa                ! access to d2wall
+#ifdef HAVE_OMP
+      use omp_lib
+#endif
 
 
       include "common.h"
@@ -56,6 +59,13 @@ c
            write(*,*) 'not threaded'
            call getsgn(ien,sgn)
         endif
+#ifdef HAVE_OMP_debug
+!$OMP critical
+        id = omp_get_thread_num ( )
+        write (*,*) 'asigmr rank, th_num, iblk, ith ', myrank, id, blk%b, blk%t
+!$OMP end critical
+#endif
+
         
         call localy(blk,y,      yl,     ien,    ndofl,  'gather  ')
         call localy(blk,ac,    acl,     ien,    ndofl,  'gather  ')

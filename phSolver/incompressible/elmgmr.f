@@ -146,7 +146,7 @@ c
 c.... allocate the element matrices
 c
 #ifdef HAVE_OMP
-      nthreadBLK=8
+      nthreadBLK=4
 #else
       nthreadBLK=1
 #endif
@@ -162,7 +162,7 @@ c
       do iblko = 1, nelblk, nthreadBLK
 !$OMP parallel do
 !$OMP& private (ith,iblk,blk,nshc)
-        do iblk = iblko,iblk0+nthreadBLK
+        do iblk = iblko,iblko+nthreadBLK-1
          if(iblk.le.nelblk) then
           ith=1+iblk-iblko
 # else
@@ -171,14 +171,16 @@ c
 #endif
           iblock = iblk         ! used in local mass inverse (p>2)
           iblkts = iblk         ! used in timeseries
-          iel    = lcblk(1,iblk)
-          lelCat = lcblk(2,iblk)
-          lcsyst = lcblk(3,iblk)
-          iorder = lcblk(4,iblk)
+!          iel    = lcblk(1,iblk)
+!          lelCat = lcblk(2,iblk)
+!          lcsyst = lcblk(3,iblk)
+!          iorder = lcblk(4,iblk)
           mattyp = lcblk(7,iblk)
           ndofl  = lcblk(8,iblk)
           nsymdl = lcblk(9,iblk)
-          inum   = iel + npro - 1
+!          inum   = iel + npro - 1
+          blk%b   = iblk
+          blk%t   = ith
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
           blk%s   = lcblk(10,iblk)
           blk%e   = lcblk(1,iblk+1) - lcblk(1,iblk) 
@@ -219,7 +221,7 @@ c
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
         enddo !threaded loop closes here
-        iblkStop=min(nelblk, iblko+nthreadBLK
+        iblkStop=min(nelblk, iblko+nthreadBLK-1)
         do iblk = iblko,iblkStop
           ith=1+iblk-iblko
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
