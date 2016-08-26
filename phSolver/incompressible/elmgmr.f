@@ -145,6 +145,7 @@ c
 c
 c.... allocate the element matrices
 c
+      
 #ifdef HAVE_OMP
       BlockPool=8
 #else
@@ -160,6 +161,7 @@ c
       if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims,BlockPool) )
 #ifdef HAVE_OMP
       do iblko = 1, nelblk, BlockPool
+        rdelta=TMRC() 
 !$OMP parallel do
 !$OMP& private (ith,iblk,blk,nshc)
         do iblk = iblko,iblko+BlockPool-1
@@ -167,6 +169,7 @@ c
           ith=1+iblk-iblko
 # else
       do iblk = 1, nelblk
+          rdelta=TMRC() 
           ith=1
 #endif
           iblock = iblk         ! used in local mass inverse (p>2)
@@ -221,6 +224,10 @@ c
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
         enddo !threaded loop closes here
+      rdelta = TMRC() - rdelta
+      rthreads = rthreads + rdelta
+      rdelta = TMRC() 
+
         iblkStop=min(nelblk, iblko+BlockPool-1)
         do iblk = iblko,iblkStop
           ith=1+iblk-iblko
@@ -230,6 +237,10 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+#else
+      rdelta = TMRC() - rdelta
+      rthreads = rthreads + rdelta
+      rdelta = TMRC() 
 #endif
 c
 c.... assemble the residual
@@ -259,6 +270,9 @@ c
 #ifdef HAVE_OMP
         enddo ! inner thread assembly loop
 #endif
+        rdelta = TMRC() - rdelta
+        rassembly = rassembly + rdelta
+
       enddo ! outer loop (only if flat MPI
       deallocate ( rl  )
       if(lhs.eq.1) then

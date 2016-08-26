@@ -184,6 +184,7 @@ extern "C" {
     double rCommu;
     double rCommuScal;
     double rthreads;
+    double rassembly;
   } mpistats ;
 
   extern struct { 

@@ -96,7 +96,7 @@ c
         xG_qp=zero
 #endif
 ! time just loop 
-       rdelta = TMRC() 
+!       rdelta = TMRC() 
 #ifdef HAVE_OMP_QP
 !$OMP  parallel do 
 !$OMP& private (ith,sgn,shpfun,shdrv,rmu,rho,aci,g1yi,g2yi,g3yi)
@@ -173,8 +173,8 @@ c.... end of integration loop
 c
       enddo
 !just loop for now
-      rdelta = TMRC() - rdelta
-      rthreads = rthreads + rdelta
+!      rdelta = TMRC() - rdelta
+!      rthreads = rthreads + rdelta
 !just
 #ifdef HAVE_OMP_QP
 c
