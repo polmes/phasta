@@ -27,7 +27,7 @@ c
 c the common block nomodule holds all the things which have been removed
 c from different modules
      
-        integer seqsize, stepseq,bsz
+        integer seqsize, stepseq,bsz,BlockPool
         integer consrv_sclr_conv_vel
         integer spongecontinuity, spongemomentum1, spongemomentum2
         integer spongeenergy, spongemomentum3
@@ -50,7 +50,7 @@ c from different modules
      &  numRCRSrfs, nsrflistRCR(0:MAXSURF),ircrfile,
      &  ideformwall, iwallmassfactor, iwallstiffactor, iviscflux 
         common /sequence/ seqsize, stepseq(100)
-	common /workfc/ master, numpe, myrank
+	common /workfc/ master, numpe, myrank,BlockPool
 	common /fronts/ maxfront, nlwork
 	common /newdim/ nshgt, minowned,maxowned, numper, nshg0
 	common /timer4/ birth, death, comtim

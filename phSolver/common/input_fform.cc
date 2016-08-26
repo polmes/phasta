@@ -82,6 +82,8 @@ int input_fform(phSolver::Input& inp)
 	}	
 #endif    
 
+    workfc.BlockPool = (int)inp.GetValue("Number of Blocks to Pool"); 
+
 /////////////////////////////chen Sep 25 2009  Flow Control Parameters ////////
 // Take BC from IC at inlet
       ctrlvari.iI2Binlet = (int)inp.GetValue("Take BC from IC at Inlet");

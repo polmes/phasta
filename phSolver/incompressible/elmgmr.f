@@ -146,23 +146,23 @@ c
 c.... allocate the element matrices
 c
 #ifdef HAVE_OMP
-      nthreadBLK=4
+      BlockPool=8
 #else
-      nthreadBLK=1
+      BlockPool=1
 #endif
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
-      allocate ( rl (bsz,nshl,ndof,nthreadBLK) )
+      allocate ( rl (bsz,nshl,ndof,BlockPool) )
       if (lhs .eq. 1) then
-        allocate ( xKebe(bsz,9,nshl,nshl,nthreadBLK) )
-        allocate ( xGoC (bsz,4,nshl,nshl,nthreadBLK) )
+        allocate ( xKebe(bsz,9,nshl,nshl,BlockPool) )
+        allocate ( xGoC (bsz,4,nshl,nshl,BlockPool) )
       endif
-      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshl,6,nthreadBLK) )
-      if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims,nthreadBLK) )
+      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshl,6,BlockPool) )
+      if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims,BlockPool) )
 #ifdef HAVE_OMP
-      do iblko = 1, nelblk, nthreadBLK
+      do iblko = 1, nelblk, BlockPool
 !$OMP parallel do
 !$OMP& private (ith,iblk,blk,nshc)
-        do iblk = iblko,iblko+nthreadBLK-1
+        do iblk = iblko,iblko+BlockPool-1
          if(iblk.le.nelblk) then
           ith=1+iblk-iblko
 # else
@@ -190,20 +190,20 @@ c
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (rl)
-            allocate ( rl (bsz,blk%s,ndof,nthreadBLK) )
+            allocate ( rl (bsz,blk%s,ndof,BlockPool) )
             if (lhs .eq. 1) then
               deallocate (xKebe)   ! below (local) easier if blk%s is correct size
               deallocate (xGoC)
-              allocate ( xKebe(bsz,9,blk%s,blk%s,nthreadBLK) )
-              allocate ( xGoC (bsz,4,blk%s,blk%s,nthreadBLK) )
+              allocate ( xKebe(bsz,9,blk%s,blk%s,BlockPool) )
+              allocate ( xGoC (bsz,4,blk%s,blk%s,BlockPool) )
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
-              allocate ( rerrl (bsz,blk%s,6,nthreadBLK) )
+              allocate ( rerrl (bsz,blk%s,6,BlockPool) )
             endif
             if ( stsResFlg .eq. 1 ) then
               deallocate(StsVecl)
-              allocate ( StsVecl (bsz,blk%s,nResDims,nthreadBLK) )
+              allocate ( StsVecl (bsz,blk%s,nResDims,BlockPool) )
             endif
           endif   ! different topology endif
 c
@@ -221,7 +221,7 @@ c
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
         enddo !threaded loop closes here
-        iblkStop=min(nelblk, iblko+nthreadBLK-1)
+        iblkStop=min(nelblk, iblko+BlockPool-1)
         do iblk = iblko,iblkStop
           ith=1+iblk-iblko
           blk%n   = lcblk(5,iblk) ! no. of vertices per element

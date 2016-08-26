@@ -91,6 +91,7 @@ extern "C" {
     int master;
     int numpe;
     int myrank;
+    int BlockPool;
   } workfc ;
 
   extern struct { 
