@@ -117,7 +117,10 @@ c
       call initmpistat()  ! see bottom of code to see just how easy it is
 
       call initmemstat() 
-      if(myrank.le.4) call hello()
+      if(myrank.lt.4) call hello()
+#ifdef HAVE_OMP
+      if(myrank.eq.0) write(*,*) 'Number of Blocks to Pool = ',BlockPool 
+#endif
       rthreads = 0.0
 
 !--------------------------------------------------------------------
