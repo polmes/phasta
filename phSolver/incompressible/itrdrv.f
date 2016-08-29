@@ -543,8 +543,8 @@ c
 c .. write out the instantaneous solution
 c
 2001    continue  ! we could get here by 2001 label if user requested stop
-        if (((irs .ge. 1) .and. (mod(lstep, ntout) .eq. 0)) .or.
-     &      istep.eq.nstep(itseq)) then
+        if ((irs .ge. 1) .and. ((mod(lstep, ntout) .eq. 0) .or.
+     &      (istep.eq.nstep(itseq)))) then
  
 !so that we can see progress in force file close it so that it flushes
 !and  then reopen in append mode
@@ -646,8 +646,8 @@ c
 !   soon.... but don't forget to change the field counter in
 !  new_interface.cc
 !
-        if (((irs .ge. 1) .and. (mod(lstep, ntout) .eq. 0)) .or.
-     &      istep.eq.nstep(itseq)) then
+        if ((irs .ge. 1) .and. (((mod(lstep, ntout) .eq. 0)) .or.
+     &      (istep.eq.nstep(itseq)))) then
 
           lesId   = numeqns(1)
           if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)

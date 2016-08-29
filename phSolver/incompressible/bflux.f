@@ -400,8 +400,8 @@ c         call Write_boundaryflux(myrank,lstep,nshg,ndof,rtmp(:,1:ndof))
 c     wallss vectors into the restart file(s)
 
         ntoutv=ntout
-        if ((irs .ge. 1) .and. (mod(lstep, ntoutv) .eq. 0) .or. 
-     &       istep .eq. nstep(itseq) ) then
+        if ((irs .ge. 1) .and. ((mod(lstep, ntoutv) .eq. 0) .or. 
+     &       (istep .eq. nstep(itseq) ))) then
 
             call write_field(myrank,'a','wss',3,
      &                       wallssVec,'d',nshg,ndofwss,lstep)
