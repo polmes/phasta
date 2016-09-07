@@ -29,6 +29,7 @@ c
 			      ! block-row of our matrix
 		c = col(i)    ! starting point to look for the matching column
 		n = col(i+1) - c  !length of the list of entries in rowp
+cdir$ ivdep
 		do b = 1, nshl ! local variable number tangent respect
 			       ! to
 c function that searches row until it finds the match that gives the
@@ -41,20 +42,26 @@ c                   dimension egmass(npro,ndof,nenl,ndof,nenl)
 c
 c compressible      lhsT(1:5,1:5,k)=lhsT(1:5,1:5,k)+egmass(e,1:5,aa,1:5,b)
 c
-		    lhsK(1,k) = lhsK(1,k) + xKebe(e,1,aa,b)
-		    lhsK(2,k) = lhsK(2,k) + xKebe(e,2,aa,b)
-		    lhsK(3,k) = lhsK(3,k) + xKebe(e,3,aa,b)
-		    lhsK(4,k) = lhsK(4,k) + xKebe(e,4,aa,b)
-		    lhsK(5,k) = lhsK(5,k) + xKebe(e,5,aa,b)
-		    lhsK(6,k) = lhsK(6,k) + xKebe(e,6,aa,b)
-		    lhsK(7,k) = lhsK(7,k) + xKebe(e,7,aa,b)
-		    lhsK(8,k) = lhsK(8,k) + xKebe(e,8,aa,b)
-		    lhsK(9,k) = lhsK(9,k) + xKebe(e,9,aa,b)
+                    do l=1,9
+		      lhsK(l,k) = lhsK(l,k) + xKebe(e,l,aa,b)
+                    enddo
+!	    lhsK(1,k) = lhsK(1,k) + xKebe(e,1,aa,b)
+!	    lhsK(2,k) = lhsK(2,k) + xKebe(e,2,aa,b)
+!	    lhsK(3,k) = lhsK(3,k) + xKebe(e,3,aa,b)
+!	    lhsK(4,k) = lhsK(4,k) + xKebe(e,4,aa,b)
+!	    lhsK(5,k) = lhsK(5,k) + xKebe(e,5,aa,b)
+!	    lhsK(6,k) = lhsK(6,k) + xKebe(e,6,aa,b)
+!	    lhsK(7,k) = lhsK(7,k) + xKebe(e,7,aa,b)
+!	    lhsK(8,k) = lhsK(8,k) + xKebe(e,8,aa,b)
+!	    lhsK(9,k) = lhsK(9,k) + xKebe(e,9,aa,b)
 c
-		    lhsP(1,k) = lhsP(1,k) + xGoC(e,1,aa,b)
-		    lhsP(2,k) = lhsP(2,k) + xGoC(e,2,aa,b)
-		    lhsP(3,k) = lhsP(3,k) + xGoC(e,3,aa,b)
-		    lhsP(4,k) = lhsP(4,k) + xGoC(e,4,aa,b)
+                    do l=1,4
+                      lhsP(l,k) = lhsP(l,k) + xGoC(e,l,aa,b)
+                    enddo
+!	    lhsP(1,k) = lhsP(1,k) + xGoC(e,1,aa,b)
+!	    lhsP(2,k) = lhsP(2,k) + xGoC(e,2,aa,b)
+!	    lhsP(3,k) = lhsP(3,k) + xGoC(e,3,aa,b)
+!	    lhsP(4,k) = lhsP(4,k) + xGoC(e,4,aa,b)
 		enddo
 	    enddo
 	enddo
