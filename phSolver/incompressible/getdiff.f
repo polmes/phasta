@@ -213,25 +213,22 @@ c     LOCALS
      &     wallnode
       integer e, n
       double precision xki, xki3, fv1, evisc
+  
+      if(itwmod.eq.-2) then
+        do e = 1, blk%e
+c         assume no wall nodes on this element
+          wallnode(:) = .false.
+c         mark the wall nodes for this element, if there are any
+          do n = 1, blk%s
+            u1=yl(e,n,2)
+            u2=yl(e,n,3)
+            u3=yl(e,n,4)
+            if((u1.eq.zero).and.(u2.eq.zero).and.(u3.eq.zero)) then
+              wallnode(n)=.true.
+            endif
+          enddo
 c
-c     Loop over elements in this block
-      do e = 1, blk%e
-c        assume no wall nodes on this element
-         wallnode(:) = .false.
-         if(itwmod.eq.-2) then  ! effective viscosity
-c           mark the wall nodes for this element, if there are any
-            do n = 1, blk%s
-               u1=yl(e,n,2)
-               u2=yl(e,n,3)
-               u3=yl(e,n,4)
-               if((u1.eq.zero).and.(u2.eq.zero).and.(u3.eq.zero))
-     &              then
-                  wallnode(n)=.true.
-               endif
-            enddo
-         endif
-c
-         if( any(wallnode(:)) ) then
+          if( any(wallnode(:)) ) then
 c if there are wall nodes for this elt, then we are using effective-
 c viscosity near-wall modeling, and eddy viscosity has been stored
 c at the wall nodes in place of the spalart-allmaras variable; the
@@ -240,10 +237,10 @@ c wall values
             evisc = zero
             nwnode=0
             do n = 1, blk%s
-               if(wallnode(n)) then
-                  evisc = evisc + yl(e,n,6)
-                  nwnode = nwnode + 1
-               endif
+              if(wallnode(n)) then
+                evisc = evisc + yl(e,n,6)
+                nwnode = nwnode + 1
+              endif
             enddo
             evisc = evisc/nwnode
             rmu(e) = rmu(e) + abs(evisc)
@@ -263,22 +260,51 @@ c$$$               xki3   = xki * xki * xki
 c$$$               fv1    = xki3 / (xki3 + saCv1P3)
 c$$$               rmu(e) = rmu(e) + fv1*abs(Turb)               
 c$$$               rmu(e) = rmu(e) + abs(evisc)
-         else
-c else one of the following is the case:
-c   using effective-viscosity, but no wall nodes on this elt
-c   using slip-velocity
-c   using no model; walls are resolved 
-c in all of these cases, eddy viscosity is calculated normally
+          else !no wall nodes
             Turb = zero
             do n = 1, blk%s
-               Turb = Turb + shape(e,n) * yl(e,n,6)
+              Turb = Turb + shape(e,n) * yl(e,n,6)
             enddo
             xki    = abs(Turb)/rmu(e)
             xki3   = xki * xki * xki
             fv1    = xki3 / (xki3 + saCv1P3)
             rmu(e) = rmu(e) + fv1*abs(Turb)
-         endif
-      enddo                     ! end loop over elts
+          endif       
+        enddo !loop over elements  
+      else
+c else one of the following is the case:
+c   using slip-velocity
+c   using no wall model; walls are resolved 
+c in all of these cases, eddy viscosity is calculated normally
+c
+c     Loop over elements in this block
+        if(blk%s.eq.4) then !hard code tets
+          do e = 1, blk%e
+            Turb=shape(e,1)*yl(e,1,6)
+     &          +shape(e,2)*yl(e,2,6)
+     &          +shape(e,3)*yl(e,3,6)
+     &          +shape(e,4)*yl(e,4,6)
+            Turb   = abs(Turb)
+            xki    = Turb/rmu(e)
+            xki3   = xki * xki * xki
+            fv1    = xki3 / (xki3 + saCv1P3)
+            rmu(e) = rmu(e) + fv1*Turb
+          enddo
+            
+        else
+          do e = 1, blk%e
+            Turb = zero
+            do n = 1, blk%s
+               Turb = Turb + shape(e,n) * yl(e,n,6)
+            enddo
+            Turb   = abs(Turb)
+            xki    = Turb/rmu(e)
+            xki3   = xki * xki * xki
+            fv1    = xki3 / (xki3 + saCv1P3)
+            rmu(e) = rmu(e) + fv1*Turb
+          enddo                     ! end loop over elts
+        endif
+      endif
       return
       end subroutine AddEddyViscSA
 

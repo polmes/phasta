@@ -343,6 +343,7 @@ c
 	do i = nNodes, 1, -1
 c
 	    tmp = 0
+cdir$ ivdep
 	    do k = col(i), col(i+1)-1
 		j = row(k)
 c
@@ -384,6 +385,7 @@ c
 	do i = nNodes, 1, -1
 c
 	    tmp = 0
+cdir$ ivdep
 	    do k = col(i), col(i+1)-1
 		j = row(k)
 c
@@ -509,6 +511,7 @@ c
 	do i = nNodes, 1, -1
 c
 	    tmp = 0
+cdir$ ivdep
 	    do k = col(i), col(i+1)-1
 		tmp = tmp + lhs(k) * p(row(k))
 	    enddo

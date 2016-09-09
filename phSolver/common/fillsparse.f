@@ -114,6 +114,7 @@ c
                          ! to the corresponding location in row
           n = col(i+1) - c   !number of nonzero blocks in the row
           r = (aa-1)*nflow   !starting index of the ath node in EGmass
+cdir$ ivdep
           do b = 1, nshl     
             s = (b-1)*nflow  !starting index of the bth node's 
                              !contribution to node aa. 
@@ -174,6 +175,7 @@ c
                          ! to the corresponding location in row
           n = col(i+1) - c   !number of nonzero blocks in the row
 !          r = (aa-1)*nflow   !starting index of the ath node in EGmass
+cdir$ ivdep
           do b = 1, nshl     
 !            s = (b-1)*nflow  !starting index of the bth node's 
                              !contribution to node aa. 
@@ -225,6 +227,7 @@ c
         i = ien(e,aa)
         c = col(i)
         n = col(i+1) - c
+cdir$ ivdep
         do b = 1, nshl
             k = sparseloc( row(c), n, ien(e,b) ) + c-1
 c

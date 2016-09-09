@@ -81,6 +81,13 @@ c
           GradV = zero
         endif
         rmass = zero
+
+      nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
+      allocate (tmpshp(nshlc,MAXQPT))
+      allocate (tmpshgl(nsd,nshlc,MAXQPT))
+      lcsyst= lcblk(3,1)
+      tmpshp(1:nshlc,:) = shp(lcsyst,1:nshlc,:)
+      tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
       
         do iblk = 1, nelblk
           iel    = lcblk(1,iblk)
@@ -100,20 +107,30 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
+            nshlc=blk%s
+            deallocate (tmpshp)
+            deallocate (tmpshgl)
+            allocate (tmpshp(blk%s,MAXQPT))
+            allocate (tmpshgl(nsd,blk%s,MAXQPT))
+            tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
+            tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
+          endif
 c     
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
 
+
           if(iter == nitr .and. icomputevort == 1 ) then
             call AsIqGradV (blk,y,                x,
-     &                   shp(lcsyst,1:nshl,:), 
-     &                   shgl(lcsyst,:,1:nshl,:),
+     &                   tmpshp,
+     &                   tmpshgl,
      &                   mien(iblk)%p,
      &                   GradV)
           endif
           call AsIq (blk,y,                x,                       
-     &                   shp(lcsyst,1:nshl,:), 
-     &                   shgl(lcsyst,:,1:nshl,:),
+     &                   tmpshp,
+     &                   tmpshgl,
      &                   mien(iblk)%p,     mxmudmi(iblk)%p,  
      &                   qres,             rmass )
         enddo
@@ -125,6 +142,8 @@ c
         if(iter == nitr .and. icomputevort == 1 ) then
           call solveGradV( rmass, GradV, iBC, iper, ilwork )
         endif
+        deallocate (tmpshp)
+        deallocate (tmpshgl)
 c
       endif 
 c
@@ -152,13 +171,18 @@ c
       BlockPool=1
 #endif
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
-      allocate ( rl (bsz,nshl,ndof,BlockPool) )
+      allocate ( rl (bsz,nshlc,ndof,BlockPool) )
+      allocate (tmpshp(nshlc,MAXQPT))
+      allocate (tmpshgl(nsd,nshlc,MAXQPT))
+      lcsyst= lcblk(3,1)
+      tmpshp(1:nshlc,:) = shp(lcsyst,1:nshlc,:)
+      tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
       if (lhs .eq. 1) then
-        allocate ( xKebe(bsz,9,nshl,nshl,BlockPool) )
-        allocate ( xGoC (bsz,4,nshl,nshl,BlockPool) )
+        allocate ( xKebe(bsz,9,nshlc,nshlc,BlockPool) )
+        allocate ( xGoC (bsz,4,nshlc,nshlc,BlockPool) )
       endif
-      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshl,6,BlockPool) )
-      if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshl,nResDims,BlockPool) )
+      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshlc,6,BlockPool) )
+      if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshlc,nResDims,BlockPool) )
 #ifdef HAVE_OMP
       do iblko = 1, nelblk, BlockPool
         rdelta=TMRC() 
@@ -194,6 +218,12 @@ c
             nshlc=blk%s
             deallocate (rl)
             allocate ( rl (bsz,blk%s,ndof,BlockPool) )
+            deallocate (tmpshp)
+            deallocate (tmpshgl)
+            allocate (tmpshp(blk%s,MAXQPT))
+            allocate (tmpshgl(nsd,blk%s,MAXQPT))
+            tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
+            tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
             if (lhs .eq. 1) then
               deallocate (xKebe)   ! below (local) easier if blk%s is correct size
               deallocate (xGoC)
@@ -212,10 +242,11 @@ c
 c
 c.... compute and assemble the residual and tangent matrix
 c
+
           call AsIGMR (blk, y,                   ac,
      &                 x,                   mxmudmi(iblk)%p,      
-     &                 shp(blk%l,1:blk%s,:),
-     &                 shgl(blk%l,:,1:blk%s,:),
+     &                 tmpshp,
+     &                 tmpshgl,
      &                 mien(iblk)%p,
      &                 rl(:,:,:,ith),
      &                 qres,                xKebe(:,:,:,:,ith),
@@ -253,7 +284,8 @@ c
             call local( blk, stsVec, StsVecl(:,:,:,ith), mien(iblk)%p, nResDims, 'scatter ')
           endif
           if ( ierrcalc .eq. 1 ) then
-            call local (blk, rerr, rerrl(:,:,:,ith),  mien(iblk)%p, 6, 'scatter ')
+            call local (blk, rerr, rerrl(:,:,:,ith),  
+     &                  mien(iblk)%p, 6, 'scatter ')
           endif
           npro=blk%e  !npro still used in these arrays
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
@@ -275,6 +307,8 @@ c
 
       enddo ! outer loop (only if flat MPI
       deallocate ( rl  )
+      deallocate (tmpshp)
+      deallocate (tmpshgl)
       if(lhs.eq.1) then
         deallocate ( xKebe )
         deallocate ( xGoC  )
@@ -488,6 +522,8 @@ c
         real*8 lhsS(nnz_tot)
 
         real*8, allocatable, dimension(:,:,:) :: xSebe
+        real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
+        real*8, allocatable :: tmpshpb(:,:), tmpshglb(:,:,:)
 c
 c.... set up the timer
 c
@@ -504,6 +540,13 @@ c of the diffusive flux vector, q, and lumped mass matrix, rmass
 c
         qres = zero
         rmass = zero
+
+      nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
+      allocate (tmpshp(nshlc,MAXQPT))
+      allocate (tmpshgl(nsd,nshlc,MAXQPT))
+      lcsyst= lcblk(3,1)
+      tmpshp(1:nshlc,:) = shp(lcsyst,1:nshlc,:)
+      tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
         
         do iblk = 1, nelblk
           iel    = lcblk(1,iblk)
@@ -521,13 +564,22 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
+            nshlc=blk%s
+            deallocate (tmpshp)
+            deallocate (tmpshgl)
+            allocate (tmpshp(blk%s,MAXQPT))
+            allocate (tmpshgl(nsd,blk%s,MAXQPT))
+            tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
+            tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
+          endif
 c     
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
 
               call AsIqSclr (blk,y,                   x,                       
-     &                       shp(lcsyst,1:nshl,:), 
-     &                       shgl(lcsyst,:,1:nshl,:),
+     &                       tmpshp, 
+     &                       tmpshgl, 
      &                       mien(iblk)%p,     qres,                   
      &                       rmass )
        
@@ -537,6 +589,9 @@ c
 c.... form the diffusive flux approximation
 c
            call qpbcSclr ( rmass, qres, iBC, iper, ilwork )       
+
+            deallocate (tmpshp)
+            deallocate (tmpshgl)
 c
         endif 
 c
@@ -552,6 +607,13 @@ c
         if ((impl(1)/10) .eq. 0) then   ! no flow solve so flxID was not zeroed
            flxID = zero
         endif
+
+      nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
+      allocate (tmpshp(nshlc,MAXQPT))
+      allocate (tmpshgl(nsd,nshlc,MAXQPT))
+      lcsyst= lcblk(3,1)
+      tmpshp(1:nshlc,:) = shp(lcsyst,1:nshlc,:)
+      tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
 c
 c.... loop over the element-blocks
 c
@@ -571,6 +633,15 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
+            nshlc=blk%s
+            deallocate (tmpshp)
+            deallocate (tmpshgl)
+            allocate (tmpshp(blk%s,MAXQPT))
+            allocate (tmpshgl(nsd,blk%s,MAXQPT))
+            tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
+            tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
+          endif
 c
 c.... allocate the element matrices
 c
@@ -580,8 +651,8 @@ c.... compute and assemble the residual and tangent matrix
 c
           call AsIGMRSclr(blk,y,                   ac,
      &                 x,
-     &                 shp(lcsyst,1:nshl,:), 
-     &                 shgl(lcsyst,:,1:nshl,:),
+     &                 tmpshp,
+     &                 tmpshgl,
      &                 mien(iblk)%p,        res,
      &                 qres,                xSebe, mxmudmi(iblk)%p )
 c
@@ -598,6 +669,8 @@ c
 c.... end of interior element loop
 c
        enddo
+       deallocate (tmpshp)
+       deallocate (tmpshgl)
 
 c
 c.... add in lumped mass contributions if needed
@@ -663,12 +736,21 @@ c
 c.... compute and assemble the residuals corresponding to the 
 c     boundary integral
 c
+          allocate (tmpshpb(nshl,MAXQPT))
+          allocate (tmpshglb(nsd,nshl,MAXQPT))
+          
+          tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
+          tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
+
           call AsBSclr (blk,y,                       x,
-     &                  shpb(lcsyst,1:nshl,:),
-     &                  shglb(lcsyst,:,1:nshl,:),
+     &                  tmpshpb, 
+     &                  tmpshglb, 
      &                  mienb(iblk)%p,           mmatb(iblk)%p,
      &                  miBCB(iblk)%p,           mBCB(iblk)%p,
      &                  res)
+
+          deallocate(tmpshpb)
+          deallocate(tmpshglb)
 c
 c.... end of boundary element loop
 c
