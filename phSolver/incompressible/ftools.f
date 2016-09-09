@@ -290,16 +290,29 @@ c row and column exchanged
 c--------------------------
 c
         subroutine fMtxBlkDot2( x, y, c, m, n )
+        include "mkl.fi"
+        include "blas.f90"
+
 c
 c.... Data declaration
 c
         implicit none
         integer m,      n
-        real*8  x(n,m), y(n),   c(m)
+        real*8  x(n,m), y(n),   c(m), d(m)
+        real*8 dsdot, xt(n)
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
         integer i,      j,      m1
+!!!!!!!!!!!$OMP simd
+cdir$ ivdep
+        j=1
+        do i=1,m
+          xt(:)=x(:,i)
+          d(i)=dsdot(n,xt,j,y,j)
+!          d(i)=dsdot(n,x(j,i),j,y,j)
+        enddo
+
 c
 c.... Determine the left overs
 c
