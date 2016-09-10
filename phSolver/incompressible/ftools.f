@@ -279,6 +279,7 @@ c
             if ( x(i,j) .ne. 0 ) x(i,j) = 1. / x(i,j)
           enddo
         enddo
+
 c
         return
         end
@@ -290,16 +291,41 @@ c row and column exchanged
 c--------------------------
 c
         subroutine fMtxBlkDot2( x, y, c, m, n )
+
+        implicit none
+
 c
 c.... Data declaration
 c
-        implicit none
         integer m,      n
-        real*8  x(n,m), y(n),   c(m)
+        real*8  x(n,m), y(n),   c(m), d(m)
+        real*8 ddot, alpha,beta
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
-        integer i,      j,      m1
+        integer i,      j,      m1,lda,incx,incy
+
+        alpha=1.0
+        beta=0.0
+        incx=1
+        incy=1
+        lda=n
+!   note matrix is expected to be a(m,n) but ours is x(n,m)
+!   I assume we handle this by n<->m in arguments 2, 3
+!   since m is the number of rows of A NOT A^T 
+!  further complicating things A is x a 
+!  their x is our y
+!  their y is our output 
+!  them    y=alpha*A^T x +beta*y
+!  us     d=alpha*x^T y +beta*d
+       if(m.gt.25) then
+          call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
+       else
+          do i=1,m
+            c(i)=ddot(n,x(1,i),1,y,1)
+          enddo
+       endif
+       return
 c
 c.... Determine the left overs
 c
