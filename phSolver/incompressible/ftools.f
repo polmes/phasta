@@ -291,25 +291,36 @@ c row and column exchanged
 c--------------------------
 c
         subroutine fMtxBlkDot2( x, y, c, m, n )
+ 
 
         implicit none
-
+        include "kmkl.fi"
 c
 c.... Data declaration
 c
         integer m,      n
         real*8  x(n,m), y(n),   c(m), d(m)
-        real*8 ddot, alpha,beta
+!        real*8 ddot, alpha,beta
+        real*8 alpha,beta
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
         integer i,      j,      m1,lda,incx,incy
+        integer iwork,      icut
 
-        alpha=1.0
-        beta=0.0
-        incx=1
-        incy=1
-        lda=n
+        iwork=0 !0 chooses original form
+!        iwork=1 ! chooses cut at 4 change original form
+!        iwork=2 ! chooses ddot only ALSO SET ICUT=200
+!        iwork=3 ! chooses dgemmv only ALSO NEED ICUT=0
+!        iwork=4 ! uses specific ICUT value for shift to dgemv
+        icut=96
+        if(iwork.ge.2) then
+          alpha=1.0
+          beta=0.0
+          incx=1
+          incy=1
+          lda=n
+        
 !   note matrix is expected to be a(m,n) but ours is x(n,m)
 !   I assume we handle this by n<->m in arguments 2, 3
 !   since m is the number of rows of A NOT A^T 
@@ -318,14 +329,20 @@ c
 !  their y is our output 
 !  them    y=alpha*A^T x +beta*y
 !  us     d=alpha*x^T y +beta*d
-       if(m.gt.25) then
-          call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
-       else
-          do i=1,m
-            c(i)=ddot(n,x(1,i),1,y,1)
-          enddo
+         if(m.gt.icut) then
+            call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
+         else
+            iwork=0
+            goto 1
+cdir$ ivdep
+            do i=1,m
+              c(i)=ddot(n,x(1,i),1,y,1)
+            enddo
+         endif
+         return
        endif
-       return
+1      continue 
+       if(iwork.eq.0) then
 c
 c.... Determine the left overs
 c
@@ -487,6 +504,72 @@ c
             c(j+6) = tmp7
             c(j+7) = tmp8
         enddo
+        endif
+        if(iwork.eq.1) then ! try a max 4 version of original
+c
+c.... Determine the left overs
+c
+        m1 = mod(m,4) + 1
+
+c
+c.... Do the small pieces
+c
+        goto ( 4001, 1001, 2001, 3001 ) m1
+c
+1001    continue
+        tmp1 = 0
+        do i = 1, n
+            tmp1 = tmp1 + x(i,1) * y(i)
+        enddo
+        c(1) = tmp1
+        goto 4001
+c
+2001    continue
+        tmp1 = 0
+        tmp2 = 0
+        do i = 1, n
+            tmp1 = tmp1 + x(i,1) * y(i)
+            tmp2 = tmp2 + x(i,2) * y(i)
+        enddo
+        c(1) = tmp1
+        c(2) = tmp2
+        goto 4001
+c
+3001    continue
+        tmp1 = 0
+        tmp2 = 0
+        tmp3 = 0
+        do i = 1, n
+            tmp1 = tmp1 + x(i,1) * y(i)
+            tmp2 = tmp2 + x(i,2) * y(i)
+            tmp3 = tmp3 + x(i,3) * y(i)
+        enddo
+        c(1) = tmp1
+        c(2) = tmp2
+        c(3) = tmp3
+        goto 4001
+c
+c.... Do the remaining part
+c
+4001   continue
+c
+        do j = m1, m, 4
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            tmp4 = 0
+            do i = 1, n
+                tmp1 = tmp1 + x(i,j+0) * y(i)
+                tmp2 = tmp2 + x(i,j+1) * y(i)
+                tmp3 = tmp3 + x(i,j+2) * y(i)
+                tmp4 = tmp4 + x(i,j+3) * y(i)
+            enddo
+            c(j+0) = tmp1
+            c(j+1) = tmp2
+            c(j+2) = tmp3
+            c(j+3) = tmp4
+        enddo
+        endif
 c
         return
         end
