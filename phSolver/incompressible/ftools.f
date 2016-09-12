@@ -308,18 +308,20 @@ c
         integer i,      j,      m1,lda,incx,incy
         integer iwork,      icut
 
-        iwork=0 !0 chooses original form
+        iwork=8 !0 chooses original form
 !        iwork=1 ! chooses cut at 4 change original form
 !        iwork=2 ! chooses ddot only ALSO SET ICUT=200
 !        iwork=3 ! chooses dgemmv only ALSO NEED ICUT=0
 !        iwork=4 ! uses specific ICUT value for shift to dgemv
-        icut=96
-        if(iwork.ge.2) then
-          alpha=1.0
-          beta=0.0
-          incx=1
-          incy=1
-          lda=n
+        icut=48
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
+        if((iwork.ge.3).and.(iwork.lt.7)) then ! let dgemv do some/all of the work
+          if(m.gt.icut) then
+            alpha=1.0
+            beta=0.0
+            incx=1
+            incy=1
+            lda=n
         
 !   note matrix is expected to be a(m,n) but ours is x(n,m)
 !   I assume we handle this by n<->m in arguments 2, 3
@@ -329,20 +331,33 @@ c
 !  their y is our output 
 !  them    y=alpha*A^T x +beta*y
 !  us     d=alpha*x^T y +beta*d
-         if(m.gt.icut) then
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
             call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
-         else
+            return
+          else ! jump to chunk 8 to do the rest of the work or 
+              ! change iwork  to who you want to do it
             iwork=0
             goto 1
+          endif
+        endif ! end of dgemv
+1       continue 
+        if(iwork.eq.2) then  
 cdir$ ivdep
-            do i=1,m
-              c(i)=ddot(n,x(1,i),1,y,1)
+          do i=1,m
+            c(i)=ddot(n,x(1,i),1,y,1)
+          enddo
+          return
+        endif
+        if(iwork.eq.8) then
+          c=0
+cdir$ ivdep
+          do j = 1, m
+            do i = 1, n
+              c(j) = c(j) + x(i,j) * y(i)
             enddo
-         endif
-         return
-       endif
-1      continue 
-       if(iwork.eq.0) then
+          enddo
+        endif
+        if(iwork.eq.0) then
 c
 c.... Determine the left overs
 c
@@ -355,6 +370,7 @@ c
 c
 1000    continue
         tmp1 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
         enddo
@@ -364,6 +380,7 @@ c
 2000    continue
         tmp1 = 0
         tmp2 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
             tmp2 = tmp2 + x(i,2) * y(i)
@@ -376,6 +393,7 @@ c
         tmp1 = 0
         tmp2 = 0
         tmp3 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
             tmp2 = tmp2 + x(i,2) * y(i)
@@ -391,6 +409,7 @@ c
         tmp2 = 0
         tmp3 = 0
         tmp4 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
             tmp2 = tmp2 + x(i,2) * y(i)
@@ -409,6 +428,7 @@ c
         tmp3 = 0
         tmp4 = 0
         tmp5 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
             tmp2 = tmp2 + x(i,2) * y(i)
@@ -430,6 +450,7 @@ c
         tmp4 = 0
         tmp5 = 0
         tmp6 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
             tmp2 = tmp2 + x(i,2) * y(i)
@@ -454,6 +475,7 @@ c
         tmp5 = 0
         tmp6 = 0
         tmp7 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         do i = 1, n
             tmp1 = tmp1 + x(i,1) * y(i)
             tmp2 = tmp2 + x(i,2) * y(i)
@@ -463,6 +485,7 @@ c
             tmp6 = tmp6 + x(i,6) * y(i)
             tmp7 = tmp7 + x(i,7) * y(i)
         enddo
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
         c(1) = tmp1
         c(2) = tmp2
         c(3) = tmp3
@@ -485,8 +508,9 @@ c
             tmp6 = 0
             tmp7 = 0
             tmp8 = 0
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
             do i = 1, n
-                tmp1 = tmp1 + x(i,j+0) * y(i)
+                tmp1 = tmp1 + x(i,j) * y(i)
                 tmp2 = tmp2 + x(i,j+1) * y(i)
                 tmp3 = tmp3 + x(i,j+2) * y(i)
                 tmp4 = tmp4 + x(i,j+3) * y(i)
@@ -504,7 +528,8 @@ c
             c(j+6) = tmp7
             c(j+7) = tmp8
         enddo
-        endif
+        return
+        endif !iwork=0
         if(iwork.eq.1) then ! try a max 4 version of original
 c
 c.... Determine the left overs
@@ -558,6 +583,8 @@ c
             tmp2 = 0
             tmp3 = 0
             tmp4 = 0
+!! NOT AN 8 JUMP !DIR$ ASSUME_ALIGNED x: 64
+!! NOT AN 8 JUMP !DIR$ ASSUME_ALIGNED y: 64
             do i = 1, n
                 tmp1 = tmp1 + x(i,j+0) * y(i)
                 tmp2 = tmp2 + x(i,j+1) * y(i)
