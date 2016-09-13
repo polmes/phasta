@@ -999,7 +999,6 @@ void lesApKG ( UsrHd   usrHd,
 	      usrHd->iper, usrHd->iBC, usrHd->BC  );
 /* transpose p  for test routine */
     double* lesPt=(double*) malloc((usrHd->nNodes)*4*sizeof(double));
-    double* lesQt=(double*) malloc((usrHd->nNodes)*3*sizeof(double));
     int jcnt,icnt;
     for (icnt=0; icnt<(usrHd->nNodes); icnt++) {
         for (jcnt=0; jcnt<(4); jcnt++) 
