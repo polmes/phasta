@@ -36,18 +36,18 @@ c.... Clear the flowdiag
 c
       if((flmpl.eq.1).or.(ipord.gt.1)) then
          do n = 1, nshg
-	    k = sparseloc( rowp(colm(n)), colm(n+1)-colm(n), n )
+            k = sparseloc( rowp(colm(n)), colm(n+1)-colm(n), n )
      &       + colm(n)-1
 c     
-	    flowdiag(n,1) = lhsK(1,k)
-	    flowdiag(n,2) = lhsK(5,k)
-	    flowdiag(n,3) = lhsK(9,k)
+            flowdiag(n,1) = lhsK(1,k)
+            flowdiag(n,2) = lhsK(5,k)
+            flowdiag(n,3) = lhsK(9,k)
 c     
-	    flowdiag(n,4) = lhsP(4,k)
+            flowdiag(n,4) = lhsP(4,k)
          enddo
       else
-	flowDiag = zero
-	do n = 1, nshg  ! rowsum put on the diagonal instead of diag entry
+        flowDiag = zero
+        do n = 1, nshg  ! rowsum put on the diagonal instead of diag entry
            do k=colm(n),colm(n+1)-1
 
 c
@@ -61,7 +61,7 @@ c
               flowdiag(n,4) = flowdiag(n,4) + abs(lhsP(4,k)) 
            enddo
            flowdiag(n,:)=flowdiag(n,:)*pt33
-	enddo
+        enddo
       endif
       if(ipvsq.ge.3) then ! for first cut only do diagonal extraction
  ! this is not yet correct for multi procs I suspect if partition
@@ -111,7 +111,7 @@ c
 c     
 c.... communicate : add the slaves part to the master's part of flowDiag
 c     
-	if (numpe > 1) then 
+        if (numpe > 1) then 
            call commu (flowDiag, ilwork, nflow, 'in ') 
         endif
 c
@@ -168,7 +168,7 @@ c
 c     
 c.... communicate : add the slaves part to the master's part of sclrDiag
 c     
-	if (numpe > 1) then 
+        if (numpe > 1) then 
            call commu (sclrDiag, ilwork, 1, 'in ') 
         endif
 c
@@ -201,55 +201,55 @@ C
 C "fLesSparseApG":
 C
 C============================================================================
-	subroutine fLesSparseApG(	col,	row,	pLhs,	
+        subroutine fLesSparseApG(	col,	row,	pLhs,	
      &					p,	q,	nNodes,
      &                                  nnz_tot )
 c
 c.... Data declaration
 c
-	implicit none
-	integer	nNodes, nnz_tot
-	integer	col(nNodes+1),	row(nnz_tot)
-	real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
+        implicit none
+        integer	nNodes, nnz_tot
+        integer	col(nNodes+1),	row(nnz_tot)
+        real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
 c
-	real*8	pisave
-	integer	i,	j,	k
+        real*8	pisave
+        integer	i,	j,	k
 c
 c.... clear the vector
 c
-	do i = 1, nNodes
-	    q(i,1) = 0
-	    q(i,2) = 0
-	    q(i,3) = 0
-	enddo
+        do i = 1, nNodes
+            q(i,1) = 0
+            q(i,2) = 0
+            q(i,3) = 0
+        enddo
 c
 c.... Do an AP product
 c
-	do i = 1, nNodes
+        do i = 1, nNodes
 c
-	    pisave = p(i)
+            pisave = p(i)
 cdir$ ivdep
-	    do k = col(i), col(i+1)-1
-		j = row(k) 
+            do k = col(i), col(i+1)-1
+        	j = row(k) 
 c
-		q(j,1) = q(j,1) - pLhs(1,k) * pisave
-		q(j,2) = q(j,2) - pLhs(2,k) * pisave
-		q(j,3) = q(j,3) - pLhs(3,k) * pisave
-	    enddo
-	enddo
+        	q(j,1) = q(j,1) - pLhs(1,k) * pisave
+        	q(j,2) = q(j,2) - pLhs(2,k) * pisave
+        	q(j,3) = q(j,3) - pLhs(3,k) * pisave
+            enddo
+        enddo
 c
 c.... end
 c
-	return
-	end
+        return
+        end
 
 C============================================================================
 C
-C "fLesSparseApKGT":   TRANSPOSED P vector prior to call
+C "fLesSparseApKG":   OPTION to TRANSPOSED P vector prior to call
 C
 C============================================================================
 
-      subroutine fLesSparseApKGT(col,	row,	kLhs,	pLhs,
+      subroutine fLesSparseApKG(col,	row,	kLhs,	pLhs,
      1                           p,	q,	nNodes,
      2                                  nnz_tot_hide ) 
 c
@@ -261,36 +261,11 @@ c      implicit none
       integer	nNodes
       integer	col(nNodes+1),	row(nnz_tot)
       real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
-      real*8 	p(4,nNodes),	q(3,nNodes),p3(3,nNodes)
+      real*8 	p(nNodes,4),  q(nNodes,3)
+      real*8 	qt(3,nNodes),p3(3,nNodes)
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
-c
-c.... clear the vector
-c
-      do i = 1, nNodes
-        q(1,i) = 0
-        q(2,i) = 0
-        q(3,i) = 0
-      enddo
-      iwork=2 ! this is our usual form transposed
-!      iwork=2 ! use MKL for the K.p_m part...no way at this time to use MKL for
-      if(iwork.eq.2) then
-        do i = 1, nNodes
-          p3(1,i)=p(1,i)
-          p3(2,i)=p(2,i)
-          p3(3,i)=p(3,i)
-        enddo
-        call mkl_dbsrgemv('N', nNodes, 3, kLhs, col, row, p3, q)
-c
-c.... Do an AP product
-c
-        do i = 1, nNodes
-c
-          pisave   = p(4,i)
-cdir$ ivdep
-          do k = col(i), col(i+1)-1
-            j = row(k) 
 !
 ! This routine wants to do K.p_m + G p_c
 !  The above call to mkl_...  is a straight K.p_m
@@ -298,147 +273,129 @@ cdir$ ivdep
 !  G ( PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  1x4).  What we
 ! see below is an on the fly negation and transpose (note j inplace summ) to
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
+!
+      iwork=0 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
+      if(iwork.eq.0) then  ! {old way
 c
-            q(1,j) = q(1,j) - pLhs(1,k) * pisave
-            q(2,j) = q(2,j) - pLhs(2,k) * pisave
-            q(3,j) = q(3,j) - pLhs(3,k) * pisave
-          enddo
+c.... clear the vector
+c
+        do i = 1, nNodes
+          q(i,1) = 0
+          q(i,2) = 0
+          q(i,3) = 0
         enddo
-      endif
-      if(iwork.eq.1) then
 c
 c.... Do an AP product
 c
         do i = 1, nNodes
 c
-          tmp1 = 0
-          tmp2 = 0
-          tmp3 = 0
-          pisave   = p(4,i)
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            pisave   = p(i,4)
 cdir$ ivdep
-          do k = col(i), col(i+1)-1
-            j = row(k) 
-            tmp1 = tmp1
-     1           + kLhs(1,k) * p(1,j)
-     2           + kLhs(4,k) * p(2,j)
-     3           + kLhs(7,k) * p(3,j)
-            tmp2 = tmp2
-     1           + kLhs(2,k) * p(1,j)
-     2           + kLhs(5,k) * p(2,j)
-     3           + kLhs(8,k) * p(3,j)
-            tmp3 = tmp3
-     1           + kLhs(3,k) * p(1,j)
-     2           + kLhs(6,k) * p(2,j)
-     3           + kLhs(9,k) * p(3,j)
-!
-! This routine wants to do K.p_m + G p_c
-!  The above is a straight K.p_m
-!  Below is recognizing that to do a G.p when you have not stored 
-!  G ( PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  1x4).  What we
-! see below is an on the fly negation and transpose (note j inplace summ) to
-! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
-c
-            q(1,j) = q(1,j) - pLhs(1,k) * pisave
-            q(2,j) = q(2,j) - pLhs(2,k) * pisave
-            q(3,j) = q(3,j) - pLhs(3,k) * pisave
-          enddo
-          q(1,i) = q(1,i) + tmp1
-          q(2,i) = q(2,i) + tmp2
-          q(3,i) = q(3,i) + tmp3
-        enddo
-      endif
-
-        if(ipvsq.ge.2) then
-         write(*,*) 'broken for transposed form'
-         tfact=alfi * gami * Delt(1)
-           call ElmpvsQ(q,p,tfact)
-        endif
-c
-c.... end
-c
-	return
-	end
-
-C============================================================================
-C
-C "fLesSparseApKG":
-C
-C============================================================================
-
-	subroutine fLesSparseApKG(	col,	row,	kLhs,	pLhs,
-     1					p,	q,	nNodes,
-     2                                  nnz_tot_hide ) 
-c
-c.... Data declaration
-c
-c	implicit none
-        use pvsQbi
-        include "common.h"
-	integer	nNodes
-	integer	col(nNodes+1),	row(nnz_tot)
-	real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
-        real*8 	p(nNodes,4),	q(nNodes,3)
-c
-	real*8	tmp1,	tmp2,	tmp3,	pisave
-	integer	i,	j,	k
-c
-c.... clear the vector
-c
-	do i = 1, nNodes
-	    q(i,1) = 0
-	    q(i,2) = 0
-	    q(i,3) = 0
-	enddo
-c
-c.... Do an AP product
-c
-	do i = 1, nNodes
-c
-	    tmp1 = 0
-	    tmp2 = 0
-	    tmp3 = 0
-	    pisave   = p(i,4)
-cdir$ ivdep
-	    do k = col(i), col(i+1)-1
-		j = row(k) 
-		tmp1 = tmp1
+            do k = col(i), col(i+1)-1
+        	j = row(k) 
+        	tmp1 = tmp1
      1		     + kLhs(1,k) * p(j,1)
      2		     + kLhs(4,k) * p(j,2)
      3		     + kLhs(7,k) * p(j,3)
-		tmp2 = tmp2
+        	tmp2 = tmp2
      1		     + kLhs(2,k) * p(j,1)
      2		     + kLhs(5,k) * p(j,2)
      3		     + kLhs(8,k) * p(j,3)
-		tmp3 = tmp3
+        	tmp3 = tmp3
      1		     + kLhs(3,k) * p(j,1)
      2		     + kLhs(6,k) * p(j,2)
      3		     + kLhs(9,k) * p(j,3)
-!
-! This routine wants to do K.p_m + G p_c
-!  The above is a straight K.p_m
-!  Below is recognizing that to do a G.p when you have not stored 
-!  G ( PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  1x4).  What we
-! see below is an on the fly negation and transpose (note j inplace summ) to
-! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
-c
-		q(j,1) = q(j,1) - pLhs(1,k) * pisave
-		q(j,2) = q(j,2) - pLhs(2,k) * pisave
-		q(j,3) = q(j,3) - pLhs(3,k) * pisave
-	    enddo
-	    q(i,1) = q(i,1) + tmp1
-	    q(i,2) = q(i,2) + tmp2
-	    q(i,3) = q(i,3) + tmp3
-	enddo
+        	q(j,1) = q(j,1) - pLhs(1,k) * pisave
+        	q(j,2) = q(j,2) - pLhs(2,k) * pisave
+        	q(j,3) = q(j,3) - pLhs(3,k) * pisave
+            enddo
+            q(i,1) = q(i,1) + tmp1
+            q(i,2) = q(i,2) + tmp2
+            q(i,3) = q(i,3) + tmp3
+        enddo
+      endif !} original code in fast index on dof-HOLDER
 
-        if(ipvsq.ge.2) then
-         tfact=alfi * gami * Delt(1)
-           call ElmpvsQ(q,p,tfact)
-        endif
+      if(iwork.gt.0)  then !transposed form {
+        do i = 1, nNodes
+          q(1,i) = 0
+          q(2,i) = 0
+          q(3,i) = 0
+          p3(1,i)=p(i,1)
+          p3(2,i)=p(i,2)
+          p3(3,i)=p(i,3)
+        enddo
+        if(iwork.eq.1) then ! original transposed {
+c
+c.... Do an AP product
+c
+          do i = 1, nNodes
+c
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            pisave   = p(i,4)
+cdir$ ivdep
+            do k = col(i), col(i+1)-1
+              j = row(k) 
+              tmp1 = tmp1
+     1             + kLhs(1,k) * p3(1,j)
+     2             + kLhs(4,k) * p3(2,j)
+     3             + kLhs(7,k) * p3(3,j)
+              tmp2 = tmp2
+     1             + kLhs(2,k) * p3(1,j)
+     2             + kLhs(5,k) * p3(2,j)
+     3             + kLhs(8,k) * p3(3,j)
+              tmp3 = tmp3
+     1             + kLhs(3,k) * p3(1,j)
+     2             + kLhs(6,k) * p3(2,j)
+     3             + kLhs(9,k) * p3(3,j)
+              qt(1,j) = qt(1,j) - pLhs(1,k) * pisave
+              qt(2,j) = qt(2,j) - pLhs(2,k) * pisave
+              qt(3,j) = qt(3,j) - pLhs(3,k) * pisave
+            enddo
+            qt(1,i) = qt(1,i) + tmp1
+            qt(2,i) = qt(2,i) + tmp2
+            qt(3,i) = qt(3,i) + tmp3
+          enddo
+        endif !iwork=1 }
+        if(iwork.eq.2) then ! { mkls sparse 
+          call mkl_dbsrgemv('N', nNodes, 3, kLhs, col, row, p3, qt)
+c
+c.... Do an AP product
+c
+          do i = 1, nNodes
+c
+            pisave   = p(i,4)
+cdir$ ivdep
+            do k = col(i), col(i+1)-1
+              j = row(k) 
+              qt(1,j) = qt(1,j) - pLhs(1,k) * pisave
+              qt(2,j) = qt(2,j) - pLhs(2,k) * pisave
+              qt(3,j) = qt(3,j) - pLhs(3,k) * pisave
+            enddo
+          enddo
+       endif !} mkl sparse
+! both need to transpose back
+       do i =1, nNodes
+         q(i,1)=qt(1,i)
+         q(i,2)=qt(2,i)
+         q(i,3)=qt(3,i)
+       enddo
+      endif ! } done with transposed forms either iwork =1 or 2
+
+      if(ipvsq.ge.2) then
+        write(*,*) 'broken for transposed form'
+        tfact=alfi * gami * Delt(1)
+        call ElmpvsQ(q,p,tfact)
+      endif
 c
 c.... end
 c
-	return
-	end
+      return
+      end
 
 
 C============================================================================
@@ -447,41 +404,41 @@ C "fLesSparseApNGt":
 C
 C============================================================================
 
-	subroutine fLesSparseApNGt(	col,	row,	pLhs,	
+        subroutine fLesSparseApNGt(	col,	row,	pLhs,	
      1					p,	q,	nNodes,
      2                                  nnz_tot   )
 c
 c.... Data declaration
 c
-	implicit none
-	integer	nNodes, nnz_tot
-	integer	col(nNodes+1),	row(nnz_tot)
-	real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
+        implicit none
+        integer	nNodes, nnz_tot
+        integer	col(nNodes+1),	row(nnz_tot)
+        real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
 c
-	real*8	tmp
-	integer	i,	j,	k
+        real*8	tmp
+        integer	i,	j,	k
 c
 c.... Do an AP product
 c
-	do i = nNodes, 1, -1
+        do i = nNodes, 1, -1
 c
-	    tmp = 0
+            tmp = 0
 cdir$ ivdep
-	    do k = col(i), col(i+1)-1
-		j = row(k)
+            do k = col(i), col(i+1)-1
+        	j = row(k)
 c
-		tmp = tmp
+        	tmp = tmp
      1		    + pLhs(1,k) * p(j,1)
      2		    + pLhs(2,k) * p(j,2)
      3		    + pLhs(3,k) * p(j,3)
-	    enddo
-	    q(i) = tmp
-	enddo
+            enddo
+            q(i) = tmp
+        enddo
 c
 c.... end
 c
-	return
-	end
+        return
+        end
 
 C============================================================================
 C
@@ -489,7 +446,7 @@ C "fLesSparseApNGtC":
 C
 C============================================================================
 
-	subroutine fLesSparseApNGtC(	col,	row,	pLhs,	
+        subroutine fLesSparseApNGtC(	col,	row,	pLhs,	
      1					p,	q,	nNodes,
      2                                  nnz_tot )
 c
@@ -500,31 +457,31 @@ c
         integer	col(nNodes+1),	row(nnz_tot)
         real*8	pLhs(4,nnz_tot),	p(nNodes,4),	q(nNodes)
 c
-	real*8	tmp
-	integer	i,	j,	k
+        real*8	tmp
+        integer	i,	j,	k
 c
 c.... Do an AP product
 c
-	do i = nNodes, 1, -1
+        do i = nNodes, 1, -1
 c
-	    tmp = 0
+            tmp = 0
 cdir$ ivdep
-	    do k = col(i), col(i+1)-1
-		j = row(k)
+            do k = col(i), col(i+1)-1
+        	j = row(k)
 c
-		tmp = tmp
+        	tmp = tmp
      1		    + pLhs(1,k) * p(j,1)
      2		    + pLhs(2,k) * p(j,2)
      3		    + pLhs(3,k) * p(j,3)
      4		    + pLhs(4,k) * p(j,4)
-	    enddo
-	    q(i) = tmp
-	enddo
+            enddo
+            q(i) = tmp
+        enddo
 c
 c.... end
 c
-	return
-	end
+        return
+        end
 
 C============================================================================
 C
@@ -532,7 +489,7 @@ C "fLesSparseApFull":
 C
 C============================================================================
 
-	subroutine fLesSparseApFull(	col,	row,	kLhs,	pLhs,
+        subroutine fLesSparseApFull(	col,	row,	kLhs,	pLhs,
      1					p,	q,	nNodes,
      2                                  nnz_tot_hide )
 c
@@ -542,63 +499,63 @@ c	implicit none
         use pvsQbi
         include "common.h"
 
-	integer	nNodes, nnz_tot
-	integer	col(nNodes+1),	row(nnz_tot)
-	real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
+        integer	nNodes, nnz_tot
+        integer	col(nNodes+1),	row(nnz_tot)
+        real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
         real*8  p(nNodes,4),	q(nNodes,4)
 c
-	real*8	tmp1,	tmp2,	tmp3,	tmp4,	pisave
-	integer	i,	j,	k
+        real*8	tmp1,	tmp2,	tmp3,	tmp4,	pisave
+        integer	i,	j,	k
 c
 c.... clear the vector
 c
-	do i = 1, nNodes
-	    q(i,1) = 0
-	    q(i,2) = 0
-	    q(i,3) = 0
-	enddo
+        do i = 1, nNodes
+            q(i,1) = 0
+            q(i,2) = 0
+            q(i,3) = 0
+        enddo
 c
 c.... Do an AP product
 c
-	do i = 1, nNodes
+        do i = 1, nNodes
 c
-	    tmp1 = 0
-	    tmp2 = 0
-	    tmp3 = 0
-	    tmp4 = 0
-	    pisave   = p(i,4)
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            tmp4 = 0
+            pisave   = p(i,4)
 cdir$ ivdep
-	    do k = col(i), col(i+1)-1
-		j = row(k)
+            do k = col(i), col(i+1)-1
+        	j = row(k)
 c
-		tmp1 = tmp1
+        	tmp1 = tmp1
      1		     + kLhs(1,k) * p(j,1)
      2		     + kLhs(4,k) * p(j,2)
      3		     + kLhs(7,k) * p(j,3)
-		tmp2 = tmp2
+        	tmp2 = tmp2
      1		     + kLhs(2,k) * p(j,1)
      2		     + kLhs(5,k) * p(j,2)
      3		     + kLhs(8,k) * p(j,3)
-		tmp3 = tmp3
+        	tmp3 = tmp3
      1		     + kLhs(3,k) * p(j,1)
      2		     + kLhs(6,k) * p(j,2)
      3		     + kLhs(9,k) * p(j,3)
 c
-		tmp4 = tmp4
+        	tmp4 = tmp4
      1		     + pLhs(1,k) * p(j,1)
      2		     + pLhs(2,k) * p(j,2)
      3		     + pLhs(3,k) * p(j,3)
      4		     + pLhs(4,k) * p(j,4)
 c
-		q(j,1) = q(j,1) - pLhs(1,k) * pisave
-		q(j,2) = q(j,2) - pLhs(2,k) * pisave
-		q(j,3) = q(j,3) - pLhs(3,k) * pisave
-	    enddo
-	    q(i,1) = q(i,1) + tmp1
-	    q(i,2) = q(i,2) + tmp2
-	    q(i,3) = q(i,3) + tmp3
-	    q(i,4) = tmp4
-	enddo
+        	q(j,1) = q(j,1) - pLhs(1,k) * pisave
+        	q(j,2) = q(j,2) - pLhs(2,k) * pisave
+        	q(j,3) = q(j,3) - pLhs(3,k) * pisave
+            enddo
+            q(i,1) = q(i,1) + tmp1
+            q(i,2) = q(i,2) + tmp2
+            q(i,3) = q(i,3) + tmp3
+            q(i,4) = tmp4
+        enddo
         if(ipvsq.ge.2) then
          tfact=alfi * gami * Delt(1)
            call ElmpvsQ(q,p,tfact)
@@ -606,8 +563,8 @@ c
 c
 c.... end
 c
-	return
-	end
+        return
+        end
 
 C============================================================================
 C
@@ -615,48 +572,48 @@ C "fLesSparseApSclr":
 C
 C============================================================================
 
-	subroutine fLesSparseApSclr(	col,	row,	lhs,	
+        subroutine fLesSparseApSclr(	col,	row,	lhs,	
      1					p,	q,	nNodes,
      &                                  nnz_tot)
 c
 c.... Data declaration
 c
-	implicit none
-	integer	nNodes, nnz_tot
-	integer	col(nNodes+1),	row(nnz_tot)
-	real*8	lhs(nnz_tot),	p(nNodes),	q(nNodes)
+        implicit none
+        integer	nNodes, nnz_tot
+        integer	col(nNodes+1),	row(nnz_tot)
+        real*8	lhs(nnz_tot),	p(nNodes),	q(nNodes)
 c
-	real*8	tmp
-	integer	i,	j,	k
+        real*8	tmp
+        integer	i,	j,	k
 c
 c.... Do an AP product
 c
-	do i = nNodes, 1, -1
+        do i = nNodes, 1, -1
 c
-	    tmp = 0
+            tmp = 0
 cdir$ ivdep
-	    do k = col(i), col(i+1)-1
-		tmp = tmp + lhs(k) * p(row(k))
-	    enddo
-	    q(i) = tmp
-	enddo
+            do k = col(i), col(i+1)-1
+        	tmp = tmp + lhs(k) * p(row(k))
+            enddo
+            q(i) = tmp
+        enddo
 c
 c.... end
 c
-	return
-	end
+        return
+        end
 C============================================================================
-	subroutine commOut(  global,  ilwork,  n, 
+        subroutine commOut(  global,  ilwork,  n, 
      &                       iper,    iBC, BC  )
-	
-	include "common.h"
-	
-	real*8  global(nshg,n), BC(nshg,ndofBC)
-	integer ilwork(nlwork), iper(nshg), iBC(nshg)
+        
+        include "common.h"
+        
+        real*8  global(nshg,n), BC(nshg,ndofBC)
+        integer ilwork(nlwork), iper(nshg), iBC(nshg)
 c
-	if ( numpe .gt. 1) then 
-	   call commu ( global, ilwork, n, 'out')
-	endif
+        if ( numpe .gt. 1) then 
+           call commu ( global, ilwork, n, 'out')
+        endif
 c
 c     before doing AP product P must be made periodic
 c     on processor slaves did not get updated with the 
@@ -678,29 +635,29 @@ c$$$              i = iper(j)
 c$$$              res(j,:) = res(i,:) 
 c$$$           endif
 c$$$        enddo
-	
-	return 
-	end
+        
+        return 
+        end
 
 C============================================================================
-	subroutine commIn(  global,  ilwork,  n, 
+        subroutine commIn(  global,  ilwork,  n, 
      &                      iper,    iBC, BC )
-	
-	include "common.h"
-	
-	real*8  global(nshg,n), BC(nshg,ndofBC)
-	integer ilwork(nlwork), iper(nshg), iBC(nshg)
+        
+        include "common.h"
+        
+        real*8  global(nshg,n), BC(nshg,ndofBC)
+        integer ilwork(nlwork), iper(nshg), iBC(nshg)
 c
         if((iabc==1) .and. (n.gt.1)) !are there any axisym bc's
      &       call rotabc(global, iBC, 'in ')
 c
 
-	if ( numpe .gt. 1 ) then
-	   call commu ( global, ilwork, n, 'in ')
-	endif
-		
-	call bc3per ( iBC, global, iper, ilwork, n)
-	
-	return 
-	end
+        if ( numpe .gt. 1 ) then
+           call commu ( global, ilwork, n, 'in ')
+        endif
+        	
+        call bc3per ( iBC, global, iper, ilwork, n)
+        
+        return 
+        end
 

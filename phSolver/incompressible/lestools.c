@@ -116,8 +116,6 @@ void  FLESSPARSEAPNGTC (	int *colm,		int *rowp,
 
 void  FLESSPARSEAPKG (	int *colm,		int *rowp,		double *lhsK,
 								double *lhsP,	double *lesP,	double *lesQ,
-void  FLESSPARSEAPKGT (	int *colm,		int *rowp,		double *lhsK,
-								double *lhsP,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
 void  RAMG_INTERFACE ( int *colm, int *rowp, double *lhsK,double *lhsP,
                        double *mcgR,double *mcgZ,
@@ -997,30 +995,11 @@ void lesApKG ( UsrHd   usrHd,
 
     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	      usrHd->iper, usrHd->iBC, usrHd->BC  );
-/* transpose p  for test routine */
-    double* lesPt=(double*) malloc((usrHd->nNodes)*4*sizeof(double));
-    int jcnt,icnt;
-    for (icnt=0; icnt<(usrHd->nNodes); icnt++) {
-        for (jcnt=0; jcnt<(4); jcnt++) 
-		lesPt[icnt*4+jcnt]=usrHd->lesP[jcnt*usrHd->nNodes+icnt];
-     }
-/* create receiving transpose q  for test routine */
-    double* lesQt=(double*) malloc((usrHd->nNodes)*3*sizeof(double));
 
-    fLesSparseApKGT( usrHd->colm, usrHd->rowp, usrHd->lhsK,
-		    usrHd->lhsP, lesPt, lesQt, 
-		    &(usrHd->nNodes),&(usrHd->nnz_tot));
-
-/* transpose back into the usrHd struct */
-    for (icnt=0; icnt<(usrHd->nNodes); icnt++) {
-        for (jcnt=0; jcnt<(3); jcnt++) 
-		usrHd->lesQ[jcnt*usrHd->nNodes+icnt]=lesQt[icnt*3+jcnt];
-     }
-
-/*    fLesSparseApKG( usrHd->colm, usrHd->rowp, usrHd->lhsK,
+    fLesSparseApKG( usrHd->colm, usrHd->rowp, usrHd->lhsK,
 		    usrHd->lhsP, usrHd->lesP, usrHd->lesQ, 
 		    &(usrHd->nNodes),&(usrHd->nnz_tot));
-*/
+
     commIn ( usrHd->lesQ, usrHd->ilwork, &nQs,
 	     usrHd->iper, usrHd->iBC, usrHd->BC  );
     

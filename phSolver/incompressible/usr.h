@@ -67,7 +67,6 @@ typedef struct _Usr* UsrHd ;
 #define commIn           FortranCInterface_GLOBAL_(commin,COMMIN)
 #define fLesSparseApSclr FortranCInterface_GLOBAL_(flessparseapsclr,FLESSPARSEAPSCLR)
 #define fLesSparseApG        FortranCInterface_GLOBAL_(flessparseapg,FLESSPARSEAPG)
-#define fLesSparseApKGT       FortranCInterface_GLOBAL_(flessparseapkgt,FLESSPARSEAPKGT)
 #define fLesSparseApKG       FortranCInterface_GLOBAL_(flessparseapkg,FLESSPARSEAPKG)
 #define fLesSparseApNGt      FortranCInterface_GLOBAL_(flessparseapngt,FLESSPARSEAPNGT)
 #define fLesSparseApNGtC     FortranCInterface_GLOBAL_(flessparseapngtc,FLESSPARSEAPNGTC)
