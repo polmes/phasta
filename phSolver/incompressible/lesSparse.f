@@ -245,6 +245,88 @@ c
 
 C============================================================================
 C
+C "fLesSparseApKGT":   TRANSPOSED P vector prior to call
+C
+C============================================================================
+
+	subroutine fLesSparseApKGT(	col,	row,	kLhs,	pLhs,
+     1					p,	q,	nNodes,
+     2                                  nnz_tot_hide ) 
+c
+c.... Data declaration
+c
+c	implicit none
+        use pvsQbi
+        include "common.h"
+	integer	nNodes
+	integer	col(nNodes+1),	row(nnz_tot)
+	real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
+        real*8 	p(4,nNodes),	q(3,nNodes)
+c
+	real*8	tmp1,	tmp2,	tmp3,	pisave
+	integer	i,	j,	k
+c
+c.... clear the vector
+c
+	do i = 1, nNodes
+	    q(1,i) = 0
+	    q(2,i) = 0
+	    q(3,i) = 0
+	enddo
+c
+c.... Do an AP product
+c
+	do i = 1, nNodes
+c
+	    tmp1 = 0
+	    tmp2 = 0
+	    tmp3 = 0
+	    pisave   = p(4,i)
+cdir$ ivdep
+	    do k = col(i), col(i+1)-1
+		j = row(k) 
+		tmp1 = tmp1
+     1		     + kLhs(1,k) * p(1,j)
+     2		     + kLhs(4,k) * p(2,j)
+     3		     + kLhs(7,k) * p(3,j)
+		tmp2 = tmp2
+     1		     + kLhs(2,k) * p(1,j)
+     2		     + kLhs(5,k) * p(2,j)
+     3		     + kLhs(8,k) * p(3,j)
+		tmp3 = tmp3
+     1		     + kLhs(3,k) * p(1,j)
+     2		     + kLhs(6,k) * p(2,j)
+     3		     + kLhs(9,k) * p(3,j)
+!
+! This routine wants to do K.p_m + G p_c
+!  The above is a straight K.p_m
+!  Below is recognizing that to do a G.p when you have not stored 
+!  G ( PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  1x4).  What we
+! see below is an on the fly negation and transpose (note j inplace summ) to
+! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
+c
+		q(1,j) = q(1,j) - pLhs(1,k) * pisave
+		q(2,j) = q(2,j) - pLhs(2,k) * pisave
+		q(3,j) = q(3,j) - pLhs(3,k) * pisave
+	    enddo
+	    q(1,i) = q(1,i) + tmp1
+	    q(2,i) = q(2,i) + tmp2
+	    q(3,i) = q(3,i) + tmp3
+	enddo
+
+        if(ipvsq.ge.2) then
+         write(*,*) 'broken for transposed form'
+         tfact=alfi * gami * Delt(1)
+           call ElmpvsQ(q,p,tfact)
+        endif
+c
+c.... end
+c
+	return
+	end
+
+C============================================================================
+C
 C "fLesSparseApKG":
 C
 C============================================================================
@@ -297,6 +379,13 @@ cdir$ ivdep
      1		     + kLhs(3,k) * p(j,1)
      2		     + kLhs(6,k) * p(j,2)
      3		     + kLhs(9,k) * p(j,3)
+!
+! This routine wants to do K.p_m + G p_c
+!  The above is a straight K.p_m
+!  Below is recognizing that to do a G.p when you have not stored 
+!  G ( PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  1x4).  What we
+! see below is an on the fly negation and transpose (note j inplace summ) to
+! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 c
 		q(j,1) = q(j,1) - pLhs(1,k) * pisave
 		q(j,2) = q(j,2) - pLhs(2,k) * pisave
