@@ -274,7 +274,7 @@ c
 ! see below is an on the fly negation and transpose (note j inplace summ) to
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
-      iwork=0 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
+      iwork=2 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
       if(iwork.eq.0) then  ! {old way
 c
 c.... clear the vector
@@ -320,9 +320,9 @@ cdir$ ivdep
 
       if(iwork.gt.0)  then !transposed form {
         do i = 1, nNodes
-          q(1,i) = 0
-          q(2,i) = 0
-          q(3,i) = 0
+          qt(1,i) = 0
+          qt(2,i) = 0
+          qt(3,i) = 0
           p3(1,i)=p(i,1)
           p3(2,i)=p(i,2)
           p3(3,i)=p(i,3)
