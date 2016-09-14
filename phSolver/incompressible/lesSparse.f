@@ -402,7 +402,7 @@ cdir$ ivdep
 c
 c.... end
 c
-      rspmvKG=rspmKG+TMRC()-rstartKG
+      rspmvKG=rspmvKG+TMRC()-rstartKG
       return
       end
 

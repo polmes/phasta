@@ -129,6 +129,7 @@ c
       rspmvphasta = 0.0
       rblasmkl = 0.0
       rspmvmkl = 0.0
+      rspmvKG = 0.0
 
 !--------------------------------------------------------------------
 !     Setting up svLS Moved down for better org
