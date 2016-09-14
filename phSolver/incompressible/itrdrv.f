@@ -125,6 +125,10 @@ c
       if(myrank.eq.0) write(*,*) 'Number of Blocks to Pool = ',BlockPool 
 #endif
       rthreads = 0.0
+      rblasphasta = 0.0
+      rspmvphasta = 0.0
+      rblasmkl = 0.0
+      rspmvmkl = 0.0
 
 !--------------------------------------------------------------------
 !     Setting up svLS Moved down for better org

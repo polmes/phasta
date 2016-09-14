@@ -274,6 +274,7 @@ c
 ! see below is an on the fly negation and transpose (note j inplace summ) to
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
+      rstartKG=TMRC()
       iwork=0 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
       if(iwork.eq.0) then  ! {old way
 c
@@ -287,6 +288,7 @@ c
 c
 c.... Do an AP product
 c
+        rdelta=TMRC()
         do i = 1, nNodes
 c
             tmp1 = 0
@@ -316,6 +318,7 @@ cdir$ ivdep
             q(i,2) = q(i,2) + tmp2
             q(i,3) = q(i,3) + tmp3
         enddo
+        rspmvphasta=rspmvphasta + TMRC()-rdelta
       endif !} original code in fast index on dof-HOLDER
 
       if(iwork.gt.0)  then !transposed form {
@@ -331,6 +334,7 @@ cdir$ ivdep
 c
 c.... Do an AP product
 c
+          rdelta= TMRC()
           do i = 1, nNodes
 c
             tmp1 = 0
@@ -360,12 +364,16 @@ cdir$ ivdep
             qt(2,i) = qt(2,i) + tmp2
             qt(3,i) = qt(3,i) + tmp3
           enddo
+          rspmvphasta=rspmvphasta + TMRC()-rdelta
         endif !iwork=1 }
         if(iwork.eq.2) then ! { mkls sparse 
+          rdelta=TMRC()
           call mkl_dbsrgemv('N', nNodes, 3, kLhs, col, row, p3, qt)
+          rspmvmkl=rspmvmkl + TMRC()-rdelta
 c
 c.... Do an AP product
 c
+          rdelta=TMRC()
           do i = 1, nNodes
 c
             pisave   = p(i,4)
@@ -377,6 +385,7 @@ cdir$ ivdep
               qt(3,j) = qt(3,j) - pLhs(3,k) * pisave
             enddo
           enddo
+          rspmvphasta=rspmvphasta + TMRC()-rdelta
        endif !} mkl sparse
 ! both need to transpose back
        do i =1, nNodes
@@ -387,13 +396,13 @@ cdir$ ivdep
       endif ! } done with transposed forms either iwork =1 or 2
 
       if(ipvsq.ge.2) then
-        write(*,*) 'broken for transposed form'
         tfact=alfi * gami * Delt(1)
         call ElmpvsQ(q,p,tfact)
       endif
 c
 c.... end
 c
+      rspmvKG=rspmKG+TMRC()-rstartKG
       return
       end
 

@@ -114,9 +114,32 @@ void print_mpi_stats(void) {
   rgetMinMaxAvg(&mpistats.rCommu,rStats,statRanks);
   if(workfc.myrank==workfc.master)
     printf("rCommu : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+/* unit cell
   rgetMinMaxAvg(&mpistats.rthreads,rStats,statRanks);
   if(workfc.myrank==workfc.master)
     printf("rthreads : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+*/
+
+  rgetMinMaxAvg(&mpistats.rspmvphasta,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvphasta : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rspmvmkl,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvmkl : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rblasphasta,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rblasphasta : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rblasmkl,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rblasmkl : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rspmvKG,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvKG : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
   rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
   if(workfc.myrank==workfc.master)
     printf("rassembly : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);

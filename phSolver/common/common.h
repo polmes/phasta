@@ -73,7 +73,9 @@ c from different modules
      &                   rISend, rISendScal, rIRecv, rIRecvScal, 
      &                   rWaitAll, rWaitAllScal, rAllR, rAllRScal, 
      &                   rCommu, rCommuScal,
-     &                   rthreads, rassembly
+     &                   rthreads, rassembly,
+     &                   rspmvKG, rspmvphasta, rspmvmkl, 
+     &                   rblasphasta, rblasmkl
 
         common /memstats/rheap,rheapavail,rstack,rstackavail,rshared,
      &                   rpersist,rguard,rmmap,rmemstats

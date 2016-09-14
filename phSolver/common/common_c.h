@@ -185,6 +185,11 @@ extern "C" {
     double rCommuScal;
     double rthreads;
     double rassembly;
+    double rspmvKG;
+    double rspmvphasta;
+    double rspmvmkl;
+    double rblasphasta;
+    double rblasmkl;
   } mpistats ;
 
   extern struct { 
