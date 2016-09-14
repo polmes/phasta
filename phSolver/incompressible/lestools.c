@@ -619,8 +619,8 @@ void lesBlkDot2 ( UsrHd   usrHd,
                  valuesp,
                  &mDims,
                  &dim,
-                 mpistats.rblasphasta,
-                 mpistats.rblasmkl ) ;
+                 &mpistats.rblasphasta,
+                 &mpistats.rblasmkl ) ;
 
     drvAllreduce ( valuesp,
                    values,
