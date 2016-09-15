@@ -277,11 +277,9 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstartKG=TMRC()
-      iwork=3 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
+      iwork=0 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
       if(iwork.eq.0) then  ! {old way
-c
-c.... clear the vector
-c
+        rdelta=TMRC()
         do i = 1, nNodes
           q(i,1) = 0
           q(i,2) = 0
@@ -290,7 +288,6 @@ c
 c
 c.... Do an AP product
 c
-        rdelta=TMRC()
         do i = 1, nNodes
 c
             tmp1 = 0
@@ -325,9 +322,6 @@ cdir$ ivdep
 
       if((iwork.gt.0).and.(iwork.lt.3))  then !transposed p3 form {
         do i = 1, nNodes
-          qt(1,i) = 0
-          qt(2,i) = 0
-          qt(3,i) = 0
           p3(1,i)=p(i,1)
           p3(2,i)=p(i,2)
           p3(3,i)=p(i,3)
@@ -337,6 +331,11 @@ c
 c.... Do an AP product
 c
           rdelta= TMRC()
+          do i = 1, nNodes
+            qt(1,i) = 0
+            qt(2,i) = 0
+            qt(3,i) = 0
+          enddo
           do i = 1, nNodes
 c
             tmp1 = 0
@@ -367,8 +366,9 @@ cdir$ ivdep
             qt(3,i) = qt(3,i) + tmp3
           enddo
           rspmvphasta=rspmvphasta + TMRC()-rdelta
-        endif !iwork=1 }
-        if(iwork.eq.2) then ! { mkls sparse 
+!        endif !iwork=1 }
+!        if(iwork.eq.2) then ! { mkls sparse 
+        else ! iwork =2 which is mkl on the 3x3 then phasta on G p4(4,:)
           rdelta=TMRC()
           call mkl_dbsrgemv('N', nNodes, 3, kLhs, col, row, p3, qt)
           rspmvmkl=rspmvmkl + TMRC()-rdelta
@@ -396,13 +396,7 @@ cdir$ ivdep
          q(i,3)=qt(3,i)
        enddo
       endif ! } done with transposed forms either iwork =1 or 2
-      if(iwork.eq.3) then ! { mkls sparse 4x4 
-        do i =1, nNodes
-         p4(1,i)=p(i,1)
-         p4(2,i)=p(i,2)
-         p4(3,i)=p(i,3)
-         p4(4,i)=p(i,4)
-        enddo
+      if(iwork.ge.3) then ! { work with 4x4 matrix
 !
 ! nasty temporray work to get G transposed not just in block but across non-zero
 ! pattern.  If fast enough we will assemble full matrix to avoid this.
@@ -428,15 +422,104 @@ cdir$ ivdep
           ktot(12,i)=0
           ktot(16,i)=0
         enddo
-        rdelta=TMRC()
-        call mkl_dbsrgemv('N', nNodes, 4, ktot, col, row, p4, q4)
-        rspmvmkl=rspmvmkl + TMRC()-rdelta
-        do i =1, nNodes
-           q(i,1)=q4(1,i)
-           q(i,2)=q4(2,i)
-           q(i,3)=q4(3,i)
-        enddo
-      endif !} mkl sparse 4x4
+        if(iwork.lt.5) then ! {transposed vec with 4x4 
+          do i =1, nNodes
+            p4(1,i)=p(i,1)
+            p4(2,i)=p(i,2)
+            p4(3,i)=p(i,3)
+            p4(4,i)=p(i,4)
+          enddo
+          if(iwork.eq.3) then !{ mkl 
+            rdelta=TMRC()
+            call mkl_dbsrgemv('N', nNodes, 4, ktot, col, row, p4, q4)
+            rspmvmkl=rspmvmkl + TMRC()-rdelta
+          else  ! has to be iwork 4 which will be 4x4 transposed p
+            rdelta= TMRC()
+            do i = 1, nNodes
+              q4(1,i) = 0
+              q4(2,i) = 0
+              q4(3,i) = 0
+            enddo
+c
+c.... Do an AP product
+c
+            do i = 1, nNodes
+c
+              tmp1 = 0
+              tmp2 = 0
+              tmp3 = 0
+cdir$ ivdep
+              do k = col(i), col(i+1)-1
+                j = row(k) 
+                tmp1 = tmp1
+     1               + ktot( 1,k) * p4(1,j)
+     2               + ktot( 5,k) * p4(2,j)
+     3               + ktot( 9,k) * p4(3,j)
+     4               + ktot(13,k) * p4(4,j)
+                tmp2 = tmp2
+     1               + ktot( 2,k) * p4(1,j)
+     2               + ktot( 6,k) * p4(2,j)
+     3               + ktot(10,k) * p4(3,j)
+     3               + ktot(14,k) * p4(4,j)
+                tmp3 = tmp3
+     1               + ktot( 3,k) * p4(1,j)
+     2               + ktot( 7,k) * p4(2,j)
+     3               + ktot(11,k) * p4(3,j)
+     3               + ktot(15,k) * p4(4,j)
+              enddo
+              q4(1,i) = q4(1,i) + tmp1
+              q4(2,i) = q4(2,i) + tmp2
+              q4(3,i) = q4(3,i) + tmp3
+            enddo
+            rspmvphasta=rspmvphasta + TMRC()-rdelta
+          endif ! } end of else for switching 3 and 4
+          do i =1, nNodes
+            q(i,1)=q4(1,i)
+            q(i,2)=q4(2,i)
+            q(i,3)=q4(3,i)
+          enddo
+        endif !} end of 5> iwork >3
+        if(iwork.eq.5) then  ! { try the original form with 4x4
+          rdelta= TMRC()
+          do i = 1, nNodes
+            q(i,1) = 0
+            q(i,2) = 0
+            q(i,3) = 0
+          enddo
+c
+c.... Do an AP product
+c
+          do i = 1, nNodes
+c
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+cdir$ ivdep
+            do k = col(i), col(i+1)-1
+              j = row(k) 
+              tmp1 = tmp1
+     1             + ktot( 1,k) * p(j,1)
+     2             + ktot( 5,k) * p(j,2)
+     3             + ktot( 9,k) * p(j,3)
+     4             + ktot(13,k) * p(j,4)
+              tmp2 = tmp2
+     1             + ktot( 2,k) * p(j,1)
+     2             + ktot( 6,k) * p(j,2)
+     3             + ktot(10,k) * p(j,3)
+     3             + ktot(14,k) * p(j,4)
+              tmp3 = tmp3
+     1             + ktot( 3,k) * p(j,1)
+     2             + ktot( 7,k) * p(j,2)
+     3             + ktot(11,k) * p(j,3)
+     3             + ktot(15,k) * p(j,4)
+            enddo
+            q(i,1) = q(i,1) + tmp1
+            q(i,2) = q(i,2) + tmp2
+            q(i,3) = q(i,3) + tmp3
+          enddo
+          rspmvphasta=rspmvphasta + TMRC()-rdelta
+        endif ! } original with 4x4
+      endif !} end of iwork > 3
 
       if(ipvsq.ge.2) then
         tfact=alfi * gami * Delt(1)
