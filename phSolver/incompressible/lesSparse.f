@@ -398,12 +398,27 @@ cdir$ ivdep
       endif ! } done with transposed forms either iwork =1 or 2
       if(iwork.eq.3) then ! { mkls sparse 4x4 
         do i =1, nNodes
-         p4(i,1)=p(1,i)
-         p4(i,2)=p(2,i)
-         p4(i,3)=p(3,i)
-         p4(i,4)=p(4,i)
+         p4(1,i)=p(i,1)
+         p4(2,i)=p(i,2)
+         p4(3,i)=p(i,3)
+         p4(4,i)=p(i,4)
         enddo
-
+!
+! nasty temporray work to get G transposed not just in block but across non-zero
+! pattern.  If fast enough we will assemble full matrix to avoid this.
+!
+        do i=1,nNodes
+cdir$ ivdep
+          do j = col(i), col(i+1)-1
+            k = row(j) 
+            do l=col(k),col(k+1)-1
+              if(row(l).eq.i) then
+                ktot(13:15,l)=-pLhs(1:3,j)
+                exit
+              endif
+            enddo
+          enddo
+        enddo
         do i=1,nnz_tot
           ktot(1:3,i)=kLhs(1:3,i)
           ktot(4,i)=0
@@ -411,7 +426,6 @@ cdir$ ivdep
           ktot(8,i)=0
           ktot(9:11,i)=kLhs(7:9,i)
           ktot(12,i)=0
-          ktot(13:15,i)=-pLHS(1:3,i)
           ktot(16,i)=0
         enddo
         rdelta=TMRC()
