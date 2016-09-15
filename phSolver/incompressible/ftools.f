@@ -315,7 +315,7 @@ c
 !        iwork=2 ! chooses ddot only ALSO SET ICUT=200
 !        iwork=3 ! chooses dgemmv only ALSO NEED ICUT=0
 !        iwork=4 ! uses specific ICUT value for shift to dgemv
-        icut=48
+        icut=0
         if((iwork.ge.3).and.(iwork.lt.7)) then ! let dgemv do some/all of the work
           if(m.gt.icut) then
             alpha=1.0

@@ -261,8 +261,10 @@ c      implicit none
       integer	nNodes
       integer	col(nNodes+1),	row(nnz_tot)
       real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
+      real*8	ktot(16,nnz_tot)
       real*8 	p(nNodes,4),  q(nNodes,3)
       real*8 	qt(3,nNodes),p3(3,nNodes)
+      real*8    q4(4,nNodes),p4(4,nNodes)
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
@@ -275,7 +277,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstartKG=TMRC()
-      iwork=0 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
+      iwork=3 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
       if(iwork.eq.0) then  ! {old way
 c
 c.... clear the vector
@@ -321,7 +323,7 @@ cdir$ ivdep
         rspmvphasta=rspmvphasta + TMRC()-rdelta
       endif !} original code in fast index on dof-HOLDER
 
-      if(iwork.gt.0)  then !transposed form {
+      if((iwork.gt.0).and.(iwork.lt.3))  then !transposed p3 form {
         do i = 1, nNodes
           qt(1,i) = 0
           qt(2,i) = 0
@@ -394,6 +396,33 @@ cdir$ ivdep
          q(i,3)=qt(3,i)
        enddo
       endif ! } done with transposed forms either iwork =1 or 2
+      if(iwork.eq.3) then ! { mkls sparse 4x4 
+        do i =1, nNodes
+         p4(i,1)=p(1,i)
+         p4(i,2)=p(2,i)
+         p4(i,3)=p(3,i)
+         p4(i,4)=p(4,i)
+        enddo
+
+        do i=1,nnz_tot
+          ktot(1:3,i)=kLhs(1:3,i)
+          ktot(4,i)=0
+          ktot(5:7,i)=kLhs(4:6,i)
+          ktot(8,i)=0
+          ktot(9:11,i)=kLhs(7:9,i)
+          ktot(12,i)=0
+          ktot(13:15,i)=-pLHS(1:3,i)
+          ktot(16,i)=0
+        enddo
+        rdelta=TMRC()
+        call mkl_dbsrgemv('N', nNodes, 4, ktot, col, row, p4, q4)
+        rspmvmkl=rspmvmkl + TMRC()-rdelta
+        do i =1, nNodes
+           q(i,1)=q4(1,i)
+           q(i,2)=q4(2,i)
+           q(i,3)=q4(3,i)
+        enddo
+      endif !} mkl sparse 4x4
 
       if(ipvsq.ge.2) then
         tfact=alfi * gami * Delt(1)
@@ -419,8 +448,7 @@ C============================================================================
 c
 c.... Data declaration
 c
-        implicit none
-        integer	nNodes, nnz_tot
+
         integer	col(nNodes+1),	row(nnz_tot)
         real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
 c
