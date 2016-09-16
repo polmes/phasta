@@ -2,7 +2,7 @@
      &                     shp,       shgl,      iBC,
      &                     BC,        shpb,      shglb,
      &                     res,       iper,      ilwork,
-     &                     rowp,      colm,     lhsK,      
+     &                     rowp,      colm,     lhsK, lhs16,      
      &                     lhsP,      rerr,     GradV)
 c
 c----------------------------------------------------------------------
@@ -48,6 +48,7 @@ c
 
         integer rowp(nshg*nnz),         colm(nshg+1)
 
+        real*8 lhs16(16,nnz_tot)
         real*8 lhsK(9,nnz_tot), lhsP(4,nnz_tot)
 
         real*8, allocatable, dimension(:,:,:,:,:) :: xKebe, xGoC
@@ -157,6 +158,7 @@ c
       if (lhs .eq. 1) then
         lhsp   = zero
         lhsk   = zero
+        lhs16   = zero
       endif
 c
 c.... loop over the element-blocks
@@ -294,6 +296,10 @@ c
              call fillsparseI (mien(iblk)%p, 
      &                 xKebe(:,:,:,:,ith) ,            lhsK,
      &                 xGoC(:,:,:,:,ith) ,             lhsP,
+     &                 rowp,                      colm)
+             call fillsparseI16 (mien(iblk)%p, 
+     &                 xKebe(:,:,:,:,ith) ,            lhs16,
+     &                 xGoC(:,:,:,:,ith) ,            
      &                 rowp,                      colm)
           endif
 c

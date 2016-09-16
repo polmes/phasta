@@ -15,6 +15,7 @@ c
      &                            rowp,     colm,    
      &                            lhsK,     lhsP)
 c     
+      use solvedata
       use pointer_data
       use pvsQbi
       use convolImpFlow !brings in the current part of convol coef for imp BC
@@ -25,7 +26,6 @@ c
 c     
       dimension flowDiag(nshg,4), ilwork(nlwork)
       dimension iBC(nshg), iper(nshg), BC(nshg,ndofBC)
-      real*8 lhsK(9,nnz_tot), lhsP(4,nnz_tot)
       integer rowp(nnz_tot),  colm(nshg+1)
       integer	n,	k
 c
@@ -39,11 +39,11 @@ c
             k = sparseloc( rowp(colm(n)), colm(n+1)-colm(n), n )
      &       + colm(n)-1
 c     
-            flowdiag(n,1) = lhsK(1,k)
-            flowdiag(n,2) = lhsK(5,k)
-            flowdiag(n,3) = lhsK(9,k)
+            flowdiag(n,1) = lhs16(1,k) !lhsK(1,k)
+            flowdiag(n,2) = lhs16(6,k) !lhsK(5,k)
+            flowdiag(n,3) = lhs16(11,k) !lhsK(9,k)
 c     
-            flowdiag(n,4) = lhsP(4,k)
+            flowdiag(n,4) = lhs16(16,k) !lhsP(4,k)
          enddo
       else
         flowDiag = zero
@@ -51,14 +51,14 @@ c
            do k=colm(n),colm(n+1)-1
 
 c
-              flowdiag(n,1) = flowdiag(n,1) + abs(lhsK(1,k)) 
-c     &                          + lhsK(2,k) + lhsK(3,k)
-              flowdiag(n,2) = flowdiag(n,2) + abs(lhsK(5,k)) 
-c     &                          + lhsK(4,k) + lhsK(6,k)
-              flowdiag(n,3) = flowdiag(n,3) + abs(lhsK(9,k)) 
-c     &                          + lhsK(7,k) + lhsK(8,k)
+              flowdiag(n,1) = flowdiag(n,1) + abs(lhs16(1,k)) 
+c     &                          + lhs16(2,k) + lhs16(3,k)
+              flowdiag(n,2) = flowdiag(n,2) + abs(lhs16(6,k)) 
+c     &                          + lhs16(5,k) + lhs16(7,k)
+              flowdiag(n,3) = flowdiag(n,3) + abs(lhs16(11,k)) 
+c     &                          + lhsK(9,k) + lhs16(10,k)
 c
-              flowdiag(n,4) = flowdiag(n,4) + abs(lhsP(4,k)) 
+              flowdiag(n,4) = flowdiag(n,4) + abs(lhs16(16,k)) 
            enddo
            flowdiag(n,:)=flowdiag(n,:)*pt33
         enddo
@@ -207,6 +207,7 @@ C============================================================================
 c
 c.... Data declaration
 c
+        use solvedata
         implicit none
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
@@ -227,14 +228,13 @@ c.... Do an AP product
 c
         do i = 1, nNodes
 c
-            pisave = p(i)
 cdir$ ivdep
             do k = col(i), col(i+1)-1
               j = row(k) 
 c
-              q(j,1) = q(j,1) - pLhs(1,k) * pisave
-              q(j,2) = q(j,2) - pLhs(2,k) * pisave
-              q(j,3) = q(j,3) - pLhs(3,k) * pisave
+              q(i,1) = q(i,1) + lhs16(13,k) * p(j)
+              q(i,2) = q(i,2) + lhs16(14,k) * p(j)
+              q(i,3) = q(i,3) + lhs16(15,k) * p(j)
             enddo
         enddo
 c
@@ -256,15 +256,15 @@ c
 c.... Data declaration
 c
 c      implicit none
+      use solvedata
       use pvsQbi
       include "common.h"
       integer	nNodes
       integer	col(nNodes+1),	row(nnz_tot)
-      real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
-      real*8	ktot(16,nnz_tot)
       real*8 	p(nNodes,4),  q(nNodes,3)
       real*8 	qt(3,nNodes),p3(3,nNodes)
       real*8    q4(4,nNodes),p4(4,nNodes)
+      real*8    kLhs(9,nnz_tot), pLhs(4,nnz_tot)
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
@@ -277,7 +277,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstartKG=TMRC()
-      iwork=0 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
+      iwork=3 ! chosen: 0 original, 1 original^T, 2 use MKL for the K.p_m part...no way at this time to use MKL for non square blocks
       if(iwork.eq.0) then  ! {old way
         rdelta=TMRC()
         do i = 1, nNodes
@@ -298,20 +298,23 @@ cdir$ ivdep
             do k = col(i), col(i+1)-1
                 j = row(k) 
                 tmp1 = tmp1
-     1               + kLhs(1,k) * p(j,1)
-     2               + kLhs(4,k) * p(j,2)
-     3               + kLhs(7,k) * p(j,3)
+     1               + lhs16(1,k) * p(j,1)
+     2               + lhs16(5,k) * p(j,2)
+     3               + lhs16(9,k) * p(j,3)
+     3               + lhs16(13,k) * p(j,4)
                 tmp2 = tmp2
-     1               + kLhs(2,k) * p(j,1)
-     2               + kLhs(5,k) * p(j,2)
-     3               + kLhs(8,k) * p(j,3)
+     1               + lhs16(2,k) * p(j,1)
+     2               + lhs16(6,k) * p(j,2)
+     3               + lhs16(10,k) * p(j,3)
+     3               + lhs16(14,k) * p(j,4)
                 tmp3 = tmp3
-     1               + kLhs(3,k) * p(j,1)
-     2               + kLhs(6,k) * p(j,2)
-     3               + kLhs(9,k) * p(j,3)
-                q(j,1) = q(j,1) - pLhs(1,k) * pisave
-                q(j,2) = q(j,2) - pLhs(2,k) * pisave
-                q(j,3) = q(j,3) - pLhs(3,k) * pisave
+     1               + lhs16(3,k) * p(j,1)
+     2               + lhs16(7,k) * p(j,2)
+     3               + lhs16(11,k) * p(j,3)
+     3               + lhs16(15,k) * p(j,4)
+!                q(j,1) = q(j,1) - pLhs(1,k) * pisave
+!                q(j,2) = q(j,2) - pLhs(2,k) * pisave
+!                q(j,3) = q(j,3) - pLhs(3,k) * pisave
             enddo
             q(i,1) = q(i,1) + tmp1
             q(i,2) = q(i,2) + tmp2
@@ -346,20 +349,23 @@ cdir$ ivdep
             do k = col(i), col(i+1)-1
               j = row(k) 
               tmp1 = tmp1
-     1             + kLhs(1,k) * p3(1,j)
-     2             + kLhs(4,k) * p3(2,j)
-     3             + kLhs(7,k) * p3(3,j)
+     1             + lhs16(1,k) * p3(1,j)
+     2             + lhs16(5,k) * p3(2,j)
+     3             + lhs16(9,k) * p3(3,j)
+     3             + lhs16(13,k) * p3(4,j)
               tmp2 = tmp2
-     1             + kLhs(2,k) * p3(1,j)
-     2             + kLhs(5,k) * p3(2,j)
-     3             + kLhs(8,k) * p3(3,j)
+     1             + lhs16(2,k) * p3(1,j)
+     2             + lhs16(6,k) * p3(2,j)
+     3             + lhs16(10,k) * p3(3,j)
+     3             + lhs16(14,k) * p3(4,j)
               tmp3 = tmp3
-     1             + kLhs(3,k) * p3(1,j)
-     2             + kLhs(6,k) * p3(2,j)
-     3             + kLhs(9,k) * p3(3,j)
-              qt(1,j) = qt(1,j) - pLhs(1,k) * pisave
-              qt(2,j) = qt(2,j) - pLhs(2,k) * pisave
-              qt(3,j) = qt(3,j) - pLhs(3,k) * pisave
+     1             + lhs16(3,k) * p3(1,j)
+     2             + lhs16(7,k) * p3(2,j)
+     3             + lhs16(11,k) * p3(3,j)
+     3             + lhs16(15,k) * p3(4,j)
+!              qt(1,j) = qt(1,j) - pLhs(1,k) * pisave
+!              qt(2,j) = qt(2,j) - pLhs(2,k) * pisave
+!              qt(3,j) = qt(3,j) - pLhs(3,k) * pisave
             enddo
             qt(1,i) = qt(1,i) + tmp1
             qt(2,i) = qt(2,i) + tmp2
@@ -369,6 +375,10 @@ cdir$ ivdep
 !        endif !iwork=1 }
 !        if(iwork.eq.2) then ! { mkls sparse 
         else ! iwork =2 which is mkl on the 3x3 then phasta on G p4(4,:)
+          kLhs(1:3,:)=lhs16(1:3,:)
+          kLhs(4:6,:)=lhs16(5:7,:)
+          kLhs(7:9,:)=lhs16(9:11,:)
+  
           rdelta=TMRC()
           call mkl_dbsrgemv('N', nNodes, 3, kLhs, col, row, p3, qt)
           rspmvmkl=rspmvmkl + TMRC()-rdelta
@@ -382,9 +392,9 @@ c
 cdir$ ivdep
             do k = col(i), col(i+1)-1
               j = row(k) 
-              qt(1,j) = qt(1,j) - pLhs(1,k) * pisave
-              qt(2,j) = qt(2,j) - pLhs(2,k) * pisave
-              qt(3,j) = qt(3,j) - pLhs(3,k) * pisave
+              qt(1,j) = qt(1,j) + lhs16(13,k) * pisave
+              qt(2,j) = qt(2,j) + lhs16(14,k) * pisave
+              qt(3,j) = qt(3,j) + lhs16(15,k) * pisave
             enddo
           enddo
           rspmvphasta=rspmvphasta + TMRC()-rdelta
@@ -397,31 +407,6 @@ cdir$ ivdep
        enddo
       endif ! } done with transposed forms either iwork =1 or 2
       if(iwork.ge.3) then ! { work with 4x4 matrix
-!
-! nasty temporray work to get G transposed not just in block but across non-zero
-! pattern.  If fast enough we will assemble full matrix to avoid this.
-!
-        do i=1,nNodes
-cdir$ ivdep
-          do j = col(i), col(i+1)-1
-            k = row(j) 
-            do l=col(k),col(k+1)-1
-              if(row(l).eq.i) then
-                ktot(13:15,l)=-pLhs(1:3,j)
-                exit
-              endif
-            enddo
-          enddo
-        enddo
-        do i=1,nnz_tot
-          ktot(1:3,i)=kLhs(1:3,i)
-          ktot(4,i)=0
-          ktot(5:7,i)=kLhs(4:6,i)
-          ktot(8,i)=0
-          ktot(9:11,i)=kLhs(7:9,i)
-          ktot(12,i)=0
-          ktot(16,i)=0
-        enddo
         if(iwork.lt.5) then ! {transposed vec with 4x4 
           do i =1, nNodes
             p4(1,i)=p(i,1)
@@ -431,7 +416,7 @@ cdir$ ivdep
           enddo
           if(iwork.eq.3) then !{ mkl 
             rdelta=TMRC()
-            call mkl_dbsrgemv('N', nNodes, 4, ktot, col, row, p4, q4)
+            call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
             rspmvmkl=rspmvmkl + TMRC()-rdelta
           else  ! has to be iwork 4 which will be 4x4 transposed p
             rdelta= TMRC()
@@ -452,20 +437,20 @@ cdir$ ivdep
               do k = col(i), col(i+1)-1
                 j = row(k) 
                 tmp1 = tmp1
-     1               + ktot( 1,k) * p4(1,j)
-     2               + ktot( 5,k) * p4(2,j)
-     3               + ktot( 9,k) * p4(3,j)
-     4               + ktot(13,k) * p4(4,j)
+     1               + lhs16( 1,k) * p4(1,j)
+     2               + lhs16( 5,k) * p4(2,j)
+     3               + lhs16( 9,k) * p4(3,j)
+     4               + lhs16(13,k) * p4(4,j)
                 tmp2 = tmp2
-     1               + ktot( 2,k) * p4(1,j)
-     2               + ktot( 6,k) * p4(2,j)
-     3               + ktot(10,k) * p4(3,j)
-     3               + ktot(14,k) * p4(4,j)
+     1               + lhs16( 2,k) * p4(1,j)
+     2               + lhs16( 6,k) * p4(2,j)
+     3               + lhs16(10,k) * p4(3,j)
+     3               + lhs16(14,k) * p4(4,j)
                 tmp3 = tmp3
-     1               + ktot( 3,k) * p4(1,j)
-     2               + ktot( 7,k) * p4(2,j)
-     3               + ktot(11,k) * p4(3,j)
-     3               + ktot(15,k) * p4(4,j)
+     1               + lhs16( 3,k) * p4(1,j)
+     2               + lhs16( 7,k) * p4(2,j)
+     3               + lhs16(11,k) * p4(3,j)
+     3               + lhs16(15,k) * p4(4,j)
               enddo
               q4(1,i) = q4(1,i) + tmp1
               q4(2,i) = q4(2,i) + tmp2
@@ -498,20 +483,20 @@ cdir$ ivdep
             do k = col(i), col(i+1)-1
               j = row(k) 
               tmp1 = tmp1
-     1             + ktot( 1,k) * p(j,1)
-     2             + ktot( 5,k) * p(j,2)
-     3             + ktot( 9,k) * p(j,3)
-     4             + ktot(13,k) * p(j,4)
+     1             + lhs16( 1,k) * p(j,1)
+     2             + lhs16( 5,k) * p(j,2)
+     3             + lhs16( 9,k) * p(j,3)
+     4             + lhs16(13,k) * p(j,4)
               tmp2 = tmp2
-     1             + ktot( 2,k) * p(j,1)
-     2             + ktot( 6,k) * p(j,2)
-     3             + ktot(10,k) * p(j,3)
-     3             + ktot(14,k) * p(j,4)
+     1             + lhs16( 2,k) * p(j,1)
+     2             + lhs16( 6,k) * p(j,2)
+     3             + lhs16(10,k) * p(j,3)
+     3             + lhs16(14,k) * p(j,4)
               tmp3 = tmp3
-     1             + ktot( 3,k) * p(j,1)
-     2             + ktot( 7,k) * p(j,2)
-     3             + ktot(11,k) * p(j,3)
-     3             + ktot(15,k) * p(j,4)
+     1             + lhs16( 3,k) * p(j,1)
+     2             + lhs16( 7,k) * p(j,2)
+     3             + lhs16(11,k) * p(j,3)
+     3             + lhs16(15,k) * p(j,4)
             enddo
             q(i,1) = q(i,1) + tmp1
             q(i,2) = q(i,2) + tmp2
@@ -545,6 +530,7 @@ C============================================================================
 c
 c.... Data declaration
 c
+      use solvedata
 
         integer	col(nNodes+1),	row(nnz_tot)
         real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
@@ -562,9 +548,9 @@ cdir$ ivdep
         	j = row(k)
 c
         	tmp = tmp
-     1		    + pLhs(1,k) * p(j,1)
-     2		    + pLhs(2,k) * p(j,2)
-     3		    + pLhs(3,k) * p(j,3)
+     1		    + lhs16(4,k) * p(j,1)
+     2		    + lhs16(8,k) * p(j,2)
+     3		    + lhs16(12,k) * p(j,3)
             enddo
             q(i) = tmp
         enddo
@@ -586,6 +572,7 @@ C============================================================================
 c
 c.... Data declaration
 c
+        use solvedata
         implicit none
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
@@ -604,10 +591,10 @@ cdir$ ivdep
         	j = row(k)
 c
         	tmp = tmp
-     1		    + pLhs(1,k) * p(j,1)
-     2		    + pLhs(2,k) * p(j,2)
-     3		    + pLhs(3,k) * p(j,3)
-     4		    + pLhs(4,k) * p(j,4)
+     1		    + lhs16(4,k) * p(j,1)
+     2		    + lhs16(8,k) * p(j,2)
+     3		    + lhs16(12,k) * p(j,3)
+     4		    + lhs16(16,k) * p(j,4)
             enddo
             q(i) = tmp
         enddo
@@ -630,6 +617,7 @@ c
 c.... Data declaration
 c
 c	implicit none
+        use solvedata
         use pvsQbi
         include "common.h"
 
@@ -657,33 +645,33 @@ c
             tmp2 = 0
             tmp3 = 0
             tmp4 = 0
-            pisave   = p(i,4)
+
 cdir$ ivdep
             do k = col(i), col(i+1)-1
                 j = row(k)
 c
                 tmp1 = tmp1
-     1               + kLhs(1,k) * p(j,1)
-     2               + kLhs(4,k) * p(j,2)
-     3               + kLhs(7,k) * p(j,3)
+     1               + lhs16(1,k) * p(j,1)
+     2               + lhs16(5,k) * p(j,2)
+     3               + lhs16(9,k) * p(j,3)
+     3               + lhs16(13,k) * p(j,4)
                 tmp2 = tmp2
-     1               + kLhs(2,k) * p(j,1)
-     2               + kLhs(5,k) * p(j,2)
-     3               + kLhs(8,k) * p(j,3)
+     1               + lhs16(2,k) * p(j,1)
+     2               + lhs16(6,k) * p(j,2)
+     3               + lhs16(10,k) * p(j,3)
+     3               + lhs16(14,k) * p(j,4)
                 tmp3 = tmp3
-     1               + kLhs(3,k) * p(j,1)
-     2               + kLhs(6,k) * p(j,2)
-     3               + kLhs(9,k) * p(j,3)
+     1               + lhs16(3,k) * p(j,1)
+     2               + lhs16(7,k) * p(j,2)
+     3               + lhs16(11,k) * p(j,3)
+     3               + lhs16(15,k) * p(j,4)
 c
                 tmp4 = tmp4
-     1               + pLhs(1,k) * p(j,1)
-     2               + pLhs(2,k) * p(j,2)
-     3               + pLhs(3,k) * p(j,3)
-     4               + pLhs(4,k) * p(j,4)
+     1               + lhs16(4,k) * p(j,1)
+     2               + lhs16(8,k) * p(j,2)
+     3               + lhs16(12,k) * p(j,3)
+     4               + lhs16(16,k) * p(j,4)
 c
-                q(j,1) = q(j,1) - pLhs(1,k) * pisave
-                q(j,2) = q(j,2) - pLhs(2,k) * pisave
-                q(j,3) = q(j,3) - pLhs(3,k) * pisave
             enddo
             q(i,1) = q(i,1) + tmp1
             q(i,2) = q(i,2) + tmp2

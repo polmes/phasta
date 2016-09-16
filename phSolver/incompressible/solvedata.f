@@ -5,6 +5,7 @@
       real*8,  allocatable :: lhsP(:,:), lhsK(:,:), lhsS(:,:)
       real*8,  allocatable :: aperm(:,:), atemp(:,:)
       real*8,  allocatable :: apermS(:,:,:), atempS(:,:)
+      real*8,  allocatable :: lhs16(:,:)
 
       end module
 
@@ -16,6 +17,7 @@ c-----------------------------------------------------------------------
       include "common.h"
       allocate (lhsP(4,nnz_tot))
       allocate (lhsK(9,nnz_tot))
+      allocate (lhs16(16,nnz_tot))
       if(leslib.eq.1) then
         allocate (aperm(nshg,nPermDims))
         allocate (atemp(nshg,nTmpDims))

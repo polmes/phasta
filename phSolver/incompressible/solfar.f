@@ -146,7 +146,7 @@ c      call summary_start()
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       lhsK,      
+     &             rowp,      colm,       lhsK, lhs16,      
      &             lhsP,      rerr,       GradV   )
       telmcp2 = TMRC()
       impistat=0
