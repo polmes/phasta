@@ -230,11 +230,11 @@ c
             pisave = p(i)
 cdir$ ivdep
             do k = col(i), col(i+1)-1
-        	j = row(k) 
+              j = row(k) 
 c
-        	q(j,1) = q(j,1) - pLhs(1,k) * pisave
-        	q(j,2) = q(j,2) - pLhs(2,k) * pisave
-        	q(j,3) = q(j,3) - pLhs(3,k) * pisave
+              q(j,1) = q(j,1) - pLhs(1,k) * pisave
+              q(j,2) = q(j,2) - pLhs(2,k) * pisave
+              q(j,3) = q(j,3) - pLhs(3,k) * pisave
             enddo
         enddo
 c
@@ -660,30 +660,30 @@ c
             pisave   = p(i,4)
 cdir$ ivdep
             do k = col(i), col(i+1)-1
-        	j = row(k)
+                j = row(k)
 c
-        	tmp1 = tmp1
-     1		     + kLhs(1,k) * p(j,1)
-     2		     + kLhs(4,k) * p(j,2)
-     3		     + kLhs(7,k) * p(j,3)
-        	tmp2 = tmp2
-     1		     + kLhs(2,k) * p(j,1)
-     2		     + kLhs(5,k) * p(j,2)
-     3		     + kLhs(8,k) * p(j,3)
-        	tmp3 = tmp3
-     1		     + kLhs(3,k) * p(j,1)
-     2		     + kLhs(6,k) * p(j,2)
-     3		     + kLhs(9,k) * p(j,3)
+                tmp1 = tmp1
+     1               + kLhs(1,k) * p(j,1)
+     2               + kLhs(4,k) * p(j,2)
+     3               + kLhs(7,k) * p(j,3)
+                tmp2 = tmp2
+     1               + kLhs(2,k) * p(j,1)
+     2               + kLhs(5,k) * p(j,2)
+     3               + kLhs(8,k) * p(j,3)
+                tmp3 = tmp3
+     1               + kLhs(3,k) * p(j,1)
+     2               + kLhs(6,k) * p(j,2)
+     3               + kLhs(9,k) * p(j,3)
 c
-        	tmp4 = tmp4
-     1		     + pLhs(1,k) * p(j,1)
-     2		     + pLhs(2,k) * p(j,2)
-     3		     + pLhs(3,k) * p(j,3)
-     4		     + pLhs(4,k) * p(j,4)
+                tmp4 = tmp4
+     1               + pLhs(1,k) * p(j,1)
+     2               + pLhs(2,k) * p(j,2)
+     3               + pLhs(3,k) * p(j,3)
+     4               + pLhs(4,k) * p(j,4)
 c
-        	q(j,1) = q(j,1) - pLhs(1,k) * pisave
-        	q(j,2) = q(j,2) - pLhs(2,k) * pisave
-        	q(j,3) = q(j,3) - pLhs(3,k) * pisave
+                q(j,1) = q(j,1) - pLhs(1,k) * pisave
+                q(j,2) = q(j,2) - pLhs(2,k) * pisave
+                q(j,3) = q(j,3) - pLhs(3,k) * pisave
             enddo
             q(i,1) = q(i,1) + tmp1
             q(i,2) = q(i,2) + tmp2
