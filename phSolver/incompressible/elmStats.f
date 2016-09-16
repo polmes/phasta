@@ -86,8 +86,7 @@ c  Assemble the residual for the statistics
 c-----------------------------------------------------------------------
       subroutine elmStatsRes( y,        ac,    x,      shp,     shgl, 
      &                        shpb,     shglb,       iBC,     BC, 
-     &                        iper,     ilwork,      rowp,    colm,
-     &                        lhsK,     lhsP )
+     &                        iper,     ilwork,      rowp,    colm)
       
       use     stats
       include "common.h"
@@ -97,8 +96,7 @@ c-----------------------------------------------------------------------
      &        shp(MAXTOP,maxsh,MAXQPT),  shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &        shpb(MAXTOP,maxsh,MAXQPT),
      &        shglb(MAXTOP,nsd,maxsh,MAXQPT),
-     &        BC(nshg,ndofBC),          lhsK(9,nnz_tot),
-     &        lhsP(4,nnz_tot),         res(nshg,ndof)
+     &        BC(nshg,ndofBC), res(nshg,ndof)
 
       integer iBC(nshg),                iper(nshg),
      &        ilwork(nlwork),           rowp(nshg,nnz),
@@ -116,8 +114,8 @@ c-----------------------------------------------------------------------
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       lhsK,      
-     &             lhsP,      rjunk   )
+     &             rowp,      colm,       
+     &             rjunk   )
       stsResFlg = 0
       ierrcalc=ierrcalctmp  ! reset it back to original value
       return 

@@ -52,8 +52,7 @@ c
      &               shp,       shgl,             iBC,
      &               BC,        shpb,           shglb,
      &               res,       iper,          ilwork,   
-     &              rowp,       colm,            lhsK,      
-     &              lhsP,       rerr   )
+     &              rowp,       colm,          rerr   )
 
         globMas = zero
         npro = numel

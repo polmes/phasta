@@ -186,12 +186,12 @@ c
 
       subroutine lmassadd ( ac,       res,
      &                      rowp,     colm,    
-     &                      lhsK,     gmass)
+     &                      lhs16,     gmass)
 c     
       include "common.h"
 c     
       real*8 ac(nshg,ndof), res(nshg,4), tmp,tmp1
-      real*8 lhsK(9,nnz_tot), gmass(nshg), rho(nshg)
+      real*8 lhs16(16,nnz_tot), gmass(nshg), rho(nshg)
       integer rowp(nnz*nshg),  colm(nshg+1)
       integer	n,	k
 c
@@ -202,15 +202,15 @@ c
       tmp1=flmpl*almi
       if((flmpl.ne.0).and.(lhs.eq.1)) then
 c
-c.... Add lmass to diag of lhsK
+c.... Add lmass to diag of lhs16
 c
          do n = 1, nshg
 	    k = sparseloc( rowp(colm(n)), colm(n+1)-colm(n), n )
      &       + colm(n)-1
             tmp=gmass(n)*tmp1*rho(n)
-	    lhsK(1,k) = lhsK(1,k) + tmp
-	    lhsK(5,k) = lhsK(5,k) + tmp
-	    lhsK(9,k) = lhsK(9,k) + tmp
+	    lhs16(1,k) = lhs16(1,k) + tmp
+	    lhs16(6,k) = lhs16(6,k) + tmp
+	    lhs16(11,k) = lhs16(11,k) + tmp
          enddo
       endif
 

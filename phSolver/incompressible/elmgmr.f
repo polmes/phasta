@@ -2,8 +2,8 @@
      &                     shp,       shgl,      iBC,
      &                     BC,        shpb,      shglb,
      &                     res,       iper,      ilwork,
-     &                     rowp,      colm,     lhsK, lhs16,      
-     &                     lhsP,      rerr,     GradV)
+     &                     rowp,      colm,     
+     &                     rerr,     GradV)
 c
 c----------------------------------------------------------------------
 c
@@ -17,6 +17,7 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004.
 c----------------------------------------------------------------------
 c
+      use solvedata  ! brings in lhs16
       use pvsQbi  ! brings in NABI
       use stats   !  
       use pointer_data  ! brings in the pointers for the blocked arrays
@@ -48,8 +49,6 @@ c
 
         integer rowp(nshg*nnz),         colm(nshg+1)
 
-        real*8 lhs16(16,nnz_tot)
-        real*8 lhsK(9,nnz_tot), lhsP(4,nnz_tot)
 
         real*8, allocatable, dimension(:,:,:,:,:) :: xKebe, xGoC
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
@@ -156,8 +155,6 @@ c
       endif
 
       if (lhs .eq. 1) then
-        lhsp   = zero
-        lhsk   = zero
         lhs16   = zero
       endif
 c
@@ -293,10 +290,6 @@ c
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
              if(ipord.eq.1) 
      &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
-             call fillsparseI (mien(iblk)%p, 
-     &                 xKebe(:,:,:,:,ith) ,            lhsK,
-     &                 xGoC(:,:,:,:,ith) ,             lhsP,
-     &                 rowp,                      colm)
              call fillsparseI16 (mien(iblk)%p, 
      &                 xKebe(:,:,:,:,ith) ,            lhs16,
      &                 xGoC(:,:,:,:,ith) ,            
@@ -326,7 +319,7 @@ c.... add in lumped mass contributions if needed
 c
       if((flmpr.ne.0).or.(flmpl.ne.0)) then
         write(*,*) 'not checked for blk'
-        call lmassadd(ac,res,rowp,colm,lhsK,gmass)
+        call lmassadd(ac,res,rowp,colm,lhs16,gmass)
       endif
 
       have_local_mass = 1

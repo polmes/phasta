@@ -511,7 +511,7 @@ c
      &                           u,      uold,     x,
      &                           shp,    shgl,     shpb,   shglb,
      &                           iBC,    BC,       iper,   ilwork,
-     &                           rowp,   colm,     lhsK,   lhsP )
+     &                           rowp,   colm)
             endif
 
 c     

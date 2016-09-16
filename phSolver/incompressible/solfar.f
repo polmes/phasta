@@ -72,6 +72,7 @@ c
         include "svLS.h"
 #endif        
 C
+      real*8 lhsK, lhsP  ! keep alive for a bit longer to not strip from usr.c
       REAL*8                rdtmp
 C    
 #ifdef HAVE_SVLS
@@ -146,8 +147,7 @@ c      call summary_start()
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       lhsK, lhs16,      
-     &             lhsP,      rerr,       GradV   )
+     &             rowp,      colm,       rerr,       GradV   )
       telmcp2 = TMRC()
       impistat=0
       impistat2=0
@@ -174,26 +174,29 @@ c####################################################################
          Res4(1:dof,i) = res(i,1:dof)
       END DO
 
+! the following is  direct map of lhsK-P to lhs16 but it seems wrong unless
+! svLS built into the storage a wrong understanding of G and -G^T
       DO i=1, nnz_tot
-         Val4(1:3,i)   = lhsK(1:3,i)
-         Val4(5:7,i)   = lhsK(4:6,i)
-         Val4(9:11,i)  = lhsK(7:9,i)
-         Val4(13:15,i) = lhsP(1:3,i)
-         Val4(16,i)    = lhsP(4,i)
+         Val4(1:3,i)   = lhs16(1:3,i) !lhsK(1:3,i)
+         Val4(5:7,i)   = lhs16(5:7,i) !lhsK(4:6,i)
+         Val4(9:11,i)  = lhs16(9:11,i) !lhsK(7:9,i)
+         Val4(13:15,i) = lhs16(4:12:4,i) !lhsP(1:3,i)  !looks wrong
+         Val4(16,i)    = lhs16(16,i) !lhsP(4,i)
+         Val4(4:12:4,i)= lhs16(13:15,i)  ! directly filled but looks wrong
       END DO
-
-      !Val4(4:12:4,:) = -lhsP(1:3,:)^t
-      DO i=1, nshg
-         Do j=colm(i), colm(i+1) - 1
-            k = rowp(j)
-            DO l=colm(k), colm(k+1) - 1
-               IF (rowp(l) .EQ. i) THEN
-                  Val4(4:12:4,l) = -lhsP(1:3,j)
-                  EXIT
-               END IF
-            END DO
-         END DO
-      END DO
+! next code block replaced by 2 lines up 
+!      !Val4(4:12:4,:) = -lhsP(1:3,:)^t
+!      DO i=1, nshg
+!         Do j=colm(i), colm(i+1) - 1
+!            k = rowp(j)
+!            DO l=colm(k), colm(k+1) - 1
+!               IF (rowp(l) .EQ. i) THEN
+!                  Val4(4:12:4,l) = -lhsP(1:3,j)
+!                  EXIT
+!               END IF
+!            END DO
+!         END DO
+!      END DO
       CALL svLS_SOLVE(svLS_lhs, svLS_ls, dof, Res4, Val4, incL, 
      2   faceRes)
       
@@ -222,7 +225,7 @@ c      call summary_start()
       ! Initial Time Profiling
       call cpu_time(cpusec(1))
       if (irun_amg_prec.gt.0) then
-          call ramg_control(colm,rowp,lhsK,lhsP,
+          call ramg_control(colm,rowp,
      &         ilwork,BC,iBC,iper)
       end if
 
