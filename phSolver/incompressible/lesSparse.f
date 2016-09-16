@@ -220,6 +220,9 @@ c
 c.... Do an AP product
 c
         do i = 1, nNodes
+          tmp1=0
+          tmp2=0
+          tmp3=0
 c
 cdir$ ivdep
             do k = col(i), col(i+1)-1
@@ -275,7 +278,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstartKG=TMRC()
-      iwork=3 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
+      iwork=0 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
               ! 3 use MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4 without transpose
       if(iwork.eq.0) then  ! {old way
         rdelta=TMRC()
@@ -328,18 +331,18 @@ cdir$ ivdep
 c
 c.... Do an AP product
 c
-          rdelta= TMRC()
-          do i = 1, nNodes
-            q3(1,i) = 0
-            q3(2,i) = 0
-            q3(3,i) = 0
-          enddo
-          do i = 1, nNodes
+        rdelta= TMRC()
+        do i = 1, nNodes
+          q3(1,i) = 0
+          q3(2,i) = 0
+          q3(3,i) = 0
+        enddo
+        do i = 1, nNodes
 c
-            tmp1 = 0
-            tmp2 = 0
-            tmp3 = 0
-            pisave   = p(i,4)
+          tmp1 = 0
+          tmp2 = 0
+          tmp3 = 0
+          pisave   = p(i,4)
 cdir$ ivdep
           do k = col(i), col(i+1)-1
             j = row(k) 
@@ -359,12 +362,17 @@ cdir$ ivdep
             q3(2,j) = q3(2,j) - lhs16(8,k) * pisave
             q3(3,j) = q3(3,j) - lhs16(12,k) * pisave
           enddo
-! accummulate into transpose to avoid transpose later
-          q(i,1) = q3(1,i) + tmp1
-          q(i,2) = q3(2,i) + tmp2
-          q(i,3) = q3(3,i) + tmp3
+! cannot accumulate into transpose due to sparse transposed G work
+          q3(1,i) = q3(1,i) + tmp1
+          q3(2,i) = q3(2,i) + tmp2
+          q3(3,i) = q3(3,i) + tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        do i =1, nNodes ! transpose back from  dof_var first
+          q(i,1)=q3(1,i)
+          q(i,2)=q3(2,i)
+          q(i,3)=q3(3,i)
+        enddo
       endif !iwork=1 }
       if(iwork.eq.2) then ! { mkl sparse 
         do i = 1, nNodes
@@ -383,6 +391,9 @@ c.... Do an AP product
 c
         rdelta=TMRC()
         do i = 1, nNodes
+          tmp1=0
+          tmp2=0
+          tmp3=0
 c
 cdir$ ivdep
           do k = col(i), col(i+1)-1
@@ -400,6 +411,8 @@ cdir$ ivdep
 ! ALT            q3(2,j) = q3(2,j) - lhs16(8,k) * pisave
 ! ALT            q3(3,j) = q3(3,j) - lhs16(12,k) * pisave
 ! ALT          enddo
+! but note you cannot accumulate into transpose as below with this approach
+
 ! accummulate into transpose to avoid transpose later
           q(i,1) = q3(1,i) + tmp1
           q(i,2) = q3(2,i) + tmp2
@@ -423,7 +436,7 @@ cdir$ ivdep
           q(i,3)=q4(3,i)
         enddo
       endif !} end mkl 4x4
-      if(ilwork.eq.4) then !{ 4x4 transposed p
+      if(iwork.eq.4) then !{ 4x4 transposed p
         do i =1, nNodes
           p4(1,i)=p(i,1)
           p4(2,i)=p(i,2)
