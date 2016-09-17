@@ -13,9 +13,9 @@ c
       subroutine drvlesPrepDiag ( flowDiag, ilwork,
      &                            iBC,      BC,      iper,
      &                            rowp,     colm,    
-     &                            plhsK,    plhsP)   !keeping it in interface for a while
+     &                            lhs16,    plhsP)   !keeping it in interface for a while
 c     
-      use solvedata
+!      use solvedata
       use pointer_data
       use pvsQbi
       use convolImpFlow !brings in the current part of convol coef for imp BC
@@ -24,6 +24,7 @@ c
       include "common.h"
       include "mpif.h"
 c     
+      real*8 lhs16(16,nnz_tot)
       dimension flowDiag(nshg,4), ilwork(nlwork)
       dimension iBC(nshg), iper(nshg), BC(nshg,ndofBC)
       integer rowp(nnz_tot),  colm(nshg+1)
@@ -201,18 +202,18 @@ C
 C "fLesSparseApG":
 C
 C============================================================================
-        subroutine fLesSparseApG(	col,	row,	pLhs,	
+        subroutine fLesSparseApG(	col,	row,	lhs16,	
      &					p,	q,	nNodes,
      &                                  nnz_tot )
 c
 c.... Data declaration
 c
-        use solvedata
+!        use solvedata
         implicit none
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
 !        real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
-        real*8	pLhs,	p(nNodes),	q(nNodes,3)
+        real*8	lhs16(16,nnz_tot),	p(nNodes),	q(nNodes,3)
         real*8 tmp1, tmp2, tmp3
 c
         integer	i,	j,	k
@@ -248,14 +249,14 @@ C "fLesSparseApKG":   OPTION to TRANSPOSED P vector prior to call
 C
 C============================================================================
 
-      subroutine fLesSparseApKG(col,	row,	kLhs,	pLhs,
+      subroutine fLesSparseApKG(col,	row,	lhs16,	pLhs,
      1                           p,	q,	nNodes,
      2                                  nnz_tot_hide ) 
 c
 c.... Data declaration
 c
 c      implicit none
-      use solvedata
+!      use solvedata
       use pvsQbi
       include "common.h"
       integer	nNodes
@@ -264,7 +265,7 @@ c      implicit none
       real*8    q3(3,nNodes), p3(3,nNodes)
       real*8    q4(4,nNodes), p4(4,nNodes)
 !      real*8    kLhs(9,nnz_tot), pLhs(4,nnz_tot)  ! old way passed in matrices
-      real*8    lhs9(9,nnz_tot), kLHS, pLhs  ! needed for mkl3xe
+      real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot), pLhs  ! needed for mkl3xe
 ! when we kill of mkl 3x3      real*8    kLhs, pLhs
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
@@ -278,7 +279,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstartKG=TMRC()
-      iwork=0 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
+      iwork=5 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
               ! 3 use MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4 without transpose
       if(iwork.eq.0) then  ! {old way
         rdelta=TMRC()
@@ -531,16 +532,16 @@ C "fLesSparseApNGt":
 C
 C============================================================================
 
-        subroutine fLesSparseApNGt(	col,	row,	pLhs,	
+        subroutine fLesSparseApNGt(	col,	row,	lhs16,	
      1					p,	q,	nNodes,
      2                                  nnz_tot   )
 c
 c.... Data declaration
 c
-      use solvedata
+!      use solvedata
 
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
+        real*8	lhs16(16,nnz_tot),	p(nNodes,3),	q(nNodes)
 c
         real*8	tmp
         integer	i,	j,	k
@@ -555,8 +556,8 @@ cdir$ ivdep
         	j = row(k)
 c
         	tmp = tmp
-     1		    + lhs16(4,k) * p(j,1)
-     2		    + lhs16(8,k) * p(j,2)
+     1		    + lhs16( 4,k) * p(j,1)
+     2		    + lhs16( 8,k) * p(j,2)
      3		    + lhs16(12,k) * p(j,3)
             enddo
             q(i) = tmp
@@ -573,17 +574,17 @@ C "fLesSparseApNGtC":
 C
 C============================================================================
 
-        subroutine fLesSparseApNGtC(	col,	row,	pLhs,	
+        subroutine fLesSparseApNGtC(	col,	row,	lhs16,	
      1					p,	q,	nNodes,
      2                                  nnz_tot )
 c
 c.... Data declaration
 c
-        use solvedata
+!        use solvedata
         implicit none
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	pLhs(4,nnz_tot),	p(nNodes,4),	q(nNodes)
+        real*8	lhs16(16,nnz_tot),	p(nNodes,4),	q(nNodes)
 c
         real*8	tmp
         integer	i,	j,	k
@@ -617,20 +618,20 @@ C "fLesSparseApFull":
 C
 C============================================================================
 
-        subroutine fLesSparseApFull(	col,	row,	kLhs,	pLhs,
+        subroutine fLesSparseApFull(	col,	row,	lhs16,	pLhs,
      1					p,	q,	nNodes,
      2                                  nnz_tot_hide )
 c
 c.... Data declaration
 c
 c	implicit none
-        use solvedata
+!        use solvedata
         use pvsQbi
         include "common.h"
 
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	kLhs(9,nnz_tot),	pLhs(4,nnz_tot)
+        real*8	lhs16(16,nnz_tot),	pLhs
         real*8  p(nNodes,4),	q(nNodes,4)
 c
         real*8	tmp1,	tmp2,	tmp3,	tmp4

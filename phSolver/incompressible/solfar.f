@@ -252,7 +252,7 @@ c
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDims,  
      &              nTmpDims,   rowp,             colm,     
-     &              lhsK,       lhsP,             rdtmp,      
+     &              lhs16,       lhsP,             rdtmp,      
      &              nnz_tot,    CGsol )
 c
 c.... solve linear system
@@ -278,7 +278,7 @@ c
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDims,  
      &              nTmpDims,   rowp,             colm,     
-     &              lhsK,       lhsP,             rdtmp,      
+     &              lhs16,       lhsP,             rdtmp,      
      &              nnz_tot,    CGsol )
 
           call myfLesSolve( lesId, usr )
