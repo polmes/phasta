@@ -2,7 +2,7 @@
 
       integer nsolflow,npermDims, nTmpDims, nPermDimsS, nTmpDimsS
 
-      real*8,  allocatable :: lhs16(:,:), lhsS(:,:)
+      real*8,  allocatable :: lhs16(:,:), lhsP(:,:), lhsS(:,:)
       real*8,  allocatable :: aperm(:,:), atemp(:,:)
       real*8,  allocatable :: apermS(:,:,:), atempS(:,:)
 
@@ -15,6 +15,7 @@ c-----------------------------------------------------------------------
       use solvedata
       include "common.h"
       allocate (lhs16(16,nnz_tot))
+      allocate (lhsP(4,nnz_tot))
       if(leslib.eq.1) then
         allocate (aperm(nshg,nPermDims))
         allocate (atemp(nshg,nTmpDims))

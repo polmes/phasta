@@ -72,7 +72,7 @@ c
         include "svLS.h"
 #endif        
 C
-      real*8 lhsK, lhsP  ! keep alive for a bit longer to not strip from usr.c
+      real*8 lhsK  ! keep alive for a bit longer to not strip from usr.c
       REAL*8                rdtmp
 C    
 #ifdef HAVE_SVLS
@@ -148,6 +148,7 @@ c      call summary_start()
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
      &             rowp,      colm,       rerr,       GradV   )
+      if(lhs.eq.1) lhsP(1:4,:)=lhs16(4:16:4,:) !efficient for G Ap's
       telmcp2 = TMRC()
       impistat=0
       impistat2=0
@@ -252,7 +253,7 @@ c
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDims,  
      &              nTmpDims,   rowp,             colm,     
-     &              lhs16,       lhsP,             rdtmp,      
+     &              lhs16,      lhsP,             rdtmp,      
      &              nnz_tot,    CGsol )
 c
 c.... solve linear system
@@ -278,7 +279,7 @@ c
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDims,  
      &              nTmpDims,   rowp,             colm,     
-     &              lhs16,       lhsP,             rdtmp,      
+     &              lhs16,      lhsP,             rdtmp,      
      &              nnz_tot,    CGsol )
 
           call myfLesSolve( lesId, usr )
