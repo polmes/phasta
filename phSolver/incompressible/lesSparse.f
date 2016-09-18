@@ -400,11 +400,6 @@ cdir$ ivdep
         rspmvmkl=rspmvmkl + TMRC()-rdelta
         rdelta=TMRC()
         do i = 1, nNodes
-          q3(1,i) = 0
-          q3(2,i) = 0
-          q3(3,i) = 0
-        enddo
-        do i = 1, nNodes
 c
           tmp1 = 0
           tmp2 = 0
