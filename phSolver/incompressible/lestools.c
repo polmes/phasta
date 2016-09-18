@@ -914,7 +914,7 @@ void lesApG ( UsrHd   usrHd,
     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	      usrHd->iper, usrHd->iBC, usrHd->BC );
 
-    fLesSparseApG( usrHd->colm, usrHd->rowp, usrHd->lhsK,
+    fLesSparseApG( usrHd->colm, usrHd->rowp, usrHd->lhsP,
 		   usrHd->lesP, usrHd->lesQ, &(usrHd->nNodes),
 		   &(usrHd->nnz_tot));
 
@@ -1065,7 +1065,7 @@ void lesApNGt ( UsrHd   usrHd,
 	      usrHd->iper, usrHd->iBC, usrHd->BC  );
 
     fLesSparseApNGt( usrHd->colm, usrHd->rowp, 
-		     usrHd->lhsK, usrHd->lesP, usrHd->lesQ, 
+		     usrHd->lhsP, usrHd->lesP, usrHd->lesQ, 
 		     &(usrHd->nNodes),&(usrHd->nnz_tot));
 
     commIn ( usrHd->lesQ, usrHd->ilwork, &nQs,
@@ -1149,7 +1149,7 @@ void lesApNGtC ( UsrHd   usrHd,
 	       usrHd->iper, usrHd->iBC, usrHd->BC  );
 
      fLesSparseApNGtC( usrHd->colm, usrHd->rowp, 
-		       usrHd->lhsK, usrHd->lesP, usrHd->lesQ, 
+		       usrHd->lhsP, usrHd->lesP, usrHd->lesQ, 
 		       &(usrHd->nNodes),&(usrHd->nnz_tot));
 
      commIn ( usrHd->lesQ, usrHd->ilwork, &nQs,

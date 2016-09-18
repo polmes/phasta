@@ -13,7 +13,7 @@ c
       subroutine drvlesPrepDiag ( flowDiag, ilwork,
      &                            iBC,      BC,      iper,
      &                            rowp,     colm,    
-     &                            lhs16,    plhsP)   !keeping it in interface for a while
+     &                            lhs16,    lhsP)   !keeping it in interface for a while
 c     
       use pointer_data
       use pvsQbi
@@ -26,6 +26,7 @@ c
       real*8 lhs16(16,nnz_tot)
       dimension flowDiag(nshg,4), ilwork(nlwork)
       dimension iBC(nshg), iper(nshg), BC(nshg,ndofBC)
+      real*8 lhsP(4,nnz_tot)
       integer rowp(nnz_tot),  colm(nshg+1)
       integer	n,	k
 c
@@ -44,7 +45,7 @@ c
             flowdiag(n,2) = lhs16(6,k) !lhsK(5,k)
             flowdiag(n,3) = lhs16(11,k) !lhsK(9,k)
 c     
-            flowdiag(n,4) = lhs16(16,k) !lhsP(4,k)
+            flowdiag(n,4) = lhsP(4,k)
          enddo
       else
         flowDiag = zero
@@ -59,7 +60,7 @@ c     &                          + lhs16(5,k) + lhs16(7,k)
               flowdiag(n,3) = flowdiag(n,3) + abs(lhs16(11,k)) 
 c     &                          + lhsK(9,k) + lhs16(10,k)
 c
-              flowdiag(n,4) = flowdiag(n,4) + abs(lhs16(16,k)) 
+              flowdiag(n,4) = flowdiag(n,4) + abs(lhsP(4,k)) 
            enddo
            flowdiag(n,:)=flowdiag(n,:)*pt33
         enddo
@@ -203,7 +204,7 @@ C
 C "fLesSparseApG":
 C
 C============================================================================
-        subroutine fLesSparseApG(	col,	row,	lhs16,	
+        subroutine fLesSparseApG(	col,	row,	pLhs,	
      &					p,	q,	nNodes,
      &                                  nnz_tot_hide )
 c
@@ -213,31 +214,33 @@ c
       include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-!        real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
-        real*8	lhs16(16,nnz_tot),	p(nNodes),	q(nNodes,3)
-        real*8 tmp1, tmp2, tmp3
+        real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
 c
+        real*8	pisave
         integer	i,	j,	k
         rstart=TMRC()
+c
+c.... clear the vector
+c
+        do i = 1, nNodes
+            q(i,1) = 0
+            q(i,2) = 0
+            q(i,3) = 0
+        enddo
 c
 c.... Do an AP product
 c
         do i = 1, nNodes
-          tmp1=0
-          tmp2=0
-          tmp3=0
 c
+            pisave = p(i)
 cdir$ ivdep
             do k = col(i), col(i+1)-1
               j = row(k) 
 c
-              tmp1 = tmp1 + lhs16(13,k) * p(j)
-              tmp2 = tmp2 + lhs16(14,k) * p(j)
-              tmp3 = tmp3 + lhs16(15,k) * p(j)
+              q(j,1) = q(j,1) - pLhs(1,k) * pisave
+              q(j,2) = q(j,2) - pLhs(2,k) * pisave
+              q(j,3) = q(j,3) - pLhs(3,k) * pisave
             enddo
-              q(i,1) = tmp1
-              q(i,2) = tmp2
-              q(i,3) = tmp3
         enddo
 c
 c.... end
@@ -259,7 +262,6 @@ c
 c.... Data declaration
 c
 c      implicit none
-!      use solvedata
       use pvsQbi
       include "common.h"
       integer	nNodes
@@ -267,9 +269,8 @@ c      implicit none
       real*8 	p(nNodes,4),  q(nNodes,3)
       real*8    q3(3,nNodes), p3(3,nNodes)
       real*8    q4(4,nNodes), p4(4,nNodes)
-!      real*8    kLhs(9,nnz_tot), pLhs(4,nnz_tot)  ! old way passed in matrices
+      real*8    pLhs(4,nnz_tot)  ! old way passed in matrices
       real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot), pLhs  ! needed for mkl3xe
-! when we kill of mkl 3x3      real*8    kLhs, pLhs
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
@@ -315,9 +316,9 @@ cdir$ ivdep
      1               + lhs16( 3,k) * p(j,1)
      2               + lhs16( 7,k) * p(j,2)
      3               + lhs16(11,k) * p(j,3)
-                q(j,1) = q(j,1) - lhs16(4,k) * pisave
-                q(j,2) = q(j,2) - lhs16(8,k) * pisave
-                q(j,3) = q(j,3) - lhs16(12,k) * pisave
+                q(j,1) = q(j,1) - pLhs(1,k) * pisave
+                q(j,2) = q(j,2) - pLhs(2,k) * pisave
+                q(j,3) = q(j,3) - pLhs(3,k) * pisave
             enddo
             q(i,1) = q(i,1) + tmp1
             q(i,2) = q(i,2) + tmp2
@@ -362,9 +363,9 @@ cdir$ ivdep
      1           + lhs16( 3,k) * p3(1,j)
      2           + lhs16( 7,k) * p3(2,j)
      3           + lhs16(11,k) * p3(3,j)
-            q3(1,j) = q3(1,j) - lhs16(4,k) * pisave
-            q3(2,j) = q3(2,j) - lhs16(8,k) * pisave
-            q3(3,j) = q3(3,j) - lhs16(12,k) * pisave
+            q3(1,j) = q3(1,j) - pLhs(1,k) * pisave
+            q3(2,j) = q3(2,j) - pLhs(2,k) * pisave
+            q3(3,j) = q3(3,j) - pLhs(3,k) * pisave
           enddo
 ! cannot accumulate into transpose due to sparse transposed G work
           q3(1,i) = q3(1,i) + tmp1
@@ -411,9 +412,9 @@ cdir$ ivdep
 ! ALTcdir$ ivdep
 ! ALT          do k = col(i), col(i+1)-1
 ! ALT            j = row(k) 
-! ALT            q3(1,j) = q3(1,j) - lhs16(4,k) * pisave
-! ALT            q3(2,j) = q3(2,j) - lhs16(8,k) * pisave
-! ALT            q3(3,j) = q3(3,j) - lhs16(12,k) * pisave
+! ALT            q3(1,j) = q3(1,j) - pLhs(1,k) * pisave
+! ALT            q3(2,j) = q3(2,j) - pLhs(2,k) * pisave
+! ALT            q3(3,j) = q3(3,j) - pLhs(3,k) * pisave
 ! ALT          enddo
 ! but note you cannot accumulate into transpose as below with this approach
 
@@ -535,7 +536,7 @@ C "fLesSparseApNGt":
 C
 C============================================================================
 
-        subroutine fLesSparseApNGt(	col,	row,	lhs16,	
+        subroutine fLesSparseApNGt(	col,	row,	pLhs,	
      1					p,	q,	nNodes,
      2                                  nnz_tot_hide   )
 c
@@ -544,7 +545,7 @@ c
         include "common.h"
 
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	lhs16(16,nnz_tot),	p(nNodes,3),	q(nNodes)
+        real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
 c
         real*8	tmp
         integer	i,	j,	k
@@ -560,9 +561,9 @@ cdir$ ivdep
         	j = row(k)
 c
         	tmp = tmp
-     1		    + lhs16( 4,k) * p(j,1)
-     2		    + lhs16( 8,k) * p(j,2)
-     3		    + lhs16(12,k) * p(j,3)
+     1		    + pLhs(1,k) * p(j,1)
+     2		    + pLhs(2,k) * p(j,2)
+     3		    + pLhs(3,k) * p(j,3)
             enddo
             q(i) = tmp
         enddo
@@ -579,7 +580,7 @@ C "fLesSparseApNGtC":
 C
 C============================================================================
 
-        subroutine fLesSparseApNGtC(	col,	row,	lhs16,	
+        subroutine fLesSparseApNGtC(	col,	row,	pLhs,	
      1					p,	q,	nNodes,
      2                                  nnz_tot_hide )
 c
@@ -589,7 +590,7 @@ c
       include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	lhs16(16,nnz_tot),	p(nNodes,4),	q(nNodes)
+        real*8	pLhs(4,nnz_tot),	p(nNodes,4),	q(nNodes)
 c
         real*8	tmp
         integer	i,	j,	k
@@ -605,10 +606,10 @@ cdir$ ivdep
         	j = row(k)
 c
         	tmp = tmp
-     1		    + lhs16(4,k) * p(j,1)
-     2		    + lhs16(8,k) * p(j,2)
-     3		    + lhs16(12,k) * p(j,3)
-     4		    + lhs16(16,k) * p(j,4)
+     1		    + pLhs(1,k) * p(j,1)
+     2		    + pLhs(2,k) * p(j,2)
+     3		    + pLhs(3,k) * p(j,3)
+     4		    + pLhs(4,k) * p(j,4)
             enddo
             q(i) = tmp
         enddo
