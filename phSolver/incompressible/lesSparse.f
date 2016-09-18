@@ -283,7 +283,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstart=TMRC()
-      iwork=4 
+      iwork=3 
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then  ! {old way
@@ -713,9 +713,9 @@ c
       real*8	tmp1,	tmp2,	tmp3,	tmp4
       integer	i,	j,	k
        
-      iwork=4
+      iwork=3
 ! chosen: 0 original with matrices contracted back
-! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
+! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T
       if(iwork.eq.0) then !{ original alg with 3x3
         lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
         lhs9(4:6,:)=lhs16(5:7,:)
