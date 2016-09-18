@@ -283,8 +283,9 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstart=TMRC()
-      iwork=0 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
-              ! 3 use MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4 without transpose
+      iwork=0 
+! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
+! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then  ! {old way
         lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
         lhs9(4:6,:)=lhs16(5:7,:)
@@ -692,26 +693,108 @@ C "fLesSparseApFull":
 C
 C============================================================================
 
-        subroutine fLesSparseApFull(	col,	row,	lhs16,	pLhs,
+      subroutine fLesSparseApFull(	col,	row,	lhs16,	pLhs,
      1					p,	q,	nNodes,
      2                                  nnz_tot_hide )
 c
 c.... Data declaration
 c
 c	implicit none
-!        use solvedata
-        use pvsQbi
-        include "common.h"
+      use pvsQbi
+      include "common.h"
 
-        integer	nNodes, nnz_tot
-        integer	col(nNodes+1),	row(nnz_tot)
-        real*8	lhs16(16,nnz_tot),	pLhs
-        real*8  p(nNodes,4),	q(nNodes,4)
+      integer	nNodes, nnz_tot
+      integer	col(nNodes+1),	row(nnz_tot)
+      real*8	lhs9(9,nnz_tot),	pLhs(4,nnz_tot)
+      real*8	lhs16(16,nnz_tot)
+      real*8  p(nNodes,4),	q(nNodes,4)
+      real*8  p4(4,nNodes),	q4(4,nNodes)
 c
-        real*8	tmp1,	tmp2,	tmp3,	tmp4
-        integer	i,	j,	k
+      real*8	tmp1,	tmp2,	tmp3,	tmp4
+      integer	i,	j,	k
+       
+      iwork=0
+! chosen: 0 original with matrices contracted back
+! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
+      if(iwork.eq.0) then !{ original alg with 3x3
+        lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
+        lhs9(4:6,:)=lhs16(5:7,:)
+        lhs9(7:9,:)=lhs16(9:11,:)
         rstart=TMRC()
-
+        do i = 1, nNodes
+            q(i,1) = 0
+            q(i,2) = 0
+            q(i,3) = 0
+        enddo
+c
+c.... Do an AP product
+c
+        do i = 1, nNodes
+c
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            tmp4 = 0
+            pisave   = p(i,4)
+cdir$ ivdep
+            do k = col(i), col(i+1)-1
+                j = row(k)
+c
+                tmp1 = tmp1
+     1               + lhs9(1,k) * p(j,1)
+     2               + lhs9(4,k) * p(j,2)
+     3               + lhs9(7,k) * p(j,3)
+                tmp2 = tmp2
+     1               + lhs9(2,k) * p(j,1)
+     2               + lhs9(5,k) * p(j,2)
+     3               + lhs9(8,k) * p(j,3)
+                tmp3 = tmp3
+     1               + lhs9(3,k) * p(j,1)
+     2               + lhs9(6,k) * p(j,2)
+     3               + lhs9(9,k) * p(j,3)
+c
+                tmp4 = tmp4
+     1               + pLhs(1,k) * p(j,1)
+     2               + pLhs(2,k) * p(j,2)
+     3               + pLhs(3,k) * p(j,3)
+     4               + pLhs(4,k) * p(j,4)
+c
+                q(j,1) = q(j,1) - pLhs(1,k) * pisave
+                q(j,2) = q(j,2) - pLhs(2,k) * pisave
+                q(j,3) = q(j,3) - pLhs(3,k) * pisave
+            enddo
+            q(i,1) = q(i,1) + tmp1
+            q(i,2) = q(i,2) + tmp2
+            q(i,3) = q(i,3) + tmp3
+            q(i,4) = tmp4
+        enddo
+        rspmvFull=rspmvFull+TMRC()-rstart
+      endif
+      if(iwork.eq.3) then ! { mkl  with 4x4 matrix
+        do i =1, nNodes  !mkl requires dof_var first
+          p4(1,i)=p(i,1)
+          p4(2,i)=p(i,2)
+          p4(3,i)=p(i,3)
+          p4(4,i)=p(i,4)
+        enddo
+        rstart=TMRC()
+        call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+        rspmvFull=rspmvFull+TMRC()-rstart
+        do i =1, nNodes ! transpose back mkl's dof_var first
+          q(i,1)=q4(1,i)
+          q(i,2)=q4(2,i)
+          q(i,3)=q4(3,i)
+          q(i,4)=q4(4,i)
+        enddo
+      endif !} end mkl 4x4
+      if(iwork.eq.4) then !{mkl 4x4
+        do i =1, nNodes  !mkl requires dof_var first
+          p4(1,i)=p(i,1)
+          p4(2,i)=p(i,2)
+          p4(3,i)=p(i,3)
+          p4(4,i)=p(i,4)
+        enddo
+        rstart=TMRC()
 c
 c.... Do an AP product
 c
@@ -727,24 +810,76 @@ cdir$ ivdep
                 j = row(k)
 c
                 tmp1 = tmp1
-     1               + lhs16(1,k) * p(j,1)
-     2               + lhs16(5,k) * p(j,2)
-     3               + lhs16(9,k) * p(j,3)
+     1               + lhs16( 1,k) * p3(1,j)
+     2               + lhs16( 5,k) * p3(2,j)
+     3               + lhs16( 9,k) * p3(3,j)
+     3               + lhs16(13,k) * p3(4,j)
+                tmp2 = tmp2
+     1               + lhs16( 2,k) * p3(1,j)
+     2               + lhs16( 6,k) * p3(2,j)
+     3               + lhs16(10,k) * p3(3,j)
+     3               + lhs16(14,k) * p3(4,j)
+                tmp3 = tmp3
+     1               + lhs16( 3,k) * p3(1,j)
+     2               + lhs16( 7,k) * p3(2,j)
+     3               + lhs16(11,k) * p3(3,j)
+     3               + lhs16(15,k) * p3(4,j)
+c
+                tmp4 = tmp4
+     1               + lhs16( 4,k) * p3(1,j)
+     2               + lhs16( 8,k) * p3(2,j)
+     3               + lhs16(12,k) * p3(3,j)
+     4               + lhs16(16,k) * p3(4,j)
+c
+            enddo
+            q(i,1) = tmp1 !done inline to avoid transpose
+            q(i,2) = tmp2
+            q(i,3) = tmp3
+            q(i,4) = tmp4
+        enddo
+        rspmvFull=rspmvFull+TMRC()-rstart
+!done inline        do i =1, nNodes ! transpose back mkl's dof_var first
+!done inline          q(i,1)=q4(1,i)
+!done inline          q(i,2)=q4(2,i)
+!done inline          q(i,3)=q4(3,i)
+!done inline          q(i,4)=q4(4,i)
+!done inline        enddo
+      endif
+      if(iwork.eq.5) then !{mkl 4x4
+        rstart=TMRC()
+c
+c.... Do an AP product
+c
+        do i = 1, nNodes
+c
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            tmp4 = 0
+
+cdir$ ivdep
+            do k = col(i), col(i+1)-1
+                j = row(k)
+c
+                tmp1 = tmp1
+     1               + lhs16( 1,k) * p(j,1)
+     2               + lhs16( 5,k) * p(j,2)
+     3               + lhs16( 9,k) * p(j,3)
      3               + lhs16(13,k) * p(j,4)
                 tmp2 = tmp2
-     1               + lhs16(2,k) * p(j,1)
-     2               + lhs16(6,k) * p(j,2)
+     1               + lhs16( 2,k) * p(j,1)
+     2               + lhs16( 6,k) * p(j,2)
      3               + lhs16(10,k) * p(j,3)
      3               + lhs16(14,k) * p(j,4)
                 tmp3 = tmp3
-     1               + lhs16(3,k) * p(j,1)
-     2               + lhs16(7,k) * p(j,2)
+     1               + lhs16( 3,k) * p(j,1)
+     2               + lhs16( 7,k) * p(j,2)
      3               + lhs16(11,k) * p(j,3)
      3               + lhs16(15,k) * p(j,4)
 c
                 tmp4 = tmp4
-     1               + lhs16(4,k) * p(j,1)
-     2               + lhs16(8,k) * p(j,2)
+     1               + lhs16( 4,k) * p(j,1)
+     2               + lhs16( 8,k) * p(j,2)
      3               + lhs16(12,k) * p(j,3)
      4               + lhs16(16,k) * p(j,4)
 c
@@ -754,14 +889,16 @@ c
             q(i,3) = tmp3
             q(i,4) = tmp4
         enddo
-        if(ipvsq.ge.2) then
-         tfact=alfi * gami * Delt(1)
-           call ElmpvsQ(q,p,tfact)
-        endif
+        rspmvFull=rspmvFull+TMRC()-rstart
+      endif
+
+      if(ipvsq.ge.2) then
+        tfact=alfi * gami * Delt(1)
+        call ElmpvsQ(q,p,tfact)
+      endif
 c
 c.... end
 c
-        rspmvFull=rspmvFull+TMRC()-rstart
         return
         end
 
