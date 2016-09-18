@@ -15,7 +15,6 @@ c
      &                            rowp,     colm,    
      &                            lhs16,    plhsP)   !keeping it in interface for a while
 c     
-!      use solvedata
       use pointer_data
       use pvsQbi
       use convolImpFlow !brings in the current part of convol coef for imp BC
@@ -31,6 +30,7 @@ c
       integer	n,	k
 c
       integer sparseloc
+      rstart=TMRC()
 c
 c     
 c.... Clear the flowdiag
@@ -137,6 +137,7 @@ c
      &             flowDiag(i,j) = 1. / sqrt(abs(flowDiag(i,j)))
            enddo
         enddo
+        rspmvD=rspmvD+TMRC()-rstart
 c     
         return
         end
@@ -208,8 +209,8 @@ C============================================================================
 c
 c.... Data declaration
 c
-!        use solvedata
-        implicit none
+!        implicit none
+      include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
 !        real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
@@ -217,6 +218,7 @@ c
         real*8 tmp1, tmp2, tmp3
 c
         integer	i,	j,	k
+        rstart=TMRC()
 c
 c.... Do an AP product
 c
@@ -240,6 +242,7 @@ c
 c
 c.... end
 c
+      rspmvG=rspmvG+TMRC()-rstart
         return
         end
 
@@ -278,7 +281,7 @@ c
 ! see below is an on the fly negation and transpose (note j inplace summ) to
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
-      rstartKG=TMRC()
+      rstart=TMRC()
       iwork=5 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
               ! 3 use MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4 without transpose
       if(iwork.eq.0) then  ! {old way
@@ -521,7 +524,7 @@ cdir$ ivdep
 c
 c.... end
 c
-      rspmvKG=rspmvKG+TMRC()-rstartKG
+      rspmvKG=rspmvKG+TMRC()-rstart
       return
       end
 
@@ -538,13 +541,14 @@ C============================================================================
 c
 c.... Data declaration
 c
-!      use solvedata
+        include "common.h"
 
         integer	col(nNodes+1),	row(nnz_tot)
         real*8	lhs16(16,nnz_tot),	p(nNodes,3),	q(nNodes)
 c
         real*8	tmp
         integer	i,	j,	k
+        rstart=TMRC()
 c
 c.... Do an AP product
 c
@@ -565,6 +569,7 @@ c
 c
 c.... end
 c
+        rspmvNGt=rspmvNGt+TMRC()-rstart
         return
         end
 
@@ -580,14 +585,15 @@ C============================================================================
 c
 c.... Data declaration
 c
-!        use solvedata
-        implicit none
+!        implicit none
+      include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
         real*8	lhs16(16,nnz_tot),	p(nNodes,4),	q(nNodes)
 c
         real*8	tmp
         integer	i,	j,	k
+        rstart=TMRC()
 c
 c.... Do an AP product
 c
@@ -609,6 +615,7 @@ c
 c
 c.... end
 c
+        rspmvNGtC=rspmvNGtC+TMRC()-rstart
         return
         end
 
@@ -636,6 +643,7 @@ c	implicit none
 c
         real*8	tmp1,	tmp2,	tmp3,	tmp4
         integer	i,	j,	k
+        rstart=TMRC()
 
 c
 c.... Do an AP product
@@ -686,6 +694,7 @@ c
 c
 c.... end
 c
+        rspmvFull=rspmvFull+TMRC()-rstart
         return
         end
 

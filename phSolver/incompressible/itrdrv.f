@@ -130,6 +130,11 @@ c
       rblasmkl = 0.0
       rspmvmkl = 0.0
       rspmvKG = 0.0
+      rspmvD = 0.0
+      rspmvG = 0.0
+      rspmvNGt = 0.0
+      rspmvNGtC = 0.0
+      rspmvFull = 0.0
 
 !--------------------------------------------------------------------
 !     Setting up svLS Moved down for better org

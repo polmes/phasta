@@ -141,6 +141,31 @@ void print_mpi_stats(void) {
     printf("rspmvKG : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
 
   rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
+  rgetMinMaxAvg(&mpistats.rspmvD,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvD : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
+  rgetMinMaxAvg(&mpistats.rspmvG,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvG : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
+  rgetMinMaxAvg(&mpistats.rspmvNGt,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvNGt : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
+  rgetMinMaxAvg(&mpistats.rspmvNGtC,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvNGtC : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
+  rgetMinMaxAvg(&mpistats.rspmvFull,rStats,statRanks);
+  if(workfc.myrank==workfc.master)
+    printf("rspmvFull : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
+
+  rgetMinMaxAvg(&mpistats.rassembly,rStats,statRanks);
   if(workfc.myrank==workfc.master)
     printf("rassembly : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
   rgetMinMaxAvg(&mpistats.rAllR,rStats,statRanks);

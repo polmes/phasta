@@ -75,7 +75,9 @@ c from different modules
      &                   rCommu, rCommuScal,
      &                   rthreads, rassembly,
      &                   rspmvKG, rspmvphasta, rspmvmkl, 
-     &                   rblasphasta, rblasmkl
+     &                   rblasphasta, rblasmkl,
+     &                   rspmvD,  rspmvG, rspmvNGt,
+     &                   rspmvNGtC, rspmvFull
 
         common /memstats/rheap,rheapavail,rstack,rstackavail,rshared,
      &                   rpersist,rguard,rmmap,rmemstats

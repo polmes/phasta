@@ -190,6 +190,11 @@ extern "C" {
     double rspmvmkl;
     double rblasphasta;
     double rblasmkl;
+    double rspmvD;
+    double rspmvG;
+    double rspmvNGt;
+    double rspmvNGTc;
+    double rspmvFull;
   } mpistats ;
 
   extern struct { 
