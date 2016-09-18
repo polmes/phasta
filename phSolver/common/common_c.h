@@ -193,7 +193,7 @@ extern "C" {
     double rspmvD;
     double rspmvG;
     double rspmvNGt;
-    double rspmvNGTc;
+    double rspmvNGtC;
     double rspmvFull;
   } mpistats ;
 

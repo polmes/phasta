@@ -205,7 +205,7 @@ C
 C============================================================================
         subroutine fLesSparseApG(	col,	row,	lhs16,	
      &					p,	q,	nNodes,
-     &                                  nnz_tot )
+     &                                  nnz_tot_hide )
 c
 c.... Data declaration
 c
@@ -282,7 +282,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstart=TMRC()
-      iwork=5 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
+      iwork=0 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
               ! 3 use MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4 without transpose
       if(iwork.eq.0) then  ! {old way
         rdelta=TMRC()
@@ -537,7 +537,7 @@ C============================================================================
 
         subroutine fLesSparseApNGt(	col,	row,	lhs16,	
      1					p,	q,	nNodes,
-     2                                  nnz_tot   )
+     2                                  nnz_tot_hide   )
 c
 c.... Data declaration
 c
@@ -581,7 +581,7 @@ C============================================================================
 
         subroutine fLesSparseApNGtC(	col,	row,	lhs16,	
      1					p,	q,	nNodes,
-     2                                  nnz_tot )
+     2                                  nnz_tot_hide )
 c
 c.... Data declaration
 c
