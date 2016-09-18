@@ -283,7 +283,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstart=TMRC()
-      iwork=0 
+      iwork=4 
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then  ! {old way
@@ -385,7 +385,7 @@ cdir$ ivdep
           q(i,2)=q3(2,i)
           q(i,3)=q3(3,i)
         enddo
-      endif !iwork=1 }
+      endif !iwork 1 }
       if(iwork.eq.2) then ! { mkl sparse 
         do i = 1, nNodes
           p3(1,i)=p(i,1)
@@ -713,7 +713,7 @@ c
       real*8	tmp1,	tmp2,	tmp3,	tmp4
       integer	i,	j,	k
        
-      iwork=0
+      iwork=4
 ! chosen: 0 original with matrices contracted back
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then !{ original alg with 3x3
@@ -810,26 +810,26 @@ cdir$ ivdep
                 j = row(k)
 c
                 tmp1 = tmp1
-     1               + lhs16( 1,k) * p3(1,j)
-     2               + lhs16( 5,k) * p3(2,j)
-     3               + lhs16( 9,k) * p3(3,j)
-     3               + lhs16(13,k) * p3(4,j)
+     1               + lhs16( 1,k) * p4(1,j)
+     2               + lhs16( 5,k) * p4(2,j)
+     3               + lhs16( 9,k) * p4(3,j)
+     3               + lhs16(13,k) * p4(4,j)
                 tmp2 = tmp2
-     1               + lhs16( 2,k) * p3(1,j)
-     2               + lhs16( 6,k) * p3(2,j)
-     3               + lhs16(10,k) * p3(3,j)
-     3               + lhs16(14,k) * p3(4,j)
+     1               + lhs16( 2,k) * p4(1,j)
+     2               + lhs16( 6,k) * p4(2,j)
+     3               + lhs16(10,k) * p4(3,j)
+     3               + lhs16(14,k) * p4(4,j)
                 tmp3 = tmp3
-     1               + lhs16( 3,k) * p3(1,j)
-     2               + lhs16( 7,k) * p3(2,j)
-     3               + lhs16(11,k) * p3(3,j)
-     3               + lhs16(15,k) * p3(4,j)
+     1               + lhs16( 3,k) * p4(1,j)
+     2               + lhs16( 7,k) * p4(2,j)
+     3               + lhs16(11,k) * p4(3,j)
+     3               + lhs16(15,k) * p4(4,j)
 c
                 tmp4 = tmp4
-     1               + lhs16( 4,k) * p3(1,j)
-     2               + lhs16( 8,k) * p3(2,j)
-     3               + lhs16(12,k) * p3(3,j)
-     4               + lhs16(16,k) * p3(4,j)
+     1               + lhs16( 4,k) * p4(1,j)
+     2               + lhs16( 8,k) * p4(2,j)
+     3               + lhs16(12,k) * p4(3,j)
+     4               + lhs16(16,k) * p4(4,j)
 c
             enddo
             q(i,1) = tmp1 !done inline to avoid transpose
