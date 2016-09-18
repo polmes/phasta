@@ -270,7 +270,7 @@ c      implicit none
       real*8    q3(3,nNodes), p3(3,nNodes)
       real*8    q4(4,nNodes), p4(4,nNodes)
       real*8    pLhs(4,nnz_tot)  ! old way passed in matrices
-      real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot), pLhs  ! needed for mkl3xe
+      real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot) ! needed for mkl3xe
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
@@ -286,6 +286,9 @@ c
       iwork=0 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
               ! 3 use MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4 without transpose
       if(iwork.eq.0) then  ! {old way
+        lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
+        lhs9(4:6,:)=lhs16(5:7,:)
+        lhs9(7:9,:)=lhs16(9:11,:)
         rdelta=TMRC()
         do i = 1, nNodes
           q(i,1) = 0
@@ -305,17 +308,17 @@ cdir$ ivdep
             do k = col(i), col(i+1)-1
                 j = row(k) 
                 tmp1 = tmp1
-     1               + lhs16( 1,k) * p(j,1)
-     2               + lhs16( 5,k) * p(j,2)
-     3               + lhs16( 9,k) * p(j,3)
+     1               + lhs9(1,k) * p(j,1)
+     2               + lhs9(4,k) * p(j,2)
+     3               + lhs9(7,k) * p(j,3)
                 tmp2 = tmp2
-     1               + lhs16( 2,k) * p(j,1)
-     2               + lhs16( 6,k) * p(j,2)
-     3               + lhs16(10,k) * p(j,3)
+     1               + lhs9(2,k) * p(j,1)
+     2               + lhs9(5,k) * p(j,2)
+     3               + lhs9(8,k) * p(j,3)
                 tmp3 = tmp3
-     1               + lhs16( 3,k) * p(j,1)
-     2               + lhs16( 7,k) * p(j,2)
-     3               + lhs16(11,k) * p(j,3)
+     1               + lhs9(3,k) * p(j,1)
+     2               + lhs9(6,k) * p(j,2)
+     3               + lhs9(9,k) * p(j,3)
                 q(j,1) = q(j,1) - pLhs(1,k) * pisave
                 q(j,2) = q(j,2) - pLhs(2,k) * pisave
                 q(j,3) = q(j,3) - pLhs(3,k) * pisave
@@ -333,6 +336,9 @@ cdir$ ivdep
           p3(2,i)=p(i,2)
           p3(3,i)=p(i,3)
         enddo
+        lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
+        lhs9(4:6,:)=lhs16(5:7,:)
+        lhs9(7:9,:)=lhs16(9:11,:)
 c
 c.... Do an AP product
 c
@@ -352,17 +358,17 @@ cdir$ ivdep
           do k = col(i), col(i+1)-1
             j = row(k) 
             tmp1 = tmp1
-     1           + lhs16( 1,k) * p3(1,j)
-     2           + lhs16( 5,k) * p3(2,j)
-     3           + lhs16( 9,k) * p3(3,j)
+     1           + lhs9(1,k) * p3(1,j)
+     2           + lhs9(4,k) * p3(2,j)
+     3           + lhs9(7,k) * p3(3,j)
             tmp2 = tmp2
-     1           + lhs16( 2,k) * p3(1,j)
-     2           + lhs16( 6,k) * p3(2,j)
-     3           + lhs16(10,k) * p3(3,j)
+     1           + lhs9(2,k) * p3(1,j)
+     2           + lhs9(5,k) * p3(2,j)
+     3           + lhs9(8,k) * p3(3,j)
             tmp3 = tmp3
-     1           + lhs16( 3,k) * p3(1,j)
-     2           + lhs16( 7,k) * p3(2,j)
-     3           + lhs16(11,k) * p3(3,j)
+     1           + lhs9(3,k) * p3(1,j)
+     2           + lhs9(6,k) * p3(2,j)
+     3           + lhs9(9,k) * p3(3,j)
             q3(1,j) = q3(1,j) - pLhs(1,k) * pisave
             q3(2,j) = q3(2,j) - pLhs(2,k) * pisave
             q3(3,j) = q3(3,j) - pLhs(3,k) * pisave
@@ -391,39 +397,58 @@ cdir$ ivdep
         rdelta=TMRC()
         call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
         rspmvmkl=rspmvmkl + TMRC()-rdelta
-c
-c.... Do an AP product
-c
         rdelta=TMRC()
         do i = 1, nNodes
-          tmp1=0
-          tmp2=0
-          tmp3=0
+          q3(1,i) = 0
+          q3(2,i) = 0
+          q3(3,i) = 0
+        enddo
+        do i = 1, nNodes
 c
+          tmp1 = 0
+          tmp2 = 0
+          tmp3 = 0
+          pisave   = p(i,4)
 cdir$ ivdep
           do k = col(i), col(i+1)-1
             j = row(k) 
-            tmp1 = tmp1 + lhs16(13,k) * p(j,4)
-            tmp2 = tmp2 + lhs16(14,k) * p(j,4)
-            tmp3 = tmp3 + lhs16(15,k) * p(j,4)
+            q3(1,j) = q3(1,j) - pLhs(1,k) * pisave
+            q3(2,j) = q3(2,j) - pLhs(2,k) * pisave
+            q3(3,j) = q3(3,j) - pLhs(3,k) * pisave
           enddo
-!OR ALTERNATIVE COMMENTED OUT replaces previous 7 lines
-! ALT            pisave   = p(i,4)
-! ALTcdir$ ivdep
-! ALT          do k = col(i), col(i+1)-1
-! ALT            j = row(k) 
-! ALT            q3(1,j) = q3(1,j) - pLhs(1,k) * pisave
-! ALT            q3(2,j) = q3(2,j) - pLhs(2,k) * pisave
-! ALT            q3(3,j) = q3(3,j) - pLhs(3,k) * pisave
-! ALT          enddo
-! but note you cannot accumulate into transpose as below with this approach
-
-! accummulate into transpose to avoid transpose later
-          q(i,1) = q3(1,i) + tmp1
-          q(i,2) = q3(2,i) + tmp2
-          q(i,3) = q3(3,i) + tmp3
+! cannot accumulate into transpose due to sparse transposed G work
+          q3(1,i) = q3(1,i) + tmp1
+          q3(2,i) = q3(2,i) + tmp2
+          q3(3,i) = q3(3,i) + tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        do i =1, nNodes ! transpose back from  dof_var first
+          q(i,1)=q3(1,i)
+          q(i,2)=q3(2,i)
+          q(i,3)=q3(3,i)
+        enddo
+!SLOWER ALT c
+!SLOWER ALT c.... Do an AP product
+!SLOWER ALT c
+!SLOWER ALT         rdelta=TMRC()
+!SLOWER ALT         do i = 1, nNodes
+!SLOWER ALT           tmp1=0
+!SLOWER ALT           tmp2=0
+!SLOWER ALT           tmp3=0
+!SLOWER ALT c
+!SLOWER ALT cdir$ ivdep
+!SLOWER ALT           do k = col(i), col(i+1)-1
+!SLOWER ALT             j = row(k) 
+!SLOWER ALT             tmp1 = tmp1 + lhs16(13,k) * p(j,4)
+!SLOWER ALT             tmp2 = tmp2 + lhs16(14,k) * p(j,4)
+!SLOWER ALT             tmp3 = tmp3 + lhs16(15,k) * p(j,4)
+!SLOWER ALT           enddo
+!SLOWER ALT ! accummulate into transpose to avoid transpose later
+!SLOWER ALT           q(i,1) = q3(1,i) + tmp1
+!SLOWER ALT           q(i,2) = q3(2,i) + tmp2
+!SLOWER ALT           q(i,3) = q3(3,i) + tmp3
+!SLOWER ALT         enddo
+!SLOWER ALT         rspmvphasta=rspmvphasta + TMRC()-rdelta
       endif !} mkl sparse
       if(iwork.eq.3) then ! { mkl  with 4x4 matrix
         do i =1, nNodes  !mkl requires dof_var first
@@ -517,6 +542,47 @@ cdir$ ivdep
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
       endif ! } original with 4x4
+      if(iwork.eq.6) then  ! {old way with 4x4 data structure
+        rdelta=TMRC()
+        do i = 1, nNodes
+          q(i,1) = 0
+          q(i,2) = 0
+          q(i,3) = 0
+        enddo
+c
+c.... Do an AP product
+c
+        do i = 1, nNodes
+c
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            pisave   = p(i,4)
+cdir$ ivdep
+            do k = col(i), col(i+1)-1
+                j = row(k) 
+                tmp1 = tmp1
+     1               + lhs16( 1,k) * p(j,1)
+     2               + lhs16( 5,k) * p(j,2)
+     3               + lhs16( 9,k) * p(j,3)
+                tmp2 = tmp2
+     1               + lhs16( 2,k) * p(j,1)
+     2               + lhs16( 6,k) * p(j,2)
+     3               + lhs16(10,k) * p(j,3)
+                tmp3 = tmp3
+     1               + lhs16( 3,k) * p(j,1)
+     2               + lhs16( 7,k) * p(j,2)
+     3               + lhs16(11,k) * p(j,3)
+                q(j,1) = q(j,1) - lhs16( 4,k) * pisave
+                q(j,2) = q(j,2) - lhs16( 8,k) * pisave
+                q(j,3) = q(j,3) - lhs16(12,k) * pisave
+            enddo
+            q(i,1) = q(i,1) + tmp1
+            q(i,2) = q(i,2) + tmp2
+            q(i,3) = q(i,3) + tmp3
+        enddo
+        rspmvphasta=rspmvphasta + TMRC()-rdelta
+      endif !} original code, 4x4,  in fast index on dof-HOLDER
 
       if(ipvsq.ge.2) then
         tfact=alfi * gami * Delt(1)
