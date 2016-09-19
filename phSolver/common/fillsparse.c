@@ -68,5 +68,41 @@ void fillsparsecpetscc(gcorp_t* ieng, double* EGmass, Mat* lhsP)
         free(mb);
 	free(locat);
 }
+void fillsparsecpetsci(gcorp_t* ieng, double* EGmass, Mat* lhsP)
+{
+        int npro = propar.npro;
+        int nshl = shpdat.nshl;
+        int nflow = conpar.nflow;
+        double* mb = (double*) malloc(sizeof(double)*nflow*nflow*nshl*nshl); //block to insert
+        int e,iv,ih,jv,jh,nfsq,nfsqnsh; //following along with fillsparse.f
+        //int* locat = (int*) malloc(sizeof(int)*nshl);
+        PetscInt* locat = (PetscInt*) malloc(sizeof(PetscInt)*nshl);
+        nfsq=nflow*nflow;
+        nfsqnsh=nfsq*nshl;
+        for(e=0;e<npro;e++)
+        {
+         for(aa=0;aa<nshl;aa++) locat[aa]=ieng[e+npro*aa]-1;
+//         for(aa=0;aa<nshl;aa++) assert(locat[aa]>=0);
+
+         id=0;
+         for(ih=0; ih<nshl;  ih++) {
+           for(iv=0; iv<nflow; iv++) {
+             for(jh=0; jh<nshl;  jh++) { 
+               for(jv=0; jv<nflow; jv++) {
+                 id++;
+                 is=e+iv+jv*nflow+nfsq*ih+nfsqnsh*jh;
+                 mb(id)=EGmass(is);
+               }
+             }
+           }    
+         }
+         //MatSetValuesBlocked(*lhsP, nshl , locat, nshl, locat, mb, ADD_VALUES);
+         PetscInt petsc_nshl;
+         petsc_nshl = (PetscInt) nshl;
+         MatSetValuesBlocked(*lhsP, petsc_nshl , locat, petsc_nshl, locat, mb, ADD_VALUES);
+        }
+        free(mb);
+	free(locat);
+}
 #endif
 

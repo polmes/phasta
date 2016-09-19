@@ -61,6 +61,9 @@ c----------------------------------------------------------------------
 c
       use pointer_data
       use solvedata
+#ifdef USE_PETSC
+      use petsc_data
+#endif      
 #ifdef AMG      
       use ramg_data
 #endif     
@@ -117,6 +120,24 @@ c
       INTEGER, ALLOCATABLE :: incL(:)
       REAL*8, ALLOCATABLE :: faceRes(:), Res4(:,:), Val4(:,:)
 
+#ifdef HAVE_PETSC
+      if(firstpetsccall .eq. 1) then
+
+        call MatCreateBAIJ(PETSC_COMM_WORLD, nflow, nflow*nshg0,
+     &  nflow*nshg0, nshgt*nflow, nshgt*nflow, PETSC_NULL_INTEGER,
+     &  PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,
+     &  lhsPETSc, ierr)
+        call MatSetOption(lhsPETSc, MAT_NEW_NONZERO_ALLOCATION_ERR,
+     &   PETSC_FALSE, ierr)
+        call MatSetSizes(lhsPETSc, nflow*nshg0, nflow*nshg0, nflow*nshgt,
+     &    nflow*nshgt, ierr)
+        call MatGetOwnershipRange(lhsPETSc, myMatStart, myMatEnd, ierr)
+        call MatSetUp(lhsPETSc, ierr)
+! not really for next line but for now just dumping the matrix
+      call MatZeroEntries(lhsPETSc, ierr)
+      endif
+
+#endif
 c     
 c.... *******************>> Element Data Formation <<******************
 c
@@ -147,7 +168,27 @@ c      call summary_start()
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       rerr,       GradV   )
+     &             rowp,      colm,
+#ifdef USE_PETSC
+     &             lhsPETSc,
+#endif
+     &             rerr,       GradV   )
+
+      if(firstpetsccall .eq. 1) then ! not really but for now
+
+      call get_time(duration(1))
+      call MatAssemblyBegin(lhsP, MAT_FINAL_ASSEMBLY,ierr)
+      call MatAssemblyEnd(lhsP, MAT_FINAL_ASSEMBLY,ierr)
+      call MatView(lhsPETSc, PETSC_VIEWER_STDOUT_WORLD,ierr)
+      call get_time(duration(2))
+      call get_max_time_diff(duration(2), duration(1), elapsed)
+      if(myrank .eq. 0) then
+         write(*,"(A, E10.3)") "MatAssembly ", elapsed
+      end if
+      end if
+
+
+
       if(lhs.eq.1) lhsP(1:4,:)=lhs16(4:16:4,:) !efficient for G Ap's
       telmcp2 = TMRC()
       impistat=0
