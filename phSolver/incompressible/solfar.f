@@ -174,6 +174,7 @@ c      call summary_start()
 #endif
      &             rerr,       GradV   )
 
+#ifdef USE_PETSC
       if(firstpetsccall .eq. 1) then ! not really but for now
 
       call get_time(duration(1))
@@ -186,7 +187,7 @@ c      call summary_start()
          write(*,"(A, E10.3)") "MatAssembly ", elapsed
       end if
       end if
-
+#endif
 
 
       if(lhs.eq.1) lhsP(1:4,:)=lhs16(4:16:4,:) !efficient for G Ap's

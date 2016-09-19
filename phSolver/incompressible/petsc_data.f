@@ -1,4 +1,5 @@
-   module petsc_data
+      module petsc_data
+#ifdef USE_PETSC
 
 #include "finclude/petscsys.h"
 #include "finclude/petscvec.h"
@@ -26,5 +27,6 @@
 !      VecScatter,save :: scatters
       integer, save :: firstpetsccall = 1
 !      integer, save :: firstpetsccalls = 1
+#endif
       end module
 
