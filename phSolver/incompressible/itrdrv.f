@@ -26,7 +26,9 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Fall 2004. Impedance BC
 c----------------------------------------------------------------------
 c
+#ifdef HAVE_MKL
       use mkl_service
+#endif
       use pvsQbi     !gives us splag (the spmass at the end of this run 
       use specialBC !gives us itvn
       use timedata   !allows collection of time series
@@ -41,7 +43,9 @@ c
 c      use readarrays !reads in uold and acold
       
         include "common.h"
+#ifdef HAVE_MKL
         include "kmkl.fi"
+#endif
         include "mpif.h"
         include "auxmpi.h"
 #ifdef HAVE_SVLS        
@@ -116,7 +120,9 @@ c
       TYPE(svLS_lhsType) svLS_lhs_S(4)
       TYPE(svLS_lsType) svLS_ls_S(4)
 #endif
+#ifdef HAVE_MKL
       irc=mkl_enable_instructions(MKL_ENABLE_AVX512_MIC)
+#endif
       call initmpistat()  ! see bottom of code to see just how easy it is
 
       call initmemstat() 

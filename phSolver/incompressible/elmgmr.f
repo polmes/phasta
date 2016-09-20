@@ -3,8 +3,8 @@
      &                     BC,        shpb,      shglb,
      &                     res,       iper,      ilwork,
      &                     rowp,      colm,     
-#ifdef USE_PETSC
-     &                     lhsP,
+#ifdef HAVE_PETSC
+     &                     lhsPETSc,
 #endif
      &                     rerr,     GradV)
 c
@@ -293,8 +293,8 @@ c
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
              if(ipord.eq.1) 
      &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
-#ifdef USE_PETSC
-           call fillsparsecpetsci (mieng(iblk)%p, xKebe(:,:,:,ith),lhsP) 
+#ifdef HAVE_PETSC
+           call fillsparsecpetsci (mieng(iblk)%p, xKebe(:,:,:,:,ith),lhsPETSc) 
 #endif
              call fillsparseI16 (mien(iblk)%p, 
      &                 xKebe(:,:,:,:,ith) ,            lhs16,

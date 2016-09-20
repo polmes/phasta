@@ -12,6 +12,7 @@
 
 #define fillsparsecpetscs FortranCInterface_GLOBAL_(fillsparsecpetscs, FILLSPARSECPETSCS)
 #define fillsparsecpetscc FortranCInterface_GLOBAL_(fillsparsecpetscc, FILLSPARSECPETSCC)
+#define fillsparsecpetsci FortranCInterface_GLOBAL_(fillsparsecpetsci, FILLSPARSECPETSCI)
 
 #define COLMAJ2D(row,col,numrow) (row-1)+(col-1)*numrow
 #define COLMAJ3D(a,b,c,amax,bmax,cmax) (a-1)+amax*((b-1)+bmax*(c-1))
@@ -74,14 +75,14 @@ void fillsparsecpetsci(gcorp_t* ieng, double* EGmass, Mat* lhsP)
         int nshl = shpdat.nshl;
         int nflow = conpar.nflow;
         double* mb = (double*) malloc(sizeof(double)*nflow*nflow*nshl*nshl); //block to insert
-        int e,iv,ih,jv,jh,nfsq,nfsqnsh; //following along with fillsparse.f
+        int is,id,e,iv,ih,jv,jh,nfsq,nfsqnsh; //following along with fillsparse.f
         //int* locat = (int*) malloc(sizeof(int)*nshl);
         PetscInt* locat = (PetscInt*) malloc(sizeof(PetscInt)*nshl);
         nfsq=nflow*nflow;
         nfsqnsh=nfsq*nshl;
         for(e=0;e<npro;e++)
         {
-         for(aa=0;aa<nshl;aa++) locat[aa]=ieng[e+npro*aa]-1;
+         for(ih=0;ih<nshl;ih++) locat[ih]=ieng[e+npro*ih]-1;
 //         for(aa=0;aa<nshl;aa++) assert(locat[aa]>=0);
 
          id=0;
@@ -91,7 +92,7 @@ void fillsparsecpetsci(gcorp_t* ieng, double* EGmass, Mat* lhsP)
                for(jv=0; jv<nflow; jv++) {
                  id++;
                  is=e+iv+jv*nflow+nfsq*ih+nfsqnsh*jh;
-                 mb(id)=EGmass(is);
+                 mb[id]=EGmass[is];
                }
              }
            }    

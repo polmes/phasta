@@ -1,3 +1,4 @@
+#define PETSC_USE_FORTRAN_MODULES 1
       subroutine SolFlow(y,          ac,         u,
      &                   yold,       acold,      uold,
      &                   x,          iBC,
@@ -61,7 +62,7 @@ c----------------------------------------------------------------------
 c
       use pointer_data
       use solvedata
-#ifdef USE_PETSC
+#ifdef HAVE_PETSC
       use petsc_data
 #endif      
 #ifdef AMG      
@@ -69,7 +70,7 @@ c
 #endif     
         
       include "common.h"
-      include "mpif.h"
+!      include "mpif.h"
       include "auxmpi.h"
 #ifdef HAVE_SVLS      
         include "svLS.h"
@@ -121,16 +122,26 @@ c
       REAL*8, ALLOCATABLE :: faceRes(:), Res4(:,:), Val4(:,:)
 
 #ifdef HAVE_PETSC
+      
+!      PetscViewer :: viewer
       if(firstpetsccall .eq. 1) then
-
-        call MatCreateBAIJ(PETSC_COMM_WORLD, nflow, nflow*nshg0,
-     &  nflow*nshg0, nshgt*nflow, nshgt*nflow, PETSC_NULL_INTEGER,
+        petsc_bs = nflow
+        petsc_o  = nflow * iownnodes
+        petsc_t  = nshgt *  nflow
+        petsc_PA  = 40;
+        call MatCreateBAIJ(PETSC_COMM_WORLD, petsc_bs, petsc_o, 
+     &  petsc_o, petsc_t, petsc_t,PETSC_NULL_INTEGER,
      &  PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,
      &  lhsPETSc, ierr)
+
+!FAIL        call MatCreateBAIJ(PETSC_COMM_WORLD, nflow, nflow*nshg0,
+!FAIL     &  nflow*nshg0, nshgt*nflow, nshgt*nflow, PETSC_NULL_INTEGER,
+!FAIL     &  PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,
+!FAIL     &  lhsPETSc, ierr)
         call MatSetOption(lhsPETSc, MAT_NEW_NONZERO_ALLOCATION_ERR,
      &   PETSC_FALSE, ierr)
-        call MatSetSizes(lhsPETSc, nflow*nshg0, nflow*nshg0, nflow*nshgt,
-     &    nflow*nshgt, ierr)
+!        call MatSetSizes(lhsPETSc, petsc_o, petsc_o, petsc_t
+!     &    petsc_t, ierr)
         call MatGetOwnershipRange(lhsPETSc, myMatStart, myMatEnd, ierr)
         call MatSetUp(lhsPETSc, ierr)
 ! not really for next line but for now just dumping the matrix
@@ -169,23 +180,26 @@ c      call summary_start()
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
      &             rowp,      colm,
-#ifdef USE_PETSC
+#ifdef HAVE_PETSC
      &             lhsPETSc,
 #endif
      &             rerr,       GradV   )
 
-#ifdef USE_PETSC
+#ifdef HAVE_PETSC
       if(firstpetsccall .eq. 1) then ! not really but for now
 
-      call get_time(duration(1))
-      call MatAssemblyBegin(lhsP, MAT_FINAL_ASSEMBLY,ierr)
-      call MatAssemblyEnd(lhsP, MAT_FINAL_ASSEMBLY,ierr)
-      call MatView(lhsPETSc, PETSC_VIEWER_STDOUT_WORLD,ierr)
-      call get_time(duration(2))
-      call get_max_time_diff(duration(2), duration(1), elapsed)
-      if(myrank .eq. 0) then
-         write(*,"(A, E10.3)") "MatAssembly ", elapsed
-      end if
+!      call get_time(duration(1))
+      call MatAssemblyBegin(lhsPETSc, MAT_FINAL_ASSEMBLY,ierr)
+      call MatAssemblyEnd(lhsPETSc, MAT_FINAL_ASSEMBLY,ierr)
+      call PetscViewerBinaryOpen(PETSC_COMM_WORLD,'PHASTA-PETSc-binary',
+     &     FILE_MODE_WRITE,viewer,ierr)
+      call MatView(lhsPETSc, viewer,ierr)
+!      call get_time(duration(2))
+!      call get_max_time_diff(duration(2), duration(1), elapsed)
+!      if(myrank .eq. 0) then
+!         write(*,"(A, E10.3)") "MatAssembly ", elapsed
+!      end if
+       ifirstpetsccall=0
       end if
 #endif
 

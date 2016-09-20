@@ -1,14 +1,21 @@
+#define PETSC_USE_FORTRAN_MODULES 1
       module petsc_data
-#ifdef USE_PETSC
+#ifdef HAVE_PETSC
 
-#include "finclude/petscsys.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscmat.h"
-#include "finclude/petscpc.h"
-#include "finclude/petscksp.h"
+#include <petsc/finclude/petscsys.h>
+#include <petsc/finclude/petscvec.h>
+#include <petsc/finclude/petscmat.h>
+#include <petsc/finclude/petscpc.h>
+#include <petsc/finclude/petscksp.h>
+#include <petsc/finclude/petscviewer.h>
+#include <petsc/finclude/petscviewer.h90>
 !      PetscOffset poff
 !      PetscOffset poffs
-      Mat,save :: lhsP,lhsPs
+       PetscInt, save:: petsc_bs,petsc_o, petsc_t, petsc_PA 
+
+       PetscViewer :: viewer
+
+      Mat,save :: lhsPETSc,lhsPs
 !      PC,save :: pc,pcs
       !PC pc
 !      KSP,save :: ksp,ksps
