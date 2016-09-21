@@ -4,7 +4,7 @@
      &                     res,       iper,      ilwork,
      &                     rowp,      colm,     
 #ifdef HAVE_PETSC
-     &                     lhsPETSc,
+     &                     lhsPETSc, ! cannot call it lhsP here because leslib uses that
 #endif
      &                     rerr,     GradV)
 c
@@ -157,7 +157,7 @@ c
         flxID = zero
       endif
 
-      if (lhs .eq. 1) then
+      if ((usingpetsc.eq.0).and.(lhs .eq. 1)) then
         lhs16   = zero
       endif
 c
@@ -291,15 +291,21 @@ c
           endif
           npro=blk%e  !npro still used in these arrays
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
-             if(ipord.eq.1) 
-     &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
+            if(ipord.eq.1) 
+     &        call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
+            if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
-           call fillsparsecpetsci (mieng(iblk)%p, xKebe(:,:,:,:,ith),lhsPETSc) 
+              call fillsparsecpetsci (mieng(iblk)%p, xKebe(:,:,:,:,ith),lhsPETSc) 
+#else
+              write(*,*) 'requested unavailable PETSc'
+              call error('elmgmrsclr', 'no PETSc', usingpetc)
 #endif
-             call fillsparseI16 (mien(iblk)%p, 
+            else
+              call fillsparseI16 (mien(iblk)%p, 
      &                 xKebe(:,:,:,:,ith) ,            lhs16,
      &                 xGoC(:,:,:,:,ith) ,            
      &                 rowp,                      colm)
+            endif
           endif
 c
 c.... end of interior element loop assembly
@@ -492,7 +498,12 @@ c      call timer ('Back    ')
      &                       shp,       shgl,      iBC,
      &                       BC,        shpb,      shglb,
      &                       res,       iper,      ilwork,
-     &                       rowp,      colm,      lhsS    )
+     &                       rowp,      colm      
+#ifdef HAVE_PETSC
+     &                       ,lhsPs)
+#else
+     &                       )
+#endif
 c
 c----------------------------------------------------------------------
 c
@@ -502,6 +513,7 @@ c solver.
 c
 c----------------------------------------------------------------------
 c
+        use solvedata
         use pointer_data
         use local_mass
 c
@@ -524,7 +536,6 @@ c
 c
         integer ilwork(nlwork), rowp(nshg*nnz),   colm(nshg+1)
 
-        real*8 lhsS(nnz_tot)
 
         real*8, allocatable, dimension(:,:,:) :: xSebe
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
@@ -664,9 +675,18 @@ c
 c.... satisfy the BC's on the implicit LHS
 c     
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
-             call fillsparseSclr (mien(iblk)%p, 
+            if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+              call fillsparsecpetscs( mieng(iblk)%p, xSebe, lhsPs)
+#else
+               write(*,*) 'requested unavailable PETSc'
+               call error('elmgmrsclr', 'no PETSc', usingpetc)
+#endif 
+            else
+              call fillsparseSclr (mien(iblk)%p, 
      &                 xSebe,             lhsS,
      &                 rowp,              colm)
+            endif
           endif
 
           deallocate ( xSebe )
@@ -680,8 +700,10 @@ c
 c
 c.... add in lumped mass contributions if needed
 c
+       if(usingpetsc.eq.0) then
        if((flmpr.ne.0).or.(flmpl.ne.0)) then
           call lmassaddSclr(ac(:,isclr), res,rowp,colm,lhsS,gmass)
+       endif
        endif
 
        have_local_mass = 1

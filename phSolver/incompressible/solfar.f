@@ -1,13 +1,11 @@
-#define PETSC_USE_FORTRAN_MODULES 1
       subroutine SolFlow(y,          ac,         u,
-     &                   yold,       acold,      uold,
      &                   x,          iBC,
      &                   BC,         res,        iper,       
      &                   ilwork,     shp,        shgl, 
      &                   shpb,       shglb,      rowp,     
-     &                   colm,       !USE SOLVEDATA lhs16,      lhsP, 
+     &                   colm,       
      &                   solinc,     rerr,       tcorecp,
-     &                   GradV,       sumtime
+     &                   GradV
 #ifdef HAVE_SVLS     
      &                   ,svLS_lhs,  svLS_ls,   svLS_nFaces)
 #else
@@ -23,8 +21,6 @@ c
 c input:
 c  y      (nshg,ndof)           : Y-variables at n+alpha_f
 c  ac     (nshg,ndof)           : Primvar. accel. variable n+alpha_m
-c  yold   (nshg,ndof)           : Y-variables at beginning of step
-c  acold   (nshg,ndof)          : Primvar. accel. at beginning of step
 c  x      (numnp,nsd)            : node coordinates
 c  iBC    (nshg)                : BC codes
 c  BC     (nshg,ndofBC)         : BC constraint parameters
@@ -63,9 +59,6 @@ c----------------------------------------------------------------------
 c
 !      use pointer_data
       use solvedata
-#ifdef HAVE_PETSC
-      use petsc_data
-#endif      
 #ifdef AMG      
       use ramg_data
 #endif     
@@ -86,8 +79,7 @@ C
 #endif      
        
       real*8    y(nshg,ndof),             ac(nshg,ndof),
-     &          yold(nshg,ndof),          acold(nshg,ndof),
-     &          u(nshg,nsd),              uold(nshg,nsd),
+     &          u(nshg,nsd), 
      &          x(numnp,nsd),             BC(nshg,ndofBC),
      &          res(nshg,nflow),          tmpres(nshg,nflow),
      &          flowDiag(nshg,4),         
@@ -106,17 +98,14 @@ c
      &          iBC(nshg),                ilwork(nlwork),
      &          iper(nshg)
 c
-      real*8    yAlpha(nshg,ndof),        acAlpha(nshg,ndof),
-     &          uAlpha(nshg,nsd),
-     &          lesP(nshg,4),             lesQ(nshg,4),
+      real*8    lesP(nshg,4),             lesQ(nshg,4),
      &          solinc(nshg,ndof),        CGsol(nshg)
 
-      real*8     tcorecp(2)
+      real*8    tcorecp(2)
       
       real*8    rerr(nshg,10),            rtmp(nshg,4),rtemp
       
       real*8    msum(4),mval(4),cpusec(10)
-      REAL*8 sumtime
 #ifdef HAVE_SVLS      
       INTEGER svLS_nFaces
 #endif      
@@ -124,34 +113,6 @@ c
       INTEGER, ALLOCATABLE :: incL(:)
       REAL*8, ALLOCATABLE :: faceRes(:), Res4(:,:), Val4(:,:)
 
-#ifdef HAVE_PETSC
-      
-!      PetscViewer :: viewer
-      if(firstpetsccall .eq. 1) then
-        petsc_bs = nflow
-        petsc_o  = nflow * iownnodes
-        petsc_t  = nshgt *  nflow
-        petsc_PA  = 40;
-        call MatCreateBAIJ(PETSC_COMM_WORLD, petsc_bs, petsc_o, 
-     &  petsc_o, petsc_t, petsc_t,PETSC_NULL_INTEGER,
-     &  PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,
-     &  lhsPETSc, ierr)
-
-!FAIL        call MatCreateBAIJ(PETSC_COMM_WORLD, nflow, nflow*nshg0,
-!FAIL     &  nflow*nshg0, nshgt*nflow, nshgt*nflow, PETSC_NULL_INTEGER,
-!FAIL     &  PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,PETSC_NULL_INTEGER,
-!FAIL     &  lhsPETSc, ierr)
-        call MatSetOption(lhsPETSc, MAT_NEW_NONZERO_ALLOCATION_ERR,
-     &   PETSC_FALSE, ierr)
-!        call MatSetSizes(lhsPETSc, petsc_o, petsc_o, petsc_t
-!     &    petsc_t, ierr)
-        call MatGetOwnershipRange(lhsPETSc, myMatStart, myMatEnd, ierr)
-        call MatSetUp(lhsPETSc, ierr)
-! not really for next line but for now just dumping the matrix
-      call MatZeroEntries(lhsPETSc, ierr)
-      endif
-
-#endif
 c     
 c.... *******************>> Element Data Formation <<******************
 c
@@ -165,12 +126,6 @@ c
         idflx = 0 
         if(idiff >= 1 )  idflx= (nflow-1) * nsd
         if (isurf == 1) idflx=nflow*nsd
-c.... compute solution at n+alpha
-c
-      call itrYAlpha( uold,    yold,    acold,
-     &                u,       y,       ac,  
-     &                uAlpha,  yAlpha,  acAlpha)
-
 c
 c.... form the LHS matrices, the residual vector (at alpha)
 c
@@ -178,41 +133,20 @@ c      call summary_start()
       impistat=1
       impistat2=1
       telmcp1 = TMRC()
-      call ElmGMR (uAlpha,    yAlpha,     acAlpha,    x,
+      call ElmGMR (u,         y,     ac,    x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,
+     &             rowp,      colm,      
 #ifdef HAVE_PETSC
      &             lhsPETSc,
 #endif
      &             rerr,       GradV   )
 
-#ifdef HAVE_PETSC
-      if(firstpetsccall .eq. 1) then ! not really but for now
-
-!      call get_time(duration(1))
-      call MatAssemblyBegin(lhsPETSc, MAT_FINAL_ASSEMBLY,ierr)
-      call MatAssemblyEnd(lhsPETSc, MAT_FINAL_ASSEMBLY,ierr)
-      call PetscViewerBinaryOpen(PETSC_COMM_WORLD,'PHASTA-PETSc-binary',
-     &     FILE_MODE_WRITE,viewer,ierr)
-      call MatView(lhsPETSc, viewer,ierr)
-!      call get_time(duration(2))
-!      call get_max_time_diff(duration(2), duration(1), elapsed)
-!      if(myrank .eq. 0) then
-!         write(*,"(A, E10.3)") "MatAssembly ", elapsed
-!      end if
-       ifirstpetsccall=0
-      end if
-#endif
-
-
       if(lhs.eq.1) lhsP(1:4,:)=lhs16(4:16:4,:) !efficient for G Ap's
       telmcp2 = TMRC()
       impistat=0
       impistat2=0
-c      call summary_stop()
-
 
             tmpres(:,:) = res(:,:)
             iblk = 1
@@ -401,8 +335,7 @@ c
       return
       end
 
-      subroutine SolSclr(y,          ac,         u,
-     &                   yold,       acold,      uold,
+      subroutine SolSclr(y,          ac,
      &                   x,          iBC,
      &                   BC,         iper,       
      &                   ilwork,     shp,        shgl, 
@@ -423,7 +356,6 @@ c
 c input:
 c  y      (nshg,ndof)           : Y-variables at n+alpha_f
 c  ac     (nshg,ndof)           : Primvar. accel. variable n+alpha_m
-c  yold   (nshg,ndof)           : Y-variables at beginning of step
 c  x      (numnp,nsd)            : node coordinates
 c  iBC    (nshg)                : BC codes
 c  BC     (nshg,ndofBC)         : BC constraint parameters
@@ -452,8 +384,6 @@ c
 #endif        
 c     
       real*8    y(nshg,ndof),             ac(nshg,ndof),
-     &          yold(nshg,ndof),          acold(nshg,ndof),
-     &          u(nshg,nsd),              uold(nshg,nsd),
      &          x(numnp,nsd),             BC(nshg,ndofBC),
      &          res(nshg,1),
      &          flowDiag(nshg,4),
@@ -469,9 +399,7 @@ c
      &          iBC(nshg),                ilwork(nlwork),
      &          iper(nshg)
 c
-      real*8    yAlpha(nshg,ndof),        acAlpha(nshg,ndof),
-     &          uAlpha(nshg,nsd),
-     &          lesP(nshg,1),               lesQ(nshg,1),
+      real*8    lesP(nshg,1),               lesQ(nshg,1),
      &          solinc(nshg,1),           CGsol(nshg),
      &          tcorecpscal(2)
 #ifdef HAVE_SVLS     
@@ -479,7 +407,6 @@ c
       TYPE(svLS_lsType), INTENT(INOUT) ::  svLS_ls
       INTEGER svLS_nFaces
 #endif      
-      REAL*8 sumtime
       INTEGER dof, i, j, k, l
       INTEGER, ALLOCATABLE :: incL(:)
       REAL*8, ALLOCATABLE :: faceRes(:), Res1(:,:), Val1(:,:)
@@ -487,23 +414,22 @@ c
 c     
 c.... *******************>> Element Data Formation <<******************
 c
-c.... compute solution at n+alpha
-c
-      call itrYAlpha( uold,    yold,    acold, 
-     &                u,       y,       ac,  
-     &                uAlpha,  yAlpha,  acAlpha)
-c
 c.... form the LHS matrices, the residual vector (at alpha)
 c
       impistat=2
       impistat2=1
       telmcp1 = TMRC()
       jsol=nsolt+isclr
-      call ElmGMRSclr(yAlpha,acAlpha,    x,
+      call ElmGMRSclr(y,      ac,    x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       lhsS   )
+     &             rowp,      colm
+#ifdef HAVE_PETSC
+     &             ,lhsPs )
+#else 
+     &             )
+#endif
       telmcp2 = TMRC()
       impistat=0
       impistat2=0

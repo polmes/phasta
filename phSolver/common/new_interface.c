@@ -489,7 +489,9 @@ Write_Field(  int *pid,
     if (field_flag==nfields){
       phio_closefile(f_descriptor);
       if (*pid==0) {
-        printf("Last field %d '%s' finished! \n",nfields, fieldtag);
+        //printf("Last field %d '%s' finished! \n",nfields, fieldtag);
+        printf("Last field %d ! \n",nfields);
+        printf("Last field '%s' finished! \n",fieldlabel);
         printf("\n");
       }
     }

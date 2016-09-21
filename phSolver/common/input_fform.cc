@@ -531,7 +531,6 @@ int input_fform(phSolver::Input& inp)
 
     //Linear Solver parameters
      conpar.usingpetsc=0;  // default is to have PETSc off
-     conpar.usingpetsc=1;  // default is to have PETSc ON for this branch ONLY
       incomp.iprjFlag = 0; incomp.ipresPrjFlag=0; inpdat.svLSFlag=0;
       inpdat.leslib=0;
     if( (string)inp.GetValue("Solver Type") =="svLS" ){
