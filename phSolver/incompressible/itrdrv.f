@@ -417,7 +417,7 @@ c
      &                         iper,          
      &                         ilwork,        shp,       shgl,
      &                         shpb,          shglb,     rowp,     
-     &                         colm,          
+     &                         colm,          !USE SOLVEDATA lhs16,     lhsP,
      &                         solinc,        rerr,      tcorecp,
      &                         GradV,      sumtime
 #ifdef HAVE_SVLS

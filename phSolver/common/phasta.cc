@@ -164,7 +164,7 @@ int phasta( int argc, char *argv[] ) {
     char inpfilename[100];
     char* pauseDebugger = getenv("catchDebugger");
 
-#if defined(__NOTHANKSlinux__) && !defined(__bgq__)
+#if defined(__linux__) && !defined(__bgq__)
 /* BM's proposed fix to the stacksize issue */
     struct rlimit stack_size_lim;
     int rlim_result;

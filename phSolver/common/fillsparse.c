@@ -90,9 +90,9 @@ void fillsparsecpetsci(gcorp_t* ieng, double* EGmass, Mat* lhsP)
            for(iv=0; iv<nflow; iv++) {
              for(jh=0; jh<nshl;  jh++) { 
                for(jv=0; jv<nflow; jv++) {
-                 id++;
                  is=e+iv+jv*nflow+nfsq*ih+nfsqnsh*jh;
                  mb[id]=EGmass[is];
+                 id++;
                }
              }
            }    

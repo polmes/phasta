@@ -5,7 +5,7 @@
      &                   BC,         res,        iper,       
      &                   ilwork,     shp,        shgl, 
      &                   shpb,       shglb,      rowp,     
-     &                   colm,       
+     &                   colm,       !USE SOLVEDATA lhs16,      lhsP, 
      &                   solinc,     rerr,       tcorecp,
      &                   GradV,       sumtime
 #ifdef HAVE_SVLS     
@@ -13,6 +13,7 @@
 #else
      &                   )
 #endif
+
 c
 c----------------------------------------------------------------------
 c
@@ -60,7 +61,7 @@ c Juin Kim, Summer 1998. (Incompressible flow solver interface)
 c Alberto Figueroa.  CMM-FSI
 c----------------------------------------------------------------------
 c
-      use pointer_data
+!      use pointer_data
       use solvedata
 #ifdef HAVE_PETSC
       use petsc_data
@@ -92,6 +93,8 @@ C
      &          flowDiag(nshg,4),         
      &          sclrDiag(nshg,1),         
      &          GradV(nshg,nsdsq)
+
+!USE SOLVEDATA      real*8    lhs16(16,nnz_tot),lhsP(4,nnz_tot)
 c
       real*8    shp(MAXTOP,maxsh,MAXQPT),  
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), 
