@@ -295,7 +295,8 @@ c
      &        call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
             if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
-              call fillsparsecpetsci (mieng(iblk)%p, xKebe(:,:,:,:,ith),lhsPETSc) 
+              call fillsparsecpetsci (mieng(iblk)%p, xGoC(:,:,:,:,ith),
+     &                                xKebe(:,:,:,:,ith),lhsPETSc) 
 #else
               write(*,*) 'requested unavailable PETSc'
               call error('elmgmrsclr', 'no PETSc', usingpetc)
@@ -472,7 +473,7 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-       if (numpe > 1) then
+       if ((usingpetsc.eq.0).and.(numpe > 1)) then
           call commu (res  , ilwork, nflow  , 'in ')
        endif
 
@@ -787,9 +788,9 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-      if (numpe > 1) then
+       if ((usingpetsc.eq.0).and.(numpe > 1)) then
         call commu (res  , ilwork, 1  , 'in ')
-      endif
+       endif
 
 c
 c.... ---------------------->   post processing  <----------------------

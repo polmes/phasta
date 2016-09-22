@@ -69,13 +69,15 @@ void fillsparsecpetscc(gcorp_t* ieng, double* EGmass, Mat* lhsP)
         free(mb);
 	free(locat);
 }
-void fillsparsecpetsci(gcorp_t* ieng, double* EGmass, Mat* lhsP)
+void fillsparsecpetsci(gcorp_t* ieng, double* xGoC, double* xKebe, Mat* lhsP)
 {
+        int bsz = genpar.bsz;
         int npro = propar.npro;
         int nshl = shpdat.nshl;
         int nflow = conpar.nflow;
+        double* mbt = (double*) malloc(sizeof(double)*nflow*nflow); //sub-block to insert
         double* mb = (double*) malloc(sizeof(double)*nflow*nflow*nshl*nshl); //block to insert
-        int is,id,e,iv,ih,jv,jh,nfsq,nfsqnsh; //following along with fillsparse.f
+        int is,id,e,iv,ih,jv,jh,nfsq,nfsqnsh,i00,i04; //following along with fillsparse.f
         //int* locat = (int*) malloc(sizeof(int)*nshl);
         PetscInt* locat = (PetscInt*) malloc(sizeof(PetscInt)*nshl);
         nfsq=nflow*nflow;
@@ -85,17 +87,33 @@ void fillsparsecpetsci(gcorp_t* ieng, double* EGmass, Mat* lhsP)
          for(ih=0;ih<nshl;ih++) locat[ih]=ieng[e+npro*ih]-1;
 //         for(aa=0;aa<nshl;aa++) assert(locat[aa]>=0);
 
-         id=0;
          for(ih=0; ih<nshl;  ih++) {
-           for(iv=0; iv<nflow; iv++) {
-             for(jh=0; jh<nshl;  jh++) { 
-               for(jv=0; jv<nflow; jv++) {
-                 is=e+iv+jv*nflow+nfsq*ih+nfsqnsh*jh;
-                 mb[id]=EGmass[is];
-                 id++;
+           for(jh=0; jh<nshl;  jh++) {
+             i00=e+ih*9*bsz+jh*9*bsz*nshl; 
+             i04=e+ih*4*bsz+jh*4*bsz*nshl; 
+             mbt[0]=xKebe[i00];
+             mbt[1]=xKebe[i00+3*bsz];
+             mbt[2]=xKebe[i00+6*bsz];
+             mbt[3]=-xGoC[i04];
+             mbt[4]=xKebe[i00+bsz];
+             mbt[5]=xKebe[i00+4*bsz];
+             mbt[6]=xKebe[i00+7*bsz];
+             mbt[7]=-xGoC[i04+bsz];
+             mbt[8]=xKebe[i00+2*bsz];
+             mbt[9]=xKebe[i00+5*bsz];
+             mbt[10]=xKebe[i00+8*bsz];
+             mbt[11]=-xGoC[i04+2*bsz];
+             mbt[12]=xGoC[i04];
+             mbt[13]=xGoC[i04+bsz];
+             mbt[14]=xGoC[i04+2*bsz];
+             mbt[15]=xGoC[i04+3*bsz];
+             for(iv=0; iv<4; iv++) {
+               for(jv=0; jv<4; jv++) {
+                 id=jv+iv*nshl*4+jh*4+ih*16*nshl;
+                 mb[id]=mbt[iv*4+jv];
                }
              }
-           }    
+           } 
          }
          //MatSetValuesBlocked(*lhsP, nshl , locat, nshl, locat, mb, ADD_VALUES);
          PetscInt petsc_nshl;

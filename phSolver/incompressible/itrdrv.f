@@ -420,6 +420,7 @@ c
                   call itrYAlpha( uold,    yold,    acold,
      &                u,       y,       ac,
      &                uAlpha,  yAlpha,  acAlpha)
+
             
                   if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
@@ -495,7 +496,7 @@ c     Delt(1)= Deltt ! Give a pseudo time step
                   call itrYAlpha( uold,    yold,    acold,
      &                u,       y,       ac,
      &                uAlpha,  yAlpha,  acAlpha)
-
+               
                   if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
                     call SolSclrp( yAlpha,      acAlpha,
@@ -526,6 +527,7 @@ c     Delt(1)= Deltt ! Give a pseudo time step
      &                         )
 #endif
                   endif      
+                  usingpetsc=itmp
                         
                 endif         ! end of scalar type solve
 
