@@ -69,19 +69,23 @@ void fillsparsecpetscc(gcorp_t* ieng, double* EGmass, Mat* lhsP)
         free(mb);
 	free(locat);
 }
-void fillsparsecpetsci(gcorp_t* ieng, double* xGoC, double* xKebe, Mat* lhsP)
+void fillsparsecpetsci(gcorp_t* ieng, double* xlhs, Mat* lhsP)
 {
         int bsz = genpar.bsz;
         int npro = propar.npro;
         int nshl = shpdat.nshl;
         int nflow = conpar.nflow;
-        double* mbt = (double*) malloc(sizeof(double)*nflow*nflow); //sub-block to insert
+//        double* mbt = (double*) malloc(sizeof(double)*nflow*nflow); //sub-block to insert
         double* mb = (double*) malloc(sizeof(double)*nflow*nflow*nshl*nshl); //block to insert
-        int is,id,e,iv,ih,jv,jh,nfsq,nfsqnsh,i00,i04; //following along with fillsparse.f
+        int nshlnfl,jhjmp,ihjmp,bsznf,id,e,iv,ih,jv,jh,nfsq,nfsqnsh,i00,i04; 
         //int* locat = (int*) malloc(sizeof(int)*nshl);
         PetscInt* locat = (PetscInt*) malloc(sizeof(PetscInt)*nshl);
         nfsq=nflow*nflow;
         nfsqnsh=nfsq*nshl;
+        bsznf=bsz*nflow;
+        nshlnfl=nflow*nshl;
+        ihjmp=nfsq*bsz;
+        jhjmp=ihjmp*nshl;
         for(e=0;e<npro;e++)
         {
          for(ih=0;ih<nshl;ih++) locat[ih]=ieng[e+npro*ih]-1;
@@ -89,28 +93,29 @@ void fillsparsecpetsci(gcorp_t* ieng, double* xGoC, double* xKebe, Mat* lhsP)
 
          for(ih=0; ih<nshl;  ih++) {
            for(jh=0; jh<nshl;  jh++) {
-             i00=e+ih*9*bsz+jh*9*bsz*nshl; 
-             i04=e+ih*4*bsz+jh*4*bsz*nshl; 
-             mbt[0]=xKebe[i00];
-             mbt[1]=xKebe[i00+3*bsz];
-             mbt[2]=xKebe[i00+6*bsz];
-             mbt[3]=-xGoC[i04];
-             mbt[4]=xKebe[i00+bsz];
-             mbt[5]=xKebe[i00+4*bsz];
-             mbt[6]=xKebe[i00+7*bsz];
-             mbt[7]=-xGoC[i04+bsz];
-             mbt[8]=xKebe[i00+2*bsz];
-             mbt[9]=xKebe[i00+5*bsz];
-             mbt[10]=xKebe[i00+8*bsz];
-             mbt[11]=-xGoC[i04+2*bsz];
-             mbt[12]=xGoC[i04];
-             mbt[13]=xGoC[i04+bsz];
-             mbt[14]=xGoC[i04+2*bsz];
-             mbt[15]=xGoC[i04+3*bsz];
+             i00=e+ih*ihjmp+jh*jhjmp;
+/*             i04=e+ih*4*bsz+jh*4*bsz*nshl; 
+             mbt[0]=xlhs[i00];
+             mbt[1]=xlhs[i00+4*bsz];
+             mbt[2]=xlhs[i00+8*bsz];
+             mbt[3]=xlhs[i00+12*bsz];
+             mbt[4]=xlhs[i00+bsz];
+             mbt[5]=xlhs[i00+5*bsz];
+             mbt[6]=xlhs[i00+9*bsz];
+             mbt[7]=xlhs[i00+13*bsz];
+             mbt[8]=xlhs[i00+2*bsz];
+             mbt[9]=xlhs[i00+6*bsz];
+             mbt[10]=xlhs[i00+10*bsz];
+             mbt[11]=xlhs[i00+14*bsz];
+             mbt[12]=xlhs[i00+3*bsz];
+             mbt[13]=xlhs[i00+7*bsz];
+             mbt[14]=xlhs[i00+11*bsz];
+             mbt[15]=xlhs[i00+15*bsz];
+*/
              for(iv=0; iv<4; iv++) {
                for(jv=0; jv<4; jv++) {
-                 id=jv+iv*nshl*4+jh*4+ih*16*nshl;
-                 mb[id]=mbt[iv*4+jv];
+                 id=jv+iv*nshlnfl+jh*nflow+ih*nfsqnsh; //16*nshl;
+                 mb[id]=xlhs[i00+jv*bsznf+iv*bsz]; // mbt[iv*4+jv];
                }
              }
            } 

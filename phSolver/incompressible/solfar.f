@@ -170,12 +170,13 @@ c####################################################################
 
 ! the following is  direct map of lhsK-P to lhs16 but it seems wrong unless
 ! svLS built into the storage a wrong understanding of G and -G^T
+! confirmed...switching blows up
       DO i=1, nnz_tot
          Val4(1:3,i)   = lhs16(1:3,i) !lhsK(1:3,i)
          Val4(5:7,i)   = lhs16(5:7,i) !lhsK(4:6,i)
          Val4(9:11,i)  = lhs16(9:11,i) !lhsK(7:9,i)
-         Val4(13:15,i) = lhs16(4:12:4,i) !lhsP(1:3,i)  !looks wrong
          Val4(16,i)    = lhs16(16,i) !lhsP(4,i)
+         Val4(13:15,i) = lhs16(4:12:4,i) !lhsP(1:3,i)  !looks wrong
          Val4(4:12:4,i)= lhs16(13:15,i)  ! directly filled but looks wrong
       END DO
 ! next code block replaced by 2 lines up 

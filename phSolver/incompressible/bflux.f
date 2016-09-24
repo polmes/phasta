@@ -142,8 +142,8 @@ c
 c
 c.... allocate the element matrices (though they're not needed)
 c
-            allocate ( xKebe(npro,9,nshl,nshl) )
-            allocate ( xGoC (npro,4,nshl,nshl) )
+!lhs=0             allocate ( xKebe(bsz,9,nshl,nshl) )
+!lhs=0             allocate ( xGoC (bsz,4,nshl,nshl) )
 c     
 c.... compute and assemble the residuals
 c     
@@ -155,10 +155,11 @@ c
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
      &                   xKebe,                xGoC,
+     &                   xlhs, 
      &                   rtmp)
 c     
-            deallocate ( xKebe )
-            deallocate ( xGoC  )
+!lhs=0            deallocate ( xKebe )
+!lhs=0            deallocate ( xGoC  )
          endif
          deallocate ( ien2  )
          deallocate ( xmu2  )

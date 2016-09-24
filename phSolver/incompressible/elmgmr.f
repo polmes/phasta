@@ -53,6 +53,7 @@ c
         integer rowp(nshg*nnz),         colm(nshg+1)
 
 
+        real*8, allocatable, dimension(:,:,:,:,:) :: xlhs
         real*8, allocatable, dimension(:,:,:,:,:) :: xKebe, xGoC
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
@@ -180,6 +181,7 @@ c
       tmpshp(1:nshlc,:) = shp(lcsyst,1:nshlc,:)
       tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
       if (lhs .eq. 1) then
+        allocate ( xlhs(bsz,16,nshlc,nshlc,BlockPool) )
         allocate ( xKebe(bsz,9,nshlc,nshlc,BlockPool) )
         allocate ( xGoC (bsz,4,nshlc,nshlc,BlockPool) )
       endif
@@ -227,8 +229,10 @@ c
             tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
             tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
             if (lhs .eq. 1) then
+              deallocate (xlhs)   ! below (local) easier if blk%s is correct size
               deallocate (xKebe)   ! below (local) easier if blk%s is correct size
               deallocate (xGoC)
+              allocate ( xlhs(bsz,16,blk%s,blk%s,BlockPool) )
               allocate ( xKebe(bsz,9,blk%s,blk%s,BlockPool) )
               allocate ( xGoC (bsz,4,blk%s,blk%s,BlockPool) )
             endif
@@ -252,7 +256,8 @@ c
      &                 mien(iblk)%p,
      &                 rl(:,:,:,ith),
      &                 qres,                xKebe(:,:,:,:,ith),
-     &                 xGoC(:,:,:,:,ith),   rerrl(:,:,:,ith), 
+     &                 xGoC(:,:,:,:,ith),   
+     &                 xlhs(:,:,:,:,ith),   rerrl(:,:,:,ith), 
      &                 StsVecl(:,:,:,ith) )
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
@@ -292,11 +297,12 @@ c
           npro=blk%e  !npro still used in these arrays
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
             if(ipord.eq.1) 
-     &        call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
+     &        call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith),
+     &                     xGoC(:,:,:,:,ith), xlhs(:,:,:,:,ith) )  
             if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
-              call fillsparsecpetsci (mieng(iblk)%p, xGoC(:,:,:,:,ith),
-     &                                xKebe(:,:,:,:,ith),lhsPETSc) 
+              call fillsparsecpetsci (mieng(iblk)%p, 
+     &                                xlhs(:,:,:,:,ith),lhsPETSc) 
 #else
               write(*,*) 'requested unavailable PETSc'
               call error('elmgmrsclr', 'no PETSc', usingpetc)
@@ -322,6 +328,7 @@ c
       deallocate (tmpshp)
       deallocate (tmpshgl)
       if(lhs.eq.1) then
+        deallocate ( xlhs )
         deallocate ( xKebe )
         deallocate ( xGoC  )
       endif

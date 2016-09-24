@@ -3,7 +3,7 @@
      &                   rLui,      rmu,       
      &                   tauC,      tauM,       tauBar,
      &                   shpfun,    shg,        xKebe,
-     &                   xGoC )
+     &                   xGoC,      xlhs )
 c------------------------------------------------------------------------
 c 
 c  This routine computes the left hand side tangent matrix at an 
@@ -42,6 +42,7 @@ c------------------------------------------------------------------------
      &          shpfun(blk%e,blk%s),shg(blk%e,blk%s,3)
       
       dimension xKebe(bsz,9,blk%s,blk%s), xGoC(bsz,4,blk%s,blk%s)
+      dimension xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
 c
@@ -257,6 +258,14 @@ c
      &                      + t1(1:blk%e,3) * shg(1:blk%e,aa,3)
          enddo
       enddo
+
+! accumulate this quadrature points contribution to the 4x4...when working we 
+! will stop carrying xKebe and xGoC
+      xlhs(1:blk%e,1: 3,:,:)=xlhs(1:blk%e,1: 3,:,:)+xKebe(1:blk%e,1:3,:,:)
+      xlhs(1:blk%e,5: 7,:,:)=xlhs(1:blk%e,5: 7,:,:)+xKebe(1:blk%e,4:6,:,:)
+      xlhs(1:blk%e,9:11,:,:)=xlhs(1:blk%e,9:11,:,:)+xKebe(1:blk%e,7:9,:,:)
+      xlhs(1:blk%e,4:16:4,:,:)=xlhs(1:blk%e,4:16:4,:,:)+xGoC(1:blk%e,1:4,:,:)
+      xlhs(1:blk%e,13:15,:,:)=xlhs(1:blk%e,13:15,:,:)-xGoC(1:blk%e,1:3,:,:)
       
 c
 c.... return

@@ -1,6 +1,6 @@
         subroutine e3 (blk, yl,      acl,     dwl,     shp,
      &                 shgl,    xl,      rl,      ql,
-     &                 xKebe,   xGoC,    xmudmi,  sgn, 
+     &                 xKebe,   xGoC,    xlhs, xmudmi,  sgn, 
      &                 rerrl, rlsl)
 c                                                                      
 c----------------------------------------------------------------------
@@ -52,6 +52,7 @@ c
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
 
         dimension xKebe(bsz,9,blk%s,blk%s), xGoC(bsz,4,blk%s,blk%s)
+        dimension xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
 c
@@ -164,7 +165,7 @@ c
      &                  xK_qp(:,:,:,:,ith),
      &                  xG_qp(:,:,:,:,ith))
 #else
-     &                  xKebe,     xGoC)
+     &                  xKebe,     xGoC,xlhs)
 #endif
         endif
 
@@ -201,6 +202,7 @@ c
          do ib = 1, blk%s
             do iaa = 1, ib-1
                xGoC(1:blk%e,4,iaa,ib) = xGoC(1:blk%e,4,ib,iaa)
+               xlhs(1:blk%e,16,iaa,ib) = xlhs(1:blk%e,16,ib,iaa)
             enddo
          enddo
       endif

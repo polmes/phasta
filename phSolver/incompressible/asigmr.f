@@ -1,7 +1,7 @@
         subroutine AsIGMR (blk,  y,       ac,      x,       xmudmi,
      &                     shp,     shgl,    ien,     
      &                     rl,     qres,
-     &                     xKebe,   xGoC,    rerrl)
+     &                     xKebe,   xGoC,    xlhs, rerrl)
 c
 c----------------------------------------------------------------------
 c
@@ -37,6 +37,7 @@ c
      &            rl(bsz,blk%s,nflow), 
      &            ql(bsz,blk%s,idflx)
 c        
+        dimension xKlhs(bsz,16,blk%s,blk%s)
         dimension xKebe(bsz,9,blk%s,blk%s), 
      &            xGoC(bsz,4,blk%s,blk%s)
 c
@@ -85,6 +86,7 @@ c
 c.... zero the matrices if they are being recalculated
 c
         if (lhs. eq. 1)  then
+           xlhs = zero
            xKebe = zero
            xGoC  = zero
         endif   
@@ -97,7 +99,7 @@ c
 
         call e3  (blk,yl,      acl,     dwl,     shp,
      &            shgl,    xl,      rl,      
-     &            ql,      xKebe,   xGoC,    xmudmi, 
+     &            ql,      xKebe,   xGoC,    xlhs, xmudmi, 
      &            sgn,     rerrl,  rlsl     )
 c
 c.... assemble the statistics residual
