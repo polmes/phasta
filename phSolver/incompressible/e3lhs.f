@@ -233,8 +233,12 @@ c
          t1(:,2) = tlW * shg(:,b,2)
          t1(:,3) = tlW * shg(:,b,3)
          do aa = 1, blk%s
-            xlhs(1:blk%e,4:12:4,aa,b) = xlhs(1:blk%e,4:12:4,aa,b) 
-     &      + t1(1:blk%e,1:3) * shpfun(1:blk%e,aa)  
+            xlhs(1:blk%e,4,aa,b) = xlhs(1:blk%e,4,aa,b) 
+     &      + t1(1:blk%e,1) * shpfun(1:blk%e,aa)  
+            xlhs(1:blk%e,8,aa,b) = xlhs(1:blk%e,8,aa,b) 
+     &      + t1(1:blk%e,2) * shpfun(1:blk%e,aa)  
+            xlhs(1:blk%e,12,aa,b) = xlhs(1:blk%e,12,aa,b) 
+     &      + t1(1:blk%e,3) * shpfun(1:blk%e,aa)  
          enddo
       enddo
 c
