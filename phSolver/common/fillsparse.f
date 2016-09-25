@@ -1,11 +1,11 @@
-      subroutine fillsparseI16(	iens, xKebe,	lhs16,
+      subroutine fillsparseI16(	iens, xlhs,	lhs16,
      &                               xGoC,      
      1			             row,	col)
 c
 c
 c
       include "common.h"
-      real*8	xKebe(bsz,9,nshl,nshl), xGoC(bsz,4,nshl,nshl)
+      real*8	xlhs(bsz,16,nshl,nshl), xGoC(bsz,4,nshl,nshl)
       integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
       real*8	lhs16(16,nnz_tot)
 c
@@ -36,11 +36,12 @@ c function that searches row until it finds the match that gives the
 c		   global equation number
 
                   k = sparseloc( row(c), n, ien(e,b) ) + c-1
-                  lhs16(1: 3,k)  =lhs16(1: 3,k) + xKebe(e,1:3,aa,b)
-                  lhs16(5: 7,k)  =lhs16(5: 7,k) + xKebe(e,4:6,aa,b)
-                  lhs16(9:11,k)  =lhs16(9:11,k) + xKebe(e,7:9,aa,b)
-                  lhs16(4:16:4,k)=lhs16(4:16:4,k) + xGoC(e,1:4,aa,b)
-                  lhs16(13:15,k) =lhs16(13:15,k)   - xGoC(e,1:3,b,aa)
+                  lhs16(:,k)  =lhs16(:,k) + xlhs(e,:,aa,b)
+!                  lhs16(1: 3,k)  =lhs16(1: 3,k) + xKebe(e,1:3,aa,b)
+!                  lhs16(5: 7,k)  =lhs16(5: 7,k) + xKebe(e,4:6,aa,b)
+!                  lhs16(9:11,k)  =lhs16(9:11,k) + xKebe(e,7:9,aa,b)
+!                  lhs16(4:16:4,k)=lhs16(4:16:4,k) + xGoC(e,1:4,aa,b)
+!                  lhs16(13:15,k) =lhs16(13:15,k)   - xGoC(e,1:3,b,aa)
 c
 c                                             *         *
 c                   dimension egmass(npro,ndof,nenl,ndof,nenl)

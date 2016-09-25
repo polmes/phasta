@@ -309,7 +309,7 @@ c
 #endif
             else
               call fillsparseI16 (mien(iblk)%p, 
-     &                 xKebe(:,:,:,:,ith) ,            lhs16,
+     &                 xlhs(:,:,:,:,ith) ,            lhs16,
      &                 xGoC(:,:,:,:,ith) ,            
      &                 rowp,                      colm)
             endif

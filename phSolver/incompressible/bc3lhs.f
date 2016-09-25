@@ -25,6 +25,7 @@ c
       dimension iBC(nshg),      ien(npro,nshl)
       real*8 BC(nshg,ndofBC), xlhs(bsz,16,nshl,nshl)
       real*8 xKebe(bsz,9,nshl,nshl), xGoC(bsz,4,nshl,nshl)
+      integer aa,b
       integer iens(npro,nshl)
 c
 c prefer to show explicit absolute value needed for cubic modes and
@@ -37,7 +38,12 @@ c
       xlhs(:,5: 7,:,:)=xKebe(:,4:6,:,:)
       xlhs(:,9:11,:,:)=xKebe(:,7:9,:,:)
       xlhs(:,4:16:4,:,:)=xGoC(:,1:4,:,:)
-      xlhs(:,13:15,:,:)=-xGoC(:,1:3,:,:)
+ 
+      do aa=1,nshl
+        do b=1,nshl
+          xlhs(:,13:15,aa,b)=-xGoC(:,1:3,b,aa)
+        enddo
+      enddo
      
 c
 c.... loop over elements
@@ -51,8 +57,8 @@ c
 c
 c.... set up parameters
 c
-            if(usingpetsc.gt.-1) then
               in  = abs(ien(iel,inod))
+            if(usingpetsc.gt.20) then
               if(btest(ibc(in),2)) then
                   xlhs(iel,4:12:4,:,inod) = zero   !take out row 4 of all rows for inod
                   xlhs(iel,13:15,inod,:) = zero    !take out column 4 of all columns for inod
