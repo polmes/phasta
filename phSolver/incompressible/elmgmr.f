@@ -54,7 +54,6 @@ c
 
 
         real*8, allocatable, dimension(:,:,:,:,:) :: xlhs
-        real*8, allocatable, dimension(:,:,:,:,:) :: xKebe, xGoC
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
         real*8  rerr(nshg,10)
@@ -182,8 +181,6 @@ c
       tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
       if (lhs .eq. 1) then
         allocate ( xlhs(bsz,16,nshlc,nshlc,BlockPool) )
-        allocate ( xKebe(bsz,9,nshlc,nshlc,BlockPool) )
-        allocate ( xGoC (bsz,4,nshlc,nshlc,BlockPool) )
       endif
       if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshlc,6,BlockPool) )
       if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshlc,nResDims,BlockPool) )
@@ -230,11 +227,7 @@ c
             tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
             if (lhs .eq. 1) then
               deallocate (xlhs)   ! below (local) easier if blk%s is correct size
-              deallocate (xKebe)   ! below (local) easier if blk%s is correct size
-              deallocate (xGoC)
               allocate ( xlhs(bsz,16,blk%s,blk%s,BlockPool) )
-              allocate ( xKebe(bsz,9,blk%s,blk%s,BlockPool) )
-              allocate ( xGoC (bsz,4,blk%s,blk%s,BlockPool) )
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
@@ -255,8 +248,7 @@ c
      &                 tmpshgl,
      &                 mien(iblk)%p,
      &                 rl(:,:,:,ith),
-     &                 qres,                xKebe(:,:,:,:,ith),
-     &                 xGoC(:,:,:,:,ith),   
+     &                 qres,              
      &                 xlhs(:,:,:,:,ith),   rerrl(:,:,:,ith), 
      &                 StsVecl(:,:,:,ith) )
 #ifdef HAVE_OMP
@@ -297,8 +289,7 @@ c
           npro=blk%e  !npro still used in these arrays
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
             if(ipord.eq.1) 
-     &        call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith),
-     &                     xGoC(:,:,:,:,ith), xlhs(:,:,:,:,ith) )  
+     &        call bc3lhs (iBC, BC,mien(iblk)%p, xlhs(:,:,:,:,ith))
             if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
               call fillsparsecpetsci (mieng(iblk)%p, 
@@ -310,7 +301,6 @@ c
             else
               call fillsparseI16 (mien(iblk)%p, 
      &                 xlhs(:,:,:,:,ith) ,            lhs16,
-     &                 xGoC(:,:,:,:,ith) ,            
      &                 rowp,                      colm)
             endif
           endif
@@ -329,8 +319,6 @@ c
       deallocate (tmpshgl)
       if(lhs.eq.1) then
         deallocate ( xlhs )
-        deallocate ( xKebe )
-        deallocate ( xGoC  )
       endif
       if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
       if ( stsResFlg .eq. 1 )          deallocate ( StsVecl  )
@@ -430,7 +418,7 @@ c
      &                 tmpshglb,
      &                 mienb(iblk)%p,           mmatb(iblk)%p,
      &                 miBCB(iblk)%p,           mBCB(iblk)%p,
-     &                 res,                     xKebe)
+     &                 res,                     xlhsdisabled)
 
 c
 c.... satisfy (again, for the vessel wall contributions) the BC's on the implicit LHS
@@ -442,9 +430,9 @@ c.... vessel wall elements
 !disable
 !disable          if (impl(1) .ne. 9 .and. lhs .eq. 1) then
 !disable             if(ipord.eq.1)
-!disable     &         call bc3lhs (iBC, BC,mienb(iblk)%p, xKebe)
+!disable     &         call bc3lhs (iBC, BC,mienb(iblk)%p, xlhsdisabled)
 !disable             call fillsparseI (mienb(iblk)%p,
-!disable     &                 xKebe,           lhsK,
+!disable     &                 xlhsdisabled,           lhsK,
 !disable     &                 xGoC,             lhsP,
 !disable     &                 rowp,                      colm)
 !disable          endif

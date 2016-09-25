@@ -154,7 +154,6 @@ c
      &                   shgl(lcsyst,:,1:nshl,:),
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
-     &                   xKebe,                xGoC,
      &                   xlhs, 
      &                   rtmp)
 c     

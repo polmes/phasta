@@ -1,11 +1,10 @@
       subroutine fillsparseI16(	iens, xlhs,	lhs16,
-     &                               xGoC,      
      1			             row,	col)
 c
 c
 c
       include "common.h"
-      real*8	xlhs(bsz,16,nshl,nshl), xGoC(bsz,4,nshl,nshl)
+      real*8	xlhs(bsz,16,nshl,nshl)
       integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
       real*8	lhs16(16,nnz_tot)
 c
@@ -37,6 +36,7 @@ c		   global equation number
 
                   k = sparseloc( row(c), n, ien(e,b) ) + c-1
                   lhs16(:,k)  =lhs16(:,k) + xlhs(e,:,aa,b)
+!old way with 2 matrices at the element level
 !                  lhs16(1: 3,k)  =lhs16(1: 3,k) + xKebe(e,1:3,aa,b)
 !                  lhs16(5: 7,k)  =lhs16(5: 7,k) + xKebe(e,4:6,aa,b)
 !                  lhs16(9:11,k)  =lhs16(9:11,k) + xKebe(e,7:9,aa,b)

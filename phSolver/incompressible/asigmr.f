@@ -1,7 +1,7 @@
         subroutine AsIGMR (blk,  y,       ac,      x,       xmudmi,
      &                     shp,     shgl,    ien,     
      &                     rl,     qres,
-     &                     xKebe,   xGoC,    xlhs, rerrl)
+     &                     xlhs, rerrl)
 c
 c----------------------------------------------------------------------
 c
@@ -38,8 +38,6 @@ c
      &            ql(bsz,blk%s,idflx)
 c        
         dimension xKlhs(bsz,16,blk%s,blk%s)
-        dimension xKebe(bsz,9,blk%s,blk%s), 
-     &            xGoC(bsz,4,blk%s,blk%s)
 c
         dimension rlsl(bsz,blk%s,6) 
 
@@ -87,8 +85,6 @@ c.... zero the matrices if they are being recalculated
 c
         if (lhs. eq. 1)  then
            xlhs = zero
-           xKebe = zero
-           xGoC  = zero
         endif   
 c
 c.... get the element residuals, LHS matrix, and preconditioner
@@ -99,7 +95,7 @@ c
 
         call e3  (blk,yl,      acl,     dwl,     shp,
      &            shgl,    xl,      rl,      
-     &            ql,      xKebe,   xGoC,    xlhs, xmudmi, 
+     &            ql,      xlhs, xmudmi, 
      &            sgn,     rerrl,  rlsl     )
 c
 c.... assemble the statistics residual

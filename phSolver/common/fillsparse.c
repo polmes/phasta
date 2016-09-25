@@ -94,24 +94,6 @@ void fillsparsecpetsci(gcorp_t* ieng, double* xlhs, Mat* lhsP)
          for(ih=0; ih<nshl;  ih++) {
            for(jh=0; jh<nshl;  jh++) {
              i00=e+ih*ihjmp+jh*jhjmp;
-/*             i04=e+ih*4*bsz+jh*4*bsz*nshl; 
-             mbt[0]=xlhs[i00];
-             mbt[1]=xlhs[i00+4*bsz];
-             mbt[2]=xlhs[i00+8*bsz];
-             mbt[3]=xlhs[i00+12*bsz];
-             mbt[4]=xlhs[i00+bsz];
-             mbt[5]=xlhs[i00+5*bsz];
-             mbt[6]=xlhs[i00+9*bsz];
-             mbt[7]=xlhs[i00+13*bsz];
-             mbt[8]=xlhs[i00+2*bsz];
-             mbt[9]=xlhs[i00+6*bsz];
-             mbt[10]=xlhs[i00+10*bsz];
-             mbt[11]=xlhs[i00+14*bsz];
-             mbt[12]=xlhs[i00+3*bsz];
-             mbt[13]=xlhs[i00+7*bsz];
-             mbt[14]=xlhs[i00+11*bsz];
-             mbt[15]=xlhs[i00+15*bsz];
-*/
              for(iv=0; iv<4; iv++) {
                for(jv=0; jv<4; jv++) {
                  id=jv+iv*nshlnfl+jh*nflow+ih*nfsqnsh; //16*nshl;

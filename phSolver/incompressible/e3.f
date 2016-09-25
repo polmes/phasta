@@ -1,6 +1,6 @@
         subroutine e3 (blk, yl,      acl,     dwl,     shp,
      &                 shgl,    xl,      rl,      ql,
-     &                 xKebe,   xGoC,    xlhs, xmudmi,  sgn, 
+     &                 xlhs, xmudmi,  sgn, 
      &                 rerrl, rlsl)
 c                                                                      
 c----------------------------------------------------------------------
@@ -22,8 +22,7 @@ c
 c output:
 c  rl     (bsz,blk%s,nflow)      : element RHS residual    (G^e_a)
 c  rml    (bsz,blk%s,nflow)      : element modified residual  (G^e_a tilde)
-c  xKebe  (bsz,9,blk%s,blk%s)  : element LHS tangent mass matrix
-c  xGoC   (bsz,4,blk%s,blk%s)    : element LHS tangent mass matrix
+c  xlhs  (bsz,16,blk%s,blk%s)  : element LHS tangent mass matrix
 c
 c Note: This routine will calculate the element matrices for the
 c        Hulbert's generalized alpha method integrator
@@ -48,10 +47,9 @@ c
      &            xl(bsz,blk%n,nsd),      dwl(bsz,blk%n),
      &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx)
 c      
-        real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp, xG_qp
+        real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
 
-        dimension xKebe(bsz,9,blk%s,blk%s), xGoC(bsz,4,blk%s,blk%s)
         dimension xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
@@ -90,11 +88,9 @@ c
 ! natural place for rdelta = TMRC() but moved lower to time just loop 
 #ifdef HAVE_OMP_QP  
 	allocate( rl_qp(bsz,blk%s,nflow,blk%g))
-        allocate( xK_qp(bsz,9,blk%s,blk%s,blk%g))
-        allocate( xG_qp(bsz,4,blk%s,blk%s,blk%g))
+        allocate( xK_qp(bsz,16,blk%s,blk%s,blk%g))
         rl_qp=zero
         xK_qp=zero
-        xG_qp=zero
 #endif
 ! time just loop 
 !       rdelta = TMRC() 
@@ -104,7 +100,7 @@ c
 !$OMP& private (shg,dxidx,WdetJ,pres,u1,u2,u3,rLui,src,rlsi)
 !$OMP& private (tauC,tauM,tauBar,uBar,id)
 !$OMP& shared (shp,shgl,dwbszl,yl,xmudmi,xl,acl,rlsl)
-!$OMP& shared (rl_qp,xK_qp,xG_qp)
+!$OMP& shared (rl_qp,xK_qp)
 #endif
         do ith = 1, blk%g
         if (Qwt(lcsyst,ith) .eq. zero) cycle          ! precaution
@@ -163,9 +159,8 @@ c
      &                  shpfun,    shg,        
 #ifdef HAVE_OMP_QP
      &                  xK_qp(:,:,:,:,ith),
-     &                  xG_qp(:,:,:,:,ith))
 #else
-     &                  xKebe,     xGoC,xlhs)
+     &                  xlhs)
 #endif
         endif
 
@@ -179,30 +174,30 @@ c
 !just
 #ifdef HAVE_OMP_QP
 c
-c here we accumulate the thread work
+c here we accumulate the thread work from each quadrature point
 c
       do i=1,blk%g
        rl(1:blk%e,1:blk%s,1:nflow)=rl(1:blk%e,1:blk%s,1:nflow)
      &                       +rl_qp(1:blk%e,1:blk%s,1:nflow,i)
-       xKebe(1:blk%e,1:9,1:blk%s,1:blk%s)=xKebe(1:blk%e,1:9,1:blk%s,1:blk%s)
-     &                                +xK_qp(1:blk%e,1:9,1:blk%s,1:blk%s,i)
-       xGoC(1:blk%e,1:4,1:blk%s,1:blk%s)=xGoC(1:blk%e,1:4,1:blk%s,1:blk%s)
-     &                              +xG_qp(1:blk%e,1:4,1:blk%s,1:blk%s,i)
+       xlhs(1:blk%e,1:12,1:blk%s,1:blk%s)=xlhs(1:blk%e,1:12,1:blk%s,1:blk%s)
+     &                                +xK_qp(1:blk%e,1:12,1:blk%s,1:blk%s,i)
+       xlhs(1:blk%e,16,1:blk%s,1:blk%s)=xlhs(1:blk%e,16,1:blk%s,1:blk%s)
+     &                                +xK_qp(1:blk%e,16,1:blk%s,1:blk%s,i)
       enddo
 
-      deallocate(xG_qp)
       deallocate(xK_qp)
       deallocate(rl_qp)
 #endif
-!natural lace for the rthreads timer when we want to capture all but moved to just loop for now
+!natural place for the rthreads timer when we want to capture all but moved to just loop for now
 c
-c.... symmetrize C
-c
+c.... symmetrize C and G from -G^T since only G was computed in e3lhs
       if (lhs .eq. 1) then
          do ib = 1, blk%s
             do iaa = 1, ib-1
-               xGoC(1:blk%e,4,iaa,ib) = xGoC(1:blk%e,4,ib,iaa)
                xlhs(1:blk%e,16,iaa,ib) = xlhs(1:blk%e,16,ib,iaa)
+            enddo
+            do iaa = 1,blk%s
+               xlhs(1:blk%e,13:15,iaa,ib) = -xlhs(1:blk%e,4:12:4,ib,iaa)
             enddo
          enddo
       endif
