@@ -291,7 +291,7 @@ c row and column exchanged
 c--------------------------
 c
         subroutine fMtxBlkDot2( x, y, c, m, n, rblasphasta,rblasmkl,
-     &             iblasphasta,iblasmkl )
+     &             iblasphasta,iblasmkl,ieqswork )
 
         implicit none
         include "kmkl.fi"
@@ -308,17 +308,17 @@ c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
         integer i,      j,      m1,lda,incx,incy
-        integer iwork,      icut
+        integer iwork, ieqswork,     icut
         integer iblasphasta,      iblasmkl
 !DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
 
-        iwork=0 !0 chooses original form
-!        iwork=1 ! chooses cut at 4 change original form
-!        iwork=2 ! chooses ddot only ALSO SET ICUT=200
-!        iwork=3 ! chooses dgemmv only ALSO NEED ICUT=0
-!        iwork>4 ! uses specific ICUT value for shift to dgemv
-        icut=48
+      iwork=mod(ieqswork,10)
+
+!       0 chunk8, 1 chunk4, 2  mkl ddot, 3  mkl dgemmv 
+!       4-6  3 for m< icut below, else chunk8, 7 open, 8 double loop 
+        
         if((iwork.ge.3).and.(iwork.lt.7)) then ! let dgemv do some/all of the work
+          icut=24*2**(iwork-4)
           if(m.gt.icut) then
             alpha=1.0
             beta=0.0

@@ -50,7 +50,7 @@ c from different modules
      &  numRCRSrfs, nsrflistRCR(0:MAXSURF),ircrfile,
      &  ideformwall, iwallmassfactor, iwallstiffactor, iviscflux 
         common /sequence/ seqsize, stepseq(100)
-	common /workfc/ master, numpe, myrank,BlockPool
+	common /workfc/ master, numpe, myrank,BlockPool,ieqswork
 	common /fronts/ maxfront, nlwork
 	common /newdim/ nshgt, minowned,maxowned, numper, nshg0
 	common /timer4/ birth, death, comtim

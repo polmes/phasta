@@ -83,6 +83,7 @@ int input_fform(phSolver::Input& inp)
 #endif    
 
     workfc.BlockPool = (int)inp.GetValue("Number of Blocks to Pool"); 
+    workfc.ieqswork = (int)inp.GetValue("Equation Solver Work Selector"); 
 
 /////////////////////////////chen Sep 25 2009  Flow Control Parameters ////////
 // Take BC from IC at inlet

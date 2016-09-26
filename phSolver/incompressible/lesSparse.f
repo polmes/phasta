@@ -272,20 +272,24 @@ c      implicit none
       real*8    q3(3,nNodes), p3(3,nNodes)
       real*8    q4(4,nNodes), p4(4,nNodes)
       real*8    pLhs(4,nnz_tot)  ! old way passed in matrices
-      real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot) ! needed for mkl3xe
+      real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot) ! needed for 3x3 options
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
 !
-! This routine wants to do K.p_m + G p_c
-!  The above call to mkl_...  is a straight K.p_m
-!  Below is recognizing that to do a G.p when you have not stored 
-!  G ( PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  1x4).  What we
+! This routine performs K.p_m + G.p_c
+! The K.p_m is a 3x3 . 3x1 (standard). The second part is G.p_c is a 3x1 . 1x1
+! Original code did not store G so  it gets pulled from PLHS but note
+! PLHS in NOT  GoverC (4x1) rather it is {-G^T C}  (1x4).  What we
 ! see below is an on the fly negation and transpose (note j inplace summ) to
-! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
+! accomplish + G p_c.  These options allow testing if this is more or less efficient 
+! than directly computing and using the full matrix.
 !
       rstart=TMRC()
-      iwork=0 
+      iwork=ieqswork/10
+#ifndef USE_MKL
+        iwork=5  ! safety in input selected MKL but code was not compiled for it 
+#endif
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then  ! {old way
@@ -390,7 +394,7 @@ cdir$ ivdep
           q(i,3)=q3(3,i)
         enddo
       endif !iwork 1 }
-      if(iwork.eq.2) then ! { mkl sparse 
+      if(iwork.eq.2) then ! { mkl sparse  3x3
         do i = 1, nNodes
           p3(1,i)=p(i,1)
           p3(2,i)=p(i,2)
@@ -453,7 +457,7 @@ cdir$ ivdep
 !SLOWER ALT           q(i,3) = q3(3,i) + tmp3
 !SLOWER ALT         enddo
 !SLOWER ALT         rspmvphasta=rspmvphasta + TMRC()-rdelta
-      endif !} mkl sparse
+      endif !} mkl sparse 3x3
       if(iwork.eq.3) then ! { mkl  with 4x4 matrix
         do i =1, nNodes  !mkl requires dof_var first
           p4(1,i)=p(i,1)
@@ -515,7 +519,7 @@ cdir$ ivdep
         rspmvphasta=rspmvphasta + TMRC()-rdelta
         ispmvphasta=ispmphasta + 1
       endif ! } 4x4 transposed 
-      if(iwork.eq.5) then  ! { try the original form with 4x4
+      if(iwork.eq.5) then  ! { 4x4 used to do 3x4 with original p
         rdelta= TMRC()
 c
 c.... Do an AP product
@@ -550,8 +554,8 @@ cdir$ ivdep
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
         ispmvphasta=ispmphasta + 1
-      endif ! } original with 4x4
-      if(iwork.eq.6) then  ! {old way with 4x4 data structure
+      endif ! } original p  with 4x4
+      if(iwork.eq.6) then  ! {old way (using 4x3 matrix from a 4x4 data structure
         rdelta=TMRC()
         do i = 1, nNodes
           q(i,1) = 0
@@ -725,9 +729,16 @@ c
       real*8	tmp1,	tmp2,	tmp3,	tmp4
       integer	i,	j,	k
        
-      iwork=5
+      iwork=ieqswork/10
 ! chosen: 0 original with matrices contracted back
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T
+!
+! handle options available to KG but not for Full
+!
+      if((iwork.eq.1).or.(iwork.eq.2).or.(iwork.eq.6) iwork=5 
+#ifndef USE_MKL
+        iwork=5  ! safety in input selected MKL but code was not compiled for it 
+#endif
       if(iwork.eq.0) then !{ original alg with 3x3
         lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
         lhs9(4:6,:)=lhs16(5:7,:)
@@ -862,7 +873,7 @@ c
 !done inline          q(i,4)=q4(4,i)
 !done inline        enddo
       endif
-      if(iwork.eq.5) then !{mkl 4x4
+      if(iwork.eq.5) then !{
         rstart=TMRC()
 c
 c.... Do an AP product
