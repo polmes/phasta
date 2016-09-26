@@ -139,6 +139,7 @@ c
            enddo
         enddo
         rspmvD=rspmvD+TMRC()-rstart
+        ispmvD=ispmvD+1
 c     
         return
         end
@@ -246,6 +247,7 @@ c
 c.... end
 c
       rspmvG=rspmvG+TMRC()-rstart
+      ispmvG=ispmvG+1
         return
         end
 
@@ -283,7 +285,7 @@ c
 ! accomplish + G p_c.  Might be worth testing if this is more or less efficient ! than directly computing and using the full matrix.
 !
       rstart=TMRC()
-      iwork=3 
+      iwork=0 
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then  ! {old way
@@ -329,6 +331,7 @@ cdir$ ivdep
             q(i,3) = q(i,3) + tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmvphasta + 1
       endif !} original code in fast index on dof-HOLDER
 
       if(iwork.eq.1) then ! original transposed {
@@ -380,6 +383,7 @@ cdir$ ivdep
           q3(3,i) = q3(3,i) + tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmvphasta + 1
         do i =1, nNodes ! transpose back from  dof_var first
           q(i,1)=q3(1,i)
           q(i,2)=q3(2,i)
@@ -398,6 +402,7 @@ cdir$ ivdep
         rdelta=TMRC()
         call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
         rspmvmkl=rspmvmkl + TMRC()-rdelta
+        ispmvmkl=ispmvmkl + 1
         rdelta=TMRC()
         do i = 1, nNodes
 c
@@ -418,6 +423,7 @@ cdir$ ivdep
           q3(3,i) = q3(3,i) + tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmvphasta + 1
         do i =1, nNodes ! transpose back from  dof_var first
           q(i,1)=q3(1,i)
           q(i,2)=q3(2,i)
@@ -456,6 +462,7 @@ cdir$ ivdep
         rdelta=TMRC()
         call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
         rspmvmkl=rspmvmkl + TMRC()-rdelta
+        ispmvmkl=ispmvmkl + 1
         do i =1, nNodes ! transpose back mkl's dof_var first
           q(i,1)=q4(1,i)
           q(i,2)=q4(2,i)
@@ -502,6 +509,7 @@ cdir$ ivdep
           q(i,3) = tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmphasta + 1
       endif ! } 4x4 transposed 
       if(iwork.eq.5) then  ! { try the original form with 4x4
         rdelta= TMRC()
@@ -537,6 +545,7 @@ cdir$ ivdep
           q(i,3) = tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmphasta + 1
       endif ! } original with 4x4
       if(iwork.eq.6) then  ! {old way with 4x4 data structure
         rdelta=TMRC()
@@ -578,6 +587,7 @@ cdir$ ivdep
             q(i,3) = q(i,3) + tmp3
         enddo
         rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmphasta + 1
       endif !} original code, 4x4,  in fast index on dof-HOLDER
 
       if(ipvsq.ge.2) then
@@ -588,6 +598,7 @@ c
 c.... end
 c
       rspmvKG=rspmvKG+TMRC()-rstart
+      ispmvKG=ispmvKG+1
       return
       end
 
@@ -633,6 +644,7 @@ c
 c.... end
 c
         rspmvNGt=rspmvNGt+TMRC()-rstart
+        ispmvNGt=ispmvNGt+1
         return
         end
 
@@ -679,6 +691,7 @@ c
 c.... end
 c
         rspmvNGtC=rspmvNGtC+TMRC()-rstart
+        ispmvNGtC=ispmvNGtC+1
         return
         end
 
@@ -764,6 +777,7 @@ c
             q(i,4) = tmp4
         enddo
         rspmvFull=rspmvFull+TMRC()-rstart
+        ispmvFull=ispmvFull+1
       endif
       if(iwork.eq.3) then ! { mkl  with 4x4 matrix
         do i =1, nNodes  !mkl requires dof_var first
@@ -775,6 +789,7 @@ c
         rstart=TMRC()
         call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
         rspmvFull=rspmvFull+TMRC()-rstart
+        ispmvFull=ispmvFull+1
         do i =1, nNodes ! transpose back mkl's dof_var first
           q(i,1)=q4(1,i)
           q(i,2)=q4(2,i)
@@ -833,6 +848,7 @@ c
             q(i,4) = tmp4
         enddo
         rspmvFull=rspmvFull+TMRC()-rstart
+        ispmvFull=ispmvFull+1
 !done inline        do i =1, nNodes ! transpose back mkl's dof_var first
 !done inline          q(i,1)=q4(1,i)
 !done inline          q(i,2)=q4(2,i)
@@ -885,6 +901,7 @@ c
             q(i,4) = tmp4
         enddo
         rspmvFull=rspmvFull+TMRC()-rstart
+        ispmvFull=ispmvFull+1
       endif
 
       if(ipvsq.ge.2) then

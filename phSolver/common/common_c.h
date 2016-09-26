@@ -195,6 +195,18 @@ extern "C" {
     double rspmvNGt;
     double rspmvNGtC;
     double rspmvFull;
+    double rblasmaxpy;
+    int iblasmaxpy;
+    int ispmvKG;
+    int ispmvphasta;
+    int ispmvmkl;
+    int iblasphasta;
+    int iblasmkl;
+    int ispmvD;
+    int ispmvG;
+    int ispmvNGt;
+    int ispmvNGtC;
+    int ispmvFull;
   } mpistats ;
 
   extern struct { 

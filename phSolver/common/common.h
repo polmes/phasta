@@ -77,7 +77,12 @@ c from different modules
      &                   rspmvKG, rspmvphasta, rspmvmkl, 
      &                   rblasphasta, rblasmkl,
      &                   rspmvD,  rspmvG, rspmvNGt,
-     &                   rspmvNGtC, rspmvFull
+     &                   rspmvNGtC, rspmvFull,
+     &                   rblasmaxpy, iblasmaxpy,
+     &                   ispmvKG, ispmvphasta, ispmvmkl, 
+     &                   iblasphasta, iblasmkl,
+     &                   ispmvD,  ispmvG, ispmvNGt,
+     &                   ispmvNGtC, ispmvFull
 
         common /memstats/rheap,rheapavail,rstack,rstackavail,rshared,
      &                   rpersist,rguard,rmmap,rmemstats

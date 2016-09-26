@@ -620,7 +620,9 @@ void lesBlkDot2 ( UsrHd   usrHd,
                  &mDims,
                  &dim,
                  &mpistats.rblasphasta,
-                 &mpistats.rblasmkl ) ;
+                 &mpistats.rblasmkl, 
+                 &mpistats.iblasphasta,
+                 &mpistats.iblasmkl ) ;
 
     drvAllreduce ( valuesp,
                    values,
@@ -750,7 +752,9 @@ void lesBlkDmaxpy ( UsrHd   usrHd,
                    dstpnt,
                    coef,
                    &mDims,
-                   &dim );
+                   &dim, 
+                   &mpistats.rblasmaxpy,
+                   &mpistats.iblasmaxpy ) ;
 }
 
 /*-----------------------------------------------------------------------

@@ -1,4 +1,4 @@
-c---------------------------------------------------------------------
+c48---------------------------------------------------------------------
 c
 c ftools.f : Bundle of Fortran routines
 c
@@ -290,7 +290,8 @@ c Farzin's implementation
 c row and column exchanged
 c--------------------------
 c
-        subroutine fMtxBlkDot2( x, y, c, m, n, rblasphasta,rblasmkl )
+        subroutine fMtxBlkDot2( x, y, c, m, n, rblasphasta,rblasmkl,
+     &             iblasphasta,iblasmkl )
 
         implicit none
         include "kmkl.fi"
@@ -308,14 +309,15 @@ c
         real*8  tmp5,   tmp6,   tmp7,   tmp8
         integer i,      j,      m1,lda,incx,incy
         integer iwork,      icut
+        integer iblasphasta,      iblasmkl
 !DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
 
         iwork=0 !0 chooses original form
 !        iwork=1 ! chooses cut at 4 change original form
 !        iwork=2 ! chooses ddot only ALSO SET ICUT=200
 !        iwork=3 ! chooses dgemmv only ALSO NEED ICUT=0
-!        iwork=4 ! uses specific ICUT value for shift to dgemv
-        icut=0
+!        iwork>4 ! uses specific ICUT value for shift to dgemv
+        icut=48
         if((iwork.ge.3).and.(iwork.lt.7)) then ! let dgemv do some/all of the work
           if(m.gt.icut) then
             alpha=1.0
@@ -335,6 +337,7 @@ c
             rdelta=TMRC()
             call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
             rblasmkl=rblasmkl+TMRC()-rdelta
+            iblasmkl=iblasmkl+m
             return
           else ! jump to chunk 8 to do the rest of the work or 
               ! change iwork  to who you want to do it
@@ -350,6 +353,7 @@ cdir$ ivdep
             c(i)=ddot(n,x(1,i),1,y,1)
           enddo
           rblasmkl=rblasmkl+TMRC()-rdelta
+          iblasmkl=iblasmkl+m
           return
         endif
         if(iwork.eq.8) then
@@ -362,6 +366,7 @@ cdir$ ivdep
             enddo
           enddo
           rblasphasta=rblasphasta+TMRC()-rdelta
+          iblasphasta=iblasphasta+m
           return
         endif
         if(iwork.eq.0) then
@@ -529,6 +534,7 @@ c
             c(j+7) = tmp8
         enddo
         rblasphasta=rblasphasta+TMRC()-rdelta
+        iblasphasta=iblasphasta+m
         return
         endif !iwork=0
         if(iwork.eq.1) then ! try a max 4 version of original
@@ -597,6 +603,7 @@ c
             c(j+3) = tmp4
         enddo
         rblasphasta=rblasphasta+TMRC()-rdelta
+        iblasphasta=iblasphasta+m
         endif
 c
         return
@@ -889,7 +896,7 @@ c Farzin's implementation
 c row and column exchanged 
 c--------------------------
 c
-       subroutine fMtxBlkDmaxpy( x, y, c, m, n )
+       subroutine fMtxBlkDmaxpy( x, y, c, m, n, rblasmaxpy,iblasmaxpy )
 c
 c.... Data declaration
 c
@@ -900,6 +907,9 @@ c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
         integer i,      j,      m1
+        integer iblasmaxpy
+        real*8 rdelta,TMRC,rblasmaxpy
+        rdelta=TMRC()
 c
 c.... Determine the left overs
 c
@@ -1017,6 +1027,8 @@ c
             enddo
         enddo
 c
+        rblasmaxpy=rblasmaxpy+TMRC()-rdelta
+        iblasmaxpy=iblasmaxpy+m
         return
         end
 c
