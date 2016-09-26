@@ -287,7 +287,7 @@ c
 !
       rstart=TMRC()
       iwork=ieqswork/10
-#ifndef USE_MKL
+#ifndef HAVE_MKL
         iwork=5  ! safety in input selected MKL but code was not compiled for it 
 #endif
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
@@ -736,7 +736,7 @@ c
 ! handle options available to KG but not for Full
 !
       if((iwork.eq.1).or.(iwork.eq.2).or.(iwork.eq.6)) iwork=5 
-#ifndef USE_MKL
+#ifndef HAVE_MKL
         iwork=5  ! safety in input selected MKL but code was not compiled for it 
 #endif
       if(iwork.eq.0) then !{ original alg with 3x3
