@@ -1,7 +1,7 @@
         subroutine AsIGMR (blk,  y,       ac,      x,       xmudmi,
      &                     shp,     shgl,    ien,     
      &                     rl,     qres,
-     &                     xlhs, rerrl)
+     &                     xlhs,   rerrl,   StsVecl)
 c
 c----------------------------------------------------------------------
 c
@@ -37,7 +37,7 @@ c
      &            rl(bsz,blk%s,nflow), 
      &            ql(bsz,blk%s,idflx)
 c        
-        dimension xKlhs(bsz,16,blk%s,blk%s)
+        dimension xlhs(bsz,16,blk%s,blk%s)
 c
         dimension rlsl(bsz,blk%s,6) 
 

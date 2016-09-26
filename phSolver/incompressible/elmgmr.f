@@ -468,7 +468,7 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-       if ((usingpetsc.eq.0).and.(numpe > 1)) then
+       if ((usingpetsc.gt.-1).and.(numpe > 1)) then
           call commu (res  , ilwork, nflow  , 'in ')
        endif
 

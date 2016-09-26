@@ -34,6 +34,7 @@ c
            enddo
 
 
+!        if((usingpetsc.ne.1).and.(numpe.gt.1)) then
         if(numpe.gt.1) then
 c
 c.... nodes treated on another processor are eliminated
