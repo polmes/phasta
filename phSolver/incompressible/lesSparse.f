@@ -735,7 +735,7 @@ c
 !
 ! handle options available to KG but not for Full
 !
-      if((iwork.eq.1).or.(iwork.eq.2).or.(iwork.eq.6) iwork=5 
+      if((iwork.eq.1).or.(iwork.eq.2).or.(iwork.eq.6)) iwork=5 
 #ifndef USE_MKL
         iwork=5  ! safety in input selected MKL but code was not compiled for it 
 #endif
