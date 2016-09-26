@@ -39,7 +39,7 @@ c-----------------------------------------------------------------------
       subroutine dSDf 
       use solvedata
       include "common.h"
-      deallocate (lhs16)
+      if(usingpetsc.ne.1) deallocate (lhs16)
       if(leslib.eq.1) then
         deallocate (aperm)
         deallocate (atemp)

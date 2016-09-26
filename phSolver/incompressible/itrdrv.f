@@ -26,7 +26,10 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Fall 2004. Impedance BC
 c----------------------------------------------------------------------
 c
+#ifdef HAVE_MKL
       use mkl_service
+#endif
+      use fncorpmod  
       use pvsQbi     !gives us splag (the spmass at the end of this run 
       use specialBC !gives us itvn
       use timedata   !allows collection of time series
@@ -41,7 +44,9 @@ c
 c      use readarrays !reads in uold and acold
       
         include "common.h"
+#ifdef HAVE_MKL
         include "kmkl.fi"
+#endif
         include "mpif.h"
         include "auxmpi.h"
 #ifdef HAVE_SVLS        
@@ -56,7 +61,9 @@ c
         
         real*8    y(nshg,ndof),              ac(nshg,ndof),           
      &            yold(nshg,ndof),           acold(nshg,ndof),
+     &            yAlpha(nshg,ndof),         acAlpha(nshg,ndof),
      &            u(nshg,nsd),               uold(nshg,nsd),
+     &            uAlpha(nshg,nsd),
      &            x(numnp,nsd),              solinc(nshg,ndof),
      &            BC(nshg,ndofBC),           tf(nshg,ndof),
      &            GradV(nshg,nsdsq)
@@ -116,7 +123,13 @@ c
       TYPE(svLS_lhsType) svLS_lhs_S(4)
       TYPE(svLS_lsType) svLS_ls_S(4)
 #endif
+#ifdef HAVE_MKL
       irc=mkl_enable_instructions(MKL_ENABLE_AVX512_MIC)
+#endif
+              idflx = 0
+        if(idiff >= 1 )  idflx= (nflow-1) * nsd
+        if (isurf == 1) idflx=nflow*nsd
+
       call initmpistat()  ! see bottom of code to see just how easy it is
 
       call initmemstat() 
@@ -390,75 +403,117 @@ c
             iter=0
             ilss=0  ! this is a switch thrown on first solve of LS redistance
             do istepc=1,seqsize
-               icode=stepseq(istepc)
-               if(mod(icode,5).eq.0) then ! this is a solve
-                  isolve=icode/10
-                  if(icode.eq.0) then ! flow solve (encoded as 0)
+              icode=stepseq(istepc)
+              if(mod(icode,5).eq.0) then ! this is a solve
+                isolve=icode/10
+                if(icode.eq.0) then ! flow solve (encoded as 0)
 c
-                     iter   = iter+1
-                     ifuncs(1)  = ifuncs(1) + 1
+                  iter   = iter+1
+                  ifuncs(1)  = ifuncs(1) + 1
 c     
-                     Force(1) = zero
-                     Force(2) = zero
-                     Force(3) = zero
-                     HFlux    = zero
-                     lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
+                  Force(1) = zero
+                  Force(2) = zero
+                  Force(3) = zero
+                  HFlux    = zero
+                  lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
 
-                     call SolFlow(y,          ac,        u,
-     &                         yold,          acold,     uold,
+                  call itrYAlpha( uold,    yold,    acold,
+     &                u,       y,       ac,
+     &                uAlpha,  yAlpha,  acAlpha)
+
+            
+                  if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+                    call SolFlowp(yAlpha,     acAlpha,   uAlpha,
+     &                         x,             iBC,
+     &                         BC,            res,
+     &                         iper,          
+     &                         ilwork,        shp,       shgl,
+     &                         shpb,          shglb,     rowp,
+     &                         colm,    
+     &                         solinc,        rerr,      tcorecp,
+     &                         GradV,      
+     &                         fncorp)
+#else
+                  write(*,*) 'requested PETSc but not built for it'
+                  call error('itrdrv  ','noPETSc',usingpetsc)  
+               
+#endif
+                  else
+                  
+                    call SolFlow(yAlpha,     acAlpha,   uAlpha,
      &                         x,             iBC,
      &                         BC,            res,
      &                         iper,          
      &                         ilwork,        shp,       shgl,
      &                         shpb,          shglb,     rowp,     
-     &                         colm,          
+     &                         colm,         
      &                         solinc,        rerr,      tcorecp,
-     &                         GradV,      sumtime
+     &                         GradV     
 #ifdef HAVE_SVLS
      &                         ,svLS_lhs,     svLS_ls,  svLS_nFaces)
 #else
      &                         )
 #endif      
+                  endif
                   
-                  else          ! scalar type solve
-                     if (icode.eq.5) then ! Solve for Temperature
+                else          ! scalar type solve
+                  if (icode.eq.5) then ! Solve for Temperature
                                 ! (encoded as (nsclr+1)*10)
-                        isclr=0
-                        ifuncs(2)  = ifuncs(2) + 1
-                        j=1
-                     else       ! solve a scalar  (encoded at isclr*10)
-                        isclr=isolve  
-                        ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
-                        j=isclr+nsolt
-                        if((iLSet.eq.2).and.(ilss.eq.0)
+                    isclr=0
+                    ifuncs(2)  = ifuncs(2) + 1
+                    j=1
+                  else       ! solve a scalar  (encoded at isclr*10)
+                    isclr=isolve  
+                    ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
+                    j=isclr+nsolt
+                    if((iLSet.eq.2).and.(ilss.eq.0)
      &                       .and.(isclr.eq.2)) then 
-                           ilss=1 ! throw switch (once per step)
-                           y(:,7)=y(:,6) ! redistance field initialized
-                           ac(:,7)   = zero
-                           call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+                      ilss=1 ! throw switch (once per step)
+                      y(:,7)=y(:,6) ! redistance field initialized
+                      ac(:,7)   = zero
+                      call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                          ilwork)
 c     
 c....store the flow alpha, gamma parameter values and assigm them the 
 c....Backward Euler parameters to solve the second levelset scalar
 c     
-                           alfit=alfi
-                           gamit=gami
-                           almit=almi
-                           Deltt=Delt(1)
-                           Dtglt=Dtgl
-                           alfi = 1
-                           gami = 1
-                           almi = 1
+                      alfit=alfi
+                      gamit=gami
+                      almit=almi
+                      Deltt=Delt(1)
+                      Dtglt=Dtgl
+                      alfi = 1
+                      gami = 1
+                      almi = 1
 c     Delt(1)= Deltt ! Give a pseudo time step
-                           Dtgl = one / Delt(1)
-                        endif  ! level set eq. 2
-                     endif ! deciding between temperature and scalar
+                      Dtgl = one / Delt(1)
+                    endif  ! level set eq. 2
+                  endif ! deciding between temperature and scalar
 
-                     lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
+                  lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
      &                                   LHSupd(isclr+2))) 
-
-                     call SolSclr(y,          ac,        u,
-     &                         yold,          acold,     uold,
+                  call itrYAlpha( uold,    yold,    acold,
+     &                u,       y,       ac,
+     &                uAlpha,  yAlpha,  acAlpha)
+               
+                  if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+                    call SolSclrp( yAlpha,      acAlpha,
+     &                         x,             iBC,
+     &                         BC,            
+     &                         iper,          
+     &                         ilwork,        shp,       shgl,
+     &                         shpb,          shglb,     rowp,
+     &                         colm,          res,
+     &                         solinc(1,isclr+5), tcorecpscal,
+     &                         fncorp)
+#else
+                  write(*,*) 'requested PETSc but not built for it'
+                  call error('itrdrv  ','noPETSc',usingpetsc)  
+#endif
+                  else
+                    call SolSclr(yAlpha,      acAlpha,
      &                         x,             iBC,
      &                         BC,            
      &                         iper,          
@@ -471,41 +526,42 @@ c     Delt(1)= Deltt ! Give a pseudo time step
 #else
      &                         )
 #endif
+                  endif      
+                  usingpetsc=itmp
                         
-                        
-                  endif         ! end of scalar type solve
+                endif         ! end of scalar type solve
 
-               else ! this is an update  (mod did not equal zero)
-                  iupdate=icode/10  ! what to update
-                  if(icode.eq.1) then !update flow  
-                     call itrCorrect ( y,    ac,    u,   solinc, iBC)
-                     call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
-                  else  ! update scalar
-                     isclr=iupdate  !unless
-                     if(icode.eq.6) isclr=0
-                     if(iRANS.lt.-100)then  ! RANS
-                        call itrCorrectSclrPos(y,ac,solinc(1,isclr+5))
-                     else
-                        call itrCorrectSclr (y, ac, solinc(1,isclr+5))
-                     endif
-                     if (ilset.eq.2 .and. isclr.eq.2)  then
-                        if (ivconstraint .eq. 1) then
-                           call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+              else ! this is an update  (mod did not equal zero)
+                iupdate=icode/10  ! what to update
+                if(icode.eq.1) then !update flow  
+                  call itrCorrect ( y,    ac,    u,   solinc, iBC)
+                  call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
+                else  ! update scalar
+                  isclr=iupdate  !unless
+                  if(icode.eq.6) isclr=0
+                  if(iRANS.lt.-100)then  ! RANS
+                    call itrCorrectSclrPos(y,ac,solinc(1,isclr+5))
+                  else
+                    call itrCorrectSclr (y, ac, solinc(1,isclr+5))
+                  endif
+                  if (ilset.eq.2 .and. isclr.eq.2)  then
+                    if (ivconstraint .eq. 1) then
+                      call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                          ilwork)
 c                    
 c ... applying the volume constraint on second level set scalar
 c
-                           call solvecon (y,    x,      iBC,  BC, 
+                      call solvecon (y,    x,      iBC,  BC, 
      &                          iper, ilwork, shp,  shgl)
 c
-                        endif   ! end of volume constraint calculations
-                     endif      ! end of redistance calculations
+                    endif   ! end of volume constraint calculations
+                  endif      ! end of redistance calculations
 c                     
-                        call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+                  call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                       ilwork)
-                     endif      ! end of flow or scalar update
-                  endif         ! end of switch between solve or update
-               enddo            ! loop over sequence in step
+                endif      ! end of flow or scalar update
+              endif         ! end of switch between solve or update
+            enddo            ! loop over sequence in step
 c     
 c
 c.... obtain the time average statistics

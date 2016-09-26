@@ -3,6 +3,9 @@
      &                     BC,        shpb,      shglb,
      &                     res,       iper,      ilwork,
      &                     rowp,      colm,     
+#ifdef HAVE_PETSC
+     &                     lhsPETSc, ! cannot call it lhsP here because leslib uses that
+#endif
      &                     rerr,     GradV)
 c
 c----------------------------------------------------------------------
@@ -50,7 +53,7 @@ c
         integer rowp(nshg*nnz),         colm(nshg+1)
 
 
-        real*8, allocatable, dimension(:,:,:,:,:) :: xKebe, xGoC
+        real*8, allocatable, dimension(:,:,:,:,:) :: xlhs
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
         real*8  rerr(nshg,10)
@@ -154,7 +157,7 @@ c
         flxID = zero
       endif
 
-      if (lhs .eq. 1) then
+      if ((usingpetsc.eq.0).and.(lhs .eq. 1)) then
         lhs16   = zero
       endif
 c
@@ -177,8 +180,7 @@ c
       tmpshp(1:nshlc,:) = shp(lcsyst,1:nshlc,:)
       tmpshgl(:,1:nshlc,:) = shgl(lcsyst,:,1:nshlc,:)
       if (lhs .eq. 1) then
-        allocate ( xKebe(bsz,9,nshlc,nshlc,BlockPool) )
-        allocate ( xGoC (bsz,4,nshlc,nshlc,BlockPool) )
+        allocate ( xlhs(bsz,16,nshlc,nshlc,BlockPool) )
       endif
       if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshlc,6,BlockPool) )
       if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshlc,nResDims,BlockPool) )
@@ -224,10 +226,8 @@ c
             tmpshp(1:blk%s,:) = shp(blk%l,1:blk%s,:)
             tmpshgl(:,1:blk%s,:) = shgl(blk%l,:,1:blk%s,:)
             if (lhs .eq. 1) then
-              deallocate (xKebe)   ! below (local) easier if blk%s is correct size
-              deallocate (xGoC)
-              allocate ( xKebe(bsz,9,blk%s,blk%s,BlockPool) )
-              allocate ( xGoC (bsz,4,blk%s,blk%s,BlockPool) )
+              deallocate (xlhs)   ! below (local) easier if blk%s is correct size
+              allocate ( xlhs(bsz,16,blk%s,blk%s,BlockPool) )
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
@@ -248,8 +248,8 @@ c
      &                 tmpshgl,
      &                 mien(iblk)%p,
      &                 rl(:,:,:,ith),
-     &                 qres,                xKebe(:,:,:,:,ith),
-     &                 xGoC(:,:,:,:,ith),   rerrl(:,:,:,ith), 
+     &                 qres,              
+     &                 xlhs(:,:,:,:,ith),   rerrl(:,:,:,ith), 
      &                 StsVecl(:,:,:,ith) )
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
@@ -288,12 +288,21 @@ c
           endif
           npro=blk%e  !npro still used in these arrays
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
-             if(ipord.eq.1) 
-     &       call bc3lhs (iBC, BC,mien(iblk)%p, xKebe(:,:,:,:,ith) )  
-             call fillsparseI16 (mien(iblk)%p, 
-     &                 xKebe(:,:,:,:,ith) ,            lhs16,
-     &                 xGoC(:,:,:,:,ith) ,            
+            if(ipord.eq.1) 
+     &        call bc3lhs (iBC, BC,mien(iblk)%p, xlhs(:,:,:,:,ith))
+            if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+              call fillsparsecpetsci (mieng(iblk)%p, 
+     &                                xlhs(:,:,:,:,ith),lhsPETSc) 
+#else
+              write(*,*) 'requested unavailable PETSc'
+              call error('elmgmrsclr', 'no PETSc', usingpetc)
+#endif
+            else
+              call fillsparseI16 (mien(iblk)%p, 
+     &                 xlhs(:,:,:,:,ith) ,            lhs16,
      &                 rowp,                      colm)
+            endif
           endif
 c
 c.... end of interior element loop assembly
@@ -309,8 +318,7 @@ c
       deallocate (tmpshp)
       deallocate (tmpshgl)
       if(lhs.eq.1) then
-        deallocate ( xKebe )
-        deallocate ( xGoC  )
+        deallocate ( xlhs )
       endif
       if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
       if ( stsResFlg .eq. 1 )          deallocate ( StsVecl  )
@@ -410,7 +418,7 @@ c
      &                 tmpshglb,
      &                 mienb(iblk)%p,           mmatb(iblk)%p,
      &                 miBCB(iblk)%p,           mBCB(iblk)%p,
-     &                 res,                     xKebe)
+     &                 res,                     xlhsdisabled)
 
 c
 c.... satisfy (again, for the vessel wall contributions) the BC's on the implicit LHS
@@ -422,9 +430,9 @@ c.... vessel wall elements
 !disable
 !disable          if (impl(1) .ne. 9 .and. lhs .eq. 1) then
 !disable             if(ipord.eq.1)
-!disable     &         call bc3lhs (iBC, BC,mienb(iblk)%p, xKebe)
+!disable     &         call bc3lhs (iBC, BC,mienb(iblk)%p, xlhsdisabled)
 !disable             call fillsparseI (mienb(iblk)%p,
-!disable     &                 xKebe,           lhsK,
+!disable     &                 xlhsdisabled,           lhsK,
 !disable     &                 xGoC,             lhsP,
 !disable     &                 rowp,                      colm)
 !disable          endif
@@ -460,7 +468,7 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-       if (numpe > 1) then
+       if ((usingpetsc.gt.-1).and.(numpe > 1)) then
           call commu (res  , ilwork, nflow  , 'in ')
        endif
 
@@ -486,7 +494,12 @@ c      call timer ('Back    ')
      &                       shp,       shgl,      iBC,
      &                       BC,        shpb,      shglb,
      &                       res,       iper,      ilwork,
-     &                       rowp,      colm,      lhsS    )
+     &                       rowp,      colm      
+#ifdef HAVE_PETSC
+     &                       ,lhsPs)
+#else
+     &                       )
+#endif
 c
 c----------------------------------------------------------------------
 c
@@ -496,6 +509,7 @@ c solver.
 c
 c----------------------------------------------------------------------
 c
+        use solvedata
         use pointer_data
         use local_mass
 c
@@ -518,7 +532,6 @@ c
 c
         integer ilwork(nlwork), rowp(nshg*nnz),   colm(nshg+1)
 
-        real*8 lhsS(nnz_tot)
 
         real*8, allocatable, dimension(:,:,:) :: xSebe
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
@@ -658,9 +671,18 @@ c
 c.... satisfy the BC's on the implicit LHS
 c     
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
-             call fillsparseSclr (mien(iblk)%p, 
+            if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+              call fillsparsecpetscs( mieng(iblk)%p, xSebe, lhsPs)
+#else
+               write(*,*) 'requested unavailable PETSc'
+               call error('elmgmrsclr', 'no PETSc', usingpetc)
+#endif 
+            else
+              call fillsparseSclr (mien(iblk)%p, 
      &                 xSebe,             lhsS,
      &                 rowp,              colm)
+            endif
           endif
 
           deallocate ( xSebe )
@@ -674,8 +696,10 @@ c
 c
 c.... add in lumped mass contributions if needed
 c
+       if(usingpetsc.eq.0) then
        if((flmpr.ne.0).or.(flmpl.ne.0)) then
           call lmassaddSclr(ac(:,isclr), res,rowp,colm,lhsS,gmass)
+       endif
        endif
 
        have_local_mass = 1
@@ -759,9 +783,9 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-      if (numpe > 1) then
+       if ((usingpetsc.eq.0).and.(numpe > 1)) then
         call commu (res  , ilwork, 1  , 'in ')
-      endif
+       endif
 
 c
 c.... ---------------------->   post processing  <----------------------

@@ -164,7 +164,7 @@ int phasta( int argc, char *argv[] ) {
     char inpfilename[100];
     char* pauseDebugger = getenv("catchDebugger");
 
-#if defined(__NOTHANKSlinux__) && !defined(__bgq__)
+#if defined(__linux__) && !defined(__bgq__)
 /* BM's proposed fix to the stacksize issue */
     struct rlimit stack_size_lim;
     int rlim_result;
@@ -182,11 +182,10 @@ int phasta( int argc, char *argv[] ) {
 #ifdef HAVE_PETSC
     PETSC_COMM_WORLD=MPI_COMM_WORLD;
     PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-    PetscInitializeFortran();
+//    PetscInitializeFortran();
     PetscPopSignalHandler(); //Let us segfault in peace ;-)
-// ok with Master    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
 // ok with 3.6x    PetscOptionsView(PETSC_VIEWER_STDOUT_WORLD);
-    PetscOptionsView(PETSC_VIEWER_STDOUT_WORLD);
     if(sizeof(PetscInt) != sizeof(long long int))
     {
       //PetscInt and gcorp_t (gen_ncorp.c)

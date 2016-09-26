@@ -82,13 +82,13 @@ c.... reset the non-contributing element values
 c
         lnflx = 0
         do n = 1, nshlb
-          lnflx = lnflx + min(1, invflx(ienb(:,lnode(n))))
+          lnflx = lnflx + min(1, invflx(ienb(1:npro,lnode(n))))
         enddo
 c
         do n = 1, nshl
-          where (lnflx .ne. nshlb)   flhsl(:,n,1) = zero
+          where (lnflx .ne. nshlb)   flhsl(1:npro,n,1) = zero
           do i = 1, nsd
-            where (lnflx .ne. nshlb) fnrml(:,n,i) = zero
+            where (lnflx .ne. nshlb) fnrml(1:npro,n,i) = zero
           enddo
         enddo
 c

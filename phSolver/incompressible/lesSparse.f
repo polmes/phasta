@@ -400,7 +400,9 @@ cdir$ ivdep
         lhs9(4:6,:)=lhs16(5:7,:)
         lhs9(7:9,:)=lhs16(9:11,:)
         rdelta=TMRC()
+#ifdef HAVE_MKL
         call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
+#endif
         rspmvmkl=rspmvmkl + TMRC()-rdelta
         ispmvmkl=ispmvmkl + 1
         rdelta=TMRC()
@@ -460,7 +462,9 @@ cdir$ ivdep
           p4(4,i)=p(i,4)
         enddo
         rdelta=TMRC()
+#ifdef HAVE_MKL
         call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#endif
         rspmvmkl=rspmvmkl + TMRC()-rdelta
         ispmvmkl=ispmvmkl + 1
         do i =1, nNodes ! transpose back mkl's dof_var first
@@ -721,7 +725,7 @@ c
       real*8	tmp1,	tmp2,	tmp3,	tmp4
       integer	i,	j,	k
        
-      iwork=3
+      iwork=5
 ! chosen: 0 original with matrices contracted back
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T
       if(iwork.eq.0) then !{ original alg with 3x3
@@ -787,7 +791,9 @@ c
           p4(4,i)=p(i,4)
         enddo
         rstart=TMRC()
+#ifdef HAVE_MKL
         call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#endif
         rspmvFull=rspmvFull+TMRC()-rstart
         ispmvFull=ispmvFull+1
         do i =1, nNodes ! transpose back mkl's dof_var first

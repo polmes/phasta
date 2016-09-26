@@ -1,17 +1,17 @@
       subroutine SolFlow(y,          ac,         u,
-     &                   yold,       acold,      uold,
      &                   x,          iBC,
      &                   BC,         res,        iper,       
      &                   ilwork,     shp,        shgl, 
      &                   shpb,       shglb,      rowp,     
      &                   colm,       
      &                   solinc,     rerr,       tcorecp,
-     &                   GradV,       sumtime
+     &                   GradV
 #ifdef HAVE_SVLS     
      &                   ,svLS_lhs,  svLS_ls,   svLS_nFaces)
 #else
      &                   )
 #endif
+
 c
 c----------------------------------------------------------------------
 c
@@ -21,8 +21,6 @@ c
 c input:
 c  y      (nshg,ndof)           : Y-variables at n+alpha_f
 c  ac     (nshg,ndof)           : Primvar. accel. variable n+alpha_m
-c  yold   (nshg,ndof)           : Y-variables at beginning of step
-c  acold   (nshg,ndof)          : Primvar. accel. at beginning of step
 c  x      (numnp,nsd)            : node coordinates
 c  iBC    (nshg)                : BC codes
 c  BC     (nshg,ndofBC)         : BC constraint parameters
@@ -59,14 +57,14 @@ c Juin Kim, Summer 1998. (Incompressible flow solver interface)
 c Alberto Figueroa.  CMM-FSI
 c----------------------------------------------------------------------
 c
-      use pointer_data
+!      use pointer_data
       use solvedata
 #ifdef AMG      
       use ramg_data
 #endif     
         
       include "common.h"
-      include "mpif.h"
+!      include "mpif.h"
       include "auxmpi.h"
 #ifdef HAVE_SVLS      
         include "svLS.h"
@@ -81,13 +79,14 @@ C
 #endif      
        
       real*8    y(nshg,ndof),             ac(nshg,ndof),
-     &          yold(nshg,ndof),          acold(nshg,ndof),
-     &          u(nshg,nsd),              uold(nshg,nsd),
+     &          u(nshg,nsd), 
      &          x(numnp,nsd),             BC(nshg,ndofBC),
      &          res(nshg,nflow),          tmpres(nshg,nflow),
      &          flowDiag(nshg,4),         
      &          sclrDiag(nshg,1),         
      &          GradV(nshg,nsdsq)
+
+!USE SOLVEDATA      real*8    lhs16(16,nnz_tot),lhsP(4,nnz_tot)
 c
       real*8    shp(MAXTOP,maxsh,MAXQPT),  
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), 
@@ -99,17 +98,14 @@ c
      &          iBC(nshg),                ilwork(nlwork),
      &          iper(nshg)
 c
-      real*8    yAlpha(nshg,ndof),        acAlpha(nshg,ndof),
-     &          uAlpha(nshg,nsd),
-     &          lesP(nshg,4),             lesQ(nshg,4),
+      real*8    lesP(nshg,4),             lesQ(nshg,4),
      &          solinc(nshg,ndof),        CGsol(nshg)
 
-      real*8     tcorecp(2)
+      real*8    tcorecp(2)
       
       real*8    rerr(nshg,10),            rtmp(nshg,4),rtemp
       
       real*8    msum(4),mval(4),cpusec(10)
-      REAL*8 sumtime
 #ifdef HAVE_SVLS      
       INTEGER svLS_nFaces
 #endif      
@@ -130,12 +126,6 @@ c
         idflx = 0 
         if(idiff >= 1 )  idflx= (nflow-1) * nsd
         if (isurf == 1) idflx=nflow*nsd
-c.... compute solution at n+alpha
-c
-      call itrYAlpha( uold,    yold,    acold,
-     &                u,       y,       ac,  
-     &                uAlpha,  yAlpha,  acAlpha)
-
 c
 c.... form the LHS matrices, the residual vector (at alpha)
 c
@@ -143,17 +133,20 @@ c      call summary_start()
       impistat=1
       impistat2=1
       telmcp1 = TMRC()
-      call ElmGMR (uAlpha,    yAlpha,     acAlpha,    x,
+      call ElmGMR (u,         y,     ac,    x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       rerr,       GradV   )
+     &             rowp,      colm,      
+#ifdef HAVE_PETSC
+     &             lhsPETSc,
+#endif
+     &             rerr,       GradV   )
+
       if(lhs.eq.1) lhsP(1:4,:)=lhs16(4:16:4,:) !efficient for G Ap's
       telmcp2 = TMRC()
       impistat=0
       impistat2=0
-c      call summary_stop()
-
 
             tmpres(:,:) = res(:,:)
             iblk = 1
@@ -177,12 +170,13 @@ c####################################################################
 
 ! the following is  direct map of lhsK-P to lhs16 but it seems wrong unless
 ! svLS built into the storage a wrong understanding of G and -G^T
+! confirmed...switching blows up
       DO i=1, nnz_tot
          Val4(1:3,i)   = lhs16(1:3,i) !lhsK(1:3,i)
          Val4(5:7,i)   = lhs16(5:7,i) !lhsK(4:6,i)
          Val4(9:11,i)  = lhs16(9:11,i) !lhsK(7:9,i)
-         Val4(13:15,i) = lhs16(4:12:4,i) !lhsP(1:3,i)  !looks wrong
          Val4(16,i)    = lhs16(16,i) !lhsP(4,i)
+         Val4(13:15,i) = lhs16(4:12:4,i) !lhsP(1:3,i)  !looks wrong
          Val4(4:12:4,i)= lhs16(13:15,i)  ! directly filled but looks wrong
       END DO
 ! next code block replaced by 2 lines up 
@@ -342,8 +336,7 @@ c
       return
       end
 
-      subroutine SolSclr(y,          ac,         u,
-     &                   yold,       acold,      uold,
+      subroutine SolSclr(y,          ac,
      &                   x,          iBC,
      &                   BC,         iper,       
      &                   ilwork,     shp,        shgl, 
@@ -364,7 +357,6 @@ c
 c input:
 c  y      (nshg,ndof)           : Y-variables at n+alpha_f
 c  ac     (nshg,ndof)           : Primvar. accel. variable n+alpha_m
-c  yold   (nshg,ndof)           : Y-variables at beginning of step
 c  x      (numnp,nsd)            : node coordinates
 c  iBC    (nshg)                : BC codes
 c  BC     (nshg,ndofBC)         : BC constraint parameters
@@ -393,8 +385,6 @@ c
 #endif        
 c     
       real*8    y(nshg,ndof),             ac(nshg,ndof),
-     &          yold(nshg,ndof),          acold(nshg,ndof),
-     &          u(nshg,nsd),              uold(nshg,nsd),
      &          x(numnp,nsd),             BC(nshg,ndofBC),
      &          res(nshg,1),
      &          flowDiag(nshg,4),
@@ -410,9 +400,7 @@ c
      &          iBC(nshg),                ilwork(nlwork),
      &          iper(nshg)
 c
-      real*8    yAlpha(nshg,ndof),        acAlpha(nshg,ndof),
-     &          uAlpha(nshg,nsd),
-     &          lesP(nshg,1),               lesQ(nshg,1),
+      real*8    lesP(nshg,1),               lesQ(nshg,1),
      &          solinc(nshg,1),           CGsol(nshg),
      &          tcorecpscal(2)
 #ifdef HAVE_SVLS     
@@ -420,7 +408,6 @@ c
       TYPE(svLS_lsType), INTENT(INOUT) ::  svLS_ls
       INTEGER svLS_nFaces
 #endif      
-      REAL*8 sumtime
       INTEGER dof, i, j, k, l
       INTEGER, ALLOCATABLE :: incL(:)
       REAL*8, ALLOCATABLE :: faceRes(:), Res1(:,:), Val1(:,:)
@@ -428,23 +415,22 @@ c
 c     
 c.... *******************>> Element Data Formation <<******************
 c
-c.... compute solution at n+alpha
-c
-      call itrYAlpha( uold,    yold,    acold, 
-     &                u,       y,       ac,  
-     &                uAlpha,  yAlpha,  acAlpha)
-c
 c.... form the LHS matrices, the residual vector (at alpha)
 c
       impistat=2
       impistat2=1
       telmcp1 = TMRC()
       jsol=nsolt+isclr
-      call ElmGMRSclr(yAlpha,acAlpha,    x,
+      call ElmGMRSclr(y,      ac,    x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       lhsS   )
+     &             rowp,      colm
+#ifdef HAVE_PETSC
+     &             ,lhsPs )
+#else 
+     &             )
+#endif
       telmcp2 = TMRC()
       impistat=0
       impistat2=0

@@ -2,8 +2,7 @@
      &                   uBar,      WdetJ,      rho,
      &                   rLui,      rmu,       
      &                   tauC,      tauM,       tauBar,
-     &                   shpfun,    shg,        xKebe,
-     &                   xGoC )
+     &                   shpfun,    shg,        xlhs)
 c------------------------------------------------------------------------
 c 
 c  This routine computes the left hand side tangent matrix at an 
@@ -25,8 +24,7 @@ c     shpfun(blk%e,blk%s)         : element shpfun functions
 c     shg(blk%e,blk%s,3)          : global grad of element shape functions
 c
 c  output:
-c     xKebe(blk%e,9,blk%s,blk%s) : left hand side
-c     xGoC(blk%e,4,blk%s,blk%s)    : left hand side
+c     xlhs(blk%e,16,blk%s,blk%s) : left hand side
 c
 c
 c------------------------------------------------------------------------
@@ -41,7 +39,7 @@ c------------------------------------------------------------------------
      &          tauC(blk%e),       tauM(blk%e),     tauBar(blk%e),
      &          shpfun(blk%e,blk%s),shg(blk%e,blk%s,3)
       
-      dimension xKebe(bsz,9,blk%s,blk%s), xGoC(bsz,4,blk%s,blk%s)
+      dimension xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
 c
@@ -94,9 +92,9 @@ c tmp1=alpha_m*(1-lmp)*WdetJ*N^aN^b*rho   the time term CORRECT
 c tmp2=tmp1+N^a*ubar_k N^b,k*rho*alpha_f*gamma*deltat*WdetJ   the 
 c    second term is convective term CORRECT
 c            
-            xKebe(1:blk%e,1,aa,b) = xKebe(1:blk%e,1,aa,b) + tmp2
-            xKebe(1:blk%e,5,aa,b) = xKebe(1:blk%e,5,aa,b) + tmp2
-            xKebe(1:blk%e,9,aa,b) = xKebe(1:blk%e,9,aa,b) + tmp2
+            xlhs(1:blk%e,1,aa,b) = xlhs(1:blk%e,1,aa,b) + tmp2
+            xlhs(1:blk%e,6,aa,b) = xlhs(1:blk%e,6,aa,b) + tmp2
+            xlhs(1:blk%e,11,aa,b) = xlhs(1:blk%e,11,aa,b) + tmp2
          enddo
       enddo
 c
@@ -142,30 +140,30 @@ c
      &       + t3(:,3) * shg(:,aa,3)
 c previous command is the N^a_{i,k} dot product with t3 defined above
 
-         xKebe(1:blk%e,1,aa,b) = xKebe(1:blk%e,1,aa,b) + tmp
+         xlhs(1:blk%e,1,aa,b) = xlhs(1:blk%e,1,aa,b) + tmp
      &                      + t1(1:blk%e,1) * shg(1:blk%e,aa,1)
      &                      + t2(1:blk%e,1) * shg(1:blk%e,aa,1)
-         xKebe(1:blk%e,5,aa,b) = xKebe(1:blk%e,5,aa,b) + tmp
+         xlhs(1:blk%e,6,aa,b) = xlhs(1:blk%e,6,aa,b) + tmp
      &                      + t1(1:blk%e,2) * shg(1:blk%e,aa,2)
      &                      + t2(1:blk%e,2) * shg(1:blk%e,aa,2)
-         xKebe(1:blk%e,9,aa,b) = xKebe(1:blk%e,9,aa,b) + tmp
+         xlhs(1:blk%e,11,aa,b) = xlhs(1:blk%e,11,aa,b) + tmp
      &                      + t1(1:blk%e,3) * shg(1:blk%e,aa,3)
      &                      + t2(1:blk%e,3) * shg(1:blk%e,aa,3)
 c
          tmp1               = t1(:,1) * shg(:,aa,2)
      &                      + t2(:,2) * shg(:,aa,1)
-         xKebe(1:blk%e,2,aa,b) = xKebe(1:blk%e,2,aa,b) + tmp1 
-         xKebe(1:blk%e,4,b,aa) = xKebe(1:blk%e,4,b,aa) + tmp1 
+         xlhs(1:blk%e,2,aa,b) = xlhs(1:blk%e,2,aa,b) + tmp1 
+         xlhs(1:blk%e,5,b,aa) = xlhs(1:blk%e,5,b,aa) + tmp1 
 c
          tmp1               = t1(:,1) * shg(:,aa,3)
      &                      + t2(:,3) * shg(:,aa,1)
-         xKebe(1:blk%e,3,aa,b) = xKebe(1:blk%e,3,aa,b) + tmp1 
-         xKebe(1:blk%e,7,b,aa) = xKebe(1:blk%e,7,b,aa) + tmp1 
+         xlhs(1:blk%e,3,aa,b) = xlhs(1:blk%e,3,aa,b) + tmp1 
+         xlhs(1:blk%e,9,b,aa) = xlhs(1:blk%e,9,b,aa) + tmp1 
 c
          tmp1               = t1(:,2) * shg(:,aa,3)
      &                      + t2(:,3) * shg(:,aa,2)
-         xKebe(1:blk%e,6,aa,b) = xKebe(1:blk%e,6,aa,b) + tmp1 
-         xKebe(1:blk%e,8,b,aa) = xKebe(1:blk%e,8,b,aa) + tmp1 
+         xlhs(1:blk%e,7,aa,b) = xlhs(1:blk%e,7,aa,b) + tmp1 
+         xlhs(1:blk%e,10,b,aa) = xlhs(1:blk%e,10,b,aa) + tmp1 
 c
 c.... now the off-diagonal (nodal) blocks
 c
@@ -177,52 +175,52 @@ c
             tmp1            = tmp
      &                      + t1(:,1) * shg(:,aa,1)
      &                      + t2(:,1) * shg(:,aa,1)
-            xKebe(1:blk%e,1,aa,b) = xKebe(1:blk%e,1,aa,b) + tmp1
-            xKebe(1:blk%e,1,b,aa) = xKebe(1:blk%e,1,b,aa) + tmp1
+            xlhs(1:blk%e,1,aa,b) = xlhs(1:blk%e,1,aa,b) + tmp1
+            xlhs(1:blk%e,1,b,aa) = xlhs(1:blk%e,1,b,aa) + tmp1
 c
             tmp1            = tmp
      &                      + t1(1:blk%e,2) * shg(:,aa,2)
      &                      + t2(:,2) * shg(:,aa,2)
-            xKebe(1:blk%e,5,aa,b) = xKebe(1:blk%e,5,aa,b) + tmp1
-            xKebe(1:blk%e,5,b,aa) = xKebe(1:blk%e,5,b,aa) + tmp1
+            xlhs(1:blk%e,6,aa,b) = xlhs(1:blk%e,6,aa,b) + tmp1
+            xlhs(1:blk%e,6,b,aa) = xlhs(1:blk%e,6,b,aa) + tmp1
 c
             tmp1            = tmp
      &                      + t1(:,3) * shg(:,aa,3)
      &                      + t2(:,3) * shg(:,aa,3)
-            xKebe(1:blk%e,9,aa,b) = xKebe(1:blk%e,9,aa,b) + tmp1
-            xKebe(1:blk%e,9,b,aa) = xKebe(1:blk%e,9,b,aa) + tmp1
+            xlhs(1:blk%e,11,aa,b) = xlhs(1:blk%e,11,aa,b) + tmp1
+            xlhs(1:blk%e,11,b,aa) = xlhs(1:blk%e,11,b,aa) + tmp1
 c
 c.... ( i != j )
 c
             tmp1               = t1(:,1) * shg(:,aa,2)
      &                         + t2(:,2) * shg(:,aa,1)
-            xKebe(1:blk%e,2,aa,b) = xKebe(1:blk%e,2,aa,b) + tmp1
-            xKebe(1:blk%e,4,b,aa) = xKebe(1:blk%e,4,b,aa) + tmp1
+            xlhs(1:blk%e,2,aa,b) = xlhs(1:blk%e,2,aa,b) + tmp1
+            xlhs(1:blk%e,5,b,aa) = xlhs(1:blk%e,5,b,aa) + tmp1
 c
             tmp1               = t1(:,1) * shg(:,aa,3)
      &                         + t2(:,3) * shg(:,aa,1)
-            xKebe(1:blk%e,3,aa,b) = xKebe(1:blk%e,3,aa,b) + tmp1
-            xKebe(1:blk%e,7,b,aa) = xKebe(1:blk%e,7,b,aa) + tmp1
+            xlhs(1:blk%e,3,aa,b) = xlhs(1:blk%e,3,aa,b) + tmp1
+            xlhs(1:blk%e,9,b,aa) = xlhs(1:blk%e,9,b,aa) + tmp1
 c
             tmp1               = t1(:,2) * shg(:,aa,1)
      &                         + t2(:,1) * shg(:,aa,2)
-            xKebe(1:blk%e,4,aa,b) = xKebe(1:blk%e,4,aa,b) + tmp1
-            xKebe(1:blk%e,2,b,aa) = xKebe(1:blk%e,2,b,aa) + tmp1
+            xlhs(1:blk%e,5,aa,b) = xlhs(1:blk%e,5,aa,b) + tmp1
+            xlhs(1:blk%e,2,b,aa) = xlhs(1:blk%e,2,b,aa) + tmp1
 c
             tmp1               = t1(:,2) * shg(:,aa,3)
      &                         + t2(:,3) * shg(:,aa,2)
-            xKebe(1:blk%e,6,aa,b) = xKebe(1:blk%e,6,aa,b) + tmp1
-            xKebe(1:blk%e,8,b,aa) = xKebe(1:blk%e,8,b,aa) + tmp1
+            xlhs(1:blk%e,7,aa,b) = xlhs(1:blk%e,7,aa,b) + tmp1
+            xlhs(1:blk%e,10,b,aa) = xlhs(1:blk%e,10,b,aa) + tmp1
 c
             tmp1               = t1(:,3) * shg(:,aa,1)
      &                         + t2(:,1) * shg(:,aa,3)
-            xKebe(1:blk%e,7,aa,b) = xKebe(1:blk%e,7,aa,b) + tmp1
-            xKebe(1:blk%e,3,b,aa) = xKebe(1:blk%e,3,b,aa) + tmp1
+            xlhs(1:blk%e,9,aa,b) = xlhs(1:blk%e,9,aa,b) + tmp1
+            xlhs(1:blk%e,3,b,aa) = xlhs(1:blk%e,3,b,aa) + tmp1
 c
             tmp1               = t1(:,3) * shg(:,aa,2)
      &                         + t2(:,2) * shg(:,aa,3)
-            xKebe(1:blk%e,8,aa,b) = xKebe(1:blk%e,8,aa,b) + tmp1
-            xKebe(1:blk%e,6,b,aa) = xKebe(1:blk%e,6,b,aa) + tmp1
+            xlhs(1:blk%e,10,aa,b) = xlhs(1:blk%e,10,aa,b) + tmp1
+            xlhs(1:blk%e,7,b,aa) = xlhs(1:blk%e,7,b,aa) + tmp1
 c
          enddo
       enddo
@@ -235,9 +233,12 @@ c
          t1(:,2) = tlW * shg(:,b,2)
          t1(:,3) = tlW * shg(:,b,3)
          do aa = 1, blk%s
-            xGoC(1:blk%e,1,aa,b) = xGoC(1:blk%e,1,aa,b) + t1(1:blk%e,1) * shpfun(1:blk%e,aa)  
-            xGoC(1:blk%e,2,aa,b) = xGoC(1:blk%e,2,aa,b) + t1(1:blk%e,2) * shpfun(1:blk%e,aa)  
-            xGoC(1:blk%e,3,aa,b) = xGoC(1:blk%e,3,aa,b) + t1(1:blk%e,3) * shpfun(1:blk%e,aa)  
+            xlhs(1:blk%e,4,aa,b) = xlhs(1:blk%e,4,aa,b) 
+     &      + t1(1:blk%e,1) * shpfun(1:blk%e,aa)  
+            xlhs(1:blk%e,8,aa,b) = xlhs(1:blk%e,8,aa,b) 
+     &      + t1(1:blk%e,2) * shpfun(1:blk%e,aa)  
+            xlhs(1:blk%e,12,aa,b) = xlhs(1:blk%e,12,aa,b) 
+     &      + t1(1:blk%e,3) * shpfun(1:blk%e,aa)  
          enddo
       enddo
 c
@@ -250,14 +251,14 @@ c
          t1(:,1) = tauM * shg(:,b,1)
          t1(:,2) = tauM * shg(:,b,2)
          t1(:,3) = tauM * shg(:,b,3)
-         do aa = b, blk%s
-            xGoC(1:blk%e,4,aa,b) = xGoC(1:blk%e,4,aa,b) 
+         do aa = b, blk%s ! note loops starts at b;1:b-1 after quadrature loop in e3 
+            xlhs(1:blk%e,16,aa,b) = xlhs(1:blk%e,16,aa,b) 
      &                      + t1(1:blk%e,1) * shg(1:blk%e,aa,1)
      &                      + t1(1:blk%e,2) * shg(1:blk%e,aa,2)
      &                      + t1(1:blk%e,3) * shg(1:blk%e,aa,3)
          enddo
       enddo
-      
+
 c
 c.... return
 c
