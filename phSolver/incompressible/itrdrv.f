@@ -527,8 +527,6 @@ c     Delt(1)= Deltt ! Give a pseudo time step
      &                         )
 #endif
                   endif      
-                  usingpetsc=itmp
-                        
                 endif         ! end of scalar type solve
 
               else ! this is an update  (mod did not equal zero)

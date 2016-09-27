@@ -914,3 +914,84 @@ c.... return
 c
         return
         end
+
+      subroutine bc3LHSSclr (iBC,  BC,  iens,  xlhs )
+c
+c----------------------------------------------------------------------
+c
+c This routine satisfies the BC of LHS mass matrix for all  
+c elements in this block.
+c
+c input:
+c  iBC   (nshg)             : boundary condition code
+c  BC    (nshg,ndofBC)      : Dirichlet BC constraint parameters
+c  ien   (npro,nshape)      : ien array for this element
+c  xlhs (bsz,nshl,nshl) : element consistent mass matrix before BC
+c
+c output:
+c  xlhs (bsz,nshl,nshl) : LHS mass matrix after BC is satisfied
+c
+c
+c Farzin Shakib, Winter 1987.
+c Zdenek Johan,  Spring 1990. (Modified for general divariant gas)
+c Ken Jansen, Summer 2000. Incompressible (only needed on xlhs)
+c----------------------------------------------------------------------
+c
+      include "common.h"
+c
+      dimension iBC(nshg),      ien(npro,nshl)
+      real*8 BC(nshg,ndofBC), xlhs(bsz,nshl,nshl)
+      integer aa,b
+      integer iens(npro,nshl)
+      logical :: ibool
+c
+c prefer to show explicit absolute value needed for cubic modes and
+c higher rather than inline abs on pointer as in past versions
+c iens is the signed ien array ien is unsigned
+c
+      ien=abs(iens)
+ 
+c
+c.... loop over elements
+c
+c        return
+      do iel = 1, npro
+c
+c.... loop over number of shape functions for this element
+c
+        do inod = 1, nshl
+c
+c.... set up parameters
+c
+          in  = abs(ien(iel,inod))
+          ndset=0
+          ibcode=iBC(in)
+          if(ibcode.eq.120) then
+            do i =1,6
+               ibool=btest(ibcode,i)
+            enddo
+          endif
+          if(isclr.eq.0) then
+c     
+c.... temperature
+c     
+            if (btest(iBC(in),1)) ndset=1
+          else
+c
+c.... turbulence or scalar
+c
+            is=isclr+5
+            if (btest(iBC(in),is)) ndset=1
+          endif
+          if(ndset.eq.1) then
+              xlhs(iel,:,inod) = zero   !take out row 4 of all rows for inod
+              xlhs(iel,inod,:) = zero    !take out column 4 of all columns for inod
+              xlhs(iel,inod,inod) = 1
+          endif
+        enddo
+      enddo
+              
+c.... return
+c
+      return
+      end

@@ -21,6 +21,7 @@ typedef long long int gcorp_t;
 
 void fillsparsecpetscs(gcorp_t* ieng, double* EGmass, Mat* lhsP)
 {
+        int bsz = genpar.bsz;
         int npro = propar.npro;
         int nshl = shpdat.nshl;
         double* mb = (double*) malloc(sizeof(double)*nshl*nshl); //block to insert
@@ -32,7 +33,7 @@ void fillsparsecpetscs(gcorp_t* ieng, double* EGmass, Mat* lhsP)
 //         for(aa=0;aa<nshl;aa++) assert(locat[aa]>=0);
          for (i=0; i<nshl; i++)  {   // fill up Ke with respective egmass 
            for (j=0; j<nshl; j++)  {
-            mb[nshl*i + j] = EGmass[e + npro*(i + nshl*j)];
+            mb[nshl*i + j] = EGmass[e + bsz*(i + nshl*j)];
            }
          }
          //MatSetValuesBlocked(*lhsP, nshl , locat, nshl, locat, mb, ADD_VALUES);

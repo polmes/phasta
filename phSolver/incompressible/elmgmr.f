@@ -296,7 +296,7 @@ c
      &                                xlhs(:,:,:,:,ith),lhsPETSc) 
 #else
               write(*,*) 'requested unavailable PETSc'
-              call error('elmgmrsclr', 'no PETSc', usingpetc)
+              call error('elmgmr', 'no PETSc', usingpetc)
 #endif
             else
               call fillsparseI16 (mien(iblk)%p, 
@@ -468,7 +468,7 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-       if ((usingpetsc.gt.-1).and.(numpe > 1)) then
+       if (numpe > 1) then
           call commu (res  , ilwork, nflow  , 'in ')
        endif
 
@@ -673,6 +673,8 @@ c
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
             if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
+              if(ipord.eq.1) 
+     &          call bc3LHSSclr (iBC, BC,mien(iblk)%p, xSebe)
               call fillsparsecpetscs( mieng(iblk)%p, xSebe, lhsPs)
 #else
                write(*,*) 'requested unavailable PETSc'
@@ -783,7 +785,7 @@ c
 c.... -------------------->   communications <-------------------------
 c
 
-       if ((usingpetsc.eq.0).and.(numpe > 1)) then
+       if (numpe > 1) then
         call commu (res  , ilwork, 1  , 'in ')
        endif
 

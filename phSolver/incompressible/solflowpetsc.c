@@ -437,10 +437,9 @@ c
 
 // .... output the statistics
 // 
-      itrpar.iKs=0; // see rstat()
       PetscInt its;
       ierr = KSPGetIterationNumber(ksp, &its);
-      itrpar.iKs = (int) its;
+      incomp.statsflow[0] = (int) its;
       /*
       PetscReal scale=1.0/sqrt(1.0*nshgt);
       if(workfc.myrank ==0) {
@@ -582,10 +581,14 @@ void  SolSclrp(double* y,         double* ac,
         petsc_m  = (PetscInt) iownnodes;
         petsc_M  = (PetscInt) nshgt;
         petsc_PA  = (PetscInt) 40;
-        
+        if(nshgt>10000) { /* the above estimation fails for small mats and/or serial */
         ierr = MatCreateAIJ(PETSC_COMM_WORLD, petsc_m, petsc_m, petsc_M, petsc_M,
                             0, idiagnz, 0, iodiagnz, &lhsPs);
-
+        } else {
+        ierr = MatCreateAIJ(PETSC_COMM_WORLD, petsc_m, petsc_m, petsc_M, petsc_M,
+                            0, 0, 0, 0, &lhsPs);
+        }
+        
         ierr = MatSetOption(lhsPs, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
 // Next is Jed Brown's improvement to imprint Assembly to make that stage scalable after the first call
@@ -663,6 +666,10 @@ void  SolSclrp(double* y,         double* ac,
       ierr = MatAssemblyBegin(lhsPs, MAT_FINAL_ASSEMBLY);
       ierr = MatAssemblyEnd(lhsPs, MAT_FINAL_ASSEMBLY);
       }
+
+/*Dumps to Screen
+        ierr = MatView(lhsPs, PETSC_VIEWER_STDOUT_WORLD);
+*/
       if(firstpetsccalls == 1) {
         ierr = MatGetLocalSize(lhsPs, &LocalRow, &LocalCol);
         ierr = VecCreateMPI(PETSC_COMM_WORLD, LocalRow, petsc_M, &resPs);
@@ -726,7 +733,7 @@ void  SolSclrp(double* y,         double* ac,
 //      itrpar.iKss=0; // see rstat()
       PetscInt its;
       ierr = KSPGetIterationNumber(ksps, &its);
-      itrpar.iKss = (int) its;
+      incomp.statssclr[0] = (int) its;
       itrpar.ntotGMs += (int) its;
       int nsolsc = 5 + sclrs.isclr;
       rstaticSclr (res,y,Dy,&nsolsc);
