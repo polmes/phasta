@@ -75,7 +75,11 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY
 OPTION(PHASTA_USE_MPI "Build MPI components" ON)
 IF(PHASTA_USE_MPI)
   ADD_DEFINITIONS( -DPARALLEL -DMPICH_SKIP_MPICXX -DOMPI_SKIP_MPICXX )
+  option(PHASTA_SKIP_MPI_CHECK "Bypass CMake MPI code. Don't use this" OFF)
+  mark_as_advanced(FORCE PHASTA_SKIP_MPI_CHECK)
+  if(NOT PHASTA_SKIP_MPI_CHECK)
   FIND_PACKAGE(MPI REQUIRED)
+  endif()
 #  SET(CMAKE_MODULE_PATH ${PHASTA_SOURCE_DIR}/CMakeFiles)
   # bug in FIND_PACKAGE for Threads -- ignore for now (bug has been reported)...
   FIND_PACKAGE(Threads)
@@ -118,6 +122,11 @@ endif(PHASTA_USE_SVLS)
 
 OPTION(PHASTA_BUILD_SOLVERS "Build Solvers" ON)
 if(PHASTA_BUILD_SOLVERS)
+        if(PHASTA_CHEF_ENABLED)
+          message(STATUS "PHASTA_CHEF_ENABLED SCOREC_PREFIX ${SCOREC_PREFIX}")
+                find_package(SCOREC 2.1.0 REQUIRED CONFIG
+                    PATHS ${SCOREC_PREFIX} NO_DEFAULT_PATH)
+        endif(PHASTA_CHEF_ENABLED)
 	set(PHASTA_BUILD_PHASTAIO ON)
 	if(PHASTA_USE_MPI)
 		set(PHASTA_BUILD_METIS ON)
@@ -125,6 +134,7 @@ if(PHASTA_BUILD_SOLVERS)
 	list(APPEND PHASTA_INCLUDES "${PHASTA_SOURCE_DIR}/phSolver/common")
 	include_directories(${PHASTA_INCLUDES})
 	add_subdirectory(phSolver)
+        add_subdirectory(checkphasta)
 #TODO
 endif(PHASTA_BUILD_SOLVERS)
 
@@ -151,6 +161,4 @@ endif(PHASTA_BUILD_M2NFixBnd)
 if(EXISTS ${PHASTA_SOURCE_DIR}/phNSpre)
 	add_subdirectory(phNSpre)
 endif(EXISTS ${PHASTA_SOURCE_DIR}/phNSpre)
-
-add_subdirectory(checkphasta)
 
