@@ -95,6 +95,7 @@ c
 !        logical  exMc
 !        real*8 vBC, vBCg
         real*8 vortmax, vortmaxg
+        real*8 errmax, errmaxg
 
        iprec=0 !PETSc - Disable PHASTA's BDiag. TODO: Preprocssor Switch
 
@@ -728,6 +729,12 @@ c... compute err
 c hack ShockError
 c  
                errmax=maxval(rerr(:,6))
+               !Find the maximum across parts
+               if(numpe.gt.1) then
+                 call MPI_ALLREDUCE(errmax, errmaxg, 1, 
+     &             MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr )
+                 errmax = errmaxg
+               endif
                errswitch=0.1*errmax  
 !
 ! note this scalefactor will govern the thickness of the refinement band around the shock.  
