@@ -70,6 +70,13 @@ c
       real*8, allocatable :: qybarcumul(:,:),qerrorcumul(:,:)
       real*8, allocatable :: qyphbarcumul(:,:,:), qvorticity(:,:)
 
+      rQInit=0
+      rInit=0
+      rOpen=0
+      rRead=0
+      rFnlz=0
+      rWrite=0
+
       debug = 0
 
       numts=-1
@@ -194,7 +201,10 @@ c
 !
 !       query, init and open
 !
+        
+        rdelta= TMRC()
         call queryphmpiio(fnamer//char(0), nfields, nppf);
+        rQInit=rQInit+ TMRC()-rdelta
         if (myrank == 0) then
           write(*,*) ''
           write(*,*) 'Considering time step',timestep,sumts
@@ -202,9 +212,14 @@ c
           write(*,*) 'Number of parts per file restart-dat: ',nppf
         endif
 
+        rdelta= TMRC()
         call initphmpiio(nfields,nppf,nfiles,descriptor,'read'//char(0))
+        rInit=rInit+ TMRC()-rdelta
+        rdelta= TMRC()
         call openfile( fnamer//char(0), 'read'//char(0), descriptor )
+        rOpen=rOpen+ TMRC()-rdelta
 
+        rdelta= TMRC()
 !
 !       Read the ybar field
 !
@@ -236,13 +251,17 @@ c
      &                     'double'//char(0),iotype) 
 
         ! Weight correctly the field and accumulate for average 
+        rRead=rRead+ TMRC()-rdelta
+        rdelta= TMRC()
         qybarcumul(:,:) = qybarcumul(:,:) + qread (:,:)*sumts
+        rStat=rStat+ TMRC()-rdelta
         deallocate(qread)
 
 !
 !       Read the errors
 !
         if(ierror == 1) then
+          rdelta= TMRC()
           write (temp1,"('(''errors@'',i',i1,',a1)')")
      &             itmp
           write (fname1,temp1) (myrank+1),'?'
@@ -268,9 +287,12 @@ c
           iqsiz=nshg2*ndoferrors
           call readdatablock(descriptor,fname1//char(0),qread,iqsiz,
      &                         'double'//char(0),iotype)
+          rRead=rRead+ TMRC()-rdelta
+          rdelta= TMRC()
 
           ! Weight correctly the field and accumulate for average 
           qerrorcumul(:,:) = qerrorcumul(:,:) + qread(:,:)*sumts
+          rStat=rStat+ TMRC()-rdelta
           deallocate(qread)
         endif ! if ierror == 1
 
@@ -279,6 +301,7 @@ c
 !
         if(numphavg .gt. 0) then
           do iphavg = 1,numphavg
+            rdelta= TMRC()
             itmp = int(log10(float(myrank+1)))+1
             itmp2 = int(log10(float(iphavg)))+1
 !            write (temp1,"('(''phase_average@'',i',i1,',A1)')") itmp
@@ -317,10 +340,13 @@ c
             iqsiz = nshg2*ndofyphbar
             call readdatablock(descriptor,fname1//char(0),qread,iqsiz,
      &                     'double'//char(0),iotype) 
+            rRead=rRead+ TMRC()-rdelta
+            rdelta= TMRC()
 
             ! Weight correctly the field and accumulate for average 
             qyphbarcumul(:,:,iphavg) = qyphbarcumul(:,:,iphavg) 
      &                               + qread (:,:)*sumts
+            rStat=rStat+ TMRC()-rdelta
             deallocate(qread)
           enddo
         endif
@@ -330,6 +356,7 @@ c
 !
 
         if(its == numts) then
+          rdelta= TMRC()
 !
 !         Read the solution of the last time step 
 !
@@ -414,20 +441,27 @@ c
             endif
           endif !if idwal == 1
 
-
+            rRead=rRead+ TMRC()-rdelta
 
         endif ! First time step
 !
 !        Close and finalize
 !
+        rdelta= TMRC()
         call closefile( descriptor, 'read'//char(0) )
+        rClose=rClose+ TMRC()-rdelta
+  
+        rdelta= TMRC()
         call finalizephmpiio( descriptor ) 
+        rFnlz=rFnlz+ TMRC()-rdelta
 
       enddo !numts = number of restart files to read
+      call freecomm( descriptor ) 
 
 !
 !     Weight correctly the average field
 !
+      rdelta= TMRC()
       qybarcumul(:,:) = qybarcumul(:,:)/totsumts
       if (ierror == 1) then
         qerrorcumul(:,:) = qerrorcumul(:,:)/totsumts
@@ -448,6 +482,8 @@ c
 !     &          qold, dwal, qerrorcumul, qybarcumul)
 
       call mpi_barrier(mpi_comm_world, ierr)
+      rStat=rStat+ TMRC()-rdelta
+      rdelta= TMRC()
       call Write_AcuStat(myrank, tablets(1,1), tablets(numts,1),
      &          totsumts, nshg2, ndof2, qold)
 
@@ -475,6 +511,16 @@ c
       if (idwal == 1) then
         call write_field(myrank, 'a', 'dwal', 4, dwal,
      &          'd', nshg2, 1, tablets(numts,1))
+      endif
+      rWrite=rWrite+ TMRC()-rdelta
+      if(myrank.eq.0) then
+         write(*,*) 'Time in QueryInit',rQInit
+         write(*,*) 'Time in Init',rInit
+         write(*,*) 'Time in Open',rOpen
+         write(*,*) 'Time in Read',rRead
+         write(*,*) 'Time in Stat',rStat
+         write(*,*) 'Time in Fnlz',rFnlz
+         write(*,*) 'Time in Write',rWrite
       endif
       
 !
