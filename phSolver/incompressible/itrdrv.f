@@ -616,8 +616,10 @@ c
 !so that we can see progress in force file close it so that it flushes
 !and  then reopen in append mode
 
+        if (myrank .eq. master) then
            close(iforce)
            open (unit=iforce, file=fforce, position='append')
+        endif
 
 !              Call to restar() will open restart file in write mode (and not append mode)
 !              that is needed as other fields are written in append mode

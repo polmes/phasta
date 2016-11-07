@@ -164,6 +164,10 @@ int phasta( int argc, char *argv[] ) {
     char inpfilename[100];
     char* pauseDebugger = getenv("catchDebugger");
 
+
+    MPI_Comm_size (MPI_COMM_WORLD, &size);
+    MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+
 #if defined(__linux__) && !defined(__bgq__)
 /* BM's proposed fix to the stacksize issue */
     struct rlimit stack_size_lim;
@@ -172,12 +176,9 @@ int phasta( int argc, char *argv[] ) {
     stack_size_lim.rlim_cur = RLIM_INFINITY;
     stack_size_lim.rlim_max = RLIM_INFINITY;
     rlim_result = setrlimit(RLIMIT_STACK, &stack_size_lim);
-    fprintf(stderr, "Attempting to set ulimit from phasta exec ");
+    if(myrank == 1) fprintf(stderr, "Attempting to set ulimit from phasta exec ");
     if(rlim_result == -1) perror("setrlimit: ");
 #endif
-
-    MPI_Comm_size (MPI_COMM_WORLD, &size);
-    MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
 
 #ifdef HAVE_PETSC
     PETSC_COMM_WORLD=MPI_COMM_WORLD;

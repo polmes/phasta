@@ -9,11 +9,12 @@
 int 
 main( int argc,   
       char* argv[] ) {
-
+/* this has moved to phasta.cc so that both C and IC code get it
   struct rlimit lim;
   memset(&lim, 0, sizeof(struct rlimit));
   getrlimit(RLIMIT_STACK, &lim);
   printf("stack: soft: %d, hard: %d, inf: %d\n", lim.rlim_cur, lim.rlim_max, RLIM_INFINITY);
+*/
 
 
   MPI_Init(&argc,&argv);
