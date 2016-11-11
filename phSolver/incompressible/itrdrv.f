@@ -1918,6 +1918,7 @@ c                        call flush(ifile)
       real*8 ybar(nshg,irank2yphbar),yold(nshg,ndof),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
+      save iphase, istepsinybar, icyclesinavg
 c$$$c
 c$$$c compute average
 c$$$c

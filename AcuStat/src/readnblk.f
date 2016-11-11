@@ -456,7 +456,6 @@ c
         rFnlz=rFnlz+ TMRC()-rdelta
 
       enddo !numts = number of restart files to read
-      call freecomm( descriptor ) 
 
 !
 !     Weight correctly the average field
