@@ -194,7 +194,7 @@ c
 
         if(ierrcalc.eq.1 .or. ioybar.eq.1) then ! we need ybar for error too
           if (ivort == 1) then
-            irank2ybar=17
+            irank2ybar=18 ! bumped by 1 to add Q
             allocate(ybar(nshg,irank2ybar)) ! more space for vorticity if requested
           else
             irank2ybar=13
@@ -221,7 +221,7 @@ c
         if(nphasesincycle.ne.0) then
 !     &     allocate(yphbar(nshg,5,nphasesincycle))
           if (ivort == 1) then
-            irank2yphbar=15
+            irank2yphbar=16 ! bumped by 1 to add Q
             allocate(yphbar(nshg,irank2yphbar,nphasesincycle)) ! more space for vorticity
           else
             irank2yphbar=11
@@ -1991,6 +1991,8 @@ c u^2, v^2, w^2, p^2 and cross terms of uv, uw and vw
      &                           (one-tfact)*ybar(:,16)
                     ybar(:,17) = tfact*vorticity(:,4) + 
      &                           (one-tfact)*ybar(:,17)
+                    ybar(:,18) = tfact*vorticity(:,5) + 
+     &                           (one-tfact)*ybar(:,18)
                   endif
 
                   if(abs(itwmod).ne.1 .and. iowflux.eq.1) then 
@@ -2083,6 +2085,9 @@ c beginning of cycle is considered as ncycles_startphaseavg*nstepsincycle+1
                        yphbar(:,15,iphase-1) = 
      &                              tfactphase*vorticity(:,4)
      &                           +(one-tfactphase)*yphbar(:,15,iphase-1)
+                       yphbar(:,16,iphase-1) = 
+     &                              tfactphase*vorticity(:,5)
+     &                           +(one-tfactphase)*yphbar(:,16,iphase-1)
                     endif
                   endif !compute phase average
       endif !if(nphasesincycle.eq.0 .or. istep.gt.ncycles_startphaseavg*nstepsincycle) 
