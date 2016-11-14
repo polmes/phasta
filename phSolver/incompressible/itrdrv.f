@@ -757,13 +757,8 @@ c
           endif ! ierrcalc
 
           if(ioybar.eq.1) then
-            if(ivort == 1) then
               call write_field(myrank,'a','ybar',4,
-     &                  ybar,'d',nshg,17,lstep)
-            else
-              call write_field(myrank,'a','ybar',4,
-     &                ybar,'d',nshg,13,lstep)
-            endif
+     &                  ybar,'d',nshg,irank2ybar,lstep)
                  
             if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
               call write_field(myrank,'a','wssbar',6,
@@ -776,13 +771,8 @@ c
                 tcormr1 = TMRC()
               endif
               do iphase=1,nphasesincycle
-                if(ivort == 1) then
                  call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,15,lstep)
-                else
-                 call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,11,lstep)
-                endif
+     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,irank2yphbar,lstep)
               end do
               if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
               if(myrank.eq.0)  then
@@ -1915,7 +1905,7 @@ c                        call flush(ifile)
       subroutine collectErrorYbar(ybar,yold,wallssVec,wallssVecBar,
      &               vorticity,yphbar,rerr,irank2ybar,irank2yphbar)
       include "common.h"
-      real*8 ybar(nshg,irank2yphbar),yold(nshg,ndof),vorticity(nshg,5)
+      real*8 ybar(nshg,irank2ybar),yold(nshg,ndof),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
       save iphase, istepsinybar, icyclesinavg
