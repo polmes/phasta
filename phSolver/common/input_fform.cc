@@ -84,6 +84,13 @@ int input_fform(phSolver::Input& inp)
 
     workfc.BlockPool = (int)inp.GetValue("Number of Blocks to Pool"); 
     workfc.ieqswork = (int)inp.GetValue("Equation Solver Work Selector"); 
+    if(workfc.myrank==workfc.master)  printf("\n Equation Solver Work Selector: %d \n",workfc.ieqswork);
+#ifndef HAVE_MKL
+    if(workfc.myrank==workfc.master)  printf("\n MKL not available: ieqswork set to 50 \n");
+    workfc.ieqswork=50;
+#endif    
+     
+    
 
 /////////////////////////////chen Sep 25 2009  Flow Control Parameters ////////
 // Take BC from IC at inlet

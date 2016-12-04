@@ -141,6 +141,7 @@ c
       rblasphasta = 0.0
       rspmvphasta = 0.0
       rblasmkl = 0.0
+      rblasaxpy = 0.0
       rspmvmkl = 0.0
       rspmvKG = 0.0
       rspmvD = 0.0

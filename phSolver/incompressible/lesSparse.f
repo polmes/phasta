@@ -287,9 +287,6 @@ c
 !
       rstart=TMRC()
       iwork=ieqswork/10
-#ifndef HAVE_MKL
-        iwork=5  ! safety in input selected MKL but code was not compiled for it 
-#endif
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
       if(iwork.eq.0) then  ! {old way
@@ -736,9 +733,6 @@ c
 ! handle options available to KG but not for Full
 !
       if((iwork.eq.1).or.(iwork.eq.2).or.(iwork.eq.6)) iwork=5 
-#ifndef HAVE_MKL
-        iwork=5  ! safety in input selected MKL but code was not compiled for it 
-#endif
       if(iwork.eq.0) then !{ original alg with 3x3
         lhs9(1:3,:)=lhs16(1:3,:) ! left out of timer as we could store
         lhs9(4:6,:)=lhs16(5:7,:)
