@@ -15,6 +15,8 @@ c---------------------------------------------------------------------
       dimension rmass(nshg), qres(nshg,idflx),
      &          iBC(nshg), iper(nshg),uv(nshg,2),
      &          tmpvec(nshg,4), tmp(nshg)  
+      dimension ilwork(nlwork)
+
 c
       if(iabc==1) then   !are there any axisym bc's
       do i=1,idflx/nsd

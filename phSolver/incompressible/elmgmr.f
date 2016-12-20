@@ -107,8 +107,8 @@ c
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
           blk%s   = lcblk(10,iblk)
           blk%e   = lcblk(1,iblk+1) - iel 
-          blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
           blk%o = lcblk(4,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
@@ -212,8 +212,8 @@ c
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
           blk%s   = lcblk(10,iblk)
           blk%e   = lcblk(1,iblk+1) - lcblk(1,iblk) 
-          blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
           blk%o = lcblk(4,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
@@ -286,7 +286,8 @@ c
             call local (blk, rerr, rerrl(:,:,:,ith),  
      &                  mien(iblk)%p, 6, 'scatter ')
           endif
-          npro=blk%e  !npro still used in these arrays
+          nshl=blk%s  !nshl still used in these routines...temp solution
+          npro=blk%e  !npro still used in these routines...temp solution
           if (impl(1) .ne. 9 .and. lhs .eq. 1) then
             if(ipord.eq.1) 
      &        call bc3lhs (iBC, BC,mien(iblk)%p, xlhs(:,:,:,:,ith))

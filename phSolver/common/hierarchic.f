@@ -44,14 +44,14 @@ c------------------------------------------------------------------------
      &          shdrv(blk%e,nsd,blk%s)
       
       
-      do i=1,nenl
+      do i=1,blk%n
          shape(1:blk%e,i) = shp(i,ith)
          do j=1,3
             shdrv(1:blk%e,j,i) = shgl(j,i,ith)
          enddo
       enddo
       if ( blk%o > 1 ) then !polynomial order
-         do i=nenl+1,blk%s
+         do i=blk%n+1,blk%s
             shape(1:blk%e,i) = sgn(1:blk%e,i) * shp(i,ith)
             do j=1,3
                shdrv(1:blk%e,j,i) = shgl(j,i,ith)*sgn(1:blk%e,i) 
