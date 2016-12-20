@@ -1,4 +1,4 @@
-      subroutine f3lhs (shpb,   shglb,  xlb,    flhsl,
+      subroutine f3lhs (blk,shpb,   shglb,  xlb,    flhsl,
      &                  fnrml,  sgn )
 c
 c----------------------------------------------------------------------
@@ -10,12 +10,12 @@ c input:
 c  shpb   (nen,nintg)           : boundary element shape-functions
 c  shglb  (nsd,nen,nintg)       : boundary element grad-shape-functions
 c  wghtb  (nintg)               : boundary element weight
-c  xlb    (npro,nenl,nsd)       : nodal coordinates
+c  xlb    (bsz,nenl,nsd)       : nodal coordinates
 c  sgn    (npro,nshl)           : mode signs for hierarchic basis
 c
 c output:
-c  flhsl  (npro,nenl,1)         : element lumped lhs on flux boundary
-c  fnrml  (npro,nenl,nsd)       : RHS of LS projection of normal to 
+c  flhsl  (bsz,nenl,1)         : element lumped lhs on flux boundary
+c  fnrml  (bsz,nenl,nsd)       : RHS of LS projection of normal to 
 c                                  flux boundary
 c
 c
@@ -32,10 +32,13 @@ c Zdenek Johan, Summer 1991.
 c----------------------------------------------------------------------
 c
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
       dimension shpb(nshl,ngaussb),        shglb(nsd,nshl,ngaussb),
-     &          xlb(npro,nenl,nsd),
-     &          flhsl(npro,nshl,1),        fnrml(npro,nshl,nsd)
+     &          xlb(bsz,nenl,nsd),
+     &          flhsl(bsz,nshl,1),        fnrml(bsz,nshl,nsd)
 c
       dimension WdetJb(npro),
      &          bnorm(npro,nsd),           fmstot(npro),
@@ -54,8 +57,8 @@ c
 c.... compute the normal to the boundary 
 c
 
-      v1 = xlb(:,2,:) - xlb(:,1,:)
-      v2 = xlb(:,3,:) - xlb(:,1,:)
+      v1 = xlb(1:blk%e,2,:) - xlb(1:blk%e,1,:)
+      v2 = xlb(1:blk%e,3,:) - xlb(1:blk%e,1,:)
       
       if (lcsyst .eq. 1) then
          temp1 = v1(:,2) * v2(:,3) - v2(:,2) * v1(:,3)
@@ -76,7 +79,7 @@ c
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(shpb,        shglb,        sgn, 
+         call getshp(blk,intp,shpb,        shglb,        sgn, 
      &               shape,       shdrv)
 c
 
@@ -99,14 +102,14 @@ c
 c.... compute the lumped LHS and normal
 c          
          do n = 1, nenl ! when changed to nshl solution degraded ipord 10
-            flhsl(:,n,1) = flhsl(:,n,1) + WdetJb * shape(:,n)
+            flhsl(1:blk%e,n,1) = flhsl(1:blk%e,n,1) + WdetJb * shape(:,n)
 
 c for curved geometries the below construct for the normals has to be used
-            fnrml(:,n,1) = fnrml(:,n,1) + WdetJb * bnorm(:,1)
+            fnrml(1:blk%e,n,1) = fnrml(1:blk%e,n,1) + WdetJb * bnorm(:,1)
      &                                           * shape(:,n)
-            fnrml(:,n,2) = fnrml(:,n,2) + WdetJb * bnorm(:,2)
+            fnrml(1:blk%e,n,2) = fnrml(1:blk%e,n,2) + WdetJb * bnorm(:,2)
      &                                           * shape(:,n)
-            fnrml(:,n,3) = fnrml(:,n,3) + WdetJb * bnorm(:,3)
+            fnrml(1:blk%e,n,3) = fnrml(1:blk%e,n,3) + WdetJb * bnorm(:,3)
      &                                           * shape(:,n)
           enddo
 c
@@ -118,19 +121,19 @@ c
         enddo
         
 c$$$        do i=1,nenl
-c$$$           fnrml(:,i,:)=bnorm(:,:)
+c$$$           fnrml(1:blk%e,i,:)=bnorm(:,:)
 c$$$        enddo
-        if(ipord.gt.1)  fnrml(:,nenl:nshl,:)=zero
+        if(ipord.gt.1)  fnrml(1:blk%e,nenl:nshl,:)=zero
 c
 c.... scale the LHS matrix contribution
 c
         temp = zero
         do n = 1, nshl
-           temp = temp + flhsl(:,n,1)
+           temp = temp + flhsl(1:blk%e,n,1)
         enddo
 c
         do n = 1, nshl
-           flhsl(:,n,1) = flhsl(:,n,1) * fmstot / temp
+           flhsl(1:blk%e,n,1) = flhsl(1:blk%e,n,1) * fmstot / temp
         enddo
 c
 c.... return

@@ -188,7 +188,7 @@ c-----------------------------------------------------------------------
      &                        u,      uold,   x,
      &                        shp,    shgl,   shpb,   shglb,
      &                        iBC,    BC,     iper,   ilwork,
-     &                        rowp,   colm,   lhsK,   lhsP )
+     &                        rowp,   colm   )
       
       use     stats
 
@@ -200,8 +200,7 @@ c-----------------------------------------------------------------------
      &        shp(MAXTOP,maxsh,MAXQPT),  shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &        shpb(MAXTOP,maxsh,MAXQPT),
      &        shglb(MAXTOP,nsd,maxsh,MAXQPT),
-     &        BC(nshg,ndofBC),          lhsK(9,nnz_tot),
-     &        lhsP(4,nnz_tot),         x(numnp,nsd)
+     &        BC(nshg,ndofBC),          x(numnp,nsd)
 
       integer iBC(nshg),                iper(nshg),
      &        ilwork(nlwork),           rowp(nshg*nnz),
@@ -232,8 +231,7 @@ c
       if (stsType .eq. 1) then
          call elmStatsRes( yAlpha,   acAlpha,     x,       shp,   shgl, 
      &                     shpb,     shglb,       iBC,     BC, 
-     &                     iper,     ilwork,      rowp,    colm,
-     &                     lhsK,     lhsP  )
+     &                     iper,     ilwork,      rowp,    colm )
 
 c
 c.... compute the statistics

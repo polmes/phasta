@@ -91,6 +91,8 @@ extern "C" {
     int master;
     int numpe;
     int myrank;
+    int BlockPool;
+    int ieqswork;
   } workfc ;
 
   extern struct { 
@@ -182,6 +184,30 @@ extern "C" {
     double rAllRScal;
     double rCommu;
     double rCommuScal;
+    double rthreads;
+    double rassembly;
+    double rspmvKG;
+    double rspmvphasta;
+    double rspmvmkl;
+    double rblasphasta;
+    double rblasmkl;
+    double rspmvD;
+    double rspmvG;
+    double rspmvNGt;
+    double rspmvNGtC;
+    double rspmvFull;
+    double rblasmaxpy;
+    int iblasmaxpy;
+    int ispmvKG;
+    int ispmvphasta;
+    int ispmvmkl;
+    int iblasphasta;
+    int iblasmkl;
+    int ispmvD;
+    int ispmvG;
+    int ispmvNGt;
+    int ispmvNGtC;
+    int ispmvFull;
   } mpistats ;
 
   extern struct { 
@@ -379,7 +405,7 @@ extern "C" {
     int iepstm;
     double dtsfct;
     double taucfct;
-    int ibksiz;
+    int bsz;
     int iabc;
     int isurf;
     int idflx;

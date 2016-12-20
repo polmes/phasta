@@ -74,7 +74,7 @@ c
       elseif (n .eq. 13 ) then ! for error
          kdof = 11 
 !      elseif (n .eq. 22 ) then
-      elseif (n .eq. 17 ) then
+      elseif (n .eq. 18 ) then
          kdof = 12
       elseif (n .eq. 16 ) then
          kdof = 13

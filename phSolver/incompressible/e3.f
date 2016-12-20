@@ -1,6 +1,6 @@
-        subroutine e3 (yl,      acl,     dwl,     shp,
+        subroutine e3 (blk, yl,      acl,     dwl,     shp,
      &                 shgl,    xl,      rl,      ql,
-     &                 xKebe,   xGoC,    xmudmi,  sgn, 
+     &                 xlhs, xmudmi,  sgn, 
      &                 rerrl, rlsl)
 c                                                                      
 c----------------------------------------------------------------------
@@ -10,20 +10,19 @@ c     UBar formulation of the incompressible Navier Stokes equations.
 c
 c
 c input:    e    a   1..5   when we think of U^e_a  and U is 5 variables
-c  yl     (npro,nshl,ndof)      : Y variables (not U)
-c  acl    (npro,nshl,ndof)      : Y acceleration (Y_{,t})
-c  shp    (nen,ngauss)           : element shape-functions  N_a
-c  shgl   (nsd,nen,ngauss)       : element local-shape-functions N_{a,xi}
-c  wght   (ngauss)               : element weight (for quadrature)
-c  xl     (npro,nenl,nsd)       : nodal coordinates at current step (x^e_a)
-c  ql     (npro,nshl,nsd*nsd) : diffusive flux vector (don't worry)
-c  rlsl   (npro,nshl,6)       : resolved Leonard stresses
+c  yl     (bsz,blk%s,ndof)      : Y variables (not U)
+c  acl    (bsz,blk%s,ndof)      : Y acceleration (Y_{,t})
+c  shp    (nen,blk%g)           : element shape-functions  N_a
+c  shgl   (nsd,nen,blk%g)       : element local-shape-functions N_{a,xi}
+c  wght   (blk%g)               : element weight (for quadrature)
+c  xl     (bsz,blk%n,nsd)       : nodal coordinates at current step (x^e_a)
+c  ql     (bsz,blk%s,nsd*nsd) : diffusive flux vector (don't worry)
+c  rlsl   (bsz,blk%s,6)       : resolved Leonard stresses
 c
 c output:
-c  rl     (npro,nshl,nflow)      : element RHS residual    (G^e_a)
-c  rml    (npro,nshl,nflow)      : element modified residual  (G^e_a tilde)
-c  xKebe  (npro,9,nshl,nshl)  : element LHS tangent mass matrix
-c  xGoC   (npro,4,nshl,nshl)    : element LHS tangent mass matrix
+c  rl     (bsz,blk%s,nflow)      : element RHS residual    (G^e_a)
+c  rml    (bsz,blk%s,nflow)      : element modified residual  (G^e_a tilde)
+c  xlhs  (bsz,16,blk%s,blk%s)  : element LHS tangent mass matrix
 c
 c Note: This routine will calculate the element matrices for the
 c        Hulbert's generalized alpha method integrator
@@ -35,35 +34,42 @@ c K. E. Jansen,   Winter 1999.   (advective form formulation)
 c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
-        include "common.h"
-c
-        dimension yl(npro,nshl,ndof),
-     &            acl(npro,nshl,ndof),       
-     &            shp(nshl,ngauss),       shgl(nsd,nshl,ngauss),
-     &            xl(npro,nenl,nsd),      dwl(npro,nenl),
-     &            rl(npro,nshl,nflow),     ql(npro,nshl,idflx)
-c      
+! only needed if debugging      use omp_lib
+      include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
 
-        dimension xKebe(npro,9,nshl,nshl), xGoC(npro,4,nshl,nshl)
+
+c
+        dimension yl(bsz,blk%s,ndof),
+     &            acl(bsz,blk%s,ndof),       
+     &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
+     &            xl(bsz,blk%n,nsd),      dwl(bsz,blk%n),
+     &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx)
+c      
+        real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
+        real*8, allocatable, dimension(:,:,:,:) :: rl_qp
+
+        dimension xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
 c
-        dimension g1yi(npro,ndof),        g2yi(npro,ndof),
-     &            g3yi(npro,ndof),        shg(npro,nshl,nsd),
-     &            aci(npro,3),            dxidx(npro,nsd,nsd),       
-     &            WdetJ(npro),            rho(npro),
-     &            pres(npro),             u1(npro),
-     &            u2(npro),               u3(npro),
-     &            rLui(npro,nsd),         uBar(npro,nsd),
-     &            xmudmi(npro,ngauss),     sgn(npro,nshl), 
-     &            shpfun(npro,nshl),      shdrv(npro,nsd,nshl),
-     &            rmu(npro),              tauC(npro),
-     &            tauM(npro),             tauBar(npro),
-     &            src(npro,3)
+        dimension g1yi(blk%e,ndof),        g2yi(blk%e,ndof),
+     &            g3yi(blk%e,ndof),        shg(blk%e,blk%s,nsd),
+     &            aci(blk%e,3),            dxidx(blk%e,nsd,nsd),       
+     &            WdetJ(blk%e),            rho(blk%e),
+     &            pres(blk%e),             u1(blk%e),
+     &            u2(blk%e),               u3(blk%e),
+     &            rLui(blk%e,nsd),         uBar(blk%e,nsd),
+     &            xmudmi(blk%e,blk%g),     sgn(blk%e,blk%s), 
+     &            shpfun(blk%e,blk%s),      shdrv(blk%e,nsd,blk%s),
+     &            rmu(blk%e),              tauC(blk%e),
+     &            tauM(blk%e),             tauBar(blk%e),
+     &            src(blk%e,3)
 
-        dimension rlsl(npro,nshl,6),      rlsli(npro,6)
+        dimension rlsl(bsz,blk%s,6),      rlsli(blk%e,6)
 
-        real*8    rerrl(npro,nshl,6)
+        real*8    rerrl(bsz,blk%s,6)
         integer   aa
 
 c
@@ -79,23 +85,38 @@ c
 c
 c.... loop through the integration points
 c
-
-        do intp = 1, ngauss
-
-        if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
+! natural place for rdelta = TMRC() but moved lower to time just loop 
+#ifdef HAVE_OMP_QP  
+	allocate( rl_qp(bsz,blk%s,nflow,blk%g))
+        allocate( xK_qp(bsz,16,blk%s,blk%s,blk%g))
+        rl_qp=zero
+        xK_qp=zero
+#endif
+! time just loop 
+!       rdelta = TMRC() 
+#ifdef HAVE_OMP_QP
+!$OMP  parallel do 
+!$OMP& private (ith,sgn,shpfun,shdrv,rmu,rho,aci,g1yi,g2yi,g3yi)
+!$OMP& private (shg,dxidx,WdetJ,pres,u1,u2,u3,rLui,src,rlsi)
+!$OMP& private (tauC,tauM,tauBar,uBar,id)
+!$OMP& shared (shp,shgl,dwbszl,yl,xmudmi,xl,acl,rlsl)
+!$OMP& shared (rl_qp,xK_qp)
+#endif
+        do ith = 1, blk%g
+        if (Qwt(lcsyst,ith) .eq. zero) cycle          ! precaution
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(blk,ith, shp,          shgl,      sgn, 
      &              shpfun,       shdrv)
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho)
+        call getdiff(blk,ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho)
 c
 c.... calculate the integration variables
 c
-        call e3ivar (yl,          acl,       shpfun,
+        call e3ivar (blk, ith,yl,          acl,       shpfun,
      &               shdrv,       xl,
      &               aci,         g1yi,      g2yi,    
      &               g3yi,        shg,       dxidx,   
@@ -107,45 +128,76 @@ c
 c
 c.... compute the stabilization terms
 c
-        call e3stab (rho,          u1,       u2,
+        call e3stab (blk, rho,          u1,       u2,
      &               u3,           dxidx,    rLui,   
      &               rmu,          tauC,     tauM,   
      &               tauBar,       uBar )  
 c
 c.... compute the residual contribution at this integration point
 c
-        call e3Res ( u1,        u2,         u3,
+        call e3Res ( blk, u1,        u2,         u3,
      &               uBar,      aci,        WdetJ,
      &               g1yi,      g2yi,       g3yi,
      &               rLui,      rmu,        rho,
      &               tauC,      tauM,       tauBar,
      &               shpfun,    shg,        src,
-     &               rl,        pres,       acl,
+#ifdef HAVE_OMP_QP
+     &               rl_qp(:,:,:,ith),      
+#else
+     &               rl,
+#endif
+     &               pres,
      &               rlsli)
 c
 c.... compute the tangent matrix contribution
 c
         if (lhs .eq. 1) then
-           call e3LHS ( u1,        u2,         u3,
+           call e3LHS ( blk,u1,        u2,         u3,
      &                  uBar,      WdetJ,      rho,
      &                  rLui,      rmu,
      &                  tauC,      tauM,       tauBar,
-     &                  shpfun,    shg,        xKebe,
-     &                  xGoC )
+     &                  shpfun,    shg,        
+#ifdef HAVE_OMP_QP
+     &                  xK_qp(:,:,:,:,ith),
+#else
+     &                  xlhs)
+#endif
         endif
 
 c
 c.... end of integration loop
 c
       enddo
+!just loop for now
+!      rdelta = TMRC() - rdelta
+!      rthreads = rthreads + rdelta
+!just
+#ifdef HAVE_OMP_QP
+c
+c here we accumulate the thread work from each quadrature point
+c
+      do i=1,blk%g
+       rl(1:blk%e,1:blk%s,1:nflow)=rl(1:blk%e,1:blk%s,1:nflow)
+     &                       +rl_qp(1:blk%e,1:blk%s,1:nflow,i)
+       xlhs(1:blk%e,1:12,1:blk%s,1:blk%s)=xlhs(1:blk%e,1:12,1:blk%s,1:blk%s)
+     &                                +xK_qp(1:blk%e,1:12,1:blk%s,1:blk%s,i)
+       xlhs(1:blk%e,16,1:blk%s,1:blk%s)=xlhs(1:blk%e,16,1:blk%s,1:blk%s)
+     &                                +xK_qp(1:blk%e,16,1:blk%s,1:blk%s,i)
+      enddo
 
+      deallocate(xK_qp)
+      deallocate(rl_qp)
+#endif
+!natural place for the rthreads timer when we want to capture all but moved to just loop for now
 c
-c.... symmetrize C
-c
+c.... symmetrize C and G from -G^T since only G was computed in e3lhs
       if (lhs .eq. 1) then
-         do ib = 1, nshl
+         do ib = 1, blk%s
             do iaa = 1, ib-1
-               xGoC(:,4,iaa,ib) = xGoC(:,4,ib,iaa)
+               xlhs(1:blk%e,16,iaa,ib) = xlhs(1:blk%e,16,ib,iaa)
+            enddo
+            do iaa = 1,blk%s
+               xlhs(1:blk%e,13:15,iaa,ib) = -xlhs(1:blk%e,4:12:4,ib,iaa)
             enddo
          enddo
       endif
@@ -160,7 +212,7 @@ c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 c###################################################################
 
 
-      subroutine e3Sclr (yl,      acl,     shp,
+      subroutine e3Sclr (blk,yl,      acl,     shp,
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
      &                     sgn,     xmudmi)
@@ -175,25 +227,28 @@ c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
       include "common.h"
+        include "eblock.h"
+        type (LocalBlkData) blk
+
 c
-      real*8    yl(npro,nshl,ndof),     acl(npro,nshl,ndof),       
-     &            shp(nshl,ngauss),       shgl(nsd,nshl,ngauss),
-     &            xl(npro,nenl,nsd),      rl(npro,nshl),          
-     &            ql(npro,nshl,nsd),      xSebe(npro,nshl,nshl),
-     &            dwl(npro,nshl)
+      real*8    yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof),       
+     &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
+     &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
+     &            ql(bsz,blk%s,nsd),      xSebe(bsz,blk%s,blk%s),
+     &            dwl(bsz,blk%n)
 c
 c.... local declarations
 c
-      real*8    gradS(npro,nsd),        shg(npro,nshl,nsd),
-     &            Sdot(npro),             Sclr(npro),
-     &            dxidx(npro,nsd,nsd),    WdetJ(npro),      
-     &            u1(npro),     u2(npro), u3(npro),
-     &            sgn(npro,nshl),         shpfun(npro,nshl),       
-     &            shdrv(npro,nsd,nshl),   rLS(npro),
-     &            tauS(npro),             diffus(npro),
-     &            srcL(npro),             srcR(npro),
-     &            gGradS(npro,nsd),       dcFct(npro),
-     &            giju(npro,6)
+      real*8    gradS(blk%e,nsd),        shg(blk%e,blk%s,nsd),
+     &            Sdot(blk%e),             Sclr(blk%e),
+     &            dxidx(blk%e,nsd,nsd),    WdetJ(blk%e),      
+     &            u1(blk%e),     u2(blk%e), u3(blk%e),
+     &            sgn(blk%e,blk%s),         shpfun(blk%e,blk%s),       
+     &            shdrv(blk%e,nsd,blk%s),   rLS(blk%e),
+     &            tauS(blk%e),             diffus(blk%e),
+     &            srcL(blk%e),             srcR(blk%e),
+     &            gGradS(blk%e,nsd),       dcFct(blk%e),
+     &            giju(blk%e,6)
 c
 c.... Source terms sometimes take the form (beta_i)*(phi,_i).  Since
 c     the convective term has (u_i)*(phi,_i), it is useful to treat
@@ -201,34 +256,34 @@ c     beta_i as a "correction" to the velocity.  In calculating the
 c     stabilization terms, the new "modified" velocity (u_i-beta_i) is 
 c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.
-      real*8    uMod(npro,nsd), srcRat(npro), xmudmi(npro,ngauss)
+      real*8    uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
 c
       integer   aa, b
 c     
 c.... local reconstruction of diffusive flux vector
 c
         if ( idiff==2 ) then
-           call e3qlSclr (yl, dwl, shp, shgl, xl, ql, sgn)
+           call e3qlSclr (blk, yl, dwl, shp, shgl, xl, ql, sgn)
         endif
 c
 c.... loop through the integration points
 c
-        do intp = 1, ngauss
+        do intqp = 1, blk%g
 
-        if (Qwt(lcsyst,intp) .eq. zero) cycle          ! precaution
+        if (Qwt(lcsyst,intqp) .eq. zero) cycle          ! precaution
 c
 c.... get the hierarchic shape functions at this int point
 c
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(blk, intqp,shp,          shgl,      sgn, 
      &              shpfun,        shdrv)
 c
 c.... get necessary fluid properties
 c
-        call getdiffsclr(shpfun,dwl,yl,diffus)
+        call getdiffsclr(blk, shpfun,dwl,yl,diffus)
 c
 c.... calculate the integration variables
 c
-        call e3ivarSclr(yl,          acl,       shpfun,
+        call e3ivarSclr(blk, intqp, yl,          acl,       shpfun,
      &                  shdrv,       xl,        xmudmi,
      &                  Sclr,        Sdot,      gradS,
      &                  shg,         dxidx,     WdetJ,       
@@ -241,7 +296,7 @@ c
 c
 c.... compute the stabilization terms
 c
-        call e3StabSclr (uMod,    dxidx,   tauS, 
+        call e3StabSclr (blk,uMod,    dxidx,   tauS, 
      &                   diffus,  srcR,    giju,
      &                   srcRat)
 c
@@ -251,7 +306,7 @@ c
            if ((idcsclr(2).eq.1 .and. isclr.eq.1) .or. 
      &          (idcsclr(2).eq.2 .and. isclr.eq.2)) then ! scalar with dc
 c
-              call e3dcSclr ( gradS,    giju,     gGradS,
+              call e3dcSclr (blk, gradS,    giju,     gGradS,
      &                        rLS,      tauS,     srcR,
      &                        dcFct)
            endif
@@ -259,7 +314,7 @@ c
 c
 c.... compute the residual contribution at this integration point
 c
-        call e3ResSclr ( uMod,      gGradS,
+        call e3ResSclr ( blk, uMod,      gGradS,
      &                   Sclr,      Sdot,       gradS,  
      &                   WdetJ,     rLS,        tauS,
      &                   shpfun,    shg,        srcR,
@@ -269,7 +324,7 @@ c
 c.... compute the tangent matrix contribution
 c
         if (lhs .eq. 1) then
-           call e3LHSSclr ( uMod,      giju,       dcFct,
+           call e3LHSSclr ( blk, uMod,      giju,       dcFct,
      &                      Sclr,      Sdot,       gradS,  
      &                      WdetJ,     rLS,        tauS,
      &                      shpfun,    shg,        srcL,

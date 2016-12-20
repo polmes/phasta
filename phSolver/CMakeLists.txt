@@ -7,6 +7,11 @@ set(CASES "/path/to/test/cases/"
   "path to the test cases")
 option(PHASTA_TESTING "enable tests" OFF)
 
+option(PHASTA_USE_MKL "Use MKL Library" OFF)
+if(PHASTA_USE_MKL)
+add_definitions(-DHAVE_MKL)
+endif(PHASTA_USE_MKL)
+
 option(PHASTA_USE_PETSC "Use PETSc GMRES Solver" OFF)
 if(PHASTA_USE_PETSC)
 find_package(PETSC REQUIRED)

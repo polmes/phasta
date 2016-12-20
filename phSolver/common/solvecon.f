@@ -12,6 +12,9 @@ c
       use pointer_data
 c     
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
       include "mpif.h"
       include "auxmpi.h"      
 c      
@@ -57,6 +60,13 @@ c
          nsymdl = lcblk(9,iblk)
          npro   = lcblk(1,iblk+1) - iel
          ngauss = nint(lcsyst)
+
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
 c
 c.... compute and assemble the constarint factor, and mass matrix
 c     
@@ -67,7 +77,7 @@ c
          tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
          tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 c   
-         call volcon (y,          x,             tmpshp,              
+         call volcon (blk,y,          x,             tmpshp,              
      &                tmpshgl,    mien(iblk)%p,  rmass,     
      &                v_lambda1,  hprime,        v_lambda2)
 
@@ -143,7 +153,7 @@ c
 c
 c
 
-      subroutine volcon (y,         x,      shp,      
+      subroutine volcon (blk,y,         x,      shp,      
      &                   shgl,      ien,    rmass, 
      &                   v_lambda1, hprime, v_lambda2)
 
@@ -154,6 +164,8 @@ c constraint factor and mass matrix.
 c
 c---------------------------------------------------------------------
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c     
       dimension y(nshg,ndof),               x(numnp,nsd),              
      &            shp(nshl,maxsh),  
@@ -163,11 +175,11 @@ c
 c
 c.... element level declarations
 c
-      dimension ycl(npro,nshl,ndof),      xl(npro,nenl,nsd),         
-     &          rmassl(npro,nshl)     
-      dimension sgn(npro,nshape),         v_lambdal1(npro,nshl),
-     &          v_lambda1(nshg),          hprimel(npro,nshl),
-     &          hprime(nshg),             v_lambdal2(npro,nshl),
+      dimension ycl(bsz,nshl,ndof),      xl(bsz,nenl,nsd),         
+     &          rmassl(bsz,nshl)     
+      dimension sgn(npro,nshape),         v_lambdal1(bsz,nshl),
+     &          v_lambda1(nshg),          hprimel(bsz,nshl),
+     &          hprime(nshg),             v_lambdal2(bsz,nshl),
      &          v_lambda2(nshg)
 c
 c local arrays
@@ -195,14 +207,16 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
       if (ipord .gt. 1) then
-         call getsgn(ien,sgn)
+           write(*,*) 'blk not plumbed this far'
+
+         call getsgn(blk,ien,sgn)
       endif
 c
 c.... gather the variables
 c
 
-      call localy(y,      ycl,     ien,    ndof,   'gather  ')
-      call localx(x,      xl,      ien,    nsd,    'gather  ')
+      call localy(blk,y,      ycl,     ien,    ndof,   'gather  ')
+      call localx(blk,x,      xl,      ien,    nsd,    'gather  ')
 c
 c.... get the element contributions of the numerator and denominator 
 c     of lambda 
@@ -221,7 +235,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c
-         call getshp(shp,          shgl,      sgn, 
+         call getshp(blk,shp,          shgl,      sgn, 
      &               shape,        shdrv)
 c
 c.... initialize
@@ -236,7 +250,8 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-         call e3metric( xl,         shdrv,        dxidx,  
+         write(*,*) 'broken blk not plumbed this far'
+         call e3metric(blk, blk, xl,         shdrv,        dxidx,  
      &                  shg,        WdetJ)
 
 c
@@ -244,8 +259,8 @@ c
 c
 c  y(intp)=SUM_{a=1}^nshl (N_a(intp) Ya)
 c     
-            Sclr    = Sclr    + shape(:,i) * ycl(:,i,7) !d^kbar
-            sclrtmp = sclrtmp + shape(:,i) * ycl(:,i,6) !d^0
+            Sclr    = Sclr    + shape(1:npro,i) * ycl(1:npro,i,7) !d^kbar
+            sclrtmp = sclrtmp + shape(1:npro,i) * ycl(1:npro,i,6) !d^0
          enddo
 
          if (isclr .eq. 2) then
@@ -265,21 +280,21 @@ c              v_lambdatmp(i)=tmp1(i)/(tmp2(i)+ epsM)
          enddo
 c
          do i=1,nshl
-            v_lambdal1(:,i)=v_lambdal1(:,i)+ shape(:,i)*WdetJ*tmp1
-            v_lambdal2(:,i)=v_lambdal2(:,i)+ shape(:,i)*WdetJ*tmp2
-c           v_lambdal(:,i)=v_lambdal(:,i)+ shape(:,i)*WdetJ*v_lambdatmp
-            hprimel(:,i) = hprimel(:,i) + shape(:,i)*WdetJ*h_prime
-            rmassl(:,i)  =rmassl(:,i) + shape(:,i)*WdetJ
+            v_lambdal1(1:npro,i)=v_lambdal1(1:npro,i)+ shape(1:npro,i)*WdetJ*tmp1
+            v_lambdal2(1:npro,i)=v_lambdal2(1:npro,i)+ shape(1:npro,i)*WdetJ*tmp2
+c           v_lambdal(1:npro,i)=v_lambdal(1:npro,i)+ shape(1:npro,i)*WdetJ*v_lambdatmp
+            hprimel(1:npro,i) = hprimel(1:npro,i) + shape(1:npro,i)*WdetJ*h_prime
+            rmassl(1:npro,i)  =rmassl(1:npro,i) + shape(1:npro,i)*WdetJ
          enddo
 c
 c.... end of the loop over integration points
 c
       enddo
 c
-      call local (v_lambda1,  v_lambdal1, ien,  1,  'scatter ')
-      call local (v_lambda2,  v_lambdal2, ien,  1,  'scatter ')
-      call local (hprime,     hprimel,    ien,  1,  'scatter ')
-      call local (rmass,      rmassl,     ien,  1,  'scatter ') 
+      call local (blk,v_lambda1,  v_lambdal1, ien,  1,  'scatter ')
+      call local (blk,v_lambda2,  v_lambdal2, ien,  1,  'scatter ')
+      call local (blk,hprime,     hprimel,    ien,  1,  'scatter ')
+      call local (blk,rmass,      rmassl,     ien,  1,  'scatter ') 
 c
       return
       end

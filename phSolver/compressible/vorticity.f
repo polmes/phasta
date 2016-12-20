@@ -119,7 +119,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
                 
          call getshp (shp2, shgl2, sgn, shp, shgl )
     
-         call e3metric( xl,         shgl,        dxidx,  
+         call e3metric(intp, xl,         shgl,        dxidx,  
      &                shg,        WdetJ) 
       
          g1yi = zero

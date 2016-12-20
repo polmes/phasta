@@ -1,4 +1,4 @@
-        subroutine localy (global, rlocal, ientmp, n, code)
+        subroutine localy (blk,global, rlocal, ientmp, n, code)
 c
 c----------------------------------------------------------------------
 c
@@ -6,8 +6,8 @@ c This subroutine performs a vector gather/scatter operation.
 c
 c input:
 c  global (nshg,n)              : global array
-c  rlocal (npro,nshl,n)         : local array
-c  ien    (npro,nshl)           : nodal connectivity
+c  rlocal (bsz,blk%s,n)         : local array
+c  ien    (bsz,blk%s)           : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -19,16 +19,19 @@ c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
-        dimension global(nshg,n),           rlocal(npro,nshl,n),
-     &            ien(npro,nshl),           ientmp(npro,nshl)
+
+        dimension global(nshg,n),           rlocal(bsz,blk%s,n),
+     &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s)
 c
         character*8 code
         
 c
 c.... cubic basis has negatives in ien
 c
-        if (ipord > 2) then
+        if (blk%o > 2) then
            ien = abs(ientmp)
         else
            ien = ientmp
@@ -51,30 +54,30 @@ c
 !      Put u,v,w in the slots 2,3,4 of yl 
 
           do j = 1, 3
-            do i = 1, nshl
-              rlocal(:,i,j+1) = global(ien(:,i),j)
+            do i = 1, blk%s
+              rlocal(1:blk%e,i,j+1) = global(ien(1:blk%e,i),j)
             enddo
           enddo
 
 !      Put Pressure in the first slot of yl
 
-          do i = 1, nshl
-             rlocal(:,i,1) = global(ien(:,i),4)
+          do i = 1, blk%s
+             rlocal(1:blk%e,i,1) = global(ien(1:blk%e,i),4)
           enddo
 
 !      Fill in the remaining slots with T, and additional scalars
           
           if(n.gt.4) then
              do j = 5, n
-                do i = 1, nshl
-                   rlocal(:,i,j) = global(ien(:,i),j)
+                do i = 1, blk%s
+                   rlocal(1:blk%e,i,j) = global(ien(1:blk%e,i),j)
                 enddo
              enddo
           endif
 c
 c.... transfer count
 c
-          gbytes = gbytes + n*nshl*npro
+          gbytes = gbytes + n*blk%s*blk%e
 c
 c.... return
 c

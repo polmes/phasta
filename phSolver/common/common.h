@@ -27,7 +27,7 @@ c
 c the common block nomodule holds all the things which have been removed
 c from different modules
      
-        integer seqsize, stepseq
+        integer seqsize, stepseq,bsz,BlockPool
         integer consrv_sclr_conv_vel
         integer spongecontinuity, spongemomentum1, spongemomentum2
         integer spongeenergy, spongemomentum3
@@ -50,7 +50,7 @@ c from different modules
      &  numRCRSrfs, nsrflistRCR(0:MAXSURF),ircrfile,
      &  ideformwall, iwallmassfactor, iwallstiffactor, iviscflux 
         common /sequence/ seqsize, stepseq(100)
-	common /workfc/ master, numpe, myrank
+	common /workfc/ master, numpe, myrank,BlockPool,ieqswork
 	common /fronts/ maxfront, nlwork
 	common /newdim/ nshgt, minowned,maxowned, numper, nshg0
 	common /timer4/ birth, death, comtim
@@ -72,7 +72,17 @@ c from different modules
      &                   impistat, impistat2, rmpitmr,
      &                   rISend, rISendScal, rIRecv, rIRecvScal, 
      &                   rWaitAll, rWaitAllScal, rAllR, rAllRScal, 
-     &                   rCommu, rCommuScal
+     &                   rCommu, rCommuScal,
+     &                   rthreads, rassembly,
+     &                   rspmvKG, rspmvphasta, rspmvmkl, 
+     &                   rblasphasta, rblasmkl,
+     &                   rspmvD,  rspmvG, rspmvNGt,
+     &                   rspmvNGtC, rspmvFull,
+     &                   rblasmaxpy, iblasmaxpy,
+     &                   ispmvKG, ispmvphasta, ispmvmkl, 
+     &                   iblasphasta, iblasmkl,
+     &                   ispmvD,  ispmvG, ispmvNGt,
+     &                   ispmvNGtC, ispmvFull
 
         common /memstats/rheap,rheapavail,rstack,rstackavail,rshared,
      &                   rpersist,rguard,rmmap,rmemstats
@@ -184,7 +194,7 @@ c
         common /genpar/ E3nsd,  I3nsd,  nsymdf, ndofBC, ndiBCB, ndBCB,
      &                  Jactyp, jump,   ires,   iprec,  iprev,  ibound,
      &                  idiff,  lhs,    itau,   ipord,  ipred,  lstres,
-     &                  iepstm, dtsfct, taucfct, ibksiz, iabc, isurf,
+     &                  iepstm, dtsfct, taucfct, bsz, iabc, isurf,
      &                  idflx,  Bo,     EntropyPressure, irampViscOutlet,
      &                  istretchOutlet, iremoveStabTimeTerm, iLHScond
 

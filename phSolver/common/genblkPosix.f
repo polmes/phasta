@@ -1,4 +1,4 @@
-        subroutine genblkPosix (IBKSZ)
+        subroutine genblkPosix 
 c
 c----------------------------------------------------------------------
 c
@@ -15,7 +15,7 @@ c
         include "mpif.h" !Required to determine the max for itpblk
 
         integer, target, allocatable :: ientp(:,:)
-        integer mater(ibksz)
+        integer mater(bsz)
         integer, target :: intfromfile(50) ! integers read from headers
         character*255 fname1
         integer :: descriptor, descriptorG, GPID, color
@@ -53,10 +53,10 @@ c
            call phio_readdatablock(fhandle,fname2 // char(0),
      &      c_loc(ientp), iientpsiz, dataInt, iotype)
 
-           do n=1,neltp,ibksz 
+           do n=1,neltp,bsz 
              
               nelblk=nelblk+1
-              npro= min(IBKSZ, neltp - n + 1)
+              npro= min(bsz, neltp - n + 1)
 c
               lcblk(1,nelblk)  = iel
 c              lcblk(2,nelblk)  = iopen ! available for later use

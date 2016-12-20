@@ -22,6 +22,9 @@ c
       use pointer_data
       
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
       include "mpif.h"
 
       character*10  cname2
@@ -115,6 +118,13 @@ c
          allocate ( ien2(npro,nshl) )
          allocate ( xmu2(npro,maxsh))
          allocate ( map(npro) )
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+
 c
 c.... get the elements touching the boundary
 c         
@@ -132,22 +142,23 @@ c
 c
 c.... allocate the element matrices (though they're not needed)
 c
-            allocate ( xKebe(npro,9,nshl,nshl) )
-            allocate ( xGoC (npro,4,nshl,nshl) )
+!lhs=0             allocate ( xKebe(bsz,9,nshl,nshl) )
+!lhs=0             allocate ( xGoC (bsz,4,nshl,nshl) )
 c     
 c.... compute and assemble the residuals
 c     
-            call AsIGMR (y,                    ac,
+            blk%e=npro
+            call AsIGMR (blk,y,                    ac,
      &                   x,                    xmu2(1:npro,:),
      &                   shp(lcsyst,1:nshl,:),
      &                   shgl(lcsyst,:,1:nshl,:),
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
-     &                   xKebe,                xGoC,
+     &                   xlhs, 
      &                   rtmp)
 c     
-            deallocate ( xKebe )
-            deallocate ( xGoC  )
+!lhs=0            deallocate ( xKebe )
+!lhs=0            deallocate ( xGoC  )
          endif
          deallocate ( ien2  )
          deallocate ( xmu2  )
@@ -169,6 +180,12 @@ c
          nenbl  = lcblkb(6,iblk)
          nshlb  = lcblkb(10,iblk)
          npro   = lcblkb(1,iblk+1) - iel 
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(10,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
  
          if(lcsyst.eq.3) lcsyst=nenbl
 c     
@@ -183,7 +200,7 @@ c
             allocate ( xKebe(npro,9,nshl,nshl) )   
 c.... compute and assemble the residuals
 c
-         call AsBFlx (u,                      y,
+         call AsBFlx (blk,u,                      y,
      &                ac,                     x,
      &                shpb(lcsyst,1:nshl,:),
      &                shglb(lcsyst,:,1:nshl,:),
@@ -383,8 +400,8 @@ c         call Write_boundaryflux(myrank,lstep,nshg,ndof,rtmp(:,1:ndof))
 c     wallss vectors into the restart file(s)
 
         ntoutv=ntout
-        if ((irs .ge. 1) .and. (mod(lstep, ntoutv) .eq. 0) .or. 
-     &       istep .eq. nstep(itseq) ) then
+        if ((irs .ge. 1) .and. ((mod(lstep, ntoutv) .eq. 0) .or. 
+     &       (istep .eq. nstep(itseq) ))) then
 
             call write_field(myrank,'a','wss',3,
      &                       wallssVec,'d',nshg,ndofwss,lstep)

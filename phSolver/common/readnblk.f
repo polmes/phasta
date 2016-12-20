@@ -276,11 +276,11 @@ c
 c.... read in and block out the connectivity
 c
       if( input_mode .eq. -1 ) then
-        call genblk (IBKSIZ)
+        call genblk 
       else if( input_mode .eq. 0 ) then
-        call genblkPosix (IBKSIZ)
+        call genblkPosix 
       else if( input_mode .ge. 1 ) then
-        call genblkSyncIO (IBKSIZ)
+        call genblkSyncIO 
       end if
 c
 c.... read the boundary condition mapping array
@@ -370,11 +370,11 @@ c
 c.... generate the boundary element blocks
 c
       if( input_mode .eq. -1 ) then
-        call genbkb (IBKSIZ)
+        call genbkb 
       else if( input_mode .eq. 0 ) then
-        call genbkbPosix (IBKSIZ)
+        call genbkbPosix 
       else if( input_mode .ge. 1 ) then
-        call genbkbSyncIO (IBKSIZ)
+        call genbkbSyncIO 
       end if
 c
 c  Read in the nsons and ifath arrays if needed

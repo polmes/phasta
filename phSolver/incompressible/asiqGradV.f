@@ -1,4 +1,4 @@
-        subroutine AsIqGradV (y,       x,       shp,
+        subroutine AsIqGradV (blk,y,       x,       shp,
      &                   shgl,    ien,
      &                   qres )
 c
@@ -21,14 +21,17 @@ c
 c----------------------------------------------------------------------
 c
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
      &            shp(nshl,ngauss),         shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),  
      &            qres(nshg,nsdsq)
 c
-        dimension yl(npro,nshl,ndof),          xl(npro,nenl,nsd),
-     &            ql(npro,nshl,nsdsq)
+        dimension yl(bsz,nshl,ndof),          xl(bsz,nenl,nsd),
+     &            ql(bsz,nshl,nsdsq)
 c
         dimension sgn(npro,nshl)
 c
@@ -47,21 +50,21 @@ c
 c.... gather the variables
 c
 
-        call localy(y,      yl,     ien,    ndof,   'gather  ')
-        call localx (x,      xl,     ien,    nsd,    'gather  ')
+        call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
+        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
 c
         ql     = zero
 
-        call e3qGradV  (yl,         shp,      shgl,    
+        call e3qGradV  (blk,yl,         shp,      shgl,    
      &             xl,         ql,
      &             sgn  )
 
 c
 c.... assemble the diffusive flux residual 
 c
-        call local (qres,   ql,  ien,  nsdsq,  'scatter ')
+        call local (blk,qres,   ql,  ien,  nsdsq,  'scatter ')
 c
 c.... end
 c

@@ -1,4 +1,4 @@
-      subroutine e3StsLhs( xl,  lStsVec )
+      subroutine e3StsLhs( blk,xl,  lStsVec )
 c-----------------------------------------------------------------------
 c 
 c  compute the terms needed for the left hand side matrices 
@@ -7,34 +7,37 @@ c
 c-----------------------------------------------------------------------
       use     stats
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
       
       integer i
-      real*8  lDir(npro,nshl,3), lStsVec(npro,nshl,nResDims),
-     &        xl(npro,nenl,3)
+      real*8  lDir(blk%e,nshl,3), lStsVec(bsz,nshl,nResDims),
+     &        xl(bsz,nenl,3)
 
-      call e3StsDir( xl,  lDir )
+      call e3StsDir(blk, xl,  lDir )
       
       do i = 1, nshl
-         lStsVec(:,i,1) = lDir(:,i,1) * lDir(:,i,1)
-         lStsVec(:,i,2) = lDir(:,i,2) * lDir(:,i,2)
-         lStsVec(:,i,3) = lDir(:,i,3) * lDir(:,i,3)
+         lStsVec(1:blk%e,i,1) = lDir(:,i,1) * lDir(:,i,1)
+         lStsVec(1:blk%e,i,2) = lDir(:,i,2) * lDir(:,i,2)
+         lStsVec(1:blk%e,i,3) = lDir(:,i,3) * lDir(:,i,3)
 
-         lStsVec(:,i,4) = lDir(:,i,1) * lDir(:,i,2)
-         lStsVec(:,i,5) = lDir(:,i,2) * lDir(:,i,3)
-         lStsVec(:,i,6) = lDir(:,i,3) * lDir(:,i,1)
+         lStsVec(1:blk%e,i,4) = lDir(:,i,1) * lDir(:,i,2)
+         lStsVec(1:blk%e,i,5) = lDir(:,i,2) * lDir(:,i,3)
+         lStsVec(1:blk%e,i,6) = lDir(:,i,3) * lDir(:,i,1)
 
-         lStsVec(:,i,7) = 0.0
-         lStsVec(:,i,8) = 0.0
-         lStsVec(:,i,9) = 0.0
-         lStsVec(:,i,10) = 0.0
-         lStsVec(:,i,11) = 0.0
+         lStsVec(1:blk%e,i,7) = 0.0
+         lStsVec(1:blk%e,i,8) = 0.0
+         lStsVec(1:blk%e,i,9) = 0.0
+         lStsVec(1:blk%e,i,10) = 0.0
+         lStsVec(1:blk%e,i,11) = 0.0
       enddo
       
       return
       end
 
 
-      subroutine e3StsRes( xl, rl, lStsVec )
+      subroutine e3StsRes( blk, xl, rl, lStsVec )
 c-----------------------------------------------------------------------
 c  
 c  compute the residual terms for the consistent projection
@@ -42,52 +45,56 @@ c
 c-----------------------------------------------------------------------      
       use     stats
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
       
-      real*8  xl(npro,nenl,3),  rl(npro,nshl,ndof)
-      real*8  lDir(npro,nshl,3), lStsVec(npro,nshl,nResDims)
+      real*8  xl(bsz,blk%n,3),  rl(bsz,blk%s,ndof)
+      real*8  lDir(blk%e,blk%s,3), lStsVec(bsz,blk%s,nResDims)
       
-      call e3StsDir( xl,  lDir )
+      call e3StsDir(blk, xl,  lDir )
       
-      do i = 1, nshl
-         lStsVec(:,i,1) = lDir(:,i,1) * rl(:,i,4)
-         lStsVec(:,i,2) = lDir(:,i,2) * rl(:,i,4)
-         lStsVec(:,i,3) = lDir(:,i,3) * rl(:,i,4)
+      do i = 1, blk%s
+         lStsVec(1:blk%e,i,1) = lDir(:,i,1) * rl(1:blk%e,i,4)
+         lStsVec(1:blk%e,i,2) = lDir(:,i,2) * rl(1:blk%e,i,4)
+         lStsVec(1:blk%e,i,3) = lDir(:,i,3) * rl(1:blk%e,i,4)
       
-         lStsVec(:,i,4) = lDir(:,i,1) * rl(:,i,1)
-         lStsVec(:,i,5) = lDir(:,i,2) * rl(:,i,2)
-         lStsVec(:,i,6) = lDir(:,i,3) * rl(:,i,3)
+         lStsVec(1:blk%e,i,4) = lDir(:,i,1) * rl(1:blk%e,i,1)
+         lStsVec(1:blk%e,i,5) = lDir(:,i,2) * rl(1:blk%e,i,2)
+         lStsVec(1:blk%e,i,6) = lDir(:,i,3) * rl(1:blk%e,i,3)
       
-         lStsVec(:,i,7) = lDir(:,i,1) * rl(:,i,2)
-     &                  + lDir(:,i,2) * rl(:,i,1)
-         lStsVec(:,i,8) = lDir(:,i,2) * rl(:,i,3)
-     &                  + lDir(:,i,3) * rl(:,i,2)
-         lStsVec(:,i,9) = lDir(:,i,3) * rl(:,i,1)
-     &        + lDir(:,i,1) * rl(:,i,3)
-         lStsVec(:,i,10) = 0
-         lStsVec(:,i,11) = 0
+         lStsVec(1:blk%e,i,7) = lDir(:,i,1) * rl(1:blk%e,i,2)
+     &                  + lDir(:,i,2) * rl(1:blk%e,i,1)
+         lStsVec(1:blk%e,i,8) = lDir(:,i,2) * rl(1:blk%e,i,3)
+     &                  + lDir(:,i,3) * rl(1:blk%e,i,2)
+         lStsVec(1:blk%e,i,9) = lDir(:,i,3) * rl(1:blk%e,i,1)
+     &        + lDir(:,i,1) * rl(1:blk%e,i,3)
+         lStsVec(1:blk%e,i,10) = 0
+         lStsVec(1:blk%e,i,11) = 0
       enddo
       
 
       return
       end
 
-      subroutine e3StsDir( xl,  lDir )
+      subroutine e3StsDir(blk, xl,  lDir )
 c-----------------------------------------------------------------------
 c
 c  compute the normal to each of the nodes
 c
 c-----------------------------------------------------------------------
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
       
-      real*8  xl(npro,nenl,3), lDir(npro,nshl,3)
+      real*8  xl(bsz,blk%n,3), lDir(blk%e,blk%s,3)
       integer e
 
 c
 c.... linear tets
 c
-      if (nshl .eq. 4 ) then
+      if (blk%s .eq. 4 ) then
          fct = 1.d0 / 6.d0
-         do e = 1, npro
+         do e = 1, blk%e
 
             x12         = xl(e,2,1) - xl(e,1,1)
             x13         = xl(e,3,1) - xl(e,1,1)
@@ -147,9 +154,9 @@ c
 c
 c.... quadratic tets
 c
-      else if (nshl .eq. 10 ) then
+      else if (blk%s .eq. 10 ) then
          fct = 1.d0 / 6.d0
-         do e = 1, npro
+         do e = 1, blk%e
 
             x12         = xl(e,2,1) - xl(e,1,1)
             x13         = xl(e,3,1) - xl(e,1,1)
@@ -234,9 +241,9 @@ c
 c
 c.... cubic tets
 c
-      else if (nshl .eq. 20 ) then
+      else if (blk%s .eq. 20 ) then
          fct = 1.d0 / 6.d0
-         do e = 1, npro
+         do e = 1, blk%e
 
             x12         = xl(e,2,1) - xl(e,1,1)
             x13         = xl(e,3,1) - xl(e,1,1)
@@ -357,9 +364,9 @@ c
 c
 c.... hexes
 c     
-      else if (nenl .eq. 8) then
+      else if (blk%n .eq. 8) then
          fct = 1.d0 / 12.d0
-         do e = 1, npro
+         do e = 1, blk%e
 	    x13		= xl(e,1,1) - xl(e,3,1)
 	    x16		= xl(e,1,1) - xl(e,6,1)
 	    x18		= xl(e,1,1) - xl(e,8,1)

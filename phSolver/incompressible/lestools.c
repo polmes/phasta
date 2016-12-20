@@ -8,6 +8,7 @@
  */
 #include "les.h"
 #include "usr.h"
+#include "common_c.h"
 #ifdef intel
 void  DRVSCLRDIAG(	double *sclrDiag,	int *ilwork,	int *iBC,
                                 double *BC,		int *iper,	int *rowp,
@@ -617,7 +618,12 @@ void lesBlkDot2 ( UsrHd   usrHd,
                  src2pnt,
                  valuesp,
                  &mDims,
-                 &dim ) ;
+                 &dim,
+                 &mpistats.rblasphasta,
+                 &mpistats.rblasmkl, 
+                 &mpistats.iblasphasta,
+                 &mpistats.iblasmkl,
+                 &workfc.ieqswork ) ;
 
     drvAllreduce ( valuesp,
                    values,
@@ -747,7 +753,9 @@ void lesBlkDmaxpy ( UsrHd   usrHd,
                    dstpnt,
                    coef,
                    &mDims,
-                   &dim );
+                   &dim, 
+                   &mpistats.rblasmaxpy,
+                   &mpistats.iblasmaxpy ) ;
 }
 
 /*-----------------------------------------------------------------------

@@ -238,7 +238,7 @@ c
           enddo
        enddo
 
-        call getdiff(yl, shpfun, xmudmif,xl, rmu, rho)
+        call getdiff(intp, yl, shpfun, xmudmif,xl, rmu, rho)
 
 
        divqi = zero

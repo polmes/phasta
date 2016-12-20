@@ -1,10 +1,10 @@
-      subroutine e3Res ( u1,        u2,         u3,
+      subroutine e3Res ( blk, u1,        u2,         u3,
      &                   uBar,      aci,        WdetJ,
      &                   g1yi,      g2yi,       g3yi,
      &                   rLui,      rmu,        rho,
      &                   tauC,      tauM,       tauBar,
      &                   shpfun,    shg,        src,
-     &                   rl,        pres,       acl,
+     &                   rl,        pres,       
      &                   rlsli)
 c------------------------------------------------------------------------
 c 
@@ -12,49 +12,50 @@ c  This routine computes the residual vector at an
 c  integration point.
 c
 c  input:
-c     u1(npro)                  : x1-velocity
-c     u2(npro)                  : x2-velocity
-c     u3(npro)                  : x3-velocity
-c     uBar(npro,3)              : u - tauM * Li
-c     aci(npro,3)               : acceleration
-c     rlsli(npro,6)             : resolved Leonard stresses
-c     WdetJ(npro)               : weighted jacobian determinant
-c     g1yi(npro,ndof)              : x1-gradient of variables
-c     g2yi(npro,ndof)              : x2-gradient of variables
-c     g3yi(npro,ndof)              : x3-gradient of variables
-c     rLui(npro,3)              : total residual of NS equations
-c     rmu(npro)                 : fluid viscosity
-c     rho(npro)                 : density
-c     tauC(npro)                : continuity tau
-c     tauM(npro)                : momentum tau
-c     tauBar(npro)              : additional tau
-c     shpfun(npro,nshl)         : element shape functions
-c     shg(npro,nshl,nsd)        : global grad of element shape functions
-c     src(npro,nsd)             : body force term
+c     u1(blk%e)                  : x1-velocity
+c     u2(blk%e)                  : x2-velocity
+c     u3(blk%e)                  : x3-velocity
+c     uBar(blk%e,3)              : u - tauM * Li
+c     aci(blk%e,3)               : acceleration
+c     rlsli(blk%e,6)             : resolved Leonard stresses
+c     WdetJ(blk%e)               : weighted jacobian determinant
+c     g1yi(blk%e,ndof)              : x1-gradient of variables
+c     g2yi(blk%e,ndof)              : x2-gradient of variables
+c     g3yi(blk%e,ndof)              : x3-gradient of variables
+c     rLui(blk%e,3)              : total residual of NS equations
+c     rmu(blk%e)                 : fluid viscosity
+c     rho(blk%e)                 : density
+c     tauC(blk%e)                : continuity tau
+c     tauM(blk%e)                : momentum tau
+c     tauBar(blk%e)              : additional tau
+c     shpfun(blk%e,blk%s)         : element shape functions
+c     shg(blk%e,blk%s,nsd)        : global grad of element shape functions
+c     src(blk%e,nsd)             : body force term
 c
 c  output:
-c     rl(npro,nshl,nflow)
+c     rl(bsz,blk%s,nflow)
 c
 c------------------------------------------------------------------------
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
-      dimension u1(npro),         u2(npro),         u3(npro),
-     &          uBar(npro,nsd),   aci(npro,nsd),    WdetJ(npro),
-     &          g1yi(npro,nflow), g2yi(npro,nflow), g3yi(npro,nflow),
-     &          rLui(npro,nsd),   rmu(npro),        rho(npro),
-     &          tauC(npro),       tauM(npro),       tauBar(npro),
-     &          shpfun(npro,nshl),shg(npro,nshl,nsd), src(npro,nsd),
-     &          pres(npro)
+      dimension u1(blk%e),         u2(blk%e),         u3(blk%e),
+     &          uBar(blk%e,nsd),   aci(blk%e,nsd),    WdetJ(blk%e),
+     &          g1yi(blk%e,nflow), g2yi(blk%e,nflow), g3yi(blk%e,nflow),
+     &          rLui(blk%e,nsd),   rmu(blk%e),        rho(blk%e),
+     &          tauC(blk%e),       tauM(blk%e),       tauBar(blk%e),
+     &          shpfun(blk%e,blk%s),shg(blk%e,blk%s,nsd), src(blk%e,nsd),
+     &          pres(blk%e)
       
-      dimension rl(npro,nshl,nflow),
-     &          acl(npro,nshl,ndof),
-     &          rlsli(npro,6)
+      dimension rl(bsz,blk%s,nflow),
+     &          rlsli(blk%e,6)
 c
 c.... local declarations
 c
-      real*8    tmp1(npro),   tmp2(npro),          tmp3(npro), 
-     &          tmp(npro),    rGNa(npro,nsd,nsd),  rNa(npro,nsd),
-     &          locmass(npro,nshl),omega(3)
+      real*8    tmp1(blk%e),   tmp2(blk%e),          tmp3(blk%e), 
+     &          tmp(blk%e),    rGNa(blk%e,nsd,nsd),  rNa(blk%e,nsd),
+     &          locmass(blk%e,blk%s),omega(3)
 
       integer aa
 c     
@@ -224,32 +225,32 @@ c
 c
 c.... multiply the residual pieces by the weight space
 c
-      do aa = 1,nshl
+      do aa = 1,blk%s
 c
 c.... continuity
 c
-         rl(:,aa,4) = rl(:,aa,4) + WdetJ
-     &              * ( shg(:,aa,1) * uBar(:,1) 
-     &                + shg(:,aa,2) * uBar(:,2) 
-     &                + shg(:,aa,3) * uBar(:,3) )
+         rl(1:blk%e,aa,4) = rl(1:blk%e,aa,4) + WdetJ
+     &              * ( shg(1:blk%e,aa,1) * uBar(1:blk%e,1) 
+     &                + shg(1:blk%e,aa,2) * uBar(1:blk%e,2) 
+     &                + shg(1:blk%e,aa,3) * uBar(1:blk%e,3) )
 c
 c.... momentum
 c
-         rl(:,aa,1) = rl(:,aa,1) - WdetJ
-     &              * ( shpfun(:,aa) * rNa(:,1)
-     &                + shg(:,aa,1) * rGNa(:,1,1)
-     &                + shg(:,aa,2) * rGNa(:,1,2)
-     &                + shg(:,aa,3) * rGNa(:,1,3) )
-         rl(:,aa,2) = rl(:,aa,2) - WdetJ
-     &              * ( shpfun(:,aa) * rNa(:,2)
-     &                + shg(:,aa,1) * rGNa(:,2,1)
-     &                + shg(:,aa,2) * rGNa(:,2,2)
-     &                + shg(:,aa,3) * rGNa(:,2,3) )
-         rl(:,aa,3) = rl(:,aa,3) - WdetJ
-     &              * ( shpfun(:,aa) * rNa(:,3)
-     &                + shg(:,aa,1) * rGNa(:,3,1)
-     &                + shg(:,aa,2) * rGNa(:,3,2)
-     &                + shg(:,aa,3) * rGNa(:,3,3) )
+         rl(1:blk%e,aa,1) = rl(1:blk%e,aa,1) - WdetJ
+     &              * ( shpfun(1:blk%e,aa) * rNa(1:blk%e,1)
+     &                + shg(1:blk%e,aa,1) * rGNa(1:blk%e,1,1)
+     &                + shg(1:blk%e,aa,2) * rGNa(1:blk%e,1,2)
+     &                + shg(1:blk%e,aa,3) * rGNa(1:blk%e,1,3) )
+         rl(1:blk%e,aa,2) = rl(1:blk%e,aa,2) - WdetJ
+     &              * ( shpfun(1:blk%e,aa) * rNa(1:blk%e,2)
+     &                + shg(1:blk%e,aa,1) * rGNa(1:blk%e,2,1)
+     &                + shg(1:blk%e,aa,2) * rGNa(1:blk%e,2,2)
+     &                + shg(1:blk%e,aa,3) * rGNa(1:blk%e,2,3) )
+         rl(1:blk%e,aa,3) = rl(1:blk%e,aa,3) - WdetJ
+     &              * ( shpfun(1:blk%e,aa) * rNa(1:blk%e,3)
+     &                + shg(1:blk%e,aa,1) * rGNa(1:blk%e,3,1)
+     &                + shg(1:blk%e,aa,2) * rGNa(1:blk%e,3,2)
+     &                + shg(1:blk%e,aa,3) * rGNa(1:blk%e,3,3) )
       
       enddo                 
 c
@@ -265,7 +266,7 @@ c
 c     calculate the residual for the advection-diffusion equation
 c
 c------------------------------------------------------------------------
-      subroutine e3ResSclr ( uMod,              gGradS,
+      subroutine e3ResSclr ( blk, uMod,              gGradS,
      &                       Sclr,		Sdot,	gradS,  
      &                       WdetJ,		rLS,	tauS,
      &                       shpfun,            shg,    src,
@@ -273,18 +274,20 @@ c------------------------------------------------------------------------
      &                       rl )
 c
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
-      real*8    uMod(npro,nsd),   gGradS(npro, nsd),
-     &          Sclr(npro),       Sdot(npro),	gradS(npro,nsd),
-     &          WdetJ(npro),      rLS(npro),	rho(npro),
-     &          tauS(npro),       shpfun(npro,nshl), src(npro), 
-     &          shg(npro,nshl,3), rl(npro,nshl)
+      real*8    uMod(blk%e,nsd),   gGradS(blk%e, nsd),
+     &          Sclr(blk%e),       Sdot(blk%e),	gradS(blk%e,nsd),
+     &          WdetJ(blk%e),      rLS(blk%e),	rho(blk%e),
+     &          tauS(blk%e),       shpfun(blk%e,blk%s), src(blk%e), 
+     &          shg(blk%e,blk%s,3), rl(bsz,blk%s)
       
-      real*8    diffus(npro)
+      real*8    diffus(blk%e)
 c
 c.... local declarations
 c
-      real*8    rGNa(npro,nsd),   rNa(npro),  rcp(npro), tmp(npro)
+      real*8    rGNa(blk%e,nsd),   rNa(blk%e),  rcp(blk%e), tmp(blk%e)
 
       integer   aa
 c     
@@ -329,9 +332,9 @@ c
 c
 c.... multiply the residual pieces by the weight space
 c
-      do aa = 1,nshl
+      do aa = 1,blk%s
 c
-         rl(:,aa) = rl(:,aa)	- WdetJ
+         rl(1:blk%e,aa) = rl(1:blk%e,aa)	- WdetJ
      &                        * ( shpfun(:,aa) * rNa(:)
      &                        + shg(:,aa,1) * rGNa(:,1)
      &                        + shg(:,aa,2) * rGNa(:,2)
@@ -349,25 +352,28 @@ c
 c----------------------------------------------------------------------
 c     Calculate the strong PDE residual.
 c----------------------------------------------------------------------
-      subroutine e3resStrongPDE(
+      subroutine e3resStrongPDE( blk,
      &     aci,  u1,   u2,   u3,   Temp, rho,  xx,
      &           g1yi, g2yi, g3yi,
      &     rLui, src, divqi)
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c     INPUTS
-      double precision, intent(in), dimension(npro,nsd) :: 
+      double precision, intent(in), dimension(blk%e,nsd) :: 
      &     aci, xx
-      double precision, intent(in), dimension(npro,nflow) :: 
+      double precision, intent(in), dimension(blk%e,nflow) :: 
      &     g1yi, g2yi, g3yi
-      double precision, intent(in), dimension(npro) ::
+      double precision, intent(in), dimension(blk%e) ::
      &     u1, u2, u3, Temp, rho
 c     OUTPUTS
-      double precision, intent(out), dimension(npro,nsd) ::
+      double precision, intent(out), dimension(blk%e,nsd) ::
      &     rLui, src
 c     LOCALS
-      double precision, dimension(npro) ::
+      double precision, dimension(blk%e) ::
      &     divu
-      double precision, dimension(npro,nsd) ::
+      double precision, dimension(blk%e,nsd) ::
      &     divqi
       double precision, dimension(nsd) ::
      &     omega

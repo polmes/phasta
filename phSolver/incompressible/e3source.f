@@ -237,19 +237,18 @@ c-----------------------------------------------------------------------
       include "common.h"
 c coming in      
       real*8  Sclr(npro),          Sdot(npro),
-     &        gradS(npro,nsd),     dwl(npro,nenl),
+     &        gradS(npro,nsd),     dwl(bsz,nenl),
      &        shape_funct(npro,nshl),    shg(npro,nshl,nsd),
-     &        yl(npro,nshl,ndof),  dxidx(npro,nsd,nsd),
+     &        yl(bsz,nshl,ndof),  dxidx(npro,nsd,nsd),
      &        rmu(npro),           u1(npro),
      &        u2(npro),            u3(npro),
-     &        xl(npro,nenl,nsd)
+     &        xl(bsz,nenl,nsd)
 c going out
       real*8  srcR(npro),          srcL(npro),
      &        uMod(npro,nsd)
 c used locally
 
-      real*8  gradV(npro,nsd,nsd), absVort(npro),
-     &        dwall(npro)
+      real*8  gradV(npro,nsd,nsd), absVort(npro),dwall(npro)
       real*8  chi,    chiP3,   fv1,   fv2,     st,    r,
      &        g,      fw,      s,     viscInv, k2d2Inv,
      &        dP2Inv, sixth,   tmp,   tmp1,    p,     dp,
@@ -288,17 +287,17 @@ c
 c          du_i/dx_j
 c
 c           i j   indices match array where V is the velocity (u in our notes)
-            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(:,n,2)
-            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(:,n,3)
-            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(:,n,4)
+            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(1:npro,n,2)
+            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(1:npro,n,3)
+            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(1:npro,n,4)
 c
-            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(:,n,2)
-            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(:,n,3)
-            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(:,n,4)
+            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(1:npro,n,2)
+            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(1:npro,n,3)
+            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(1:npro,n,4)
 c
-            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(:,n,2)
-            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(:,n,3)
-            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(:,n,4)
+            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(1:npro,n,2)
+            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(1:npro,n,3)
+            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(1:npro,n,4)
 c                                             a j     u   a i
 c from our notes where we had N_{a,j} = dN_a/dx_j  note that i is off by one because p was first in yl vector
 c
@@ -311,7 +310,7 @@ c
      &                  + (gradV(:,1,2) - gradV(:,2,1)) ** 2 )
          dwall = zero
          do n = 1, nenl
-            dwall     = dwall + shape_funct(:,n) * dwl(:,n)
+            dwall     = dwall + shape_funct(:,n) * dwl(1:npro,n)
          enddo
 
          sixth   = 1.0/6.0
@@ -454,17 +453,17 @@ c
 c          du_i/dx_j
 c
 c           i j   indices match array where V is the velocity (u in our notes)
-            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(:,n,2)
-            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(:,n,3)
-            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(:,n,4)
+            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(1:npro,n,2)
+            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(1:npro,n,3)
+            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(1:npro,n,4)
 c
-            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(:,n,2)
-            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(:,n,3)
-            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(:,n,4)
+            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(1:npro,n,2)
+            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(1:npro,n,3)
+            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(1:npro,n,4)
 c
-            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(:,n,2)
-            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(:,n,3)
-            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(:,n,4)
+            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(1:npro,n,2)
+            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(1:npro,n,3)
+            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(1:npro,n,4)
 c                                             a j     u   a i
 c from our notes where we had N_{a,j} = dN_a/dx_j  note that i is off by one because p was first in yl vector
 c
@@ -472,7 +471,7 @@ c
 
          dwall = zero
          do n = 1, nenl
-            dwall     = dwall + shape_funct(:,n) * dwl(:,n)
+            dwall     = dwall + shape_funct(:,n) * dwl(1:npro,n)
          enddo
 
          kay(:)=zero

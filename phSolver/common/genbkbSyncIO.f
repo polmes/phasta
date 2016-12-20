@@ -1,4 +1,4 @@
-        subroutine genbkbSyncIO (ibksz)
+        subroutine genbkbSyncIO 
 c
 c----------------------------------------------------------------------
 c
@@ -17,7 +17,7 @@ c
 
         integer, target, allocatable :: ientp(:,:),iBCBtp(:,:)
         real*8, target, allocatable :: BCBtp(:,:)
-        integer materb(ibksz)
+        integer materb(bsz)
         integer, target :: intfromfile(50) ! integers read from headers
         character*255 fname1
         integer :: descriptor, descriptorG, GPID, color, nfields
@@ -150,9 +150,9 @@ c
                  BCBtp(:,5)=zero
               endwhere
               
-              do n=1,neltp,ibksz 
+              do n=1,neltp,bsz 
                  nelblb=nelblb+1
-                 npro= min(IBKSZ, neltp - n + 1)
+                 npro= min(bsz, neltp - n + 1)
                  lcblkb(1,nelblb)  = iel
                  lcblkb(3,nelblb)  = lcsyst
                  lcblkb(4,nelblb)  = ipordl

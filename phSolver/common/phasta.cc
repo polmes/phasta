@@ -26,6 +26,11 @@ using namespace std;
 #else
 #include <unistd.h>
 #endif
+#if defined(__linux__) && !defined(__bgq__)
+/* BM's proposed fix to the stacksize issue ...More below same comment*/
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 
 #include "common_c.h"
 #include "Input.h"
@@ -158,17 +163,30 @@ int phasta( int argc, char *argv[] ) {
     int size,ierr;
     char inpfilename[100];
     char* pauseDebugger = getenv("catchDebugger");
+
+
     MPI_Comm_size (MPI_COMM_WORLD, &size);
     MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+
+#if defined(__linux__) && !defined(__bgq__)
+/* BM's proposed fix to the stacksize issue */
+    struct rlimit stack_size_lim;
+    int rlim_result;
+    memset(&stack_size_lim, 0, sizeof(struct rlimit));
+    stack_size_lim.rlim_cur = RLIM_INFINITY;
+    stack_size_lim.rlim_max = RLIM_INFINITY;
+    rlim_result = setrlimit(RLIMIT_STACK, &stack_size_lim);
+    if(myrank == 1) fprintf(stderr, "Attempting to set ulimit from phasta exec ");
+    if(rlim_result == -1) perror("setrlimit: ");
+#endif
 
 #ifdef HAVE_PETSC
     PETSC_COMM_WORLD=MPI_COMM_WORLD;
     PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
-    PetscInitializeFortran();
+//    PetscInitializeFortran();
     PetscPopSignalHandler(); //Let us segfault in peace ;-)
-// ok with Master    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
 // ok with 3.6x    PetscOptionsView(PETSC_VIEWER_STDOUT_WORLD);
-    PetscOptionsView(PETSC_VIEWER_STDOUT_WORLD);
     if(sizeof(PetscInt) != sizeof(long long int))
     {
       //PetscInt and gcorp_t (gen_ncorp.c)

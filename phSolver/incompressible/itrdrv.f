@@ -26,6 +26,10 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Fall 2004. Impedance BC
 c----------------------------------------------------------------------
 c
+#ifdef HAVE_MKL
+      use mkl_service
+#endif
+      use fncorpmod  
       use pvsQbi     !gives us splag (the spmass at the end of this run 
       use specialBC !gives us itvn
       use timedata   !allows collection of time series
@@ -40,6 +44,9 @@ c
 c      use readarrays !reads in uold and acold
       
         include "common.h"
+#ifdef HAVE_MKL
+        include "kmkl.fi"
+#endif
         include "mpif.h"
         include "auxmpi.h"
 #ifdef HAVE_SVLS        
@@ -54,7 +61,9 @@ c
         
         real*8    y(nshg,ndof),              ac(nshg,ndof),           
      &            yold(nshg,ndof),           acold(nshg,ndof),
+     &            yAlpha(nshg,ndof),         acAlpha(nshg,ndof),
      &            u(nshg,nsd),               uold(nshg,nsd),
+     &            uAlpha(nshg,nsd),
      &            x(numnp,nsd),              solinc(nshg,ndof),
      &            BC(nshg,ndofBC),           tf(nshg,ndof),
      &            GradV(nshg,nsdsq)
@@ -114,9 +123,32 @@ c
       TYPE(svLS_lhsType) svLS_lhs_S(4)
       TYPE(svLS_lsType) svLS_ls_S(4)
 #endif
+#ifdef HAVE_MKL
+      irc=mkl_enable_instructions(MKL_ENABLE_AVX512_MIC)
+#endif
+              idflx = 0
+        if(idiff >= 1 )  idflx= (nflow-1) * nsd
+        if (isurf == 1) idflx=nflow*nsd
+
       call initmpistat()  ! see bottom of code to see just how easy it is
 
       call initmemstat() 
+      if(myrank.lt.4) call hello()
+#ifdef HAVE_OMP
+      if(myrank.eq.0) write(*,*) 'Number of Blocks to Pool = ',BlockPool 
+#endif
+      rthreads = 0.0
+      rblasphasta = 0.0
+      rspmvphasta = 0.0
+      rblasmkl = 0.0
+      rblasaxpy = 0.0
+      rspmvmkl = 0.0
+      rspmvKG = 0.0
+      rspmvD = 0.0
+      rspmvG = 0.0
+      rspmvNGt = 0.0
+      rspmvNGtC = 0.0
+      rspmvFull = 0.0
 
 !--------------------------------------------------------------------
 !     Setting up svLS Moved down for better org
@@ -163,7 +195,7 @@ c
 
         if(ierrcalc.eq.1 .or. ioybar.eq.1) then ! we need ybar for error too
           if (ivort == 1) then
-            irank2ybar=17
+            irank2ybar=18 ! bumped by 1 to add Q
             allocate(ybar(nshg,irank2ybar)) ! more space for vorticity if requested
           else
             irank2ybar=13
@@ -190,7 +222,7 @@ c
         if(nphasesincycle.ne.0) then
 !     &     allocate(yphbar(nshg,5,nphasesincycle))
           if (ivort == 1) then
-            irank2yphbar=15
+            irank2yphbar=16 ! bumped by 1 to add Q
             allocate(yphbar(nshg,irank2yphbar,nphasesincycle)) ! more space for vorticity
           else
             irank2yphbar=11
@@ -372,75 +404,117 @@ c
             iter=0
             ilss=0  ! this is a switch thrown on first solve of LS redistance
             do istepc=1,seqsize
-               icode=stepseq(istepc)
-               if(mod(icode,5).eq.0) then ! this is a solve
-                  isolve=icode/10
-                  if(icode.eq.0) then ! flow solve (encoded as 0)
+              icode=stepseq(istepc)
+              if(mod(icode,5).eq.0) then ! this is a solve
+                isolve=icode/10
+                if(icode.eq.0) then ! flow solve (encoded as 0)
 c
-                     iter   = iter+1
-                     ifuncs(1)  = ifuncs(1) + 1
+                  iter   = iter+1
+                  ifuncs(1)  = ifuncs(1) + 1
 c     
-                     Force(1) = zero
-                     Force(2) = zero
-                     Force(3) = zero
-                     HFlux    = zero
-                     lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
+                  Force(1) = zero
+                  Force(2) = zero
+                  Force(3) = zero
+                  HFlux    = zero
+                  lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
 
-                     call SolFlow(y,          ac,        u,
-     &                         yold,          acold,     uold,
+                  call itrYAlpha( uold,    yold,    acold,
+     &                u,       y,       ac,
+     &                uAlpha,  yAlpha,  acAlpha)
+
+            
+                  if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+                    call SolFlowp(yAlpha,     acAlpha,   uAlpha,
+     &                         x,             iBC,
+     &                         BC,            res,
+     &                         iper,          
+     &                         ilwork,        shp,       shgl,
+     &                         shpb,          shglb,     rowp,
+     &                         colm,    
+     &                         solinc,        rerr,      tcorecp,
+     &                         GradV,      
+     &                         fncorp)
+#else
+                  write(*,*) 'requested PETSc but not built for it'
+                  call error('itrdrv  ','noPETSc',usingpetsc)  
+               
+#endif
+                  else
+                  
+                    call SolFlow(yAlpha,     acAlpha,   uAlpha,
      &                         x,             iBC,
      &                         BC,            res,
      &                         iper,          
      &                         ilwork,        shp,       shgl,
      &                         shpb,          shglb,     rowp,     
-     &                         colm,          
+     &                         colm,         
      &                         solinc,        rerr,      tcorecp,
-     &                         GradV,      sumtime
+     &                         GradV     
 #ifdef HAVE_SVLS
      &                         ,svLS_lhs,     svLS_ls,  svLS_nFaces)
 #else
      &                         )
 #endif      
+                  endif
                   
-                  else          ! scalar type solve
-                     if (icode.eq.5) then ! Solve for Temperature
+                else          ! scalar type solve
+                  if (icode.eq.5) then ! Solve for Temperature
                                 ! (encoded as (nsclr+1)*10)
-                        isclr=0
-                        ifuncs(2)  = ifuncs(2) + 1
-                        j=1
-                     else       ! solve a scalar  (encoded at isclr*10)
-                        isclr=isolve  
-                        ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
-                        j=isclr+nsolt
-                        if((iLSet.eq.2).and.(ilss.eq.0)
+                    isclr=0
+                    ifuncs(2)  = ifuncs(2) + 1
+                    j=1
+                  else       ! solve a scalar  (encoded at isclr*10)
+                    isclr=isolve  
+                    ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
+                    j=isclr+nsolt
+                    if((iLSet.eq.2).and.(ilss.eq.0)
      &                       .and.(isclr.eq.2)) then 
-                           ilss=1 ! throw switch (once per step)
-                           y(:,7)=y(:,6) ! redistance field initialized
-                           ac(:,7)   = zero
-                           call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+                      ilss=1 ! throw switch (once per step)
+                      y(:,7)=y(:,6) ! redistance field initialized
+                      ac(:,7)   = zero
+                      call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                          ilwork)
 c     
 c....store the flow alpha, gamma parameter values and assigm them the 
 c....Backward Euler parameters to solve the second levelset scalar
 c     
-                           alfit=alfi
-                           gamit=gami
-                           almit=almi
-                           Deltt=Delt(1)
-                           Dtglt=Dtgl
-                           alfi = 1
-                           gami = 1
-                           almi = 1
+                      alfit=alfi
+                      gamit=gami
+                      almit=almi
+                      Deltt=Delt(1)
+                      Dtglt=Dtgl
+                      alfi = 1
+                      gami = 1
+                      almi = 1
 c     Delt(1)= Deltt ! Give a pseudo time step
-                           Dtgl = one / Delt(1)
-                        endif  ! level set eq. 2
-                     endif ! deciding between temperature and scalar
+                      Dtgl = one / Delt(1)
+                    endif  ! level set eq. 2
+                  endif ! deciding between temperature and scalar
 
-                     lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
+                  lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
      &                                   LHSupd(isclr+2))) 
-
-                     call SolSclr(y,          ac,        u,
-     &                         yold,          acold,     uold,
+                  call itrYAlpha( uold,    yold,    acold,
+     &                u,       y,       ac,
+     &                uAlpha,  yAlpha,  acAlpha)
+               
+                  if(usingpetsc.eq.1) then
+#ifdef HAVE_PETSC
+                    call SolSclrp( yAlpha,      acAlpha,
+     &                         x,             iBC,
+     &                         BC,            
+     &                         iper,          
+     &                         ilwork,        shp,       shgl,
+     &                         shpb,          shglb,     rowp,
+     &                         colm,          res,
+     &                         solinc(1,isclr+5), tcorecpscal,
+     &                         fncorp)
+#else
+                  write(*,*) 'requested PETSc but not built for it'
+                  call error('itrdrv  ','noPETSc',usingpetsc)  
+#endif
+                  else
+                    call SolSclr(yAlpha,      acAlpha,
      &                         x,             iBC,
      &                         BC,            
      &                         iper,          
@@ -453,41 +527,40 @@ c     Delt(1)= Deltt ! Give a pseudo time step
 #else
      &                         )
 #endif
-                        
-                        
-                  endif         ! end of scalar type solve
+                  endif      
+                endif         ! end of scalar type solve
 
-               else ! this is an update  (mod did not equal zero)
-                  iupdate=icode/10  ! what to update
-                  if(icode.eq.1) then !update flow  
-                     call itrCorrect ( y,    ac,    u,   solinc, iBC)
-                     call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
-                  else  ! update scalar
-                     isclr=iupdate  !unless
-                     if(icode.eq.6) isclr=0
-                     if(iRANS.lt.-100)then  ! RANS
-                        call itrCorrectSclrPos(y,ac,solinc(1,isclr+5))
-                     else
-                        call itrCorrectSclr (y, ac, solinc(1,isclr+5))
-                     endif
-                     if (ilset.eq.2 .and. isclr.eq.2)  then
-                        if (ivconstraint .eq. 1) then
-                           call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+              else ! this is an update  (mod did not equal zero)
+                iupdate=icode/10  ! what to update
+                if(icode.eq.1) then !update flow  
+                  call itrCorrect ( y,    ac,    u,   solinc, iBC)
+                  call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
+                else  ! update scalar
+                  isclr=iupdate  !unless
+                  if(icode.eq.6) isclr=0
+                  if(iRANS.lt.-100)then  ! RANS
+                    call itrCorrectSclrPos(y,ac,solinc(1,isclr+5))
+                  else
+                    call itrCorrectSclr (y, ac, solinc(1,isclr+5))
+                  endif
+                  if (ilset.eq.2 .and. isclr.eq.2)  then
+                    if (ivconstraint .eq. 1) then
+                      call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                          ilwork)
 c                    
 c ... applying the volume constraint on second level set scalar
 c
-                           call solvecon (y,    x,      iBC,  BC, 
+                      call solvecon (y,    x,      iBC,  BC, 
      &                          iper, ilwork, shp,  shgl)
 c
-                        endif   ! end of volume constraint calculations
-                     endif      ! end of redistance calculations
+                    endif   ! end of volume constraint calculations
+                  endif      ! end of redistance calculations
 c                     
-                        call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+                  call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                       ilwork)
-                     endif      ! end of flow or scalar update
-                  endif         ! end of switch between solve or update
-               enddo            ! loop over sequence in step
+                endif      ! end of flow or scalar update
+              endif         ! end of switch between solve or update
+            enddo            ! loop over sequence in step
 c     
 c
 c.... obtain the time average statistics
@@ -498,7 +571,7 @@ c
      &                           u,      uold,     x,
      &                           shp,    shgl,     shpb,   shglb,
      &                           iBC,    BC,       iper,   ilwork,
-     &                           rowp,   colm,     lhsK,   lhsP )
+     &                           rowp,   colm)
             endif
 
 c     
@@ -538,14 +611,16 @@ c
 c .. write out the instantaneous solution
 c
 2001    continue  ! we could get here by 2001 label if user requested stop
-        if (((irs .ge. 1) .and. (mod(lstep, ntout) .eq. 0)) .or.
-     &      istep.eq.nstep(itseq)) then
+        if ((irs .ge. 1) .and. ((mod(lstep, ntout) .eq. 0) .or.
+     &      (istep.eq.nstep(itseq)))) then
  
 !so that we can see progress in force file close it so that it flushes
 !and  then reopen in append mode
 
+        if (myrank .eq. master) then
            close(iforce)
            open (unit=iforce, file=fforce, position='append')
+        endif
 
 !              Call to restar() will open restart file in write mode (and not append mode)
 !              that is needed as other fields are written in append mode
@@ -641,8 +716,8 @@ c
 !   soon.... but don't forget to change the field counter in
 !  new_interface.cc
 !
-        if (((irs .ge. 1) .and. (mod(lstep, ntout) .eq. 0)) .or.
-     &      istep.eq.nstep(itseq)) then
+        if ((irs .ge. 1) .and. (((mod(lstep, ntout) .eq. 0)) .or.
+     &      (istep.eq.nstep(itseq)))) then
 
           lesId   = numeqns(1)
           if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -683,13 +758,8 @@ c
           endif ! ierrcalc
 
           if(ioybar.eq.1) then
-            if(ivort == 1) then
               call write_field(myrank,'a','ybar',4,
-     &                  ybar,'d',nshg,17,lstep)
-            else
-              call write_field(myrank,'a','ybar',4,
-     &                ybar,'d',nshg,13,lstep)
-            endif
+     &                  ybar,'d',nshg,irank2ybar,lstep)
                  
             if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
               call write_field(myrank,'a','wssbar',6,
@@ -702,13 +772,8 @@ c
                 tcormr1 = TMRC()
               endif
               do iphase=1,nphasesincycle
-                if(ivort == 1) then
                  call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,15,lstep)
-                else
-                 call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,11,lstep)
-                endif
+     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,irank2yphbar,lstep)
               end do
               if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
               if(myrank.eq.0)  then
@@ -1841,9 +1906,10 @@ c                        call flush(ifile)
       subroutine collectErrorYbar(ybar,yold,wallssVec,wallssVecBar,
      &               vorticity,yphbar,rerr,irank2ybar,irank2yphbar)
       include "common.h"
-      real*8 ybar(nshg,irank2yphbar),yold(nshg,ndof),vorticity(nshg,5)
+      real*8 ybar(nshg,irank2ybar),yold(nshg,ndof),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
+      save iphase, istepsinybar, icyclesinavg
 c$$$c
 c$$$c compute average
 c$$$c
@@ -1916,6 +1982,8 @@ c u^2, v^2, w^2, p^2 and cross terms of uv, uw and vw
      &                           (one-tfact)*ybar(:,16)
                     ybar(:,17) = tfact*vorticity(:,4) + 
      &                           (one-tfact)*ybar(:,17)
+                    ybar(:,18) = tfact*vorticity(:,5) + 
+     &                           (one-tfact)*ybar(:,18)
                   endif
 
                   if(abs(itwmod).ne.1 .and. iowflux.eq.1) then 
@@ -1930,8 +1998,27 @@ c u^2, v^2, w^2, p^2 and cross terms of uv, uw and vw
 c
 c compute phase average
 c
-               if(nphasesincycle.ne.0 .and.
-     &            istep.gt.ncycles_startphaseavg*nstepsincycle) then
+! 
+! the following chunk of code will zero out the amplitude  for (iduty-1) cycles of the jet before 
+! using the time varying amplitude computed above
+!
+            iphaseAvgOn=1
+            iduty=idnint(rampmdot(2,2))
+!MAKE ALWAYS FALSE>>>>WE NEED ALL STATS I THINK
+
+            if(iduty.lt.-1) then
+                r_freq=rampmdot(2,1)
+! this one switches off on phase 24 and results in uneven number of phases per file                nperiods=r_freq*(lstep+1)*Delt(1)  ! compute period number of the current step. NOTE lstep step number across all runs
+! hopefully fixed by removing the "+1" on lstep
+                nperiods=r_freq*(lstep)*Delt(1)  ! compute period number of the current step. NOTE lstep step number across all runs
+                imod=mod(nperiods,iduty)           ! will be the remeinder of nperiods/iduty
+                if(imod.gt.0) iPhaseAvgOn=0        ! set to zero except for the period with no remainder
+            endif
+!            if(myrank.eq.0) write(*,*) 'iduty,nperiods,imod,iphaseAvgOn', iduty,nperiods,imod,iPhaseAvgOn
+
+               if((nphasesincycle.ne.0 ).and.
+     &            (istep.gt.ncycles_startphaseavg*nstepsincycle) .and.
+     &            (iPhaseAvgOn.eq.1)) then
 
 c beginning of cycle is considered as ncycles_startphaseavg*nstepsincycle+1
                   if((istep-1).eq.ncycles_startphaseavg*nstepsincycle)
@@ -2008,6 +2095,9 @@ c beginning of cycle is considered as ncycles_startphaseavg*nstepsincycle+1
                        yphbar(:,15,iphase-1) = 
      &                              tfactphase*vorticity(:,4)
      &                           +(one-tfactphase)*yphbar(:,15,iphase-1)
+                       yphbar(:,16,iphase-1) = 
+     &                              tfactphase*vorticity(:,5)
+     &                           +(one-tfactphase)*yphbar(:,16,iphase-1)
                     endif
                   endif !compute phase average
       endif !if(nphasesincycle.eq.0 .or. istep.gt.ncycles_startphaseavg*nstepsincycle) 

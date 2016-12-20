@@ -1,4 +1,4 @@
-c---------------------------------------------------------------------
+c48---------------------------------------------------------------------
 c
 c ftools.f : Bundle of Fortran routines
 c
@@ -7,42 +7,6 @@ c
 c Various operations run based on les**.c
 c
 c---------------------------------------------------------------------
-c
-c--------------
-c flesPrepDiag
-c--------------
-c
- 	subroutine flesPrepDiag ( ien, xKebe, xGoc, flowDiag )
-c
-        include "common.h"
-c
-        dimension xKebe(npro,3*nshl,3*nshl), 
-     &            xGoC(npro,4*nshl,nshl)
-        dimension Diagl(npro,nshl,nflow),   flowDiag(nshg, 4)
-        integer   ien(npro,nshl)
-c
-c
-c.... monentum contribution to diagonal
-c
-        do i = 1, nshl
-          i0 = (nsd) * (i - 1)
-          Diagl(:,i,1) = xKebe(1:npro,i0+1,i0+1)
-          Diagl(:,i,2) = xKebe(1:npro,i0+2,i0+2)
-          Diagl(:,i,3) = xKebe(1:npro,i0+3,i0+3)
-        enddo
-c
-c.... continuity contribution to diagonal
-c
-        nn2 = nshl * nsd
-        do i = 1, nshl
-          Diagl(:,i,4) = xGoC(1:npro,nn2+i,i)
-        enddo
-
-        call local (flowDiag,  Diagl, ien, nflow, 'scatter ')
-c
-        return
-        end
-c
 c--------------------------------
 c fMtxVdimVecMult 
 c Farzin's implementation
@@ -315,6 +279,7 @@ c
             if ( x(i,j) .ne. 0 ) x(i,j) = 1. / x(i,j)
           enddo
         enddo
+
 c
         return
         end
@@ -325,17 +290,88 @@ c Farzin's implementation
 c row and column exchanged
 c--------------------------
 c
-        subroutine fMtxBlkDot2( x, y, c, m, n )
+        subroutine fMtxBlkDot2( x, y, c, m, n, rblasphasta,rblasmkl,
+     &             iblasphasta,iblasmkl,ieqswork )
+
+        implicit none
+        include "kmkl.fi"
+
 c
 c.... Data declaration
 c
-        implicit none
         integer m,      n
-        real*8  x(n,m), y(n),   c(m)
+        real*8  x(n,m), y(n),   c(m), d(m)
+
+        real*8 alpha,beta
+        real*8 rdelta, TMRC, rblasphasta,rblasmkl
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
-        integer i,      j,      m1
+        integer i,      j,      m1,lda,incx,incy
+        integer iwork, ieqswork,     icut
+        integer iblasphasta,      iblasmkl
+!DIR$ ASSUME_ALIGNED x: 64, y:64, c:64
+
+      iwork=mod(ieqswork,10)
+
+!       0 chunk8, 1 chunk4, 2  mkl ddot, 3  mkl dgemmv 
+!       4-6  3 for m< icut below, else chunk8, 7 open, 8 double loop 
+        
+        if((iwork.ge.3).and.(iwork.lt.7)) then ! let dgemv do some/all of the work
+          icut=24*2**(iwork-4)
+          if(m.gt.icut) then
+            alpha=1.0
+            beta=0.0
+            incx=1
+            incy=1
+            lda=n
+        
+!   note matrix is expected to be a(m,n) but ours is x(n,m)
+!   I assume we handle this by n<->m in arguments 2, 3
+!   since m is the number of rows of A NOT A^T 
+!  further complicating things A is x a 
+!  their x is our y
+!  their y is our output 
+!  them    y=alpha*A^T x +beta*y
+!  us     d=alpha*x^T y +beta*d
+            rdelta=TMRC()
+            call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
+            rblasmkl=rblasmkl+TMRC()-rdelta
+            iblasmkl=iblasmkl+m
+            return
+          else ! jump to chunk 8 to do the rest of the work or 
+              ! change iwork  to who you want to do it
+            iwork=0
+            goto 1
+          endif
+        endif ! end of dgemv
+1       continue 
+        if(iwork.eq.2) then  
+cdir$ ivdep
+          rdelta=TMRC()
+          do i=1,m
+            c(i)=ddot(n,x(1,i),1,y,1)
+          enddo
+          rblasmkl=rblasmkl+TMRC()-rdelta
+          iblasmkl=iblasmkl+m
+          return
+        endif
+        if(iwork.eq.8) then
+          rdelta=TMRC()
+          c=0
+cdir$ ivdep
+          do j = 1, m
+            do i = 1, n
+              c(j) = c(j) + x(i,j) * y(i)
+            enddo
+          enddo
+          rblasphasta=rblasphasta+TMRC()-rdelta
+          iblasphasta=iblasphasta+m
+          return
+        endif
+        if(iwork.eq.0) then
+          rdelta=TMRC()
+
 c
 c.... Determine the left overs
 c
@@ -479,7 +515,7 @@ c
             tmp7 = 0
             tmp8 = 0
             do i = 1, n
-                tmp1 = tmp1 + x(i,j+0) * y(i)
+                tmp1 = tmp1 + x(i,j) * y(i)
                 tmp2 = tmp2 + x(i,j+1) * y(i)
                 tmp3 = tmp3 + x(i,j+2) * y(i)
                 tmp4 = tmp4 + x(i,j+3) * y(i)
@@ -497,6 +533,78 @@ c
             c(j+6) = tmp7
             c(j+7) = tmp8
         enddo
+        rblasphasta=rblasphasta+TMRC()-rdelta
+        iblasphasta=iblasphasta+m
+        return
+        endif !iwork=0
+        if(iwork.eq.1) then ! try a max 4 version of original
+          rdelta=TMRC()
+c
+c.... Determine the left overs
+c
+        m1 = mod(m,4) + 1
+
+c
+c.... Do the small pieces
+c
+        goto ( 4001, 1001, 2001, 3001 ) m1
+c
+1001    continue
+        tmp1 = 0
+        do i = 1, n
+            tmp1 = tmp1 + x(i,1) * y(i)
+        enddo
+        c(1) = tmp1
+        goto 4001
+c
+2001    continue
+        tmp1 = 0
+        tmp2 = 0
+        do i = 1, n
+            tmp1 = tmp1 + x(i,1) * y(i)
+            tmp2 = tmp2 + x(i,2) * y(i)
+        enddo
+        c(1) = tmp1
+        c(2) = tmp2
+        goto 4001
+c
+3001    continue
+        tmp1 = 0
+        tmp2 = 0
+        tmp3 = 0
+        do i = 1, n
+            tmp1 = tmp1 + x(i,1) * y(i)
+            tmp2 = tmp2 + x(i,2) * y(i)
+            tmp3 = tmp3 + x(i,3) * y(i)
+        enddo
+        c(1) = tmp1
+        c(2) = tmp2
+        c(3) = tmp3
+        goto 4001
+c
+c.... Do the remaining part
+c
+4001   continue
+c
+        do j = m1, m, 4
+            tmp1 = 0
+            tmp2 = 0
+            tmp3 = 0
+            tmp4 = 0
+            do i = 1, n
+                tmp1 = tmp1 + x(i,j+0) * y(i)
+                tmp2 = tmp2 + x(i,j+1) * y(i)
+                tmp3 = tmp3 + x(i,j+2) * y(i)
+                tmp4 = tmp4 + x(i,j+3) * y(i)
+            enddo
+            c(j+0) = tmp1
+            c(j+1) = tmp2
+            c(j+2) = tmp3
+            c(j+3) = tmp4
+        enddo
+        rblasphasta=rblasphasta+TMRC()-rdelta
+        iblasphasta=iblasphasta+m
+        endif
 c
         return
         end
@@ -788,7 +896,7 @@ c Farzin's implementation
 c row and column exchanged 
 c--------------------------
 c
-       subroutine fMtxBlkDmaxpy( x, y, c, m, n )
+       subroutine fMtxBlkDmaxpy( x, y, c, m, n, rblasmaxpy,iblasmaxpy )
 c
 c.... Data declaration
 c
@@ -799,6 +907,9 @@ c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
         integer i,      j,      m1
+        integer iblasmaxpy
+        real*8 rdelta,TMRC,rblasmaxpy
+        rdelta=TMRC()
 c
 c.... Determine the left overs
 c
@@ -916,6 +1027,8 @@ c
             enddo
         enddo
 c
+        rblasmaxpy=rblasmaxpy+TMRC()-rdelta
+        iblasmaxpy=iblasmaxpy+m
         return
         end
 c
@@ -1109,385 +1222,6 @@ c
             enddo
 
         endif
-c
-        return
-        end
-c
-c---------
-c flesApG
-c---------
-c
-	subroutine flesApG ( ien, xGoC, lesP, lesQ, nPs, nQs )
-c   
-        include "common.h"
-c
-        dimension xGoC(npro,4*nshl,nshl)
-        real*8 lesP(nshg,nPs), lesQ(nshg,nQs) 
-        dimension ien(npro,nshl)
-        dimension Ptemp(npro,nshl,nPs), Qtemp(npro,nshl,nQs)
-c
-c.... zero Qtemp
-c
-	Qtemp = zero
-c
-c.... localize the lesP for the EBE product
-c
-        call local ( lesP, Ptemp, ien, nPs, 'gather  ' )
-c
-c.... Now, product operation
-c
-    	do i = 1, nshl
-           i0 = (nsd) * (i - 1)  
-           do j = 1, nshl
-c
-             Qtemp(:,i,1) = Qtemp(:,i,1) 
-     &                    + xGoC(1:npro,i0+1,j) * Ptemp(:,j,nPs)
-c
-             Qtemp(:,i,2) = Qtemp(:,i,2)
-     &                    + xGoC(1:npro,i0+2,j) * Ptemp(:,j,nPs)
-c
-             Qtemp(:,i,3) = Qtemp(:,i,3)
-     &                    + xGoC(1:npro,i0+3,j) * Ptemp(:,j,nPs) 
-c
-           enddo
-        enddo
-c
-c... assemble the result of the product
-c
-        call local ( lesQ, Qtemp, ien, nQs, 'scatter ' )
-c
-        return 
-        end
-c
-c----------
-c flesApKG
-c----------
-c
- 	subroutine flesApKG ( ien, xKebe, xGoC, lesP, lesQ, nPs, nQs )
-c
-        include "common.h"
-c
-        dimension xKebe(npro,3*nshl,3*nshl), 
-     &       xGoC(npro,4*nshl,nshl)
-        dimension ien(npro,nshl)
-        real*8 lesP(nshg,nPs), lesQ(nshg,nQs)
-        dimension Ptemp(npro,nshl,nPs), Qtemp(npro,nshl,nQs)       
-c
-c.... zero Qtemp
-c
-	Qtemp = zero
-c
-c.... localize the lesP for the EBE product
-c
-        call local ( lesP, Ptemp, ien, nPs, 'gather  ' )
-c
-c.... Now, product operation
-c
-c.... K contribution 
-c
-        do i = 1, nshl
-           i0 = (nsd) * (i - 1)
-          do j = 1, nshl
-             j0 = (nsd) * (j - 1) 
-c
-            Qtemp(:,i,1) = Qtemp(:,i,1)
-     &                   + xKebe(1:npro,i0+1,j0+1) * Ptemp(:,j,1)
-     &                   + xKebe(1:npro,i0+1,j0+2) * Ptemp(:,j,2)    
-     &                   + xKebe(1:npro,i0+1,j0+3) * Ptemp(:,j,3)
-c
-            Qtemp(:,i,2) = Qtemp(:,i,2)
-     &                   + xKebe(1:npro,i0+2,j0+1) * Ptemp(:,j,1)
-     &                   + xKebe(1:npro,i0+2,j0+2) * Ptemp(:,j,2)
-     &                   + xKebe(1:npro,i0+2,j0+3) * Ptemp(:,j,3)
-            Qtemp(:,i,3) = Qtemp(:,i,3)
-     &                   + xKebe(1:npro,i0+3,j0+1) * Ptemp(:,j,1)
-     &                   + xKebe(1:npro,i0+3,j0+2) * Ptemp(:,j,2)
-     &                   + xKebe(1:npro,i0+3,j0+3) * Ptemp(:,j,3)
-c
-          enddo
-     	enddo
-c
-c.... G contribution
-c
-        do i = 1, nshl 
-           i0 = (nsd) * (i - 1) 
-          do j = 1, nshl
-c
-            Qtemp(:,i,1) = Qtemp(:,i,1)
-     &                   + xGoC(1:npro,i0+1,j) * Ptemp(:,j,nPs)
-            Qtemp(:,i,2) = Qtemp(:,i,2)
-     &                   + xGoC(1:npro,i0+2,j) * Ptemp(:,j,nPs)
-            Qtemp(:,i,3) = Qtemp(1:,i,3)
-     &                   + xGoC(1:npro,i0+3,j) * Ptemp(:,j,nPs)
-c
-          enddo
-        enddo
-c
-c.... assemble the result of the product
-c
-        call local ( lesQ, Qtemp, ien, nQs, 'scatter ' )
-c
-        return
-        end
-c
-c-----------
-c flesApNGt
-c-----------
-c
-	subroutine flesApNGt ( ien, xGoC, lesP, lesQ, nPs, nQs )
-c
-        include "common.h"
-c
-        dimension ien(npro,nshl), xGoC(npro,4*nshl,nshl)
-        real*8 lesP(nshg,nPs), lesQ(nshg,nQs)
-        dimension Ptemp(npro,nshl,nPs), Qtemp(npro,nshl,nQs)
-c
-c.... zero Qtemp
-c
-	Qtemp = zero 
-c
-c.... localize the lesP for the EBE product
-c
-        call local ( lesP, Ptemp, ien, nPs, 'gather  ' )
-c
-c.... Now, product operation
-c
-c.... Negative G^t contribution ( not explicitly formed )
-c
-        do i = 1, nshl
-           do j = 1, nshl
-              i0 = (nsd) * (j - 1)
-c
-             Qtemp(:,i,nQs) = Qtemp(:,i,nQs)
-     &                      - xGoC(1:npro,i0+1,i) * Ptemp(:,j,1)
-     &                      - xGoC(1:npro,i0+2,i) * Ptemp(:,j,2)
-     &                      - xGoC(1:npro,i0+3,i) * Ptemp(:,j,3)
-c
-           enddo
-        enddo
-c
-c... assemble the result of the product
-c
-        call local ( lesQ, Qtemp, ien, nQs, 'scatter  ' )
-c
-        return
-        end
-c
-c------------
-c flesApNGtC 
-c------------
-c
-	subroutine flesApNGtC ( ien, xGoC, lesP, lesQ, nPs, nQs )
-c
-        include "common.h"
-c
-        dimension ien(npro,nshl), xGoC(npro,4*nshl,nshl)
-        real*8 lesP(nshg,nPs), lesQ(nshg,nQs)
-        dimension Ptemp(npro,nshl,nPs), Qtemp(npro,nshl,nQs)
-c
-c.... zero Qtemp
-c
-	Qtemp = zero
-c
-c.... localize the lesP for the EBE product
-c
-	call local ( lesP, Ptemp, ien, nPs, 'gather  ')
-c
-c.... Now, product operation
-c
-c.... Negative G^t contribution ( not explicitly formed )
-c
-        do i = 1, nshl
-           do j = 1, nshl
-           i0 = (nsd) * (j - 1)
-c
-             Qtemp(:,i,nQs) = Qtemp(:,i,nQs)
-     &                      - xGoC(1:npro,i0+1,i) * Ptemp(:,j,1)
-     &                      - xGoC(1:npro,i0+2,i) * Ptemp(:,j,2)
-     &                      - xGoC(1:npro,i0+3,i) * Ptemp(:,j,3)
-c
-           enddo
-        enddo
-c
-c.... C contribution
-c
-        nnm2 = nshl * (nsd)
-c
-        do i = 1, nshl
-           i0 = nnm2 + i
-          do j = 1, nshl
-c
-             Qtemp(:,i,nQs) = Qtemp(:,i,nQs)
-     &                      + xGoC(1:npro,i0,j) * Ptemp(:,j,nPs)
-c
-          enddo
-        enddo
-c
-c... assemble the result of the product
-c
-        call local ( lesQ, Qtemp, ien, nQs, 'scatter  ' )
-c
-        return
-        end
-c
-c------------
-c flesApFull
-c------------
-c
-	subroutine flesApFull ( ien, xKebe, xGoC, lesP, lesQ, nPs, nQs )
-c   
-        include "common.h"
-c
-        dimension ien(npro,nshl)
-        dimension xKebe(npro,3*nshl,3*nshl), 
-     &       xGoC(npro,4*nshl,nshl)
-        real*8 lesP(nshg,nPs), lesQ(nshg,nQs)
-        dimension Ptemp(npro,nshl,nPs), Qtemp(npro,nshl,nQs)
-c
-c.... zero Qtemp
-c
-	Qtemp = zero
-c
-c.... localize the lesP for the EBE product
-c
- 	call local ( lesP, Ptemp, ien, nPs, 'gather  ' )
-c
-c.... Now, product operation
-c
-c.... K * Du contribution
-c
-        do i = 1, nshl
-           i0 = (nsd) * (i - 1)
-          do j = 1, nshl
-             j0 = (nsd) * (j - 1)
-c
-            Qtemp(:,i,1) = Qtemp(:,i,1)
-     &                   + xKebe(1:npro,i0+1,j0+1) * Ptemp(:,j,1)
-     &                   + xKebe(1:npro,i0+1,j0+2) * Ptemp(:,j,2)
-     &                   + xKebe(1:npro,i0+1,j0+3) * Ptemp(:,j,3)
-c
-            Qtemp(:,i,2) = Qtemp(:,i,2)
-     &                   + xKebe(1:npro,i0+2,j0+1) * Ptemp(:,j,1)
-     &                   + xKebe(1:npro,i0+2,j0+2) * Ptemp(:,j,2)
-     &                   + xKebe(1:npro,i0+2,j0+3) * Ptemp(:,j,3)
-            Qtemp(:,i,3) = Qtemp(:,i,3)
-     &                   + xKebe(1:npro,i0+3,j0+1) * Ptemp(:,j,1)
-     &                   + xKebe(1:npro,i0+3,j0+2) * Ptemp(:,j,2)
-     &                   + xKebe(1:npro,i0+3,j0+3) * Ptemp(:,j,3)
-c
-          enddo
-        enddo
-c
-c.... G * Dp contribution
-c
-       do i = 1, nshl
-           i0 = (nsd) * (i - 1)
-          do j = 1, nshl
-c
-            Qtemp(:,i,1) = Qtemp(:,i,1)
-     &                   + xGoC(1:npro,i0+1,j) * Ptemp(:,j,nPs)
-            Qtemp(:,i,2) = Qtemp(:,i,2)
-     &                   + xGoC(1:npro,i0+2,j) * Ptemp(:,j,nPs)
-            Qtemp(:,i,3) = Qtemp(:,i,3)
-     &                   + xGoC(1:npro,i0+3,j) * Ptemp(:,j,nPs)
-c
-          enddo
-        enddo
-c
-c.... -G^t * Du contribution
-c
-       do i = 1, nshl
-           do j = 1, nshl
-              i0 = (nsd) * (j - 1)
-c
-             Qtemp(:,i,nQs) = Qtemp(:,i,nQs)
-     &                      - xGoC(1:npro,i0+1,i) * Ptemp(:,j,1)
-     &                      - xGoC(1:npro,i0+2,i) * Ptemp(:,j,2)
-     &                      - xGoC(1:npro,i0+3,i) * Ptemp(:,j,3)
-c
-           enddo
-        enddo
-c
-c.... C * Dp contribution
-c
-        nnm2 = nshl * (nsd)
-c
-        do i = 1, nshl
-           i0 = nnm2 + i
-          do j = 1, nshl
-c
-             Qtemp(:,i,nQs) = Qtemp(:,i,nQs)
-     &                      + xGoC(1:npro,i0,j) * Ptemp(:,j,nPs)
-c
-          enddo
-        enddo
-
-
-
-c
-c... assemble the result of the product
-c
-        call local ( lesQ, Qtemp, ien, nQs, 'scatter ' )
-c
-        return
-        end
-c
-c-----------
-c fsclrDiag
-c-----------
-c
-	subroutine fsclrDiag ( ien, xTe, sclrDiag )
-c 
-        include "common.h"
-c
-        dimension xTe(npro,nshl,nshl)
-        dimension sclrDiag(nshg,1), Diagl(npro,nshl,1)
-        dimension ien(npro,nshl)
-c
-        do i = 1, nshl
-           Diagl(:,i,1) = xTe(1:npro,i,i)
-        enddo
-c
-        call local (sclrDiag, Diagl, ien, 1, 'scatter ')
-c  
-        return
-        end
-c
-c------------
-c flesApSclr
-c------------
-c
-	subroutine flesApSclr ( ien, xTe, lesP, lesQ, nPs, nQs )
-c
-        include "common.h"
-c
-        dimension xTe(npro,nshl,nshl)
-        dimension ien(npro,nshl)
-        real*8 lesP(nshg,nPs), lesQ(nshg,nQs)
-        dimension Ptemp(npro,nshl,nPs), Qtemp(npro,nshl,nQs)
-c
-c.... zero Qtemp
-c
-        Qtemp = zero
-c
-c.... localize the lesP for the EBE product
-c
-        call local ( lesP, Ptemp, ien, nPs, 'gather  ')
-c
-c.... Now, product operation
-c
-        do i = 1, nshl
-          do j = 1, nshl
-c
-            Qtemp(:,i,nQs) = Qtemp(:,i,nQs) 
-     &                     + xTe(1:npro,i,j) * Ptemp(:,j,nPs)
-c
-          enddo
-        enddo
-c
-c.... assemble the result of the product
-c
-  	call local ( lesQ, Qtemp, ien, nQs, 'scatter ' )
 c
         return
         end

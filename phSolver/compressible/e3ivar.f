@@ -234,7 +234,7 @@ c.... --------------------->  Element Metrics  <-----------------------
 c
       ttim(26) = ttim(26) - secs(0.0)
 c
-        call e3metric( xl,         shgl,        dxidx,  
+        call e3metric(intp, xl,         shgl,        dxidx,  
      &                 shg,        WdetJ)
 c
 c       
@@ -505,7 +505,7 @@ c
 c input:
 c  ycl     (npro,nshl,ndof)      : primitive variables
 c  actl   (npro,nshl)           : time-deriv of ytl
-c  dwl    (npro,nshl)           : distances to wall
+c  dwl    (npro,nenl)           : distances to wall
 c  shape  (npro,nshl)           : element shape-functions
 c  shgl   (npro,nsd,nshl)       : element local-grad-shape-functions
 c  xl     (npro,nenl,nsd)       : nodal coordinates at current step
@@ -656,7 +656,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-      call e3metric( xl,         shgl,        dxidx,  
+      call e3metric(intp, xl,         shgl,        dxidx,  
      &               shg,        WdetJ)
 
 

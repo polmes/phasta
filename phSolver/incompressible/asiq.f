@@ -1,4 +1,4 @@
-        subroutine AsIq (y,       x,       shp,
+        subroutine AsIq (blk, y,       x,       shp,
      &                   shgl,    ien,     xmudmi,
      &                   qres,    rmass    )
 c
@@ -13,7 +13,7 @@ c     y     (numnp,ndof)        : Y variables
 c     x     (numnp,nsd)         : nodal coordinates
 c     shp   (nen,nintg)         : element shape-functions
 c     shgl  (nsd,nen,nintg)     : element local shape-function gradients
-c     ien   (npro)              : nodal connectivity array
+c     ien   (blk%e)              : nodal connectivity array
 c
 c output:
 c     qres  (numnp,nsd,nsd)  : residual vector for diffusive flux
@@ -23,22 +23,25 @@ c----------------------------------------------------------------------
 c
         use turbsa      ! access to d2wall
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
-     &            shp(nshl,ngauss),         shgl(nsd,nshl,ngauss),
-     &            ien(npro,nshl),      dwl(npro,nenl),
+     &            shp(blk%s,blk%g),         shgl(nsd,blk%s,blk%g),
+     &            ien(blk%e,blk%s),      dwl(bsz,blk%n),
      &            qres(nshg,idflx),    rmass(nshg)
 c
-        dimension yl(npro,nshl,ndof),          xl(npro,nenl,nsd),
-     &            ql(npro,nshl,idflx),  rmassl(npro,nshl),
-     &            xmudmi(npro,ngauss)
+        dimension yl(bsz,blk%s,ndof),          xl(bsz,blk%n,nsd),
+     &            ql(bsz,blk%s,idflx),  rmassl(bsz,blk%s),
+     &            xmudmi(blk%e,blk%g)
 c
-        dimension sgn(npro,nshl)
+        dimension sgn(blk%e,blk%s)
 c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
 c
-        do i=1,nshl
+        do i=1,blk%s
            where ( ien(:,i) < 0 )
               sgn(:,i) = -one
            elsewhere
@@ -50,8 +53,8 @@ c
 c.... gather the variables
 c
 
-        call localy(y,      yl,     ien,    ndof,   'gather  ')
-        call localx (x,      xl,     ien,    nsd,    'gather  ')
+        call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
+        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
         if (iRANS .eq. -2) then ! kay-epsilon
            call localx (d2wall,   dwl,     ien,    1,     'gather  ')
         endif
@@ -61,15 +64,15 @@ c
         ql     = zero
         rmassl = zero
 
-        call e3q  (yl,         dwl,      shp,      shgl,    
+        call e3q  (blk,yl,         dwl,      shp,      shgl,    
      &             xl,         ql,       rmassl,
      &             xmudmi,     sgn  )
 
 c
 c.... assemble the diffusive flux residual 
 c
-        call local (qres,   ql,  ien,  idflx,  'scatter ')
-        call local (rmass,  rmassl, ien,  1,          'scatter ')
+        call local (blk,qres,   ql,  ien,  idflx,  'scatter ')
+        call local (blk,rmass,  rmassl, ien,  1,          'scatter ')
 c
 c.... end
 c
@@ -85,33 +88,36 @@ c interior elements for the global reconstruction of the diffusive
 c flux vector.
 c
 c----------------------------------------------------------------------
-        subroutine AsIqSclr (y,       x,       shp,
+       subroutine AsIqSclr (blk,y,       x,       shp,
      &                       shgl,    ien,     qres,    
      &                       rmass    )
 c
         use turbsa      ! access to d2wall
         include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
 c
         dimension y(nshg,ndof),             x(numnp,nsd),            
-     &            shp(nshl,ngauss),         shgl(nsd,nshl,ngauss),
-     &            ien(npro,nshl),      dwl(npro,nenl),
+     &            shp(blk%s,blk%g),         shgl(nsd,blk%s,blk%g),
+     &            ien(blk%e,blk%s),      dwl(bsz,blk%n),
      &            qres(nshg,nsd),           rmass(nshg)
 c
-        dimension yl(npro,nshl,ndof),       xl(npro,nenl,nsd),         
-     &            ql(npro,nshl,nsd),        rmassl(npro,nshl)
+        dimension yl(bsz,blk%s,ndof),       xl(bsz,blk%n,nsd),         
+     &            ql(bsz,blk%s,nsd),        rmassl(bsz,blk%s)
 c
-        dimension sgn(npro,nshl)
+        dimension sgn(blk%e,blk%s)
 
-        if (ipord .gt. 1) then
-           call getsgn(ien,sgn)
+        if (blk%o .gt. 1) then
+           call getsgn(blk,ien,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localy(y,      yl,     ien,    ndof,   'gather  ')
-        call localx (x,      xl,     ien,    nsd,    'gather  ')
+        call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
+        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
         if (iRANS .eq. -2) then ! kay-epsilon
-           call localx (d2wall,   dwl,     ien,    1,     'gather  ')
+           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
         endif
 c
 c.... get the element residuals 
@@ -119,15 +125,15 @@ c
         ql     = zero
         rmassl = zero
 
-        call e3qSclr  (yl,      dwl,    shp,    shgl,    
+        call e3qSclr  (blk,yl,      dwl,    shp,    shgl,    
      &                 xl,      ql,     rmassl, 
      &                 sgn             )
 
 c
 c.... assemble the temperature diffusive flux residual 
 c
-        call local (qres,   ql,  ien,  nsd,  'scatter ')
-        call local (rmass,  rmassl, ien,  1, 'scatter ')
+        call local (blk,qres,   ql,  ien,  nsd,  'scatter ')
+        call local (blk,rmass,  rmassl, ien,  1, 'scatter ')
 c
 c.... end
 c

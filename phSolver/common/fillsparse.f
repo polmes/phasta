@@ -1,68 +1,74 @@
-	subroutine fillsparseI(	iens, xKebe,	lhsK,
-     &                               xGoC,      lhsP,
+      subroutine fillsparseI16(	iens, xlhs,	lhs16,
      1			             row,	col)
 c
 c
 c
-	include "common.h"
-	real*8	xKebe(npro,9,nshl,nshl), xGoC(npro,4,nshl,nshl)
-	integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
-	real*8	lhsK(9,nnz_tot),	lhsP(4,nnz_tot)
+      include "common.h"
+      real*8	xlhs(bsz,16,nshl,nshl)
+      integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
+      real*8	lhs16(16,nnz_tot)
 c
-	integer	aa,	b,	c,	e,	i,	k,	n
+      integer	aa,	b,	c,	e,	i,	k,	n
 c
-	integer sparseloc
+      integer sparseloc
 
-	integer iens(npro,nshl)
+      integer iens(npro,nshl)
 c
 c prefer to show explicit absolute value needed for cubic modes and
 c higher rather than inline abs on pointer as in past versions
 c iens is the signed ien array ien is unsigned
 c
-	ien=abs(iens)
+      ien=abs(iens)
 c       
 c.... Accumulate the lhs
 c
-	do e = 1, npro ! loop over the elements
-	    do aa = 1, nshl ! loop over the local equation numbers
-		i = ien(e,aa) ! finds the global equation number or
-			      ! block-row of our matrix
-		c = col(i)    ! starting point to look for the matching column
-		n = col(i+1) - c  !length of the list of entries in rowp
-		do b = 1, nshl ! local variable number tangent respect
-			       ! to
+      do e = 1, npro ! loop over the elements
+        do aa = 1, nshl ! loop over the local equation numbers
+          i = ien(e,aa) ! finds the global equation number or
+      ! block-row of our matrix
+          c = col(i)    ! starting point to look for the matching column
+          n = col(i+1) - c  !length of the list of entries in rowp
+cdir$ ivdep
+          do b = 1, nshl ! local variable number tangent respect
+      ! to
 c function that searches row until it finds the match that gives the
 c		   global equation number
 
-		    k = sparseloc( row(c), n, ien(e,b) ) + c-1
+                  k = sparseloc( row(c), n, ien(e,b) ) + c-1
+                  lhs16(:,k)  =lhs16(:,k) + xlhs(e,:,aa,b)
+!old way with 2 matrices at the element level
+!                  lhs16(1: 3,k)  =lhs16(1: 3,k) + xKebe(e,1:3,aa,b)
+!                  lhs16(5: 7,k)  =lhs16(5: 7,k) + xKebe(e,4:6,aa,b)
+!                  lhs16(9:11,k)  =lhs16(9:11,k) + xKebe(e,7:9,aa,b)
+!                  lhs16(4:16:4,k)=lhs16(4:16:4,k) + xGoC(e,1:4,aa,b)
+!                  lhs16(13:15,k) =lhs16(13:15,k)   - xGoC(e,1:3,b,aa)
 c
 c                                             *         *
 c                   dimension egmass(npro,ndof,nenl,ndof,nenl)
 c
 c compressible      lhsT(1:5,1:5,k)=lhsT(1:5,1:5,k)+egmass(e,1:5,aa,1:5,b)
 c
-		    lhsK(1,k) = lhsK(1,k) + xKebe(e,1,aa,b)
-		    lhsK(2,k) = lhsK(2,k) + xKebe(e,2,aa,b)
-		    lhsK(3,k) = lhsK(3,k) + xKebe(e,3,aa,b)
-		    lhsK(4,k) = lhsK(4,k) + xKebe(e,4,aa,b)
-		    lhsK(5,k) = lhsK(5,k) + xKebe(e,5,aa,b)
-		    lhsK(6,k) = lhsK(6,k) + xKebe(e,6,aa,b)
-		    lhsK(7,k) = lhsK(7,k) + xKebe(e,7,aa,b)
-		    lhsK(8,k) = lhsK(8,k) + xKebe(e,8,aa,b)
-		    lhsK(9,k) = lhsK(9,k) + xKebe(e,9,aa,b)
-c
-		    lhsP(1,k) = lhsP(1,k) + xGoC(e,1,aa,b)
-		    lhsP(2,k) = lhsP(2,k) + xGoC(e,2,aa,b)
-		    lhsP(3,k) = lhsP(3,k) + xGoC(e,3,aa,b)
-		    lhsP(4,k) = lhsP(4,k) + xGoC(e,4,aa,b)
-		enddo
-	    enddo
-	enddo
+!	    lhsK(1,k) = lhsK(1,k) + xKebe(e,1,aa,b)
+!	    lhsK(2,k) = lhsK(2,k) + xKebe(e,2,aa,b)
+!	    lhsK(3,k) = lhsK(3,k) + xKebe(e,3,aa,b)
+!	    lhsK(4,k) = lhsK(4,k) + xKebe(e,4,aa,b)
+!	    lhsK(5,k) = lhsK(5,k) + xKebe(e,5,aa,b)
+!	    lhsK(6,k) = lhsK(6,k) + xKebe(e,6,aa,b)
+!	    lhsK(7,k) = lhsK(7,k) + xKebe(e,7,aa,b)
+!	    lhsK(8,k) = lhsK(8,k) + xKebe(e,8,aa,b)
+!	    lhsK(9,k) = lhsK(9,k) + xKebe(e,9,aa,b)
+!	    lhsP(1,k) = lhsP(1,k) + xGoC(e,1,aa,b)
+!	    lhsP(2,k) = lhsP(2,k) + xGoC(e,2,aa,b)
+!	    lhsP(3,k) = lhsP(3,k) + xGoC(e,3,aa,b)
+!	    lhsP(4,k) = lhsP(4,k) + xGoC(e,4,aa,b)
+          enddo
+        enddo
+      enddo
 c
 c.... end
 c
-	return
-	end
+      return
+      end
 
 
 	subroutine fillsparseC(	iens, EGmass,	lhsK,
@@ -107,6 +113,7 @@ c
                          ! to the corresponding location in row
           n = col(i+1) - c   !number of nonzero blocks in the row
           r = (aa-1)*nflow   !starting index of the ath node in EGmass
+cdir$ ivdep
           do b = 1, nshl     
             s = (b-1)*nflow  !starting index of the bth node's 
                              !contribution to node aa. 
@@ -167,6 +174,7 @@ c
                          ! to the corresponding location in row
           n = col(i+1) - c   !number of nonzero blocks in the row
 !          r = (aa-1)*nflow   !starting index of the ath node in EGmass
+cdir$ ivdep
           do b = 1, nshl     
 !            s = (b-1)*nflow  !starting index of the bth node's 
                              !contribution to node aa. 
@@ -195,7 +203,7 @@ c
      1                         row,    col)
       
       include "common.h"
-      real*8    xSebe(npro,nshl,nshl)
+      real*8    xSebe(bsz,nshl,nshl)
       integer    ien(npro,nshl),    col(nshg+1), row(nshg*nnz)
       real*8    lhsS(nnz_tot)    
 
@@ -218,6 +226,7 @@ c
         i = ien(e,aa)
         c = col(i)
         n = col(i+1) - c
+cdir$ ivdep
         do b = 1, nshl
             k = sparseloc( row(c), n, ien(e,b) ) + c-1
 c

@@ -6,50 +6,55 @@ c
 c Christian Whiting, Winter 1999
 c------------------------------------------------------------------------
 
-      subroutine getsgn(ien, sgn)
+      subroutine getsgn(blk,ien, sgn)
 c------------------------------------------------------------------------
 c     returns the matrix of mode signs used for negating higher order
 c     basis functions. Connectivity array is assumed to have negative
 c     signs on all modes to be negated.
 c------------------------------------------------------------------------
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
-      dimension ien(npro,nshl),  sgn(npro,nshl)
+      dimension ien(blk%e,blk%s),  sgn(blk%e,blk%s)
       
-      do i=nenl+1,nshl
+      do i=blk%n+1,blk%s
          where ( ien(:,i) < 0 )
-            sgn(:,i) = -one
+            sgn(1:blk%e,i) = -one
          elsewhere
-            sgn(:,i) = one
+            sgn(1:blk%e,i) = one
          endwhere
       enddo
       
       return 
       end
       
-      subroutine getshp(shp, shgl, sgn, shape, shdrv)
+      subroutine getshp(blk,ith,shp, shgl, sgn, shape, shdrv)
 c------------------------------------------------------------------------
 c     returns the matrix of element shape functions with the higher
 c     order modes correctly negated at the current quadrature point.
 c------------------------------------------------------------------------
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
+
       
-      dimension shp(nshl,ngauss),   shgl(nsd,nshl,ngauss),
-     &          sgn(npro,nshl),     shape(npro,nshl),
-     &          shdrv(npro,nsd,nshl)
+      dimension shp(blk%s,blk%g),   shgl(nsd,blk%s,blk%g),
+     &          sgn(blk%e,blk%s),     shape(blk%e,blk%s),
+     &          shdrv(blk%e,nsd,blk%s)
       
       
-      do i=1,nenl
-         shape(:,i) = shp(i,intp)
+      do i=1,blk%n
+         shape(1:blk%e,i) = shp(i,ith)
          do j=1,3
-            shdrv(:,j,i) = shgl(j,i,intp)
+            shdrv(1:blk%e,j,i) = shgl(j,i,ith)
          enddo
       enddo
-      if ( ipord > 1 ) then
-         do i=nenl+1,nshl
-            shape(:,i) = sgn(:,i) * shp(i,intp)
+      if ( blk%o > 1 ) then !polynomial order
+         do i=blk%n+1,blk%s
+            shape(1:blk%e,i) = sgn(1:blk%e,i) * shp(i,ith)
             do j=1,3
-               shdrv(:,j,i) = shgl(j,i,intp)*sgn(:,i) 
+               shdrv(1:blk%e,j,i) = shgl(j,i,ith)*sgn(1:blk%e,i) 
             enddo
          enddo
       endif
@@ -269,11 +274,12 @@ c
          ndofl  = lcblk(8,iblk)
          npro   = lcblk(1,iblk+1) - iel 
 
-         allocate ( ycl(npro,nshl,ndof ) )
+         allocate ( ycl(bsz,nshl,ndof ) )
          allocate ( yvl(npro,nshl,nvars) )
-         allocate ( xl(npro,nenl,nsd   ) )
+         allocate ( xl(bsz,nenl,nsd   ) )
          allocate ( sgn(npro,nshl)       )
-         
+ 
+         write(*,*) 'blk not plumbed this far'
          call getsgn(mien(iblk)%p,sgn)
          
          call localy( ycoeff, ycl, mien(iblk)%p, ndof,  'gather  ')
@@ -334,7 +340,7 @@ c
 c.... loop over interpolation points
 c
       do intp = 1, npts
-         call getshp(shp,          shgl,      sgn, 
+         call getshp(intp, shp,          shgl,      sgn, 
      &               shape,        shdrv)
       
 c
@@ -348,7 +354,7 @@ c
 c
 c.... viscous stress
 c
-         call e3metric( xl,         shdrv,      dxidx,  
+         call e3metric(intp, xl,         shdrv,      dxidx,  
      &                  shg,        tmp)
 
          gradV = zero

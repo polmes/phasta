@@ -2,7 +2,7 @@
 
       integer nsolflow,npermDims, nTmpDims, nPermDimsS, nTmpDimsS
 
-      real*8,  allocatable :: lhsP(:,:), lhsK(:,:), lhsS(:,:)
+      real*8,  allocatable :: lhs16(:,:), lhsP(:,:), lhsS(:,:)
       real*8,  allocatable :: aperm(:,:), atemp(:,:)
       real*8,  allocatable :: apermS(:,:,:), atempS(:,:)
 
@@ -14,8 +14,8 @@ c-----------------------------------------------------------------------
       subroutine aSDf 
       use solvedata
       include "common.h"
+      allocate (lhs16(16,nnz_tot))
       allocate (lhsP(4,nnz_tot))
-      allocate (lhsK(9,nnz_tot))
       if(leslib.eq.1) then
         allocate (aperm(nshg,nPermDims))
         allocate (atemp(nshg,nTmpDims))
@@ -39,8 +39,7 @@ c-----------------------------------------------------------------------
       subroutine dSDf 
       use solvedata
       include "common.h"
-      deallocate (lhsP)
-      deallocate (lhsK)
+      if(usingpetsc.ne.1) deallocate (lhs16)
       if(leslib.eq.1) then
         deallocate (aperm)
         deallocate (atemp)

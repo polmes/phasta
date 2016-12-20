@@ -1,4 +1,4 @@
-        subroutine genblk (IBKSZ)
+        subroutine genblk 
 c
 c----------------------------------------------------------------------
 c
@@ -15,7 +15,7 @@ c
         include "mpif.h" !Required to determine the max for itpblk
 
         integer, target, allocatable :: ientp(:,:)
-        integer mater(ibksz)
+        integer mater(bsz)
         integer, target :: intfromfile(50) ! integers read from headers
         character*255 fname1
         integer :: descriptor, descriptorG, GPID, color
@@ -108,9 +108,9 @@ c
      &      c_loc(ientp), iientpsiz, dataInt, iotype)
 
            if(writeLock==0) then
-             do n=1,neltp,ibksz 
+             do n=1,neltp,bsz 
                 nelblk=nelblk+1
-                npro= min(IBKSZ, neltp - n + 1)
+                npro= min(bsz, neltp - n + 1)
                 lcblk(1,nelblk)  = iel
                 lcblk(3,nelblk)  = lcsyst
                 lcblk(4,nelblk)  = ipordl

@@ -20,42 +20,22 @@ c-----------------------------------------------------------------------
            r_time_factor = rampmdot(1,2)*r_amp   ! read parameter scales Vmax
         endif
 
+        
+
         icount = 0
         do kk=1,nshg
           if(ndsurf(kk).eq.18) then ! this means diaphragm for the Cube Test case
 
-            factor = idnint(rampmdot(2,2))
-
-            if(factor == 0) then
-              offphase = 0.d0
-
-            elseif(factor == 1) then
-              offphase = 1.d0
-
-            elseif(factor == 2) then
-              !Start to count from tip. If factor == 2 -> 1, 3, 5, etc
-              if(mod(ndsurf(kk)-1,factor) == 0) then   
-                offphase = 1.d0
-              else
-                offphase = 0.d0
-              endif
-
-            elseif(factor == 3) then
-              !Start to count from tip. If factor == 3 -> 2, 5, 8, etc
-              if(mod(ndsurf(kk)+1,factor) == 0) then   
-                offphase = 1.d0
-              else
-                offphase = 0.d0
-              endif
-
-            elseif(factor < 0) then
-              !Only one jet blowing. If factor = -5, then jet 5 only
-              !blows
-              if (ndsurf(kk) == -factor) then 
-                offphase = 1.d0
-              else 
-                offphase = 0.d0
-              endif
+            offphase = 1.d0
+! 
+! the following chunk of code will zero out the amplitude  for (iduty-1) cycles of the jet before 
+! using the time varying amplitude computed above
+!
+            iduty=idnint(rampmdot(2,2))
+            if(iduty.gt.1) then
+                nperiods=r_freq*(lstep+1)*Delt(1)  ! compute period number of the current step. NOTE lstep step number across all runs
+                imod=mod(nperiods,iduty)           ! will be the remeinder of nperiods/iduty
+                if(imod.gt.0) offphase=0           ! set to zero except for the period with no remainder
             endif
 
             BC(kk,3)=r_time_factor*vbc_prof(kk,1)*offphase
@@ -80,8 +60,6 @@ c--------------------------------------------------------------
         include "common.h"
         real*8 vbc_prof(nshg,3), x(numnp,nsd)
         real*8 rcenter(3),rnorml(3)
- 
-        open(unit=789, file='bcprofile.dat',status='unknown')
         do kk=1,nshg
 c.............Factors below are negative for desired blowing direction
            if(ndsurf(kk).eq.18) then
@@ -93,10 +71,6 @@ c.............Factors below are negative for desired blowing direction
              vbc_prof(kk,2)=-1.6*1E7*(x(kk,1)-x1)*(x(kk,1)-x2)*
      &                              (x(kk,3)-z1)*(x(kk,3)-z2)
              vbc_prof(kk,3)=0.d0 
-
-             write(789,987) kk,vbc_prof(kk,1),vbc_prof(kk,2),
-     &                          vbc_prof(kk,3)
-
            else
               vbc_prof(kk,:)=zero
            endif
