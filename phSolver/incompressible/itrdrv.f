@@ -1998,8 +1998,27 @@ c u^2, v^2, w^2, p^2 and cross terms of uv, uw and vw
 c
 c compute phase average
 c
-               if(nphasesincycle.ne.0 .and.
-     &            istep.gt.ncycles_startphaseavg*nstepsincycle) then
+! 
+! the following chunk of code will zero out the amplitude  for (iduty-1) cycles of the jet before 
+! using the time varying amplitude computed above
+!
+            iphaseAvgOn=1
+            iduty=idnint(rampmdot(2,2))
+!MAKE ALWAYS FALSE>>>>WE NEED ALL STATS I THINK
+
+            if(iduty.lt.-1) then
+                r_freq=rampmdot(2,1)
+! this one switches off on phase 24 and results in uneven number of phases per file                nperiods=r_freq*(lstep+1)*Delt(1)  ! compute period number of the current step. NOTE lstep step number across all runs
+! hopefully fixed by removing the "+1" on lstep
+                nperiods=r_freq*(lstep)*Delt(1)  ! compute period number of the current step. NOTE lstep step number across all runs
+                imod=mod(nperiods,iduty)           ! will be the remeinder of nperiods/iduty
+                if(imod.gt.0) iPhaseAvgOn=0        ! set to zero except for the period with no remainder
+            endif
+!            if(myrank.eq.0) write(*,*) 'iduty,nperiods,imod,iphaseAvgOn', iduty,nperiods,imod,iPhaseAvgOn
+
+               if((nphasesincycle.ne.0 ).and.
+     &            (istep.gt.ncycles_startphaseavg*nstepsincycle) .and.
+     &            (iPhaseAvgOn.eq.1)) then
 
 c beginning of cycle is considered as ncycles_startphaseavg*nstepsincycle+1
                   if((istep-1).eq.ncycles_startphaseavg*nstepsincycle)
