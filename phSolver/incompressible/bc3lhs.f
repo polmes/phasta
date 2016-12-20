@@ -47,8 +47,8 @@ c.... set up parameters
 c
           in  = abs(ien(iel,inod))
 ! not sure what is wrong with this but it does not work.
-! in reality one should never set dirichlet pressure BC's as it eliminated the continuity
-! equation BAD and weak pressure always doees a better job
+! in reality one should never set dirichlet pressure BC's as it eliminates the continuity
+! equation (BAD!!) and weak pressure always does a better job
 !
           if(usingpetsc.gt.20) then
             if(btest(ibc(in),2)) then
