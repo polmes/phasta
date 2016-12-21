@@ -386,7 +386,7 @@ c
           else
              ngaussb = nintb(lcsyst)
           endif
-! note the following is the volumen element characteristics as needed for 
+! note the following is the volume element characteristics as needed for 
 ! routines like getdiff, getdiffsclr, getshpb which were already converted for
 ! threading and thus need to dimension based on this data.  
 ! debug to confirm
@@ -740,7 +740,7 @@ c
           else
              ngaussb = nintb(lcsyst)
           endif
-! note the following is the volumen element characteristics as needed for 
+! note the following is the volume element characteristics as needed for 
 ! routines like getdiff, getdiffsclr, getshpb which were already converted for
 ! threading and thus need to dimension based on this data.  
 ! debug to confirm

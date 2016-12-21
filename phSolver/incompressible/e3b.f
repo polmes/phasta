@@ -206,7 +206,7 @@ c
      &                      + shape(iel,nodlcl)*BCB(iel,n,5)
               enddo
            endif
-!KJ CHANGE      if(ideformwall.eq.1) then
+!      if(ideformwall.eq.1) then
 c
 c.... turbulence wall (as a way of checking for deformable wall stiffness)
 c
@@ -222,7 +222,7 @@ c
 !disable              xKebe(iel,:,:,:) = zero
 !disable              rKwall_glob(iel,:,:,:) = zero                 ! no stiffness: not a wall element
            endif
-!KJ CHANGE      endif
+!      endif
 
         enddo                                               ! end of bc loop
 c
@@ -243,7 +243,7 @@ c                 pres(iel) = zero
 c
 c whatever is zeroed here will beome part of the post-processed surface
 c                 "traction force"
-!KJ CHANGE         if(ideformwall.eq.1) then
+!         if(ideformwall.eq.1) then
 c
 c uncomment the next two lines to get all of the t vector coming from
 c                 Alberto's wall motion model.
@@ -261,7 +261,7 @@ c
                   rlkwall(iel,1,:)=walln1*bnorm(iel,:)
                   rlkwall(iel,2,:)=walln2*bnorm(iel,:)
                   rlkwall(iel,3,:)=walln3*bnorm(iel,:)
-!KJ CHANGE              endif
+!              endif
              endif
            enddo
         endif

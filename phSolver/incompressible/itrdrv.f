@@ -86,6 +86,9 @@ c
         integer stopjob
         character*10 cname2
         character*5  cname
+        integer i_redist_counter
+        real*8 redist_toler_previous
+        logical iloop
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
@@ -403,8 +406,22 @@ c
             enddo
             iter=0
             ilss=0  ! this is a switch thrown on first solve of LS redistance
-            do istepc=1,seqsize
+c
+c set the initial tolerance for the redistance loop
+c
+            if (i_redist_loop_flag.eq.1) then
+              redist_toler_previous = 100.0
+            endif
+c
+c LOOP OVER SEQUENCES
+c
+            istepc = 1
+            iloop = .true.
+            i_redist_counter=0
+!            do istepc=1,seqsize
+             do while (iloop) 
               icode=stepseq(istepc)
+c
               if(mod(icode,5).eq.0) then ! this is a solve
                 isolve=icode/10
                 if(icode.eq.0) then ! flow solve (encoded as 0)
@@ -461,19 +478,62 @@ c
                 else          ! scalar type solve
                   if (icode.eq.5) then ! Solve for Temperature
                                 ! (encoded as (nsclr+1)*10)
-                    isclr=0
-                    ifuncs(2)  = ifuncs(2) + 1
-                    j=1
-                  else       ! solve a scalar  (encoded at isclr*10)
-                    isclr=isolve  
-                    ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
-                    j=isclr+nsolt
-                    if((iLSet.eq.2).and.(ilss.eq.0)
+                        isclr=0
+                        ifuncs(2)  = ifuncs(2) + 1
+                        j=1
+                     else       ! solve a scalar  (encoded at isclr*10)
+                        isclr=isolve  
+                        ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
+                        j=isclr+nsolt
+c  Modify psuedo time step based on CFL number for redistancing
+                        if((iLSet.eq.2).and.(ilss.ge.1).and.
+     &                     (i_dtlset_cfl.eq.1).and.
+     &                     (isclr.eq.2)) then
+! COMING SOON                           call calc_deltau()
+                           Delt(1) = dtlset ! psuedo time step for level set
+                           Dtgl = one / Delt(1)
+                           ilss = ilss+1
+                        endif
+c
+                        if((iLSet.eq.2).and.(ilss.eq.0)
      &                       .and.(isclr.eq.2)) then 
-                      ilss=1 ! throw switch (once per step)
-                      y(:,7)=y(:,6) ! redistance field initialized
-                      ac(:,7)   = zero
-                      call itrBCSclr (  y,  ac,  iBC,  BC, iper,
+                           ilss=1 ! throw switch (once per step)
+                           y(:,7)=y(:,6) ! redistance field initialized
+                           ac(:,7)   = zero
+c23456789012345678901234567890123456789012345678901234567890123456789012
+                           if (iSolvLSSclr2.eq.2)  then
+!COMING SOON                             call get_bcredist(x,y,iBCredist,BCredist,
+!COMING SOON     &                                      primvert, primvertval(:,1))
+                             primvertval(:,1) = BCredist(:)
+                             ib=5+isclr
+                             ibb=ib+1
+                             do inode = 1, nshg
+                              if (iBCredist(inode).eq.1) then
+                               if (btest(iBC(inode),ib)) then
+                                write(*,*) "WARNING -- Bit 7 already set"
+                               endif
+                              endif
+                             enddo
+c
+                             where (iBCredist.eq.1) 
+                              iBC(:) = iBC(:) + 128   ! set scalar 2 (bit 7)    
+                              BC(:,ibb) = BCredist(:)
+                             endwhere
+                             numpv = 0
+                             numpvset = 0
+                             do inode = 1, nshg
+                               if (primvert(inode) .gt. 0) then
+                               numpv = numpv + 1
+                                 if (primvert(inode).eq.2) then
+                                   numpvset = numpvset + 1
+                                 endif
+                               endif
+                             enddo
+                             write(*,*) lstep+1,
+     &                                  " Primary Verts: set/exist = ",
+     &                                  numpvset, numpv
+                           endif
+                           call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                          ilwork)
 c     
 c....store the flow alpha, gamma parameter values and assigm them the 
@@ -488,19 +548,33 @@ c
                       gami = 1
                       almi = 1
 c     Delt(1)= Deltt ! Give a pseudo time step
-                      Dtgl = one / Delt(1)
-                    endif  ! level set eq. 2
-                  endif ! deciding between temperature and scalar
+                           Delt(1) = dtlset ! psuedo time step for level set
+                           Dtgl = one / Delt(1)
+                        endif  ! level set eq. 2
+                     endif ! deciding between temperature and scalar
 
-                  lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
+                     lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
      &                                   LHSupd(isclr+2))) 
-                  call itrYAlpha( uold,    yold,    acold,
+                     if((isclr.eq.1.and.iSolvLSSclr1.eq.1) .or. 
+     &                  (isclr.eq.2.and.iSolvLSSclr2.eq.1) .or.
+     &                  (isclr.eq.2.and.iSolvLSSclr2.eq.2)) then
+                      lhs=0
+                      call SolSclrExp(y,          ac,        yold,
+     &                         acold,         x,         iBC,
+     &                         BC,            nPermDimsS,nTmpDimsS,  
+     &                         apermS(1,1,j), atempS,    iper,          
+     &                         ilwork,        shp,       shgl,
+     &                         shpb,          shglb,     rowp,     
+     &                         colm,          lhsS(1,j), 
+     &                         solinc(1,isclr+5), CFLls) 
+                     else
+                      call itrYAlpha( uold,    yold,    acold,
      &                u,       y,       ac,
      &                uAlpha,  yAlpha,  acAlpha)
                
-                  if(usingpetsc.eq.1) then
+                      if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
-                    call SolSclrp( yAlpha,      acAlpha,
+                      call SolSclrp( yAlpha,      acAlpha,
      &                         x,             iBC,
      &                         BC,            
      &                         iper,          
@@ -513,8 +587,8 @@ c     Delt(1)= Deltt ! Give a pseudo time step
                   write(*,*) 'requested PETSc but not built for it'
                   call error('itrdrv  ','noPETSc',usingpetsc)  
 #endif
-                  else
-                    call SolSclr(yAlpha,      acAlpha,
+                      else
+                       call SolSclr(yAlpha,      acAlpha,
      &                         x,             iBC,
      &                         BC,            
      &                         iper,          
@@ -527,7 +601,8 @@ c     Delt(1)= Deltt ! Give a pseudo time step
 #else
      &                         )
 #endif
-                  endif      
+                     endif !implicit petsc or else
+                 endif     ! explicity or implicit if/else
                 endif         ! end of scalar type solve
 
               else ! this is an update  (mod did not equal zero)
@@ -558,10 +633,73 @@ c
 c                     
                   call itrBCSclr (  y,  ac,  iBC,  BC, iper,
      &                       ilwork)
-                endif      ! end of flow or scalar update
-              endif         ! end of switch between solve or update
-            enddo            ! loop over sequence in step
-c     
+c
+c ... update the old value for second level set scalar
+c
+                     if (ilset.eq.2 .and. isclr.eq.2)  then
+                         call itrUpdateDist( yold, acold, y, ac)
+                     endif   
+
+                     endif      ! end of flow or scalar update
+                  endif         ! end of switch between solve or update
+c
+c** Conditions for Redistancing Loop **
+c Here we test to see if the following conditions are met:
+c	no. of redistance iterations < i_redist_max_iter
+c	residual (redist_toler_curr) > redist_toler
+c If these are true then we continue in the redistance loop
+c
+                 if(i_redist_loop_flag.eq.1) then
+                   if (icode .eq. 21) then ! only check after a redistance update
+                     if((ilset.eq.2).and.(isclr.eq.2)) then !redistance condition
+                      if (redist_toler_curr.gt.redist_toler) then !condition 1
+                       if (i_redist_counter.lt.i_redist_max_iter) then ! condition 2
+                        i_redist_counter = i_redist_counter + 1
+                        istepc = istepc - 2  ! repeat the 20 21 step
+                        if(redist_toler_curr.gt.redist_toler_previous)
+     &                  then
+                         if(myrank.eq.master) then
+                          write(*,*) "Warning: diverging!"
+                         endif
+                        endif
+                       else
+                        iloop = .false. 
+                        if(myrank.eq.master) then  
+                         write(*,*) "Exceeded Max # of the iterations: "
+     &                              , i_redist_max_iter
+                        endif
+                       endif
+                       redist_toler_previous=redist_toler_curr
+                      else
+                       if(myrank.eq.master) then
+                        write(*,*) "Redistance loop converged in ",
+     &                       i_redist_counter," iterations"
+                       endif
+                       iloop = .false. 
+                      endif
+                     endif
+                   endif !end of the redistance condition
+                 endif !end of the condition for the redistance loop
+c
+                 if (istepc .eq. seqsize) then
+                   iloop = .false.
+                 endif
+                 istepc = istepc + 1
+c
+c**End of loop condition for Redistancing equation**
+c		 		  
+               end do      ! end while loop over sequence steps
+c
+c Check if interface has moved into region of larger interface
+c
+             if ((iLSet.eq.2).and.(i_check_prox.eq.1)) then 
+!COMING SOON               call check_proximity(y, stopjob)
+	       if(stopjob.ne.0) then
+                   lstep = lstep + 1
+                   goto 2001
+               endif
+             endif          
+     
 c
 c.... obtain the time average statistics
 c
@@ -596,7 +734,17 @@ c
 c ..  Print memory consumption on BGQ
 c
             call printmeminfo("itrdrv"//char(0))
-
+c
+c...Reset BC codes of primary vertices
+c (need to remove dirchlet bc on primary vertices
+c  by removing the 8th bit (val=128)
+c
+            if((iLSet.eq.2).and.(ilss.eq.1).and.(iSolvLSSclr2.eq.2))
+     &      then
+               where (iBCredist.eq.1)
+                 iBC(:) = iBC(:) - 128   ! remove prescription on scalar 2
+               endwhere
+            endif
 c
 c ..  Compute vorticity 
 c

@@ -235,7 +235,10 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "DDES" ) {
       turbvari.iles  = -2;
       turbvari.irans = -1;
- 
+    } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
+      turbvari.irans = 0;
+      turbvari.iles  = 0;
+      turbvari.idns = 1;
     } else {
       cout << " Turbulence Model: Only Legal Values ( No-Model, LES, RANS-SA, RANS-KE, DES97, DDES )";
       cout << endl;
@@ -270,8 +273,21 @@ int input_fform(phSolver::Input& inp)
     levlset.epsilon_ls = inp.GetValue("Number of Elements Across Interface");
     levlset.epsilon_lsd = inp.GetValue("Number of Elements Across Interface for Redistancing");
     levlset.dtlset = inp.GetValue("Pseudo Time step for Redistancing");
-    levlset.iExpLSSclr2 = inp.GetValue("Explicit Solve for Redistance Field");
-    levlset.iExpLSSclr1 = inp.GetValue("Explicit Solve for Scalar 1 Field");
+    levlset.dtlset_cfl = inp.GetValue("Base pseudo time step for redistancing on CFL number");
+    if (levlset.dtlset_cfl > 0.0) {
+       levlset.i_dtlset_cfl = 1; }
+    else {
+       levlset.i_dtlset_cfl = 0;
+    }
+    levlset.AdjRedistVelCFL = inp.GetValue("Adjust Redistance Velocity to Satisfy CFL Limit");
+    if (levlset.AdjRedistVelCFL > 0.0) {
+       levlset.i_AdjRedistVel = 1; }
+    else { 
+       levlset.i_AdjRedistVel = 0;
+    }
+    levlset.iSolvLSSclr2 = inp.GetValue("Solve for Redistance Field");
+    levlset.iSolvLSSclr1 = inp.GetValue("Solve for Scalar 1 Field");
+    levlset.i_focusredist = inp.GetValue("Focus redistancing about interface");
     if ((string)inp.GetValue("Apply Volume Constraint") == "True" ) {
       levlset.ivconstraint = 1; } 
     else if((string)inp.GetValue("Apply Volume Constraint") == "False" ) {
@@ -803,6 +819,15 @@ int input_fform(phSolver::Input& inp)
         }
 
       }
+//
+// could be turbulence wall model in DNS (i.e. no turb. model)
+//
+// will assume we are using RANS models here
+//
+    } else if (turbvari.idns > 0) {
+      if((string)inp.GetValue("Turbulence Wall Model Type") == "Slip Velocity") turbvar.itwmod = -1;
+      else if((string)inp.GetValue("Turbulence Wall Model Type") == "Effective Viscosity") turbvar.itwmod = -2;
+      else  turbvar.itwmod = 0;
     }
   
     // SPEBC MODELING PARAMETERS

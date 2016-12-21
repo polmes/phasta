@@ -148,7 +148,7 @@ extern "C" {
   } turbvar ;
 
   extern struct {
-    int irans, iles, idistcalc, isubmod;
+    int irans, iles, idns, idistcalc, isubmod;
     int ifproj;
     int i2filt;
     int modlstats;
@@ -350,10 +350,25 @@ extern "C" {
     double epsilon_ls;
     double epsilon_lsd;
     double dtlset;
+    double dtlset_cfl;
+    double redist_toler;
+    double redist_toler_curr;
+    double r_int_buffer;
+    double r_int_elem_size;
+    double phvol[2];
+    double AdjRedistVelCFL;
     int iLSet;
     int ivconstraint;
-    int iExpLSSclr1;
-    int iExpLSSclr2;
+    int iSolvLSSclr1;
+    int iSolvLSSclr2;
+    int i_redist_loop_flag;
+    int i_redist_max_iter;
+    int i_spat_var_eps_flag;
+    int i_dtlset_cfl;
+    int i_check_prox;
+    int i_gradphi;
+    int i_focusredist;
+    int i_AdjRedistVel;
   } levlset;
 
   extern struct { 
@@ -430,6 +445,13 @@ extern "C" {
     int LHSupd[6];
     int loctim[MAXTS];
     double deltol[2][MAXTS];
+    double CFLfl_max;
+    int iCFLfl_maxelem;
+    int iflag_cfl_dt;
+    double CFLfl_limit;
+    double timestart; 
+    double CFLls_max;
+    int iCFLls_maxelem;
     int leslib;
     int svLSFlag;
     int svLSType;

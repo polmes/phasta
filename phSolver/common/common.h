@@ -64,7 +64,7 @@ c from different modules
      &                   dtavei, dke,  fwr1, flump, DES_SA_hmin,
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
      &                   nlist, nintf(MAXTOP)
-        common /turbvari/iRANS, iLES, idistcalc, isubmod, ifproj,
+        common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
      &                   ierrsmooth, iramp
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
@@ -175,8 +175,16 @@ c...........................................................................
 c...........................................................................
 
 c
-        common /levlset/ epsilon_ls, epsilon_lsd, dtlset, iLSet, 
-     &                   ivconstraint, iExpLSSclr1, iExpLSSclr2
+        common /levlset/ epsilon_ls, epsilon_lsd, dtlset, dtlset_cfl,
+     &                   redist_toler, redist_toler_curr,
+     &                   r_int_buffer,r_int_elem_size, phvol(2),
+     &                   AdjRedistVelCFL,
+     &                   iLSet,
+     &                   ivconstraint, iSolvLSSclr1, iSolvLSSclr2,
+     &                   i_redist_loop_flag, 
+     &                   i_redist_max_iter, i_spat_var_eps_flag,
+     &                   i_dtlset_cfl, i_check_prox, i_gradphi,
+     &                   i_focusredist, i_AdjRedistVel
 
 c 
         common /shpdat/ nshape, nshapeb, maxshb,
@@ -204,6 +212,9 @@ c
      &                  CFLsl(MAXTS),   nstep(MAXTS),   niter(MAXTS),
      &                  impl(MAXTS),    rhoinf(MAXTS),
      &                  LHSupd(6),  loctim(MAXTS),  deltol(MAXTS,2), 
+     &                  CFLfl_max, iCFLfl_maxelem, iflag_cfl_dt,
+     &                  CFLfl_limit, timestart, CFLls_max, 
+     &                  iCFLls_maxelem,
      &                  leslib,     svLSFlag,   svLSType
 c
         common /intdat/ intg(2,MAXTS),  intpt(3),       intptb(3)

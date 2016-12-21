@@ -200,14 +200,13 @@ c
 c$$$     &          ,hprimel(npro,nshl),      v_lambdal1(npro,nshl),
 c$$$     &          v_lambdal2(npro,nshl)
 c above arrays must be uncommented for alternate method included below (commented)
-      real epsilon_tmp
+	real*8 epsilon_tmp
 
 c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
 c
       if (ipord .gt. 1) then
-           write(*,*) 'blk not plumbed this far'
 
          call getsgn(blk,ien,sgn)
       endif
@@ -250,7 +249,6 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-         write(*,*) 'broken blk not plumbed this far'
          call e3metric(blk, blk, xl,         shdrv,        dxidx,  
      &                  shg,        WdetJ)
 
