@@ -108,7 +108,16 @@ c
         real*8, allocatable, dimension(:,:) :: rerr
         real*8, allocatable, dimension(:,:) :: ybar, strain, vorticity
         real*8, allocatable, dimension(:,:) :: wallssVec, wallssVecbar
-
+c
+c Redistancing option of fixing phi of primary vertices
+c
+        real*8  primvertval(nshg,2)
+        integer primvert(nshg)
+        integer i_primvert,numpv,numpvset
+        integer  iredist_flag
+          
+        REAL*8,  allocatable :: BCredist(:)
+        integer, allocatable :: iBCredist(:)
         real*8 tcorecp(2), tcorecpscal(2)
 
         real*8, allocatable, dimension(:,:,:) :: yphbar
@@ -253,6 +262,28 @@ c
 c...  prepare lumped mass if needed
 c
       if((flmpr.ne.0).or.(flmpl.ne.0)) call genlmass(x, shp,shgl)
+c
+c set flag for freezing LS Scalar 2
+c
+            if (iSolvLSSclr2.eq.2) then
+              allocate (iBCredist(nshg))
+              allocate (BCredist(nshg))
+              BCredist(:) = zero
+              iBCredist(:) = 0
+            endif
+c
+c Redistancing option of fixing phi of primary vertices
+c
+        i_primvert = 0
+        if (i_primvert .eq. 1) then
+          do inode = 1, nshg
+           primvert(inode) = 0
+           primvertval(inode,1) = zero 
+           primvertval(inode,2) = zero
+c           write(*,*) "primvertval, inode = ", primvertval(inode,1),
+c     &                                  primvertval(inode,2), inode
+          enddo
+        endif
 c
 c.... -----------------> End of initialization <-----------------
 c
