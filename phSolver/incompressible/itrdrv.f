@@ -668,7 +668,7 @@ c
 c ... update the old value for second level set scalar
 c
                      if (ilset.eq.2 .and. isclr.eq.2)  then
-                         call itrUpdateDist( yold, acold, y, ac)
+!COMING SOON                         call itrUpdateDist( yold, acold, y, ac)
                      endif   
 
                      endif      ! end of flow or scalar update
