@@ -15,6 +15,7 @@ c-----------------------------------------------------------------------
      &        shape(blk%e,blk%s),   rho(blk%e),
      &        dwl(bsz,blk%n),     sclr(blk%e),
      &        xl(bsz,blk%n,nsd)
+      real*8 elem_size(blk%e)
       integer n, e
 
       real*8  epsilon_ls, kay, epsilon

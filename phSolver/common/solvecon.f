@@ -266,9 +266,9 @@ c
 
          do i=1,npro
          if (isclr .eq. 2) then
-           epsilon_tmp = epsilon_lsd*elem_local_size(lcblk(1,iblk)-1+i)
+           epsilon_tmp = epsilon_lsd*elem_local_size(blk%i -1+i)
          else
-           epsilon_tmp = epsilon_ls*elem_local_size(lcblk(1,iblk)-1+i)
+           epsilon_tmp = epsilon_ls*elem_local_size(blk%i -1+i)
          endif
 
             if (abs (Sclrtmp(i)) .le. epsilon_tmp) then
