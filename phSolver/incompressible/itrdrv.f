@@ -40,6 +40,7 @@ c
       use fncorpmod
       use solvedata
       use iso_c_binding
+      use spat_var_eps !use spatial varying eps_ls
 
 c      use readarrays !reads in uold and acold
       
@@ -265,14 +266,14 @@ c      if((flmpr.ne.0).or.(flmpl.ne.0)) call genlmass(x, shp,shgl)
       call genlmass(x, shp, shgl, iBC, iper, ilwork)
 c... compute element volumes
 c
-!COMING SOON      allocate(elem_local_size(numel))
-!COMING SOON      if (numelb .gt. 0) then
-!COMING SOON        allocate(elemb_local_size(numelb))
-!COMING SOON      else
-!COMING SOON	allocate(elemb_local_size(1))
-!COMING SOON      endif
-!COMING SOON      call getelsize(x,  shp,  shgl,  elem_local_size,
-!COMING SOON     &               shpb, shglb,  elemb_local_size)
+      allocate(elem_local_size(numel))
+      if (numelb .gt. 0) then
+        allocate(elemb_local_size(numelb))
+      else
+        allocate(elemb_local_size(1))
+      endif
+      call getelsize(x,  shp,  shgl,  elem_local_size,
+     &               shpb, shglb,  elemb_local_size)
 c
 c Initialize Level Set CFL array
 c

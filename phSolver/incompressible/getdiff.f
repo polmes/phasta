@@ -1,9 +1,11 @@
-      subroutine getDiff(blk, ith, dwl,yl, shape, xmudmi, xl, rmu,  rho)
+      subroutine getDiff(blk, ith, dwl,yl, shape, xmudmi, xl, rmu,  rho,
+     &                    elem_size)
 c-----------------------------------------------------------------------
 c  compute and add the contribution of the turbulent
 c  eddy viscosity to the molecular viscosity.
 c-----------------------------------------------------------------------
       use     turbSA
+      use  spat_var_eps !* for spatially varying epsilon_ls  
       include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
@@ -53,16 +55,32 @@ c
          do n = 1, blk%s
             Sclr = Sclr + shape(1:blk%e,n) * yl(1:blk%e,n,isc)
          enddo
+         if (icode .ge. 20) then !scalar 2
          do i= 1, blk%e
-            if (sclr(i) .lt. - epsilon_ls)then
-               prop_blend(i) = zero
-            elseif  (abs(sclr(i)) .le. epsilon_ls)then
-               prop_blend(i) = 0.5*(one + Sclr(i)/epsilon_ls +
-     &              (sin(pi*Sclr(i)/epsilon_ls))/pi )
-            elseif (sclr(i) .gt. epsilon_ls) then
-               prop_blend(i) = one
-            endif
-         enddo
+	     epsilon_lsd_tmp = epsilon_lsd*elem_size(i)
+c
+             if (sclr(i) .lt. - epsilon_lsd_tmp) then
+                 prop_blend(i) = zero
+              elseif  (abs(sclr(i)) .le. epsilon_lsd_tmp) then
+                 prop_blend(i) = 0.5*(one + Sclr(i) / epsilon_lsd_tmp +
+     &                           (sin(pi*Sclr(i)/epsilon_lsd_tmp))/pi)
+              elseif (sclr(i) .gt. epsilon_lsd_tmp) then
+                 prop_blend(i) = one
+              endif
+           enddo
+        else !scalar 1 or flow
+            do i= 1, blk%e
+              epsilon_ls_tmp = epsilon_ls*elem_size(i)
+              if (sclr(i) .lt. - epsilon_ls_tmp) then
+                 prop_blend(i) = zero	
+              elseif  (abs(sclr(i)) .le. epsilon_ls_tmp) then
+                 prop_blend(i) = 0.5*(one + Sclr(i)/epsilon_ls_tmp +
+     &                           (sin(pi*Sclr(i)/epsilon_ls_tmp))/pi)
+              elseif (sclr(i) .gt. epsilon_ls_tmp) then
+                 prop_blend(i) = one
+              endif
+           enddo
+        endif
 c
         rho = datmat(1,1,2) + (datmat(1,1,1)-datmat(1,1,2))*prop_blend
         rmu = datmat(1,2,2) + (datmat(1,2,1)-datmat(1,2,2))*prop_blend
@@ -214,7 +232,7 @@ c     LOCALS
       integer e, n
       double precision xki, xki3, fv1, evisc
   
-      if(itwmod.eq.-2) then
+      if(itwmod.eq.-2) then  ! effective viscosity
         do e = 1, blk%e
 c         assume no wall nodes on this element
           wallnode(:) = .false.

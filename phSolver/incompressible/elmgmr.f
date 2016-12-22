@@ -110,6 +110,7 @@ c
           blk%l = lcblk(3,iblk)
           blk%g = nint(blk%l)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (tmpshp)
@@ -215,6 +216,7 @@ c
           blk%l = lcblk(3,iblk)
           blk%g = nint(blk%l)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (rl)
@@ -397,6 +399,7 @@ c
           blk%g = nintb(lcsyst)
           blk%l = lcblkb(3,iblk)
           blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)
 c
 c.... allocate the element matrices
 c

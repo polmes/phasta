@@ -35,9 +35,10 @@ c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
 ! only needed if debugging      use omp_lib
+      use spat_var_eps   ! use spatially-varying epl_ls
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      include "eblock.h"
+      type (LocalBlkData) blk
 
 
 c
@@ -78,7 +79,7 @@ c.... local reconstruction of diffusive flux vector for quadratics
 c     or greater but NOT for bflux since local mass was not mapped
 c
         if ( idiff==2 .and. ires .eq. 1 ) then
-           call e3ql (yl,        dwl,       shp,       shgl, 
+           call e3ql (blk, yl,        dwl,       shp,       shgl, 
      &                xl,        ql,        xmudmi, 
      &                sgn)
         endif
@@ -112,7 +113,8 @@ c
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(blk,ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho)
+        call getdiff(blk,ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho,
+     &               elem_local_size(blk%i))
 c
 c.... calculate the integration variables
 c

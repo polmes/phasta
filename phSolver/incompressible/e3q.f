@@ -19,6 +19,8 @@ c  rmassl     (bsz,blk%s)        : element lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
+        use spat_var_eps   ! use spatially-varying epl_ls
+c
         include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
@@ -87,7 +89,8 @@ c.... compute diffusive fluxes
 c
 c.... compute the viscosity
 c
-        call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp)
+        call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp,
+     &               elem_local_size(blk%i))
 c
 c.... diffusive flux in x1-direction
 c
@@ -150,6 +153,9 @@ c
            alph2 = alph2+shpsum*WdetJ
         endif
       endif                     ! end of idiff=1 .or. 3 
+c
+c Compute gradient of level set scalar to be used to compute
+c normal vector later in qpbc & e3ivar
 c
       if(isurf .eq. 1) then
 c

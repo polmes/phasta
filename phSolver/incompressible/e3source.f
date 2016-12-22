@@ -207,7 +207,7 @@ c
 
 
 
-      subroutine e3sourceSclr ( Sclr,      Sdot,      gradS,
+      subroutine e3sourceSclr ( blk, Sclr,      Sdot,      gradS,
      &                          dwl,       shape_funct,     shg,   
      &                          yl,        dxidx,     rmu,
      &                          u1,        u2,        u3,   xl,
@@ -234,7 +234,10 @@ c
 c-----------------------------------------------------------------------
       use     turbSA
       use turbKE
+      use  spat_var_eps ! for spatially varying epsilon_ls
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c coming in      
       real*8  Sclr(npro),          Sdot(npro),
      &        gradS(npro,nsd),     dwl(bsz,nenl),
@@ -513,7 +516,7 @@ c
 !COMING SOON            cfl_loc   = cfl_loc + shape_funct(:,n) * cfll(:,n)
 !COMING SOON         enddo
 
-         call e3LSVel ( gradS,  yl,   shape_funct, 
+         call e3LSVel ( blk, gradS,  yl,   shape_funct, 
      &                  u1,     u2,   u3, sign_levelset)
 
 
@@ -574,7 +577,7 @@ c
 
 
 
-      subroutine e3LSVel ( gradS,  yl,   shape_funct, 
+      subroutine e3LSVel (blk, gradS,  yl,   shape_funct, 
      &                     u1,     u2,   u3,  sign_levelset)
 
 
@@ -589,8 +592,10 @@ c
 c     output:
 c
 c-----------------------------------------------------------------------
-!COMING SOON      use  spat_var_eps ! for spatially varying epsilon_ls
+      use  spat_var_eps ! for spatially varying epsilon_ls
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 c coming in      
       real*8  gradS(npro,nsd), 
      &        shape_funct(npro,nshl),
@@ -630,8 +635,8 @@ c
      &                      + shape_funct(ii,jj) * yl(ii,jj,7)
            enddo
 
-           epsilon_lsd_tmp = epsilon_lsd !COMING SOON * 
-!COMING SOON     &             elem_local_size(lcblk(1,iblk)-1+ii)
+           epsilon_lsd_tmp = epsilon_lsd * 
+     &             elem_local_size(blk%i -1+ii)
 
            if (sclr_ls(ii) .gt. epsilon_lsd_tmp)then
               sign_levelset(ii) = one

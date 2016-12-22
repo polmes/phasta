@@ -242,6 +242,8 @@ c-----------------------------------------------------------------------
 
       use     pointer_data
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
       
       integer nvars, npts, nHits(nshg)
       
@@ -280,12 +282,12 @@ c
          allocate ( sgn(npro,nshl)       )
  
          write(*,*) 'blk not plumbed this far'
-         call getsgn(mien(iblk)%p,sgn)
+         call getsgn(blk,mien(iblk)%p,sgn)
          
          call localy( ycoeff, ycl, mien(iblk)%p, ndof,  'gather  ')
          call localx( x,      xl,  mien(iblk)%p, nsd,   'gather  ')
 
-         call eval  ( xl,       ycl,      yvl,      
+         call eval  ( blk, xl,       ycl,      yvl,      
      &                shp,      shgl,     sgn,      
      &                nvars,    npts    )
 
@@ -320,11 +322,13 @@ c
 c  evaluate in element coordinate system
 c
 c-----------------------------------------------------------------------
-      subroutine eval( xl,      ycl,     yvl,     
+      subroutine eval( blk,xl,      ycl,     yvl,     
      &                 shp,     shgl,    sgn,
      &                 nvars,   npts ) 
       
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
       
       integer nvars
 c
@@ -340,7 +344,7 @@ c
 c.... loop over interpolation points
 c
       do intp = 1, npts
-         call getshp(intp, shp,          shgl,      sgn, 
+         call getshp(blk,intp, shp,          shgl,      sgn, 
      &               shape,        shdrv)
       
 c

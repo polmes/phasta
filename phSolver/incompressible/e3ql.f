@@ -20,6 +20,7 @@ c
 c----------------------------------------------------------------------
 c
       use local_mass
+      use spat_var_eps   ! use spatially-varying epl_ls
       include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
@@ -52,21 +53,22 @@ c
       rmass = zero
       qrl   = zero
         
-      do intp = 1, ngauss
+      do ith = 1, blk%g
 
-         call getshp(intp, shp, shgl, sgn, shape, shdrv)
+         call getshp(blk,ith, shp, shgl, sgn, shape, shdrv)
 
          qdi = zero
 c
 c.... calculate the integration variables 
 c    
 c
-         call e3qvar   (yl,           shdrv,   
+         call e3qvar   (blk, yl,           shdrv,   
      &                  xl,           g1yi,
      &                  g2yi,         g3yi,         shg,
      &                  dxidx,        WdetJ )
 
-         call getdiff(intp,dwl,  yl, shape, xmudmi, xl,rmu, tmp)
+         call getdiff(blk,ith,dwl,  yl, shape, xmudmi, xl,rmu, tmp,
+     &               elem_local_size(blk%i))
 c
 c.... diffusive flux in x1-direction
 c
@@ -80,7 +82,7 @@ c
          qdi(:,5) =  two * rmu *  g2yi(:,3)
          qdi(:,8) =        rmu * (g2yi(:,4) + g3yi(:,3))
 c     
-c.... diffusive flux in x3-direction
+c.... diffusive flux in /x3-direction
 c
          qdi(:,3) =        rmu * (g1yi(:,4) + g3yi(:,2))
          qdi(:,6)=        rmu * (g2yi(:,4) + g3yi(:,3))

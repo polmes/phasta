@@ -6,8 +6,12 @@ c---------------------------------------------------------------------------
 
       use stats
       use rlssave   ! Use the resolved Leonard stresses at the nodes.
+      use  spat_var_eps ! for spatially varying epsilon_ls
+
 
       include "common.h"
+      include "eblock.h"
+      type (LocalBlkData) blk
 
       dimension y(nshg,5),                  ac(nshg,5),
      &          x(numnp,nsd),               ien(npro,nshl),
@@ -237,9 +241,11 @@ c
              shpfun(i,n) = shp(n,intp)
           enddo
        enddo
+ 
+       write(*,*) 'advLES.f is not updated for thread changes yet'
 
-        call getdiff(intp, yl, shpfun, xmudmif,xl, rmu, rho)
-
+        call getdiff(blk,ith, yl, shpfun, xmudmif,xl, rmu, rho,
+     &               elem_local_size(blk%i))
 
        divqi = zero
        if ( idiff >= 1 ) then

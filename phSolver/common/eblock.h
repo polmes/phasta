@@ -1,6 +1,6 @@
       type LocalBlkData
-          integer :: n,s,e,g,l,o,b,t
-!n=nenl, s=nshl, e=nelInThisBlock=npro, g=ngauss, l=lcyst, o=order,b=iblk, t=ith
+          integer :: n,s,e,g,l,o,b,t,i
+!n=nenl, s=nshl, e=nelInThisBlock=npro, g=ngauss, l=lcyst, o=order,b=iblk, t=ith, i=iel (first element number of the block)
       end type LocalBlkData
 
 

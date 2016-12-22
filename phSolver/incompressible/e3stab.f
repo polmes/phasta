@@ -98,7 +98,7 @@ c
          fact = sqrt(tauM)
          dtsi=one/dts
          ff=taucfct/dtsfct
-         tauC =rho* pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3))*ff
+         if(icode.eq.0) tauC =rho* pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3))*ff
          tauM = one/fact
       else if(itau.eq.1)  then  ! new tau
 
@@ -128,9 +128,11 @@ c
 c
 c  we can calculate tauC more efficiently now
 c
-         tauC=tauM*(one+tauM*rmu*rmu)
-         tauC=one/tauC
-         tauC=taucfct*sqrt(tauC)
+         if(icode.eq.0) then
+           tauC=tauM*(one+tauM*rmu*rmu)
+           tauC=one/tauC
+           tauC=taucfct*sqrt(tauC)
+         endif
 c
 c
 c...  momentum tau
@@ -188,9 +190,11 @@ cdebugcheck         tauBar = pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3)) !*dtsi
 c
 c  we can calculate tauC more efficiently now
 c
-         tauC=tauM*(one+tauM*rmu*rmu)
-         tauC=one/tauC
-         tauC=sqrt(tauC)*taucfct
+         if(icode.eq.0) then
+           tauC=tauM*(one+tauM*rmu*rmu)
+           tauC=one/tauC
+           tauC=sqrt(tauC)*taucfct
+        endif
 c
 c
 c...  momentum tau
@@ -225,8 +229,7 @@ c  4 comes from the bi-unit mapping). If you want to limit sooner the formula
 c  would be  ".01-factor"=minCFL^2*4
 c
 
-         tauM = rho ** 2
-     1		    * ( four*taubar + fact
+         tauM =  ( four*taubar + fact
      2		    + fff * rmu** 2
      3		    * ( gijd(:,1) ** 2
      4		      + gijd(:,2) ** 2
@@ -237,8 +240,6 @@ c
      9		        + gijd(:,6) ** 2 ) ) 
      b              +omegasq)
          fact=sqrt(tauM)
-c         tauBar = pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3)) !*dtsi
-      
         tauM=one/fact           ! turn it right side up.
       else if(itau.eq.3)  then  ! compressible tau
 
@@ -268,7 +269,7 @@ c
 c  we can calculate tauC more efficiently now
 c
          tauM=sqrt(tauM/fact)*two
-         tauC=pt5*tauM*min(one,pt5*tauM/rmu)*taucfct
+         if(icode.eq.0) tauC=pt5*tauM*min(one,pt5*tauM/rmu)*taucfct
 c
 c
 c...  momentum tau
@@ -294,10 +295,11 @@ c
          dts= one/( Dtgl*dtsfct)
          tauM =min(dts,min(fact,fact*fact*unorm*pt33/rmu))
       endif
+      if(icode.eq.0) then
 c
 c.... calculate tauBar
 c
-      tauBar = rLui(:,1) * ( gijd(:,1) * rLui(:,1)
+        tauBar = rLui(:,1) * ( gijd(:,1) * rLui(:,1)
      &                       + gijd(:,4) * rLui(:,2)
      &                       + gijd(:,6) * rLui(:,3) )
      &         + rLui(:,2) * ( gijd(:,4) * rLui(:,1)
@@ -306,9 +308,10 @@ c
      &         + rLui(:,3) * ( gijd(:,6) * rLui(:,1)
      &                       + gijd(:,5) * rLui(:,2)
      &                       + gijd(:,3) * rLui(:,3) )
-      where ( tauBar .ne. 0.0 ) 
-         tauBar = tauM / sqrt(tauBar)
-      endwhere
+        where ( tauBar .ne. 0.0 ) 
+           tauBar = tauM / sqrt(tauBar)
+        endwhere
+      endif
 
 c
 c.... compute the modified velocity, uBar

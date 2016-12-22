@@ -48,6 +48,7 @@ c Christian Whiting, Winter 1999. (uBar formulation)
 c
 c----------------------------------------------------------------------
 c
+      use  spat_var_eps ! for spatially varying epsilon_ls
       include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
@@ -76,6 +77,7 @@ c
         dimension gyti(blk%e,nsd),            gradh(blk%e,nsd),
      &            sforce(blk%e,3),            weber(blk%e),
      &            Sclr(blk%e)
+      real*8 epsilon_ls_tmp
 c
 c.... ------------->  Primitive variables at int. point  <--------------
 c
@@ -195,6 +197,8 @@ c
 c     
           if (isurf .eq. 1) then   
 c     .... divergence of normal calculation (curvature)
+c  note ql(:,:,idflx-2 through idflx) contains the normal vector
+c  e3q computed grad(phi) and qpbc divided by the magnitude of grad(phi).
              do n=1, blk%s
                 divqi(1:blk%e,idflow+1) = divqi(1:blk%e,idflow+1) 
      &               + shg(1:blk%e,n,1)*ql(1:blk%e,n,idflx-2)
@@ -217,14 +221,19 @@ c
                    gyti(i,3) = gyti(i,3) + shg(i,n,3) * yl(i,n,6)
 c     
                 enddo
-
-                if (abs (sclr(i)) .le. epsilon_ls) then
-                   gradh(i,1) = 0.5/epsilon_ls * (1.0 
-     &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,1)
-                   gradh(i,2) = 0.5/epsilon_ls * (1.0 
-     &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,2) 
-                   gradh(i,3) = 0.5/epsilon_ls * (1.0 
-     &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,3)
+c
+c..Now we have to use spatially varied epsilon_ls
+c
+                epsilon_ls_tmp = epsilon_ls * 
+     &               elem_local_size(blk%i +i-1)
+  
+                if (abs (sclr(i)) .le. epsilon_ls_tmp) then
+                   gradh(i,1) = 0.5/epsilon_ls_tmp * (1.0 
+     &                  + cos(pi*Sclr(i)/epsilon_ls_tmp)) * gyti(i,1)
+                   gradh(i,2) = 0.5/epsilon_ls_tmp * (1.0 
+     &                  + cos(pi*Sclr(i)/epsilon_ls_tmp)) * gyti(i,2) 
+                   gradh(i,3) = 0.5/epsilon_ls_tmp * (1.0 
+     &                  + cos(pi*Sclr(i)/epsilon_ls_tmp)) * gyti(i,3)
                 endif
              enddo              !end of the loop over blk%e
 c     
@@ -325,6 +334,7 @@ c-----------------------------------------------------------------------
      &                      SrcL,        uMod,      dwl,
      &                      diffus,      srcRat)
 c
+      use spat_var_eps   ! use spatially-varying epl_ls
       include "common.h"
         include "eblock.h"
         type (LocalBlkData) blk
@@ -466,12 +476,17 @@ c
      &         aci,  u1,   u2,   u3,   Temp, rho,  x,
      &               g1yi, g2yi, g3yi,
      &         rLui, src, divqi)
-          src(:,1)=u1           !
-          src(:,2)=u2           ! store u in src memory
-          src(:,3)=u3           !
-c         e3uBar calculates Tau_M and assembles uBar
-          call getdiff(blk,ntp,dwl, yl, shpfun, xmudmi, xl, rmu, rho)
-          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
+c     this is call to getdiff is for the flow diffusive properties
+          call getdiff(blk,ith,dwl, yl, shpfun, xmudmi, xl, rmu, rho,
+     &               elem_local_size(blk%i))
+! bad to have a separate routine for something like Tau that may vary          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
+! changing to call e3stab that now has conditionals to skip computation of tauc and taubar so should be o.k. that they are note
+! dimensioned in this case since memory not accessed
+          call e3stab (blk, rho,          u1,       u2,
+     &                 u3,           dxidx,    rLui,
+     &                 rmu,          tauC,     tauM,
+     &                 tauBar,       uBar )
+
           u1=ubar(:,1)          ! the entire scalar residual
           u2=ubar(:,2)          ! is based on the modified
           u3=ubar(:,3)          ! velocity for conservation
@@ -498,7 +513,7 @@ c
 
        if(nosource.ne.1) then
         srcRat = zero
-        call e3sourceSclr ( Sclr,         Sdot,      gradS,  dwl,
+        call e3sourceSclr ( blk, Sclr,         Sdot,      gradS,  dwl,
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,
      &                      xl,           srcR,      srcL,   uMod,

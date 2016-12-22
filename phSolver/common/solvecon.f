@@ -165,6 +165,7 @@ c This subroutine is to calculate the element contribution to the
 c constraint factor and mass matrix.
 c
 c---------------------------------------------------------------------
+      use  spat_var_eps !this module for the spatially varying epsilon_ls
       include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
@@ -263,13 +264,13 @@ c
             sclrtmp = sclrtmp + shape(1:npro,i) * ycl(1:npro,i,6) !d^0
          enddo
 
+         do i=1,npro
          if (isclr .eq. 2) then
-            epsilon_tmp = epsilon_lsd
+           epsilon_tmp = epsilon_lsd*elem_local_size(lcblk(1,iblk)-1+i)
          else
-            epsilon_tmp = epsilon_ls
+           epsilon_tmp = epsilon_ls*elem_local_size(lcblk(1,iblk)-1+i)
          endif
 
-         do i=1,npro
             if (abs (Sclrtmp(i)) .le. epsilon_tmp) then
                h_prime(i) = (0.5/epsilon_tmp) * (1 
      &                    + cos(pi*Sclrtmp(i)/epsilon_tmp))

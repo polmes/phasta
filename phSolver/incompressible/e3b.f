@@ -49,6 +49,7 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004
 c----------------------------------------------------------------------
 c
+	use spat_var_eps   ! use spatially-varying epl_ls
         include "common.h"
       include "eblock.h"
       type (LocalBlkData) blk
@@ -121,7 +122,8 @@ c
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(blk,intp,dwl, yl,     shape,     xmudmi, xlb,   rmu, rho)
+        call getdiff(blk,intp, dwl, yl,     shape,     xmudmi, xlb,   rmu, rho,
+     &             elemb_local_size(blk%i))
 c
 c.... calculate the integraton variables
 c

@@ -44,16 +44,16 @@ c
 c     
 c.... loop through the integration points
 c     
-      do intp = 1, ngauss      ! (these are in common.h)
+      do ith = 1, ngauss      ! (these are in common.h)
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(intp,shp,         shgl,         sgn, 
-     &               shape,       shdrv,        intp)
+         call getshp(ith,shp,         shgl,         sgn, 
+     &               shape,       shdrv,        ith)
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metric(intp, xl, shdrv,dxidx,shg,WdetJ)
+         call e3metric(ith, xl, shdrv,dxidx,shg,WdetJ)
 c     
          do iel = 1, npro
             do  na  = 1, nshl
@@ -108,16 +108,16 @@ c----------------> Get the lumped mass matrix <-----------------------
 c     
 c.... loop through the integration points
 c     
-      do intp = 1, ngaussf      ! (these are in common.h)
+      do ith = 1, ngaussf      ! (these are in common.h)
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(intp,shpf,         shglf,         sgn, 
-     &               shape,       shdrv,        intp)
+         call getshp(ith,shpf,         shglf,         sgn, 
+     &               shape,       shdrv,        ith)
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metricf(intp, xl, shdrv,dxidx,shg,WdetJ,Qwtf)
+         call e3metricf(ith, xl, shdrv,dxidx,shg,WdetJ,Qwtf)
 c     
          do i=1,nods !nenl !nshl
             eml(:,i) = eml(:,i) + shape(:,i)*WdetJ(:)
@@ -138,7 +138,7 @@ c--------------> Get the consistent mass matrix <------------------------
 c     
 c.... loop through the integration points
 c     
-      do intp = 1, ngauss       ! (these are in common.h)
+      do ith = 1, ngauss       ! (these are in common.h)
 
 c.... get the hierarchic shape functions at this int point
 c
@@ -146,13 +146,13 @@ c
 c.... for the mass matrix to be consistent shp and shgl must be
 c.... evaluated with at least higher quadrature than one-pt. quad. 
 
-         call getshp(intp,shp,         shgl,         sgn,  
-     &               shape,       shdrv,        intp)
+         call getshp(ith,shp,         shgl,         sgn,  
+     &               shape,       shdrv,        ith)
 
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metric(intp, xl, shdrv,dxidx,shg,WdetJ)
+         call e3metric(ith, xl, shdrv,dxidx,shg,WdetJ)
 c     
 
          do iel = 1, npro
@@ -225,16 +225,16 @@ c----------------> Get the lumped mass matrix <-----------------------
 c     
 c.... loop through the integration points
 c     
-      do intp = 1, ngaussf      ! (these are in common.h)
+      do ith = 1, ngaussf      ! (these are in common.h)
 c
 c.... get the hierarchic shape functions at this int point
 c
-         call getshp(intp,shpf,         shglf,         sgn, 
-     &               shape,       shdrv,        intp)
+         call getshp(ith,shpf,         shglf,         sgn, 
+     &               shape,       shdrv,        ith)
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metricf(intp, xl, shdrv,dxidx,shg,WdetJ,Qwtf)
+         call e3metricf(ith, xl, shdrv,dxidx,shg,WdetJ,Qwtf)
 c     
          do i=1,nshl
             eml(:,i) = eml(:,i) + shape(:,i)*WdetJ(:)
@@ -255,7 +255,7 @@ c--------------> Get the consistent mass matrix <------------------------
 c     
 c.... loop through the integration points
 c     
-      do intp = 1, ngauss       ! (these are in common.h)
+      do ith = 1, ngauss       ! (these are in common.h)
 
 c.... get the hierarchic shape functions at this int point
 c
@@ -263,13 +263,13 @@ c
 c.... for the mass matrix to be consistent shp and shgl must be
 c.... evaluated with at least higher quadrature than one-pt. quad. 
 
-         call getshp(intp,shp,         shgl,         sgn,  
-     &               shape,       shdrv,        intp)
+         call getshp(ith,shp,         shgl,         sgn,  
+     &               shape,       shdrv,        ith)
 
 c     
 c.... calculate the determinant of the jacobian and weight it
 c     
-         call e3metric(intp, xl, shdrv,dxidx,shg,WdetJ)
+         call e3metric(ith, xl, shdrv,dxidx,shg,WdetJ)
 c     
 
          do iel = 1, npro
@@ -313,7 +313,7 @@ c  coordinates and the jacobian of the mapping (weighted by
 c  the quadrature weight
 c
 c-----------------------------------------------------------------------
-      subroutine e3metricf(  xl,      shgl,     dxidx,
+      subroutine e3metricf(  ith,xl,      shgl,     dxidx,
      &                      shg,     WdetJ, Qwtf)
 
       include "common.h"
@@ -368,9 +368,9 @@ c
        dxidx(:,3,3) = (dxdxi(:,1,1) * dxdxi(:,2,2) 
      &                - dxdxi(:,1,2) * dxdxi(:,2,1)) * tmp
 c
-c       WdetJ = Qwt(lcsyst,intp) / tmp
+c       WdetJ = Qwt(lcsyst,ith) / tmp
 
-       WdetJ = Qwtf(intp) / tmp
+       WdetJ = Qwtf(ith) / tmp
 c
 c.... compute the global gradient of shape-functions
 c
