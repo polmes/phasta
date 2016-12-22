@@ -44,6 +44,7 @@ c
 c
 c ... loop over element blocks
 c
+      ith=1  ! not yet threaded
       do iblk = 1, nelblk
 c
 c.... set up the parameters
@@ -61,6 +62,7 @@ c
          npro   = lcblk(1,iblk+1) - iel
          ngauss = nint(lcsyst)
 
+
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
           blk%s   = lcblk(10,iblk)
           blk%e   = lcblk(1,iblk+1) - iel
@@ -77,7 +79,7 @@ c
          tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
          tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 c   
-         call volcon (blk,y,          x,             tmpshp,              
+         call volcon (blk,ith,y,          x,             tmpshp,              
      &                tmpshgl,    mien(iblk)%p,  rmass,     
      &                v_lambda1,  hprime,        v_lambda2)
 
@@ -153,7 +155,7 @@ c
 c
 c
 
-      subroutine volcon (blk,y,         x,      shp,      
+      subroutine volcon (blk,ith, y,         x,      shp,      
      &                   shgl,      ien,    rmass, 
      &                   v_lambda1, hprime, v_lambda2)
 
@@ -234,7 +236,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c
-         call getshp(blk,shp,          shgl,      sgn, 
+         call getshp(blk,ith, shp,          shgl,      sgn, 
      &               shape,        shdrv)
 c
 c.... initialize

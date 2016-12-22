@@ -29,7 +29,7 @@ c of the smoothed error and lumped mass matrix, rmass
 c
         rerrsm = zero
         rmass = zero
-        
+        ith=1  ! not yet threaded  
         do iblk = 1, nelblk
 c
 c.... set up the parameters
@@ -63,7 +63,7 @@ c     and lumped mass matrix, rmass
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call smooth (blk,rerr,                x,                       
+          call smooth (blk,ith, rerr,       x,                       
      &               tmpshp,              
      &               tmpshgl,
      &               mien(iblk)%p,
@@ -116,7 +116,7 @@ c
        return
        end
 
-        subroutine smooth (blk,rerr,       x,       shp,
+        subroutine smooth (blk,ith, rerr,       x,       shp,
      &                     shgl,       ien,          
      &                     rerrsm,     rmass    )
 c
@@ -194,7 +194,7 @@ c
         call getshp(blk,intp,shp,          shgl,      sgn, 
      &              shape,        shdrv)
 c
-        call e3metric(blk, xl,         shdrv,        dxidx,  
+        call e3metric(blk, ith, xl,         shdrv,        dxidx,  
      &                 shg,        WdetJ)
         error=zero
         do n = 1, nshl

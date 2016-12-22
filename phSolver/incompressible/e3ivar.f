@@ -497,6 +497,7 @@ c
 
 
        if(nosource.ne.1) then
+        srcRat = zero
         call e3sourceSclr ( Sclr,         Sdot,      gradS,  dwl,
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,

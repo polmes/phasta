@@ -329,7 +329,8 @@ c
 c.... compute mass term for stab u_j N_{a,j} tau N_b (note that a and b
 c            flipped on both sides below)
 c
-            xSebe(1:blk%e,b,aa) = xSebe(1:blk%e,b,aa) + t1(1:blk%e,2)*shpfun(1:blk%e,aa)
+            xSebe(:,b,aa) = xSebe(:,b,aa) + t1(:,2)*shpfun(:,aa)*
+     &                                      almi*(one-flmpl)
          enddo
       enddo
 c

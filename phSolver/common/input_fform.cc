@@ -297,6 +297,42 @@ int input_fform(phSolver::Input& inp)
       cout << endl;
       exit(1);
     }   
+//*********************
+     if ((string)inp.GetValue("Redistance loop") == "True" ) {
+       levlset.i_redist_loop_flag = 1; }
+     else if((string)inp.GetValue("Redistance loop") == "False" ) {
+       levlset.i_redist_loop_flag = 0; }
+     else {
+       cout << "Redistance loop: Only Legal Values (True, False) ";
+       cout << endl;
+       exit(1);
+     }
+     levlset.redist_toler = inp.GetValue("Tolerance for redistance loop");
+     levlset.i_redist_max_iter = inp.GetValue("Maximum number of redistance iterations");
+     levlset.i_spat_var_eps_flag = inp.GetValue("Use spatial varying epsilon_ls");
+//*******************
+// For checking proximity of the interface to large elements
+     if ((string)inp.GetValue("Check proximity of interface to large elements") == "True" ) {
+       levlset.i_check_prox = 1; }
+     else if((string)inp.GetValue("Check proximity of interface to large elements") == "False" ) {
+       levlset.i_check_prox = 0; }
+     else {
+       cout << "Check proximity of interface to large elements: Only Legal Values (True, False) ";
+       cout << endl;
+       exit(1);
+     }
+     levlset.r_int_buffer = inp.GetValue("Check proximity interface buffer thickness");
+     levlset.r_int_elem_size = inp.GetValue("Check proximity maximum element size");
+// For output of gradient of level set function
+     if ((string)inp.GetValue("Output level set gradient") == "True" ) {
+       levlset.i_gradphi = 1; }
+     else if((string)inp.GetValue("Output level set gradient") == "False" ) {
+       levlset.i_gradphi = 0; }
+     else {
+       cout << "Output level set gradient: Only Legal Values (True, False) ";
+       cout << endl;
+       exit(1);
+     }
     }
 
     vector<double> vec;
@@ -693,6 +729,7 @@ int input_fform(phSolver::Input& inp)
       genpar.itau = 11;
 
     genpar.dtsfct = inp.GetValue("Tau Time Constant");
+    genpar.dtsfctsclr = inp.GetValue("Tau Time Constant for Scalars");
     genpar.taucfct = inp.GetValue("Tau C Scale Factor");
 
 	genpar.iLHScond = inp.GetValue("LHS BC heat flux enable");

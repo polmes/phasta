@@ -1,4 +1,4 @@
-        subroutine genlmass (x, shp,shgl)
+        subroutine genlmass (x, shp,shgl, iBC, iper, ilwork)
 c
         use pointer_data
 c
@@ -12,6 +12,7 @@ c
 c
         real*8 shp(MAXTOP,maxsh,MAXQPT),   
      &            shgl(MAXTOP,nsd,maxsh,MAXQPT) 
+        integer iBC(nshg), iper(nshg), ilwork(nlwork)
 c
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
         
@@ -64,7 +65,29 @@ c
 c.... end of interior element loop
 c
        enddo
+c
+c.... -------------------->   communications <-------------------------
+c
+         if (numpe > 1) then
+            call commu (gmass, ilwork, 1, 'in ')
+         end if
+c
+c  take care of periodic boundary conditions on mass matrix
+c
+       do j= 1,nshg
+         if ((btest(iBC(j),10))) then
+           i = iper(j)
+           gmass(i) = gmass(i) + gmass(j)
+         endif
+       enddo
 
+       do j= 1,nshg
+         if ((btest(iBC(j),10))) then
+           i = iper(j)
+           gmass(j) = gmass(i)
+         endif
+       enddo
+c
       return
       end
 

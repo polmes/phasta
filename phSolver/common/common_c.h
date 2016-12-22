@@ -419,6 +419,7 @@ extern "C" {
     int lstres;
     int iepstm;
     double dtsfct;
+    double dtsfctsclr;
     double taucfct;
     int bsz;
     int iabc;

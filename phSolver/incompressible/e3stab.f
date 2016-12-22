@@ -531,7 +531,7 @@ c
            fff = 64.0d0
         endif
 
-      dts  =  (Dtgl*dtsfct)
+      dts  =  (Dtgl*dtsfctsclr)
 !      dts=  min(Dtgl,28800.0d0)*dtsfct      !28800 = 1600*180 / 10
 !      dts=  min(Dtgl,2880.0d0)*dtsfct      !2880 = 1600*180 / 100
 !      dts=  min(Dtgl,288.0d0)*dtsfct        !288 = 1600*180 / 1000

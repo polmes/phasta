@@ -262,6 +262,7 @@ c    Kay-Epsilon
      &       kay(npro), epsilon(npro), fmu(npro), fmui(npro),
      &       srcjac(npro,4), srcRat(npro)
       integer e,n
+      real*8 small,epsilon_lsd_tmp
 c----------------------------------------------------------------------
 c
 c           --             --              --           --
@@ -493,19 +494,29 @@ c        no source term in the LHS yet
          if(isclr.eq.2) srcL = srcJac(:,4)
          iadvdiff=0 ! scalar advection-diffusion flag
          if(iadvdiff.eq.1)then
-            srcL(:)=zero
-            srcR(:)=zero
-            srcRat(:)=zero
+            srcL(1:npro)=zero
+            srcR(1:npro)=zero
+            srcRat(1:npro)=zero
          endif
 c
 c.... No source terms with the form (beta_i)*(phi,_i) for K or E
 c
-         uMod(:,1) = u1(:) - zero
-         uMod(:,2) = u2(:) - zero
-         uMod(:,3) = u3(:) - zero
+         uMod(1:npro,1) = u1(1:npro) - zero
+         uMod(1:npro,2) = u2(1:npro) - zero
+         uMod(1:npro,3) = u3(1:npro) - zero
 
       
       elseif (iLSet.ne.0) then
+
+!COMING SOON         cfl_loc = zero
+!COMING SOON          do n = 1, nshl
+!COMING SOON            cfl_loc   = cfl_loc + shape_funct(:,n) * cfll(:,n)
+!COMING SOON         enddo
+
+         call e3LSVel ( gradS,  yl,   shape_funct, 
+     &                  u1,     u2,   u3, sign_levelset)
+
+
          if (isclr.eq.1)  then
             
             srcR = zero
@@ -513,70 +524,36 @@ c
 
          elseif (isclr.eq.2) then !we are redistancing level-sets
 
-!   If Sclr(:,1).gt.zero, result of sign_term function 1
-!   If Sclr(:,1).eq.zero, result of sign_term function 0
-!   If Sclr(:,1).lt.zero, result of sign_term function -1
-
-            sclr_ls = zero      !zero out temp variable
-        
-            do ii=1,npro
-
-               do jj = 1, nshl  ! first find the value of levelset at point ii
-                  
-                  sclr_ls(ii) =  sclr_ls(ii) 
-     &                        + shape_funct(ii,jj) * yl(ii,jj,6)
-
-               enddo
-               
-               if (sclr_ls(ii) .gt. epsilon_ls)then
-            
-                  sign_levelset(ii) = one
-                  
-               elseif  (abs(sclr_ls(ii)) .le. epsilon_ls)then
-                  
-                  sign_levelset(ii) = sclr_ls(ii)/epsilon_ls 
-     &                  + sin(pi*sclr_ls(ii)/epsilon_ls)/pi
-                  
-               elseif (sclr_ls(ii) .lt. epsilon_ls) then
-                  
-                  sign_levelset(ii) = - one
-                  
-               endif
-               
-               srcR(ii) = sign_levelset(ii)
-               
-            enddo
-            
+            srcR = sign_levelset
             srcL =  zero   
 
-!   The redistancing equation can be written in the following form
-!
-!   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
-!
-!   This is rewritten in the form
-!
-!   d_{,t} + u * d_{,i} = sign(phi)
-!
+         endif
 
-!   For the redistancing equation the "velocity" term is calculated as 
-!   follows
+         umod(1:npro,1) = u1      ! These are for the LHS
+         umod(1:npro,2) = u2
+         umod(1:npro,3) = u3 
 
-
-
-            mytmp = sign_levelset / sqrt( gradS(:,1)*gradS(:,1) 
-     &                            + gradS(:,2)*gradS(:,2) 
-     &                            + gradS(:,3)*gradS(:,3)) 
-
-            uMod(:,1) = mytmp * gradS(:,1) ! These are for the LHS
-            uMod(:,2) = mytmp * gradS(:,2)
-            uMod(:,3) = mytmp * gradS(:,3)
-
-            u1 = umod(:,1)      ! These are for the RHS
-            u2 = umod(:,2)
-            u3 = umod(:,3)
-
-
-         endif    ! close of scalar 2 of level set
+c Adjust local redistancing velocity to maintain a minimum CFL number.
+c This is an attempt to adjust the local velocity rather than the 
+c psuedo time step to control CFL number
+!COMING SOON         if ((i_AdjRedistVel.eq.1).and.(isclr.eq.2)) then
+!COMING SOON           do ipro = 1, npro
+!COMING SOON            if (cfl_loc(ipro) .gt. AdjRedistVelCFL) then
+!COMING SOON             u1(ipro) = u1(ipro) * AdjRedistVelCFL / cfl_loc(ipro)
+!COMING SOON             u2(ipro) = u2(ipro) * AdjRedistVelCFL / cfl_loc(ipro)
+!COMING SOON             u3(ipro) = u3(ipro) * AdjRedistVelCFL / cfl_loc(ipro)
+!COMING SOON             uMod(ipro,1) = u1(ipro)
+!COMING SOON             uMod(ipro,2) = u2(ipro)
+!COMING SOON             uMod(ipro,3) = u3(ipro)
+!COMING SOONc             write(*,5002) u1(ipro),u2(ipro),u3(ipro)
+!COMING SOON 5001        format("Modified elemen ",i10," with u1, u2, u3 = ",
+!COMING SOON     &               3(1x,e12.5)," with CFL = ",e12.5)
+!COMING SOON 5002        format("      now u1, u2, u3 = ",3(1x,e12.5))
+!COMING SOON            endif
+!COMING SOON           enddo
+!COMING SOON        
+!COMING SOON          endif
+c
 
       else        ! NOT turbulence and NOT level set so this is a simple
                   ! scalar. If your scalar equation has a source term
@@ -591,4 +568,104 @@ c
       end
 
 
+!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!******************************************************************
+!-------------------------------------------------------------------
+
+
+
+      subroutine e3LSVel ( gradS,  yl,   shape_funct, 
+     &                     u1,     u2,   u3,  sign_levelset)
+
+
+c-----------------------------------------------------------------------
+c
+c     calculate the coefficients for the Spalart-Allmaras 
+c     turbulence model and its jacobian
+c
+c     input: 
+c             gradS :   spatial gradient of Sclr
+c
+c     output:
+c
+c-----------------------------------------------------------------------
+!COMING SOON      use  spat_var_eps ! for spatially varying epsilon_ls
+      include "common.h"
+c coming in      
+      real*8  gradS(npro,nsd), 
+     &        shape_funct(npro,nshl),
+     &        yl(npro,nenl,ndof), 
+     &        u1(npro),
+     &        u2(npro),            u3(npro)
+c used locally
+
+      real*8  mytmp(npro),         sign_levelset(npro),
+     &        sclr_ls(npro)
+      real*8 small,epsilon_lsd_tmp
+c
+
+c
+c.... compute primitive variables
+c
+      u1   = zero
+      u2   = zero
+      u3   = zero
+c
+c For Level Set Scalar 1
+      if (isclr.eq.1)  then
+        do n = 1, nshl
+           u1   = u1   + shape_funct(1:npro,n) * yl(1:npro,n,2)
+           u2   = u2   + shape_funct(1:npro,n) * yl(1:npro,n,3)
+           u3   = u3   + shape_funct(1:npro,n) * yl(1:npro,n,4)
+        enddo
+      elseif (isclr.eq.2) then !we are redistancing level-sets
+         sclr_ls = zero      !zero out temp variable
+      
+         do ii=1,npro
+           do jj = 1, nshl  ! first find the value of levelset at point ii
+c
+c sign(phi) should be based on the distance field        
+c                  
+             sclr_ls(ii) =  sclr_ls(ii) 
+     &                      + shape_funct(ii,jj) * yl(ii,jj,7)
+           enddo
+
+           epsilon_lsd_tmp = epsilon_lsd !COMING SOON * 
+!COMING SOON     &             elem_local_size(lcblk(1,iblk)-1+ii)
+
+           if (sclr_ls(ii) .gt. epsilon_lsd_tmp)then
+              sign_levelset(ii) = one
+           elseif  (abs(sclr_ls(ii)) .le. epsilon_lsd_tmp)then
+              sign_levelset(ii) = sclr_ls(ii)/epsilon_lsd_tmp 
+     &              + sin(pi*sclr_ls(ii)/epsilon_lsd_tmp)/pi
+           elseif (sclr_ls(ii) .lt. -epsilon_lsd_tmp) then
+              sign_levelset(ii) = - one
+           endif
+         enddo
+            
+
+!   The redistancing equation can be written in the following form
+!
+!   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
+!
+!   This is rewritten in the form
+!
+!   d_{,t} + u * d_{,i} = sign(phi)
+!
+
+!   For the redistancing equation the "velocity" term is calculated as 
+!   follows
+
+         small = 1e-10
+         mytmp = sign_levelset / (sqrt( gradS(1:npro,1)*gradS(:,1) 
+     &                         + gradS(1:npro,2)*gradS(:,2) 
+     &                         + gradS(1:npro,3)*gradS(:,3)) + small) 
+
+         u1 = mytmp * gradS(1:npro,1) 
+         u2 = mytmp * gradS(1:npro,2)
+         u3 = mytmp * gradS(1:npro,3)
+      endif
+
+      return
+      end
 

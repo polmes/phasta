@@ -261,7 +261,22 @@ c
 c
 c...  prepare lumped mass if needed
 c
-      if((flmpr.ne.0).or.(flmpl.ne.0)) call genlmass(x, shp,shgl)
+c      if((flmpr.ne.0).or.(flmpl.ne.0)) call genlmass(x, shp,shgl)
+      call genlmass(x, shp, shgl, iBC, iper, ilwork)
+c... compute element volumes
+c
+!COMING SOON      allocate(elem_local_size(numel))
+!COMING SOON      if (numelb .gt. 0) then
+!COMING SOON        allocate(elemb_local_size(numelb))
+!COMING SOON      else
+!COMING SOON	allocate(elemb_local_size(1))
+!COMING SOON      endif
+!COMING SOON      call getelsize(x,  shp,  shgl,  elem_local_size,
+!COMING SOON     &               shpb, shglb,  elemb_local_size)
+c
+c Initialize Level Set CFL array
+c
+!COMING SOON       CFLls = zero
 c
 c set flag for freezing LS Scalar 2
 c

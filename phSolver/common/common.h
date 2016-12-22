@@ -202,7 +202,7 @@ c
         common /genpar/ E3nsd,  I3nsd,  nsymdf, ndofBC, ndiBCB, ndBCB,
      &                  Jactyp, jump,   ires,   iprec,  iprev,  ibound,
      &                  idiff,  lhs,    itau,   ipord,  ipred,  lstres,
-     &                  iepstm, dtsfct, taucfct, bsz, iabc, isurf,
+     &                  iepstm, dtsfct, dtsfctsclr, taucfct, bsz, iabc, isurf,
      &                  idflx,  Bo,     EntropyPressure, irampViscOutlet,
      &                  istretchOutlet, iremoveStabTimeTerm, iLHScond
 
