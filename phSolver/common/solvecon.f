@@ -235,7 +235,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c
-         call getshp(blk,ith, shp,          shgl,      sgn, 
+         call getshp(blk,intp, shp,          shgl,      sgn, 
      &               shape,        shdrv)
 c
 c.... initialize
@@ -250,7 +250,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-         call e3metric(blk, blk, xl,         shdrv,        dxidx,  
+         call e3metric(blk, intp, xl,         shdrv,        dxidx,  
      &                  shg,        WdetJ)
 
 c
