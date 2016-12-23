@@ -90,7 +90,7 @@ c
 c----------------------------------------------------------------------
        subroutine AsIqSclr (blk,y,       x,       shp,
      &                       shgl,    ien,     qres,    
-     &                       rmass    )
+     &                       rmass,   cfl,     icflhits   )
 c
       use turbsa      ! access to d2wall
       use eblock
