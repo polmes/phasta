@@ -18,9 +18,8 @@ c
 c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),

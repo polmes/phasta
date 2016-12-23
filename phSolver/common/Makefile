@@ -64,7 +64,7 @@ endif
 
 dirs := .
 DEPS := $(DEPS) phasta/phastaIO 
-mods  := spebc.f pointer.f \
+mods  := eblock.f spebc.f pointer.f \
         turbsa.f \
         perprep.f local_mass.f \
         filtprep.f  pvsqbi.f \

@@ -25,9 +25,8 @@ c Zdenek Johan, Summer 1990.  (Modified from e2tau.f)
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-        include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension rho(blk%e),                 u1(blk%e),
@@ -333,9 +332,8 @@ c-----------------------------------------------------------------------
       subroutine e3uBar (blk,rho,          ui,         dxidx,     
      &                   rLui,         rmu,        uBar )         
 
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       real*8     rho(blk%e),            ui(blk%e,nsd),
      &           dxidx(blk%e,nsd,nsd),  rLui(blk%e,nsd),
@@ -399,9 +397,8 @@ c get the metric tensor g_{ij}=xi_{k,i} xi_{k,j}.
 c-----------------------------------------------------------------------
       subroutine e3gijd(blk, dxidx,  gijd )
       
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       
       real*8  dxidx(blk%e,nsd,nsd),  gijd(blk%e,6),
      &        tmp1(blk%e),           tmp2(blk%e),
@@ -496,9 +493,8 @@ c------------------------------------------------------------------------
      &                       srcRat )
 c
 c
-        include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         real*8    rho(blk%e),                 uMod(blk%e,nsd),

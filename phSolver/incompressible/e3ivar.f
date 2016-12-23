@@ -49,9 +49,8 @@ c
 c----------------------------------------------------------------------
 c
       use  spat_var_eps ! for spatially varying epsilon_ls
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 c
 c  passed arrays
@@ -336,9 +335,8 @@ c-----------------------------------------------------------------------
      &                      cfll)
 c
       use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
 
 c
 c  passed arrays

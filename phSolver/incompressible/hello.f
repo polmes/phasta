@@ -1,8 +1,7 @@
       subroutine hello
       use omp_lib
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (localBlkData) blk
 
       integer idshared(4)
 #ifdef HAVE_OMP
@@ -84,9 +83,8 @@
 
 !DEC$ ATTRIBUTES NOINLINE :: testpass2
       subroutine testPass2(iblk,blk)
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       real*8 ui(blk%e,blk%g)
       real*8 yl(blk%e,blk%s,nflow)  
       nelbk=blk%e
@@ -99,9 +97,8 @@
       end
 
       subroutine testPass(iblk,blk)
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       do iblk = 1, nelblk
           iblock = iblk         ! used in local mass inverse (p>2)
           iblkts = iblk         ! used in timeseries

@@ -18,9 +18,8 @@ c  ql     (npro,nshl,nsd*nsd) : element RHS diffusion residual
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension yl(bsz,nshl,ndof),

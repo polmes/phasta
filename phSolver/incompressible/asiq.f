@@ -21,10 +21,9 @@ c     rmass  (numnp)            : lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
-        use turbsa      ! access to d2wall
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use turbsa      ! access to d2wall
+      use eblock
+      include "common.h"
 
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
@@ -92,10 +91,9 @@ c----------------------------------------------------------------------
      &                       shgl,    ien,     qres,    
      &                       rmass    )
 c
-        use turbsa      ! access to d2wall
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use turbsa      ! access to d2wall
+      use eblock
+      include "common.h"
 
 c
         dimension y(nshg,ndof),             x(numnp,nsd),            

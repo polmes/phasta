@@ -13,9 +13,8 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use turbSA ! access to d2wall
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),

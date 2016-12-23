@@ -17,9 +17,8 @@ c  cfl_loc(blk%e) 	   : CFL of the element
 c
 c----------------------------------------------------------------------
 c
-       include "common.h"
-       include "eblock.h"
-       type (LocalBlkData) blk
+      use  eblock
+      include "common.h"
 c
         dimension rho(blk%e),                 u1(blk%e),
      &            u2(blk%e),                  u3(blk%e),

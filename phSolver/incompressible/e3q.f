@@ -19,11 +19,10 @@ c  rmassl     (bsz,blk%s)        : element lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
-        use spat_var_eps   ! use spatially-varying epl_ls
+      use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      include "common.h"
 
 c
         dimension yl(bsz,blk%s,ndof),     dwl(bsz,blk%n),
@@ -223,9 +222,8 @@ c diffusive flux vector and the lumped mass matrix.
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension yl(bsz,blk%s,ndof),    dwl(bsz,blk%n),

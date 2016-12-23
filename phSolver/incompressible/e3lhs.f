@@ -28,9 +28,8 @@ c     xlhs(blk%e,16,blk%s,blk%s) : left hand side
 c
 c
 c------------------------------------------------------------------------
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
 
 
       dimension u1(blk%e),         u2(blk%e),       u3(blk%e),
@@ -279,9 +278,8 @@ c------------------------------------------------------------------------
      &                       xSebe )
 
 c
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
 
 
       real*8    uMod(blk%e,nsd),

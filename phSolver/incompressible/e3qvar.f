@@ -30,9 +30,8 @@ c Zdenek Johan, Winter 1991. (Fortran 90)
 c Kenneth Jansen, Winter 1997. Primitive Variables
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
 c  passed arrays
@@ -151,9 +150,8 @@ c-----------------------------------------------------------------------
       subroutine e3qvarSclr  (blk,yl,       shgl,         xl, 
      &                        gradT,    dxidx,        WdetJ )
 
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 
 c

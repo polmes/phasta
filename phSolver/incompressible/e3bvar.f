@@ -46,9 +46,8 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c----------------------------------------------------------------------
 c
       use        turbsa
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 c
       dimension yl(bsz,nshl,ndof),        rmu(npro),
@@ -801,9 +800,8 @@ c---------------------------------------------------------------------
      &                         shape,     WdetJb,   bnorm,
      &                         flux,      dwl )
 
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension yl(bsz,nshl,ndof),        shdrv(npro,nsd,nshl),

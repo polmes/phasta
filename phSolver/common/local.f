@@ -21,9 +21,8 @@ c
 c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),
@@ -137,9 +136,8 @@ c
 c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
-        include "common.h"
-       include "eblock.h"
-       type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 
         dimension global(numnp,n),           rlocal(bsz,blk%s,n),
@@ -219,9 +217,8 @@ c  to each global dof. This may be used to find the average.
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-       include "eblock.h"
-       type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),
      &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s),
@@ -276,9 +273,8 @@ c
 c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
-        include "common.h"
-       include "eblock.h"
-       type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),
      &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s)

@@ -36,9 +36,8 @@ c  output:
 c     rl(bsz,blk%s,nflow)
 c
 c------------------------------------------------------------------------
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       dimension u1(blk%e),         u2(blk%e),         u3(blk%e),
      &          uBar(blk%e,nsd),   aci(blk%e,nsd),    WdetJ(blk%e),
@@ -273,9 +272,8 @@ c------------------------------------------------------------------------
      &                       diffus,
      &                       rl )
 c
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       real*8    uMod(blk%e,nsd),   gGradS(blk%e, nsd),
      &          Sclr(blk%e),       Sdot(blk%e),	gradS(blk%e,nsd),
@@ -356,9 +354,8 @@ c----------------------------------------------------------------------
      &     aci,  u1,   u2,   u3,   Temp, rho,  xx,
      &           g1yi, g2yi, g3yi,
      &     rLui, src, divqi)
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 c     INPUTS
       double precision, intent(in), dimension(blk%e,nsd) :: 

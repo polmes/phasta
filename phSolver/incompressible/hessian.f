@@ -2,11 +2,10 @@
      &                       shp,       shgl,      iBC,
      &                       shpb,      shglb,     iper,      
      &                       ilwork,    uhess,     gradu  )
-        use pointer_data  ! brings in the pointers for the blocked arrays
+      use pointer_data  ! brings in the pointers for the blocked arrays
+      use eblock
 
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      include "common.h"
 
 c
         dimension y(nshg,ndof),      
@@ -103,9 +102,8 @@ c-----------------------------------------------------------------------------
         subroutine velocity_gradient (blk, y,       x,       shp,     shgl, 
      &                                 ien,     gradu,   rmass    )
 
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
@@ -182,9 +180,8 @@ c-----------------------------------------------------------------------------
         subroutine velocity_hessian ( blk,gradu,   x,     shp,   shgl, 
      &                                ien,     uhess, rmass  )
 
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 c
         dimension gradu(nshg,9),              x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
@@ -313,9 +310,8 @@ c-------------------------------------------------------------------------
      &                              gradient, dxidx,   WdetJ )
 c
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 c
 c  passed arrays
 

@@ -8,9 +8,8 @@ c  the z-coordinate
 c
 c-----------------------------------------------------------------------
 
+      use  eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       
       real*8   xx(blk%e,nsd), src(blk%e,nsd)
 
@@ -237,9 +236,8 @@ c-----------------------------------------------------------------------
       use     turbSA
       use turbKE
       use  spat_var_eps ! for spatially varying epsilon_ls
+      use  eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c coming in      
       real*8  Sclr(blk%e),          Sdot(blk%e),
      &        gradS(blk%e,nsd),     dwl(bsz,blk%n),
@@ -598,9 +596,8 @@ c     output:
 c
 c-----------------------------------------------------------------------
       use  spat_var_eps ! for spatially varying epsilon_ls
+      use  eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c coming in      
       real*8  gradS(blk%e,nsd), 
      &        shape_funct(blk%e,blk%s),

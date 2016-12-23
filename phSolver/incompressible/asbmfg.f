@@ -14,9 +14,8 @@ c Irene Vignon, Spring 2004.
 c----------------------------------------------------------------------
 c
       use turbSA                ! access to d2wall
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),
@@ -91,9 +90,8 @@ c
      &                   ienb,    materb,  iBCB,    BCB,
      &                   res)
       use turbSA ! access to d2wall
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),

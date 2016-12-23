@@ -10,10 +10,9 @@ c--------------------------------------------------------------------
 c
 c
       use pointer_data
+      use eblock
 c     
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       include "mpif.h"
       include "auxmpi.h"      
@@ -166,9 +165,8 @@ c constraint factor and mass matrix.
 c
 c---------------------------------------------------------------------
       use  spat_var_eps !this module for the spatially varying epsilon_ls
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c     
       dimension y(nshg,ndof),               x(numnp,nsd),              
      &            shp(nshl,maxsh),  

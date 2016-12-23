@@ -16,14 +16,13 @@ c
       use rlssave  ! Use the resolved Leonard stresses at the nodes.
       use timedata    ! time series
       use turbsa                ! access to d2wall
+      use eblock
 #ifdef HAVE_OMP
       use omp_lib
 #endif
 
 
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
@@ -146,9 +145,8 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use     turbSA  
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
      &            x(numnp,nsd),              

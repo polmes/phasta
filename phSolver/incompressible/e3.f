@@ -37,9 +37,8 @@ c----------------------------------------------------------------------
 c
 ! only needed if debugging      use omp_lib
       use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 
 c
@@ -247,9 +246,8 @@ c K. E. Jansen,   Winter 1999.   (advective form formulation)
 c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
 
 c
       real*8    yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof),       

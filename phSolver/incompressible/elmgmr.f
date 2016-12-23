@@ -26,10 +26,9 @@ c
       use pointer_data  ! brings in the pointers for the blocked arrays
       use local_mass
       use timedata
+      use eblock
 c
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),
@@ -544,13 +543,12 @@ c solver.
 c
 c----------------------------------------------------------------------
 c
-        use solvedata
-        use pointer_data
-        use local_mass
+      use solvedata
+      use pointer_data
+      use local_mass
+      use eblock
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      include "common.h"
         include "mpif.h"
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),

@@ -30,9 +30,8 @@ c Zdenek Johan, Winter 1991. (Recoded)
 c Zdenek Johan, Winter 1991. (Fortran 90)
 c----------------------------------------------------------------------
 c
-	include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension gradS(blk%e,nsd),            gGradS(blk%e,nsd),

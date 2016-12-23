@@ -6,15 +6,14 @@ c
 c 
 c----------------------------------------------------------------------
 c
-        use pvsQbi  ! brings in NABI
-        use stats   !  
-        use pointer_data  ! brings in the pointers for the blocked arrays
-        use local_mass
+      use pvsQbi  ! brings in NABI
+      use stats   !  
+      use pointer_data  ! brings in the pointers for the blocked arrays
+      use local_mass
+      use eblock
 c
-        include "common.h"
-        include "mpif.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      include "common.h"
+      include "mpif.h"
 
 
 c
@@ -154,9 +153,8 @@ c
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 
 c....Passed arrays

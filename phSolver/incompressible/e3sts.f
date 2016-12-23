@@ -5,10 +5,9 @@ c  compute the terms needed for the left hand side matrices
 c  needed for the conservative projection       
 c
 c-----------------------------------------------------------------------
-      use     stats
+      use  stats
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       
       integer i
@@ -44,9 +43,8 @@ c  compute the residual terms for the consistent projection
 c
 c-----------------------------------------------------------------------      
       use     stats
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       
       real*8  xl(bsz,blk%n,3),  rl(bsz,blk%s,ndof)
       real*8  lDir(blk%e,blk%s,3), lStsVec(bsz,blk%s,nResDims)
@@ -82,9 +80,8 @@ c
 c  compute the normal to each of the nodes
 c
 c-----------------------------------------------------------------------
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       
       real*8  xl(bsz,blk%n,3), lDir(blk%e,blk%s,3)
       integer e

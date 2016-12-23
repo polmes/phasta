@@ -49,10 +49,9 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004
 c----------------------------------------------------------------------
 c
-	use spat_var_eps   ! use spatially-varying epl_ls
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
+      include "common.h"
 
 c
         dimension yl(bsz,nshl,ndof),          iBCB(npro,ndiBCB),
@@ -378,9 +377,8 @@ c*********************************************************************
 
         subroutine e3bSclr (blk,yl,      iBCB,    BCB,     shpb,    shglb,
      &                      xlb,     rl,      sgn,     dwl)
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),

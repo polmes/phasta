@@ -7,11 +7,9 @@ c---------------------------------------------------------------------------
       use stats
       use rlssave   ! Use the resolved Leonard stresses at the nodes.
       use  spat_var_eps ! for spatially varying epsilon_ls
-
+      use  eblock
 
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       dimension y(nshg,5),                  ac(nshg,5),
      &          x(numnp,nsd),               ien(npro,nshl),

@@ -6,9 +6,8 @@ c  eddy viscosity to the molecular viscosity.
 c-----------------------------------------------------------------------
       use     turbSA
       use  spat_var_eps !* for spatially varying epsilon_ls  
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
 
       real*8  yl(bsz,blk%s,ndof), rmu(blk%e), xmudmi(blk%e,blk%g),
@@ -125,9 +124,9 @@ c
 
       subroutine EviscDESIC(blk,xl,xmut,xmudmi)
      
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      
       real*8 xmut(blk%e),xl(bsz,blk%n,nsd),xmudmi(blk%e,blk%g)
 
 
@@ -154,9 +153,8 @@ c
 
       use turbSA
       use turbKE ! access to KE model constants
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
       
       real*8   diffus(blk%e), rho(blk%e)
       real*8   yl(bsz,blk%s,ndof), dwl(bsz,blk%n), shape(blk%e,blk%s)
@@ -216,9 +214,8 @@ c
 
       subroutine AddEddyViscSA(blk, yl,shape,rmu)
       use turbSA
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
@@ -331,9 +328,8 @@ c     Loop over elements in this block
 
       subroutine AddSAVar(blk,yl,shape,rmu)
       use turbSA
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
@@ -391,9 +387,8 @@ c in all these cases, the S-A variable is calculated normally
 
       subroutine AddEddyViscKE(blk, yl, dwl, shape, rho, sigmaInv, rmu)
       use turbKE ! access to KE model constants
+      use eblock
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl

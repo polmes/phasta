@@ -10,9 +10,8 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use pvsQbi
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension xlb(bsz,nenl,nsd),    bnorm(npro,nsd),
@@ -171,9 +170,8 @@ c Irene Vignon - copied from AsBNABI, Fall 2005.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use pvsQbi
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension xlb(bsz,nenl,nsd),

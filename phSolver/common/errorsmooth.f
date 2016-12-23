@@ -1,12 +1,11 @@
       subroutine errsmooth(rerr,   x,     iper,   ilwork, 
      &                     shp,    shgl,  iBC)
 c
-        use pointer_data
+      use pointer_data
+      use eblock
 c
-        include "common.h"
-        include "mpif.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      include "common.h"
+      include "mpif.h"
 
 c
         dimension shp(MAXTOP,maxsh,MAXQPT),  
@@ -139,9 +138,8 @@ c     rmass  (nshg)            : lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
+      use eblock
+      include "common.h"
 
 c
         dimension rerr(nshg,10),               x(numnp,nsd),     
