@@ -6,6 +6,7 @@
       use eblock
 
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndof),      
@@ -104,6 +105,7 @@ c-----------------------------------------------------------------------------
 
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
@@ -182,6 +184,7 @@ c-----------------------------------------------------------------------------
 
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
         dimension gradu(nshg,9),              x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
@@ -312,6 +315,7 @@ c
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
 c  passed arrays
 

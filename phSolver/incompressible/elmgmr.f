@@ -29,6 +29,7 @@ c
       use eblock
 c
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),
@@ -549,6 +550,7 @@ c
       use eblock
 c
       include "common.h"
+      type (LocalBlkData) blk
         include "mpif.h"
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),

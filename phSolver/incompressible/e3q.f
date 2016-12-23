@@ -23,6 +23,7 @@ c
       use eblock
 c
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension yl(bsz,blk%s,ndof),     dwl(bsz,blk%n),
@@ -224,6 +225,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension yl(bsz,blk%s,ndof),    dwl(bsz,blk%n),

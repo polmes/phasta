@@ -4,6 +4,7 @@ c
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
         include "mpif.h"
 c
@@ -104,6 +105,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
         real*8 x(numnp,nsd),              
      &         shp(nshl,maxsh),       shgl(nsd,nshl,ngauss),

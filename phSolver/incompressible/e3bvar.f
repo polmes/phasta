@@ -48,6 +48,7 @@ c
       use        turbsa
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
       dimension yl(bsz,nshl,ndof),        rmu(npro),
@@ -802,6 +803,7 @@ c---------------------------------------------------------------------
 
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension yl(bsz,nshl,ndof),        shdrv(npro,nsd,nshl),

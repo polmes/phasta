@@ -23,6 +23,7 @@ c
 
 
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
@@ -147,6 +148,7 @@ c
       use     turbSA  
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
      &            x(numnp,nsd),              

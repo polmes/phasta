@@ -33,6 +33,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
       dimension shpb(nshl,ngaussb),        shglb(nsd,nshl,ngaussb),

@@ -41,6 +41,7 @@ c-----------------------------------------------------------------------
       use     pvsQbi
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       
       real*8   x(numnp,nsd)

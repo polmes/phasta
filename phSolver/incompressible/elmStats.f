@@ -8,6 +8,7 @@ c-----------------------------------------------------------------------
       use eblock
       
       include "common.h"
+      type (LocalBlkData) blk
 
       real*8  x(numnp,3)
       integer iBC(nshg), iper(nshg), ilwork(nlwork)

@@ -8,6 +8,7 @@ c-----------------------------------------------------------------------
       use  spat_var_eps !* for spatially varying epsilon_ls  
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
       real*8  yl(bsz,blk%s,ndof), rmu(blk%e), xmudmi(blk%e,blk%g),
@@ -126,6 +127,7 @@ c
      
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       real*8 xmut(blk%e),xl(bsz,blk%n,nsd),xmudmi(blk%e,blk%g)
 
@@ -155,6 +157,7 @@ c
       use turbKE ! access to KE model constants
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       real*8   diffus(blk%e), rho(blk%e)
       real*8   yl(bsz,blk%s,ndof), dwl(bsz,blk%n), shape(blk%e,blk%s)
@@ -216,6 +219,7 @@ c
       use turbSA
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
@@ -330,6 +334,7 @@ c     Loop over elements in this block
       use turbSA
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl
@@ -389,6 +394,7 @@ c in all these cases, the S-A variable is calculated normally
       use turbKE ! access to KE model constants
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
      &     yl

@@ -27,6 +27,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension rho(blk%e),                 u1(blk%e),
@@ -334,6 +335,7 @@ c-----------------------------------------------------------------------
 
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       real*8     rho(blk%e),            ui(blk%e,nsd),
      &           dxidx(blk%e,nsd,nsd),  rLui(blk%e,nsd),
@@ -399,6 +401,7 @@ c-----------------------------------------------------------------------
       
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       real*8  dxidx(blk%e,nsd,nsd),  gijd(blk%e,6),
      &        tmp1(blk%e),           tmp2(blk%e),
@@ -495,6 +498,7 @@ c
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         real*8    rho(blk%e),                 uMod(blk%e,nsd),

@@ -39,6 +39,7 @@ c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
 c
@@ -248,6 +249,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
       real*8    yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof),       

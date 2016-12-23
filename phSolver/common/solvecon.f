@@ -16,6 +16,7 @@ c
 
       include "mpif.h"
       include "auxmpi.h"      
+      type (LocalBlkData) blk
 c      
       dimension y(nshg,ndof),                    
      &          x(numnp,nsd),            iBC(nshg),
@@ -167,6 +168,7 @@ c---------------------------------------------------------------------
       use  spat_var_eps !this module for the spatially varying epsilon_ls
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c     
       dimension y(nshg,ndof),               x(numnp,nsd),              
      &            shp(nshl,maxsh),  

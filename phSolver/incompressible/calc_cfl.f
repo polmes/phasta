@@ -19,6 +19,7 @@ c----------------------------------------------------------------------
 c
       use  eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
         dimension rho(blk%e),                 u1(blk%e),
      &            u2(blk%e),                  u3(blk%e),

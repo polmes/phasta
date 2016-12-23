@@ -32,6 +32,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
 c  passed arrays
@@ -152,6 +153,7 @@ c-----------------------------------------------------------------------
 
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
 c

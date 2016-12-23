@@ -23,6 +23,7 @@ c
       use eblock
       
       include "common.h"
+      type (LocalBlkData) blk
 
       include "mpif.h"
 

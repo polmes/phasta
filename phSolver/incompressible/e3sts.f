@@ -8,6 +8,7 @@ c-----------------------------------------------------------------------
       use  stats
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       
       integer i
@@ -45,6 +46,7 @@ c-----------------------------------------------------------------------
       use     stats
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       real*8  xl(bsz,blk%n,3),  rl(bsz,blk%s,ndof)
       real*8  lDir(blk%e,blk%s,3), lStsVec(bsz,blk%s,nResDims)
@@ -82,6 +84,7 @@ c
 c-----------------------------------------------------------------------
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       real*8  xl(bsz,blk%n,3), lDir(blk%e,blk%s,3)
       integer e

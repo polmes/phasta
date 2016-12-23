@@ -23,6 +23,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),
@@ -138,6 +139,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
         dimension global(numnp,n),           rlocal(bsz,blk%s,n),
@@ -219,6 +221,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),
      &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s),
@@ -275,6 +278,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),
      &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s)

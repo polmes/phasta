@@ -20,6 +20,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
         dimension global(nshg,n),           rlocal(bsz,blk%s,n),

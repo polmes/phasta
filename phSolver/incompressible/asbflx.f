@@ -15,6 +15,7 @@ c
       use turbSA ! access to d2wall
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndofl),           x(numnp,nsd),

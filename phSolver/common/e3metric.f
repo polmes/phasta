@@ -10,6 +10,7 @@ c-----------------------------------------------------------------------
 
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       real*8     xl(bsz,blk%n,nsd),    shgl(blk%e,nsd,blk%s),
      &           dxidx(blk%e,nsd,nsd),  shg(blk%e,blk%s,nsd), 

@@ -20,6 +20,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension yl(bsz,nshl,ndof),

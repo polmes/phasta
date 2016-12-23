@@ -6,6 +6,7 @@ c
 c
       include "common.h"
       include "mpif.h"
+      type (LocalBlkData) blk
 
 c
         dimension shp(MAXTOP,maxsh,MAXQPT),  
@@ -140,6 +141,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension rerr(nshg,10),               x(numnp,nsd),     

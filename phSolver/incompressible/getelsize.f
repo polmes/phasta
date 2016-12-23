@@ -13,6 +13,7 @@ c
       use eblock
 c
       include "common.h"
+      type (LocalBlkData) blk
       include "mpif.h"
 
 
@@ -155,6 +156,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
 c....Passed arrays

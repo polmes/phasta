@@ -4,6 +4,7 @@
       use timedata
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
       dimension shape(blk%s), ycl(bsz,blk%s,ndofl),

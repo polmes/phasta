@@ -24,6 +24,7 @@ c
       use turbsa      ! access to d2wall
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndof),               x(numnp,nsd),            
@@ -94,6 +95,7 @@ c
       use turbsa      ! access to d2wall
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension y(nshg,ndof),             x(numnp,nsd),            

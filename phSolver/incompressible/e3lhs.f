@@ -30,6 +30,7 @@ c
 c------------------------------------------------------------------------
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
       dimension u1(blk%e),         u2(blk%e),       u3(blk%e),
@@ -280,6 +281,7 @@ c------------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 
       real*8    uMod(blk%e,nsd),

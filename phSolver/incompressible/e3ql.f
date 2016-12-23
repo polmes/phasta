@@ -23,6 +23,7 @@ c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
       dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),
@@ -192,6 +193,7 @@ c
       use local_mass
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
       dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),
      &          shp(blk%s,ngauss),          shgl(nsd,blk%s,ngauss),

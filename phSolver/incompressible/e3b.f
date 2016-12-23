@@ -52,6 +52,7 @@ c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension yl(bsz,nshl,ndof),          iBCB(npro,ndiBCB),
@@ -379,6 +380,7 @@ c*********************************************************************
      &                      xlb,     rl,      sgn,     dwl)
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),

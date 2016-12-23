@@ -32,6 +32,7 @@ c----------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension gradS(blk%e,nsd),            gGradS(blk%e,nsd),

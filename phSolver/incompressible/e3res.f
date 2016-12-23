@@ -38,6 +38,7 @@ c
 c------------------------------------------------------------------------
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       dimension u1(blk%e),         u2(blk%e),         u3(blk%e),
      &          uBar(blk%e,nsd),   aci(blk%e,nsd),    WdetJ(blk%e),
@@ -274,6 +275,7 @@ c------------------------------------------------------------------------
 c
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       real*8    uMod(blk%e,nsd),   gGradS(blk%e, nsd),
      &          Sclr(blk%e),       Sdot(blk%e),	gradS(blk%e,nsd),
@@ -356,6 +358,7 @@ c----------------------------------------------------------------------
      &     rLui, src, divqi)
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c     INPUTS
       double precision, intent(in), dimension(blk%e,nsd) :: 

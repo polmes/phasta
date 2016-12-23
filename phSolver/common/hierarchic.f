@@ -14,6 +14,7 @@ c     signs on all modes to be negated.
 c------------------------------------------------------------------------
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       dimension ien(blk%e,blk%s),  sgn(blk%e,blk%s)
       
@@ -35,6 +36,7 @@ c     order modes correctly negated at the current quadrature point.
 c------------------------------------------------------------------------
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       
       dimension shp(blk%s,blk%g),   shgl(nsd,blk%s,blk%g),
@@ -241,6 +243,7 @@ c-----------------------------------------------------------------------
       use     pointer_data
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       integer nvars, npts, nHits(nshg)
       
@@ -325,6 +328,7 @@ c-----------------------------------------------------------------------
       
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       integer nvars
 c

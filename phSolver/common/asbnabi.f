@@ -12,6 +12,7 @@ c
       use pvsQbi
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension xlb(bsz,nenl,nsd),    bnorm(npro,nsd),
@@ -172,6 +173,7 @@ c
       use pvsQbi
       use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension xlb(bsz,nenl,nsd),

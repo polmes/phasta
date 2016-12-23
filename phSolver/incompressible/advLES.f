@@ -10,6 +10,7 @@ c---------------------------------------------------------------------------
       use  eblock
 
       include "common.h"
+      type (LocalBlkData) blk
 
       dimension y(nshg,5),                  ac(nshg,5),
      &          x(numnp,nsd),               ien(npro,nshl),
