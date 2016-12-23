@@ -38,7 +38,7 @@ c
      &            xl(bsz,blk%n,nsd),           dwl(bsz,blk%n),      
      &            rl(bsz,blk%s,nflow), 
      &            ql(bsz,blk%s,idflx),
-     &            cfll(blk%e,blk%s)
+     &            cfll(bsz,blk%s)
 c        
         dimension xlhs(bsz,16,blk%s,blk%s)
 c
@@ -111,7 +111,7 @@ c
 c.... sum the CFL value from IPs.  These wil be divided by the number of
 c     contributors in elmgmr to get average CFL value at node
 c
-        call localSum (cfl, cfll, ien, icflhits, 1)
+        call localSum (blk,cfl, cfll, ien, icflhits, 1)
 c
 c.... end
 c
@@ -162,7 +162,8 @@ c
         real*8    yl(bsz,blk%s,ndofl),        acl(bsz,blk%s,ndofl),
      &            xl(bsz,blk%n,nsd),         
      &            rl(bsz,blk%s),              ql(bsz,blk%s,nsd),
-     &            dwl(bsz,blk%n)            
+     &            dwl(bsz,blk%n),
+     &            cfll(bsz,blk%s),            cfllold(bsz,blk%s)            
 c        
         real*8    xSebe(bsz,blk%s,blk%s),      xmudmi(blk%e,blk%g) 
 c
@@ -183,7 +184,7 @@ c
      &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
         call local (blk,qres,   ql,     ien,    nsd,    'gather  ')
         if (iLSet.eq.2) then
-          call local(cflold, cfllold, ien,  1,  'gather  ')
+          call local(blk,cflold, cfllold, ien,  1,  'gather  ')
         endif
 c
 c.... zero the matrices if they are being recalculated
@@ -210,7 +211,7 @@ c.... assemble the CFL values.  cfl will contain the sum of
 c     all contributing integration points.  Will divide by
 c     the number of contributors to get the average CFL number.
         if (iLSet.eq.2) then
-          call localSum (cfl, cfll, ien, icflhits, 1)
+          call localSum (blk,cfl, cfll, ien, icflhits, 1)
         endif
 c
 c.... end

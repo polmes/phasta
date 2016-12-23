@@ -294,7 +294,7 @@ c
 c
 c.... average coefficients since stresses may be discontinuous
 c         
-         call localSum( yvals,    yvl,    mien(iblk)%p,  
+         call localSum( blk, yvals,    yvl,    mien(iblk)%p,  
      &                  nHits,    nVars)  
          
          
