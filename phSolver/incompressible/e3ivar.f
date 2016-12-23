@@ -271,7 +271,7 @@ c.... -------------------> error calculation  <-----------------
 c     
 ! OLD WAY       if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
 ! NEW WAY only one point quadrature on the error
-       if((ierrcalc.eq.1).and.(nitr.eq.iter).and.(ith.eq.ngauss)) then
+       if((ierrcalc.eq.1).and.(nitr.eq.iter).and.(ith.eq.blk%g)) then
           do ia=1,blk%s
              tmp=shpfun(:,ia)*WdetJ(:)
              tmp1=shpfun(:,ia) !Qwt(lcsyst,ith) 
@@ -332,7 +332,8 @@ c-----------------------------------------------------------------------
      &                      u1,          u2,        u3,              
      &                      ql,          rLS ,       SrcR,
      &                      SrcL,        uMod,      dwl,
-     &                      diffus,      srcRat)
+     &                      diffus,      srcRat,
+     &                      cfll)
 c
       use spat_var_eps   ! use spatially-varying epl_ls
       include "common.h"
@@ -354,7 +355,8 @@ c
      &          SrcR(blk%e),                 SrcL(blk%e),
      &          dwl(bsz,blk%n),            diffus(blk%e),
      &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
-     &          divqi(blk%e)   
+     &          divqi(blk%e) ,
+     &          cfll(blk%e,blk%s)   
 c
       dimension tmp(blk%e), srcRat(blk%e)
       real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),
@@ -517,7 +519,7 @@ c
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,
      &                      xl,           srcR,      srcL,   uMod,
-     &                      srcRat)
+     &                      srcRat,  cfll )
        else
         srcRat = zero
         srcR   = zero

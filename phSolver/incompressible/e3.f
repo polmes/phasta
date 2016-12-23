@@ -1,7 +1,7 @@
         subroutine e3 (blk, yl,      acl,     dwl,     shp,
      &                 shgl,    xl,      rl,      ql,
      &                 xlhs, xmudmi,  sgn, 
-     &                 rerrl, rlsl)
+     &                 rerrl, rlsl,    cfll)
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -23,6 +23,7 @@ c output:
 c  rl     (bsz,blk%s,nflow)      : element RHS residual    (G^e_a)
 c  rml    (bsz,blk%s,nflow)      : element modified residual  (G^e_a tilde)
 c  xlhs  (bsz,16,blk%s,blk%s)  : element LHS tangent mass matrix
+c  cfll   (blk%e,blk%s) 		: CFL of the element
 c
 c Note: This routine will calculate the element matrices for the
 c        Hulbert's generalized alpha method integrator
@@ -46,7 +47,8 @@ c
      &            acl(bsz,blk%s,ndof),       
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),      dwl(bsz,blk%n),
-     &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx)
+     &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx),
+     &            cfll(blk%e,blk%s)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
@@ -72,6 +74,11 @@ c
 
         real*8    rerrl(bsz,blk%s,6)
         integer   aa
+
+c
+c... needed for CFL calculation
+c
+      real*8 cfll_loc(blk%e)
 
 c
 c     
@@ -127,6 +134,17 @@ c
      &               ql,          rLui,      src,
      &               rerrl,       rlsl,      rlsli,
      &               dwl) 
+c
+c.... compute CFL number
+c
+        cfll_loc = zero
+        call calc_cfl(blk, rho,          u1,       u2,
+     &                u3,           dxidx,    rmu,    
+     &                cfll_loc)
+
+        do i=1,blk%s
+          cfll(:,i) = cfll(:,i) + shpfun(:,i)*cfll_loc
+        enddo
 c
 c.... compute the stabilization terms
 c
@@ -217,7 +235,8 @@ c###################################################################
       subroutine e3Sclr (blk,yl,      acl,     shp,
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
-     &                     sgn,     xmudmi)
+     &                     sgn,     xmudmi,  cfll,
+     &                   cfllold)
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -237,7 +256,8 @@ c
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
      &            ql(bsz,blk%s,nsd),      xSebe(bsz,blk%s,blk%s),
-     &            dwl(bsz,blk%n)
+     &            dwl(bsz,blk%n),         cfll(blk%e,blk%s),
+     &          cfllold(blk%e,blk%s)
 c
 c.... local declarations
 c
@@ -261,6 +281,13 @@ c     and the source term sneaks into the RHS and LHS.
       real*8    uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
 c
       integer   aa, b
+
+c
+c... needed for CFL calculation
+c
+      real*8 rmu_tmp(blk%e), rho_tmp(blk%e), cfll_loc(blk%e)
+      rmu_tmp = zero
+      rho_tmp = 1.0  
 c     
 c.... local reconstruction of diffusive flux vector
 c
@@ -292,8 +319,19 @@ c
      &                  u1,          u2,        u3,              
      &                  ql,          rLS,       SrcR,
      &                  SrcL,        uMod,      dwl,
-     &                  diffus,      srcRat)
+     &                  diffus,      srcRat,
+     &                  cfllold )
+c
+c.... compute CFL number
+c
+        cfll_loc = zero
+        call calc_cfl(blk, rho_tmp,      u1,       u2,
+     &                u3,        dxidx,    rmu_tmp,
+     &                cfll_loc)
 
+        do i=1,blk%s
+          cfll(:,i) = cfll(:,i) + shpfun(:,i)*cfll_loc
+        enddo
 
 c
 c.... compute the stabilization terms

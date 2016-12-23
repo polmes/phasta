@@ -119,8 +119,8 @@ c               tmpBC(i,j)=BC(i,nstart+j)
             enddo
 c         endif
 c      enddo
-      
-      call localb(tmpBC,tmpBCB,ienb,nsclr,'gather  ')
+      write(*,*) 'blk not here yet'
+      call local(blk,tmpBC,tmpBCB,ienb,nsclr,'gather  ')
       
       do i=1,npro
          do j=1,nsclr

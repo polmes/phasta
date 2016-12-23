@@ -342,7 +342,8 @@ c
      &                   ilwork,     shp,        shgl, 
      &                   shpb,       shglb,      rowp,     
      &                   colm,       solinc,
-     &                   tcorecpscal
+     &                   tcorecpscal,
+     &                   cfl
 #ifdef HAVE_SVLS     
      &                   ,svLS_lhs,  svLS_ls,   svLS_nFaces)
 #else
@@ -402,7 +403,7 @@ c
 c
       real*8    lesP(nshg,1),               lesQ(nshg,1),
      &          solinc(nshg,1),           CGsol(nshg),
-     &          tcorecpscal(2)
+     &          tcorecpscal(2),           cfl(nshg)
 #ifdef HAVE_SVLS     
       TYPE(svLS_lhsType), INTENT(INOUT) :: svLS_lhs
       TYPE(svLS_lsType), INTENT(INOUT) ::  svLS_ls
@@ -425,7 +426,8 @@ c
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm
+     &             rowp,      colm,
+     &             cfl
 #ifdef HAVE_PETSC
      &             ,lhsPs )
 #else 

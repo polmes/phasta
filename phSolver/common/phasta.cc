@@ -176,7 +176,7 @@ int phasta( int argc, char *argv[] ) {
     stack_size_lim.rlim_cur = RLIM_INFINITY;
     stack_size_lim.rlim_max = RLIM_INFINITY;
     rlim_result = setrlimit(RLIMIT_STACK, &stack_size_lim);
-    if(myrank == 1) fprintf(stderr, "Attempting to set ulimit from phasta exec ");
+    if(myrank == 0) fprintf(stderr, "Attempting to set ulimit from phasta exec ");
     if(rlim_result == -1) perror("setrlimit: ");
 #endif
 

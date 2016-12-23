@@ -1,7 +1,8 @@
         subroutine AsIGMR (blk,  y,       ac,      x,       xmudmi,
      &                     shp,     shgl,    ien,     
      &                     rl,     qres,
-     &                     xlhs,   rerrl,   StsVecl)
+     &                     xlhs,   rerrl,   StsVecl,
+     &                     cfl,     icflhits )
 c
 c----------------------------------------------------------------------
 c
@@ -29,13 +30,15 @@ c
      &            x(numnp,nsd),              
      &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
      &            ien(blk%e,blk%s),
-     &            qres(nshg,idflx)
+     &            qres(nshg,idflx),           cfl(nshg),
+     &            icflhits(nshg)
 
 c
         dimension yl(bsz,blk%s,ndofl),         acl(bsz,blk%s,ndofl),
      &            xl(bsz,blk%n,nsd),           dwl(bsz,blk%n),      
      &            rl(bsz,blk%s,nflow), 
-     &            ql(bsz,blk%s,idflx)
+     &            ql(bsz,blk%s,idflx),
+     &            cfll(blk%e,blk%s)
 c        
         dimension xlhs(bsz,16,blk%s,blk%s)
 c
@@ -96,13 +99,19 @@ c
         call e3  (blk,yl,      acl,     dwl,     shp,
      &            shgl,    xl,      rl,      
      &            ql,      xlhs, xmudmi, 
-     &            sgn,     rerrl,  rlsl     )
+     &            sgn,     rerrl,  rlsl,
+     &            cfll     )
 c
 c.... assemble the statistics residual
 c
         if ( stsResFlg .eq. 1 ) then
            call e3StsRes (blk, xl, rl, StsVecl )
         endif
+c
+c.... sum the CFL value from IPs.  These wil be divided by the number of
+c     contributors in elmgmr to get average CFL value at node
+c
+        call localSum (cfl, cfll, ien, icflhits, 1)
 c
 c.... end
 c
@@ -125,7 +134,8 @@ c=======================================================================
 
         subroutine AsIGMRSclr(blk, y,       ac,      x,       
      &                     shp,     shgl,    ien,     
-     &                     res,     qres,    xSebe, xmudmi )
+     &                     res,     qres,    xSebe, xmudmi,
+     &                     cfl,     icflhits,  cflold )
 c
 c----------------------------------------------------------------------
 c
@@ -144,7 +154,9 @@ c
      &            x(numnp,nsd),              
      &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
      &            ien(blk%e,blk%s),
-     &            res(nshg),                  qres(nshg,nsd)
+     &            res(nshg),                  qres(nshg,nsd),
+     &            cfl(nshg),                  icflhits(nshg),
+     &            cflold(nshg)
 
 c
         real*8    yl(bsz,blk%s,ndofl),        acl(bsz,blk%s,ndofl),
@@ -170,6 +182,9 @@ c
         if(iRANS.lt. 0) 
      &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
         call local (blk,qres,   ql,     ien,    nsd,    'gather  ')
+        if (iLSet.eq.2) then
+          call local(cflold, cfllold, ien,  1,  'gather  ')
+        endif
 c
 c.... zero the matrices if they are being recalculated
 c
@@ -180,14 +195,23 @@ c
 c.... get the element residuals, LHS matrix, and preconditioner
 c
       rl = zero
+      cfll = zero
       call e3Sclr  (blk,yl,      acl,     shp,
      &              shgl,    xl,      dwl,
      &              rl,      ql,      xSebe,   
-     &              sgn, xmudmi)
+     &              sgn, xmudmi,  cfll,
+     &              cfllold)
 c
 c.... assemble the residual
 c
         call local (blk,res,    rl,     ien,    1,  'scatter ')
+c
+c.... assemble the CFL values.  cfl will contain the sum of
+c     all contributing integration points.  Will divide by
+c     the number of contributors to get the average CFL number.
+        if (iLSet.eq.2) then
+          call localSum (cfl, cfll, ien, icflhits, 1)
+        endif
 c
 c.... end
 c

@@ -58,6 +58,9 @@ c
       integer irstin, isize, nitems, ndofwss
       integer iarray(50)  ! integers read from headers
 
+      real*8 cfltmp(nshg)
+      integer cflhitstmp(nshg)
+
       real*8, allocatable, dimension(:,:,:,:) :: xKebe, xGoC
       integer, allocatable, dimension(:,:)    :: ien2
       integer, allocatable, dimension(:)      :: map
@@ -155,7 +158,7 @@ c
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
      &                   xlhs, 
-     &                   rtmp)
+     &                   rtmp, cfltmp, cflhitstmp)
 c     
 !lhs=0            deallocate ( xKebe )
 !lhs=0            deallocate ( xGoC  )

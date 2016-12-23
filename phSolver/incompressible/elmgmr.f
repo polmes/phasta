@@ -62,6 +62,8 @@ c
         real*8, allocatable :: tmpshpb(:,:), tmpshglb(:,:,:)
 
         real*8 spmasstot(20),  ebres(nshg)
+        real*8 cfl(nshg), CFLfl_maxtmp
+        integer icflhits(nshg)
 c
 c.... set up the timer
 c
@@ -252,7 +254,8 @@ c
      &                 rl(:,:,:,ith),
      &                 qres,              
      &                 xlhs(:,:,:,:,ith),   rerrl(:,:,:,ith), 
-     &                 StsVecl(:,:,:,ith) )
+     &                 StsVecl(:,:,:,ith),
+     &                 cfl,                 icflhits )
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
         enddo !threaded loop closes here
@@ -333,7 +336,34 @@ c
         call lmassadd(ac,res,rowp,colm,lhs16,gmass)
       endif
 
-      have_local_mass = 1
+       have_local_mass = 1
+
+c  Divide CFL number by the number of contributors to get
+c  the average CFL number.
+       cfl = cfl / icflhits
+
+c
+c Find element with worst (largest) CFL number
+c
+        CFLfl_max = cfl(1)
+        iCFLfl_maxelem = 1
+        do i = 1, nshg
+          if (cfl(i) .gt. CFLfl_max) then
+            CFLfl_max = cfl(i)
+            iCFLfl_maxelem = i
+          endif
+        enddo
+c
+c Communicate with other processors to get maximum CFL number over
+c all processors
+c
+        if(numpe. gt. 1) then
+           call MPI_ALLREDUCE (CFLfl_max, CFLfl_maxtmp, 1,
+     &       MPI_DOUBLE_PRECISION,MPI_MAX, MPI_COMM_WORLD,ierr)
+        else
+           CFLfl_maxtmp = CFLfl_max
+        endif
+        CFLfl_max = CFLfl_maxtmp 
 c
 c.... time average statistics
 c       
@@ -498,7 +528,8 @@ c      call timer ('Back    ')
      &                       shp,       shgl,      iBC,
      &                       BC,        shpb,      shglb,
      &                       res,       iper,      ilwork,
-     &                       rowp,      colm      
+     &                       rowp,      colm,
+     &                       cfl      
 #ifdef HAVE_PETSC
      &                       ,lhsPs)
 #else
@@ -538,6 +569,8 @@ c
 
 
         real*8, allocatable, dimension(:,:,:) :: xSebe
+        real*8  cfl(nshg), CFLls_maxtmp, cflold(nshg)
+        integer icflhits(nshg)
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
         real*8, allocatable :: tmpshpb(:,:), tmpshglb(:,:,:)
 c
@@ -556,6 +589,8 @@ c of the diffusive flux vector, q, and lumped mass matrix, rmass
 c
         qres = zero
         rmass = zero
+        icflhits = 0
+        cfl = zero
 
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
       allocate (tmpshp(nshlc,MAXQPT))
@@ -597,10 +632,14 @@ c     and lumped mass matrix, rmass
      &                       tmpshp, 
      &                       tmpshgl, 
      &                       mien(iblk)%p,     qres,                   
-     &                       rmass )
+     &                       rmass, cfl, icflhits )
        
            enddo
-       
+
+c  Divide CFL number by the number of contributors to get
+c  the average CFL number.
+           cfl = cfl / icflhits
+
 c
 c.... form the diffusive flux approximation
 c
@@ -624,6 +663,9 @@ c
            flxID = zero
         endif
 
+        icflhits = 0
+        cflold = cfl
+        cfl = zero
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
       allocate (tmpshp(nshlc,MAXQPT))
       allocate (tmpshgl(nsd,nshlc,MAXQPT))
@@ -670,7 +712,8 @@ c
      &                 tmpshp,
      &                 tmpshgl,
      &                 mien(iblk)%p,        res,
-     &                 qres,                xSebe, mxmudmi(iblk)%p )
+     &                 qres,                xSebe, mxmudmi(iblk)%p,
+     &                 cfl,  icflhits, cflold )
 c
 c.... satisfy the BC's on the implicit LHS
 c     
@@ -709,6 +752,34 @@ c
        endif
 
        have_local_mass = 1
+
+c  Divide CFL number by the number of contributors to get
+c  the average CFL number.
+       cfl = cfl / icflhits
+
+c
+c Find element with worst (largest) CFL number
+c
+        CFLls_max = cfl(1)
+        iCFLls_maxelem = 1
+        do i = 1, nshg
+          if (cfl(i) .gt. CFLls_max) then
+            CFLls_max = cfl(i)
+            iCFLls_maxelem = i
+          endif
+        enddo
+c
+c Communicate with other processors to get maximum CFL number over
+c all processors
+c
+        if(numpe. gt. 1) then
+           call MPI_ALLREDUCE (CFLls_max, CFLls_maxtmp, 1,
+     &       MPI_DOUBLE_PRECISION,MPI_MAX, MPI_COMM_WORLD,ierr)
+        else
+           CFLls_maxtmp = CFLls_max
+        endif
+        CFLls_max = CFLls_maxtmp
+
 c
 c
 c  call DtN routine which updates the flux to be consistent with the

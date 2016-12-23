@@ -123,6 +123,7 @@ c
 
         real*8, allocatable, dimension(:,:,:) :: yphbar
         real*8 CFLworst(numel)
+        real*8 CFLls(nshg)
 
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -277,7 +278,7 @@ c
 c
 c Initialize Level Set CFL array
 c
-!COMING SOON       CFLls = zero
+       CFLls = zero
 c
 c set flag for freezing LS Scalar 2
 c
@@ -536,7 +537,7 @@ c  Modify psuedo time step based on CFL number for redistancing
                         if((iLSet.eq.2).and.(ilss.ge.1).and.
      &                     (i_dtlset_cfl.eq.1).and.
      &                     (isclr.eq.2)) then
-! COMING SOON                           call calc_deltau()
+                           call calc_deltau()
                            Delt(1) = dtlset ! psuedo time step for level set
                            Dtgl = one / Delt(1)
                            ilss = ilss+1
@@ -613,7 +614,7 @@ c     Delt(1)= Deltt ! Give a pseudo time step
      &                         ilwork,        shp,       shgl,
      &                         shpb,          shglb,     rowp,     
      &                         colm,          lhsS(1,j), 
-     &                         solinc(1,isclr+5), CFLls) 
+     &                         solinc(1,isclr+5), CFLls)
                      else
                       call itrYAlpha( uold,    yold,    acold,
      &                u,       y,       ac,
@@ -642,7 +643,7 @@ c     Delt(1)= Deltt ! Give a pseudo time step
      &                         ilwork,        shp,       shgl,
      &                         shpb,          shglb,     rowp,     
      &                         colm,          
-     &                         solinc(1,isclr+5), tcorecpscal
+     &                         solinc(1,isclr+5), tcorecpscal, CFLls
 #ifdef HAVE_SVLS
      &                         ,svLS_lhs_S(isclr),   svLS_ls_S(isclr), svls_nfaces)
 #else

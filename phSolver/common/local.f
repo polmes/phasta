@@ -209,7 +209,7 @@ c
 
 
 
-        subroutine localSum (global, rlocal, ientmp, nHits, n)
+        subroutine localSum (blk,global, rlocal, ientmp, nHits, n)
 c
 c----------------------------------------------------------------------
 c
@@ -220,9 +220,11 @@ c
 c----------------------------------------------------------------------
 c
         include "common.h"
+       include "eblock.h"
+       type (LocalBlkData) blk
 
-        dimension global(nshg,n),           rlocal(bsz,nshl,n),
-     &            ien(npro,nshl),           ientmp(npro,nshl),
+        dimension global(nshg,n),           rlocal(bsz,blk%s,n),
+     &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s),
      &            nHits(nshg)
 c
 c.... cubic basis has negatives in ien
@@ -236,15 +238,15 @@ c
 c.... ------------------------->  'assembling '  <----------------------
 c
         do j = 1, n
-           do i = 1, nshl
-              do nel = 1,npro
+           do i = 1, blk%s
+              do nel = 1,blk%e
                  idg = ien(nel,i)
                  global(idg,j) = global(idg,j) + rlocal(nel,i,j)
               enddo
            enddo
         enddo
-        do i = 1, nshl
-           do nel = 1,npro
+        do i = 1, blk%s
+           do nel = 1,blk%e
               idg = ien(nel,i)
               nHits(idg) = nHits(idg) + 1
            enddo
@@ -254,7 +256,7 @@ c.... end
 c
         end
  
-      subroutine localb (global, rlocal, ientmp, n, code)
+      subroutine localb (blk,global, rlocal, ientmp, n, code)
 c
 c----------------------------------------------------------------------
 c
@@ -262,8 +264,8 @@ c This subroutine performs a vector gather/scatter operation on boundary only.
 c
 c input:
 c  global (nshg,n)             : global array
-c  rlocal (npro,nshl,n)         : local array
-c  ien    (npro,nshl)      : nodal connectivity
+c  rlocal (blk%e,blk%s,n)         : local array
+c  ien    (blk%e,blk%s)      : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -275,9 +277,11 @@ c Zdenek Johan, Winter 1992.
 c----------------------------------------------------------------------
 c
         include "common.h"
+       include "eblock.h"
+       type (LocalBlkData) blk
 
-        dimension global(nshg,n),           rlocal(npro,nshlb,n),
-     &            ien(npro,nshl),           ientmp(npro,nshl)
+        dimension global(nshg,n),           rlocal(bsz,blk%s,n),
+     &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s)
 c
         character*8 code
         
@@ -302,7 +306,7 @@ c.... gather the data
 c
 
           do j = 1, n
-            do i = 1, nshlb
+            do i = 1, blk%s
               rlocal(:,i,j) = global(ien(:,i),j)
             enddo
           enddo
@@ -311,7 +315,7 @@ c
 c
 c.... transfer count
 c
-          gbytes = gbytes + n*nshl*npro
+          gbytes = gbytes + n*blk%s*blk%e
 c
 c.... return
 c
@@ -330,8 +334,8 @@ c
 c.... scatter the data (possible collisions)
 c
           do j = 1, n
-            do i = 1, nshlb
-              do nel = 1,npro
+            do i = 1, blk%s
+              do nel = 1,blk%e
                 global(ien(nel,i),j) = global(ien(nel,i),j) 
      &                               + rlocal(nel,i,j)
               enddo
@@ -341,8 +345,8 @@ c
 c
 c.... transfer and flop counts
 c
-          sbytes = sbytes + n*nshlb*npro
-          flops  = flops  + n*nshlb*npro
+          sbytes = sbytes + n*blk%s*blk%e
+          flops  = flops  + n*blk%s*blk%e
 c
 c.... return
 c
@@ -356,8 +360,8 @@ c
 c.... scatter the data (possible collisions)
 c
           do j = 1, n
-            do i = 1, nshlb
-              do nel = 1,npro
+            do i = 1, blk%s
+              do nel = 1,blk%e
                 global(ien(nel,i),j) = rlocal(nel,i,j)
               enddo
             enddo
