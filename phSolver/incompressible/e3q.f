@@ -214,7 +214,7 @@ c
 
         subroutine e3qSclr (blk,yl,      dwl,     shp,     shgl,
      &                      xl,      ql,      rmassl, 
-     &                      sgn )
+     &                      sgn,     cfll )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -231,7 +231,8 @@ c
         dimension yl(bsz,blk%s,ndof),    dwl(bsz,blk%n),
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),
-     &            ql(bsz,blk%s,nsd),     rmassl(bsz,blk%s)
+     &            ql(bsz,blk%s,nsd),     rmassl(bsz,blk%s),
+     &            cfll(bsz,blk%s)
 c
 c local arrays
 c
@@ -244,6 +245,13 @@ c
      &            shdrv(blk%e,nsd,blk%s),    shpsum(blk%e)
 
         real*8 diffus(blk%e)
+        real*8 u1(blk%e), u2(blk%e), u3(blk%e)
+c
+c... needed for CFL calculation
+c
+      real*8 rmu_tmp(blk%e), rho_tmp(blk%e), cfll_loc(blk%e)
+      rmu_tmp = zero
+      rho_tmp = 1.0
 c
 c.... loop through the integration points
 c
@@ -269,7 +277,20 @@ c     formation of q
 c
         call e3qvarSclr   (blk,yl,        shdrv,   
      &                     xl,        gradT,
-     &                     dxidx,     WdetJ )        
+     &                     dxidx,     WdetJ,
+     &                     shape, u1,  u2,  u3 )        
+
+c
+c.... compute CFL number
+c
+        cfll_loc = zero
+        call calc_cfl(blk,       rho_tmp,      u1,       u2,
+     &                u3,        dxidx,    rmu_tmp,
+     &                cfll_loc)
+c assemble contribution to CFL number
+        do i=1,blk%s
+          cfll(1:blk%e,i) = cfll(1:blk%e,i) + shape(:,i)*cfll_loc
+        enddo
 
 c
 c.... compute diffusive flux vector at this integration point

@@ -124,16 +124,24 @@ c.... get the element residuals
 c
         ql     = zero
         rmassl = zero
+        cfll = zero
 
         call e3qSclr  (blk,yl,      dwl,    shp,    shgl,    
      &                 xl,      ql,     rmassl, 
-     &                 sgn             )
+     &                 sgn,    cfll )
 
 c
 c.... assemble the temperature diffusive flux residual 
 c
         call local (blk,qres,   ql,  ien,  nsd,  'scatter ')
         call local (blk,rmass,  rmassl, ien,  1, 'scatter ')
+c
+c.... assemble the CFL values.  cfl will contain the sum of
+c     all contributing integration points.  Will divide by
+c     the number of contributors to get the average CFL number.
+        if (iLSet.eq.2) then
+          call localSum (blk, cfl, cfll, ien, icflhits, 1)
+        endif
 c
 c.... end
 c
