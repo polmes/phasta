@@ -23,7 +23,7 @@ c output:
 c  rl     (bsz,blk%s,nflow)      : element RHS residual    (G^e_a)
 c  rml    (bsz,blk%s,nflow)      : element modified residual  (G^e_a tilde)
 c  xlhs  (bsz,16,blk%s,blk%s)  : element LHS tangent mass matrix
-c  cfll   (blk%e,blk%s) 		: CFL of the element
+c  cfll   (bsz,blk%s) 		: CFL of the element
 c
 c Note: This routine will calculate the element matrices for the
 c        Hulbert's generalized alpha method integrator
@@ -48,7 +48,7 @@ c
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),      dwl(bsz,blk%n),
      &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx),
-     &            cfll(blk%e,blk%s)
+     &            cfll(bsz,blk%s)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
@@ -143,7 +143,7 @@ c
      &                cfll_loc)
 
         do i=1,blk%s
-          cfll(:,i) = cfll(:,i) + shpfun(:,i)*cfll_loc
+          cfll(1:blk%e,i) = cfll(1:blk%e,i) + shpfun(:,i)*cfll_loc
         enddo
 c
 c.... compute the stabilization terms
@@ -256,8 +256,8 @@ c
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
      &            ql(bsz,blk%s,nsd),      xSebe(bsz,blk%s,blk%s),
-     &            dwl(bsz,blk%n),         cfll(blk%e,blk%s),
-     &          cfllold(blk%e,blk%s)
+     &            dwl(bsz,blk%n),         cfll(bsz,blk%s),
+     &          cfllold(bsz,blk%s)
 c
 c.... local declarations
 c
@@ -330,7 +330,7 @@ c
      &                cfll_loc)
 
         do i=1,blk%s
-          cfll(:,i) = cfll(:,i) + shpfun(:,i)*cfll_loc
+          cfll(1:blk%e,i) = cfll(1:blk%e,i) + shpfun(:,i)*cfll_loc
         enddo
 
 c

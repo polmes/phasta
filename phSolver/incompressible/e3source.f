@@ -214,7 +214,7 @@ c
      &                          yl,        dxidx,     rmu,
      &                          u1,        u2,        u3,   xl,
      &                          srcR,      srcL,      uMod,
-     &                          srcRat) 
+     &                          srcRat,    cfll) 
 
 
 c-----------------------------------------------------------------------
@@ -248,7 +248,7 @@ c coming in
      &        rmu(blk%e),           u1(blk%e),
      &        u2(blk%e),            u3(blk%e),
      &        xl(bsz,blk%n,nsd),
-     &        cfll(blk%e,blk%s)
+     &        cfll(bsz,blk%s)
 c going out
       real*8  srcR(blk%e),          srcL(blk%e),
      &        uMod(blk%e,nsd),      cfl_loc(blk%e)
@@ -516,7 +516,7 @@ c
 
          cfl_loc = zero
          do n = 1, blk%s
-           cfl_loc   = cfl_loc + shape_funct(:,n) * cfll(:,n)
+           cfl_loc   = cfl_loc + shape_funct(:,n) * cfll(1:blk%e,n)
          enddo
 
          call e3LSVel ( blk, gradS,  yl,   shape_funct, 
@@ -604,7 +604,7 @@ c-----------------------------------------------------------------------
 c coming in      
       real*8  gradS(blk%e,nsd), 
      &        shape_funct(blk%e,blk%s),
-     &        yl(blk%e,blk%n,ndof), 
+     &        yl(bsz,blk%n,ndof), 
      &        u1(blk%e),
      &        u2(blk%e),            u3(blk%e)
 c used locally

@@ -540,6 +540,8 @@ c
 !      dts=  min(Dtgl,288.0d0)*dtsfct        !288 = 1600*180 / 1000
 
 c        if(iRANS.ne.-2) srcRat=srcR
+! ADDING THIS BACK FROM JR thesis work....check 
+        if(iLSet.eq.2) srcRat=srcR
         tauT = 
      1         (two*dts)**2 
      2       + srcRat ** 2

@@ -101,10 +101,12 @@ c
         dimension y(nshg,ndof),             x(numnp,nsd),            
      &            shp(blk%s,blk%g),         shgl(nsd,blk%s,blk%g),
      &            ien(blk%e,blk%s),      dwl(bsz,blk%n),
-     &            qres(nshg,nsd),           rmass(nshg)
+     &            qres(nshg,nsd),           rmass(nshg),
+     &            cfl(nshg),           icflhits(nshg)
 c
         dimension yl(bsz,blk%s,ndof),       xl(bsz,blk%n,nsd),         
-     &            ql(bsz,blk%s,nsd),        rmassl(bsz,blk%s)
+     &            ql(bsz,blk%s,nsd),        rmassl(bsz,blk%s),
+     &            cfll(bsz,blk%s)
 c
         dimension sgn(blk%e,blk%s)
 

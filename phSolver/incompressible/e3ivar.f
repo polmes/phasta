@@ -356,7 +356,7 @@ c
      &          dwl(bsz,blk%n),            diffus(blk%e),
      &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
      &          divqi(blk%e) ,
-     &          cfll(blk%e,blk%s)   
+     &          cfll(bsz,blk%s)   
 c
       dimension tmp(blk%e), srcRat(blk%e)
       real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),

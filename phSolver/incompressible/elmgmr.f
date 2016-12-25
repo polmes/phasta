@@ -615,6 +615,7 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (tmpshp)
@@ -691,6 +692,7 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (tmpshp)
@@ -825,6 +827,7 @@ c
           blk%g = nintb(lcsyst)
           blk%l = lcblkb(3,iblk)
           blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)
 c
 c localize the dtn boundary condition
 c
