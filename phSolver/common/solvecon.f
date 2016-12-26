@@ -69,6 +69,7 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble the constarint factor, and mass matrix
 c     

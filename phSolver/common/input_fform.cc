@@ -442,38 +442,39 @@ int input_fform(phSolver::Input& inp)
     vec.erase(vec.begin(),vec.end());
 
     //Material Properties Keywords 
-    matdat.nummat = levlset.iLSet+1;
+    matdat.nummat = 1;
+    if( levlset.iLSet > 0) matdat.nummat = 2;
     if((string)inp.GetValue("Shear Law") == "Constant Viscosity") 
-      for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][1] = 0;
+      for(i=0; i < matdat.nummat; i++) matdat.matflg[i][1] = 0;
 
     if((string)inp.GetValue("Bulk Viscosity Law") == "Constant Bulk Viscosity") 
-      for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][2] = 0;
+      for(i=0; i < matdat.nummat; i++) matdat.matflg[i][2] = 0;
 
     mmatpar.pr = inp.GetValue("Prandtl Number"); 
 
     if((string)inp.GetValue("Conductivity Law") == "Constant Conductivity") 
-      for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][3] = 0;
+      for(i=0; i < matdat.nummat; i++) matdat.matflg[i][3] = 0;
 
     vec = inp.GetValue("Density");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][0][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
 
     vec = inp.GetValue("Viscosity");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][1][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
 
 //      vec = inp.GetValue("Specific Heat");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][2][0] = 0;
     }
 //      vec.erase(vec.begin(),vec.end());
 
     vec = inp.GetValue("Thermal Conductivity");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][3][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
@@ -490,22 +491,22 @@ int input_fform(phSolver::Input& inp)
     turbvar.rmutarget = inp.GetValue("Target Viscosity For Step NSTEP");
 
     if ( (string)inp.GetValue("Body Force Option") == "None" ) {
-      for( i=0; i< levlset.iLSet +1 ; i++)  matdat.matflg[i][4] = 0;
+      for( i=0; i< matdat.nummat ; i++)  matdat.matflg[i][4] = 0;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Vector" ) {
-      for( i=0; i< levlset.iLSet +1 ; i++)  matdat.matflg[i][4] = 1;
+      for( i=0; i< matdat.nummat ; i++)  matdat.matflg[i][4] = 1;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "User e3source.f" ) {
-      for( i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 3;
+      for( i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 3;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Boussinesq" ) {
-      for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 2;
+      for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 2;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Cooling Analytic" ) {
-      for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 4;
+      for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 4;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Cooling Initial Condition" ) {
-      for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 5;
+      for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 5;
     }
 
     // the following block of stuff is common to all cooling type sponges. 
@@ -540,7 +541,7 @@ int input_fform(phSolver::Input& inp)
     }
 
     vec = inp.GetValue("Body Force");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][4][0] = vec[0+i*3];
       matdat.datmat[i][4][1] = vec[1+i*3];
       matdat.datmat[i][4][2] = vec[2+i*3];
@@ -548,7 +549,7 @@ int input_fform(phSolver::Input& inp)
     vec.erase(vec.begin(),vec.end());
 
     vec = inp.GetValue("Body Force Pressure Gradient");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][6][0] = vec[0+i*3];
       matdat.datmat[i][6][1] = vec[1+i*3];
       matdat.datmat[i][6][2] = vec[2+i*3];
