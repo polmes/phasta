@@ -188,7 +188,6 @@ c
      &                       + shape(:,i)*WdetJ*g2yti
            ql(1:blk%e,i,idflow+3)  = ql(1:blk%e,i,idflow+3)  
      &                       + shape(:,i)*WdetJ*g3yti
-           rmassl(1:blk%e,i) = rmassl(1:blk%e,i) + shape(:,i)*WdetJ
         enddo
       endif  !end of the isurf  
 c

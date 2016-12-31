@@ -29,6 +29,7 @@ c
       use eblock
 c
       include "common.h"
+      include "mpif.h"
       type (LocalBlkData) blk
 
 c
@@ -176,7 +177,7 @@ c
       BlockPool=1
 #endif
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
-      allocate ( rl (bsz,nshlc,ndof,BlockPool) )
+      allocate ( rl(bsz,nshlc,nflow,BlockPool) )
       allocate (tmpshp(nshlc,MAXQPT))
       allocate (tmpshgl(nsd,nshlc,MAXQPT))
       lcsyst= lcblk(3,1)
@@ -185,7 +186,7 @@ c
       if (lhs .eq. 1) then
         allocate ( xlhs(bsz,16,nshlc,nshlc,BlockPool) )
       endif
-      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshlc,6,BlockPool) )
+      if ( ierrcalc .eq. 1 ) allocate ( rerrl(bsz,nshlc,6,BlockPool) )
       if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshlc,nResDims,BlockPool) )
 #ifdef HAVE_OMP
       do iblko = 1, nelblk, BlockPool
@@ -222,7 +223,7 @@ c
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (rl)
-            allocate ( rl (bsz,blk%s,ndof,BlockPool) )
+            allocate ( rl(bsz,blk%s,nflow,BlockPool) )
             deallocate (tmpshp)
             deallocate (tmpshgl)
             allocate (tmpshp(blk%s,MAXQPT))
@@ -235,7 +236,7 @@ c
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
-              allocate ( rerrl (bsz,blk%s,6,BlockPool) )
+              allocate ( rerrl(bsz,blk%s,6,BlockPool) )
             endif
             if ( stsResFlg .eq. 1 ) then
               deallocate(StsVecl)

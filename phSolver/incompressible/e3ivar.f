@@ -257,15 +257,7 @@ c
        call e3resStrongPDE(blk,
      &      aci,  u1,   u2,   u3,   Temp, rho,  xx,
      &            g1yi, g2yi, g3yi,
-     &      rLui, src, divqi)
-c
-c.... take care of the surface tension force term here
-c
-       if (isurf .eq. 1) then  ! note multiplied by density in e3res.f 
-          src(:,1) = src(:,1) + sforce(:,1)
-          src(:,2) = src(:,2) + sforce(:,2)
-          src(:,3) = src(:,3) + sforce(:,3)
-       endif       
+     &      rLui, src, divqi, sforce)      
 c
 c.... -------------------> error calculation  <-----------------
 c     
@@ -473,12 +465,13 @@ c
              write(*,*) 'Not sure if we can handle level set with K-E'
              write(*,*) '(different uMods? correct value of rho?)'
           endif
+          sforce=zero ! until we bring sforce computation to scalar solve
           divqi=zero  ! until we reconstruct q_flow for scalar solve
           call e3resStrongPDE( blk,
      &         aci,  u1,   u2,   u3,   Temp, rho,  x,
      &               g1yi, g2yi, g3yi,
-     &         rLui, src, divqi)
-c     this is call to getdiff is for the flow diffusive properties
+     &         rLui, src, divqi,sforce)
+c     this call to getdiff is for the flow diffusive properties
           call getdiff(blk,ith,dwl, yl, shpfun, xmudmi, xl, rmu, rho,
      &               elem_local_size(blk%i))
 ! bad to have a separate routine for something like Tau that may vary          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)

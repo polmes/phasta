@@ -355,7 +355,7 @@ c----------------------------------------------------------------------
       subroutine e3resStrongPDE( blk,
      &     aci,  u1,   u2,   u3,   Temp, rho,  xx,
      &           g1yi, g2yi, g3yi,
-     &     rLui, src, divqi)
+     &     rLui, src, divqi, sforce)
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -374,7 +374,7 @@ c     LOCALS
       double precision, dimension(blk%e) ::
      &     divu
       double precision, dimension(blk%e,nsd) ::
-     &     divqi
+     &     divqi, sforce
       double precision, dimension(nsd) ::
      &     omega
 c.... compute source term
@@ -398,6 +398,23 @@ c        body force contribution to src
             call e3source(xx, src)
          end select
       endif
+c
+c  Add contribution for imposed pressure gradient
+c
+      bpgx  = datmat(1,7,1) ! pressure gradient
+      bpgy  = datmat(2,7,1)
+      bpgz  = datmat(3,7,1)
+      src(:,1) = src(:,1) + bpgx / rho
+      src(:,2) = src(:,2) + bpgy / rho
+      src(:,3) = src(:,3) + bpgz / rho
+c
+c Add contribution from surface tension
+c
+       if (isurf .eq. 1) then  ! note multiplied by density in e3res.f
+          src(:,1) = src(:,1) + sforce(:,1)
+          src(:,2) = src(:,2) + sforce(:,2)
+          src(:,3) = src(:,3) + sforce(:,3)
+       endif
 c     
       if(matflg(6,1).eq.1) then
 c        coriolis force contribution to src
