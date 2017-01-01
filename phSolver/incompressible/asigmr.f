@@ -93,6 +93,7 @@ c
 c.... get the element residuals, LHS matrix, and preconditioner
 c
         rl     = zero
+        cfll   = zero
 
         if(ierrcalc.eq.1) rerrl = zero
 
