@@ -182,7 +182,6 @@ c
      &          rmaxdyU, rmaxdyP, nrsmax,
      &          mproc(1)+1,jresmx,int(statsflow(4)),
      &          int(statsflow(1))
-           
            call flush(ihist)
         endif
 c        if(numpe>1) call MPI_BARRIER (MPI_COMM_WORLD,ierr)

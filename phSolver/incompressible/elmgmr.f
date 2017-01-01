@@ -167,6 +167,8 @@ c
 c
 c.... loop over the element-blocks
 c
+        cfl = zero
+        icflhits = 0
 c
 c.... allocate the element matrices
 c

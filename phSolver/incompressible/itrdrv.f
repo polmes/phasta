@@ -737,6 +737,19 @@ c
 c**End of loop condition for Redistancing equation**
 c		 		  
                end do      ! end while loop over sequence steps
+           if((myrank.eq.0) .and. 
+     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+            write(*,*) 'CLF Flow status: Step, CFLfl_max, dt'
+            write(*,7001) lstep+1, CFLfl_max, delt(itseq)
+           endif
+           if((myrank.eq.0) .and. (iLSet.eq.2) .and.   
+     &   ((CFLls_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+            write(*,*) 'CLF LS status: Step, CFLls_max,  dt'
+            write(*,7001) lstep+1, CFLls_max, delt(itseq)
+           endif
+ 7001      format(1p,i8,e10.3,e10.3)
+
+
 c
 c Check if interface has moved into region of larger interface
 c

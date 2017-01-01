@@ -61,6 +61,7 @@ c
 c
 c.... form the LHS matrices, the residual vector (at n tilde)
 c
+      statssclr(1)=0
       ac(:,7)=zero
       call ElmGMRSclr(y,      ac,         x,
      &             shp,       shgl,       iBC,       
