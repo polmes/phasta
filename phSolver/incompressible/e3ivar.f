@@ -473,7 +473,8 @@ c
      &         rLui, src, divqi,sforce)
 c     this call to getdiff is for the flow diffusive properties
           call getdiff(blk,ith,dwl, yl, shpfun, xmudmi, xl, rmu, rho,
-     &               elem_local_size(blk%i))
+     &               elem_local_size(blk%i),
+     &               evl)
 ! bad to have a separate routine for something like Tau that may vary          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
 ! changing to call e3stab that now has conditionals to skip computation of tauc and taubar so should be o.k. that they are note
 ! dimensioned in this case since memory not accessed

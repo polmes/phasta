@@ -1,7 +1,7 @@
         subroutine e3 (blk, yl,      acl,     dwl,     shp,
      &                 shgl,    xl,      rl,      ql,
      &                 xlhs, xmudmi,  sgn, 
-     &                 rerrl, rlsl,    cfll)
+     &                 rerrl, rlsl,    cfll, evl)
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -18,6 +18,7 @@ c  wght   (blk%g)               : element weight (for quadrature)
 c  xl     (bsz,blk%n,nsd)       : nodal coordinates at current step (x^e_a)
 c  ql     (bsz,blk%s,nsd*nsd) : diffusive flux vector (don't worry)
 c  rlsl   (bsz,blk%s,6)       : resolved Leonard stresses
+c  evl    (bsz,blk%s)         : effective viscosity for turb. wall function
 c
 c output:
 c  rl     (bsz,blk%s,nflow)      : element RHS residual    (G^e_a)
@@ -48,7 +49,7 @@ c
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),      dwl(bsz,blk%n),
      &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx),
-     &            cfll(bsz,blk%s)
+     &            cfll(bsz,blk%s),        evl(bsz,blk%s)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp
@@ -88,7 +89,7 @@ c
         if ( idiff==2 .and. ires .eq. 1 ) then
            call e3ql (blk, yl,        dwl,       shp,       shgl, 
      &                xl,        ql,        xmudmi, 
-     &                sgn)
+     &                sgn,       evl)
         endif
 c
 c.... loop through the integration points
@@ -121,7 +122,8 @@ c
 c.... get necessary fluid properties (including eddy viscosity)
 c
         call getdiff(blk,ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho,
-     &               elem_local_size(blk%i))
+     &               elem_local_size(blk%i),
+     &               evl)
 c
 c.... calculate the integration variables
 c
@@ -236,7 +238,7 @@ c###################################################################
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
      &                     sgn,     xmudmi,  cfll,
-     &                   cfllold)
+     &                   cfllold, evl)
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -257,7 +259,7 @@ c
      &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
      &            ql(bsz,blk%s,nsd),      xSebe(bsz,blk%s,blk%s),
      &            dwl(bsz,blk%n),         cfll(bsz,blk%s),
-     &          cfllold(bsz,blk%s)
+     &          cfllold(bsz,blk%s),     evl(bsz,blk%s)
 c
 c.... local declarations
 c
@@ -308,7 +310,7 @@ c
 c
 c.... get necessary fluid properties
 c
-        call getdiffsclr(blk, shpfun,dwl,yl,diffus)
+        call getdiffsclr(blk, shpfun,dwl,yl,diffus,evl)
 c
 c.... calculate the integration variables
 c

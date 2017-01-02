@@ -1,6 +1,7 @@
         subroutine e3b (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &                  shpb,    shglb,
-     &                  xlb,     rl,      sgn,     dwl,     xKebe)
+     &                  xlb,     rl,      sgn,     dwl,     xKebe,
+     &                  evl)
 c
 c----------------------------------------------------------------------
 c
@@ -33,6 +34,7 @@ c                                  BCB (6) : heat flux
 c  shpb   (nen,ngaussb)           : boundary element shape-functions
 c  shglb  (nsd,nen,ngaussb)       : boundary element grad-shape-functions
 c  xlb    (bsz,nenl,nsd)       : nodal coordinates at current step
+c  evl    (bsz,nshl)           : eff. viscosity adder for eff. visc. turb wall function
 c
 c output:
 c  rl     (bsz,nshl,nflow)      : element residual
@@ -49,6 +51,7 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004
 c----------------------------------------------------------------------
 c
+      use turbSA		! need otwn(nshg)
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
       include "common.h"
@@ -80,7 +83,8 @@ c
      &            shape(npro,nshl),        shdrv(npro,nsd,nshl),
      &            rNa(npro,4)
 
-        real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl)
+        real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl),
+     &            evl(bsz,blk%s)
 c
 !disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
@@ -123,7 +127,8 @@ c
 c.... get necessary fluid properties (including eddy viscosity)
 c
         call getdiff(blk,intp, dwl, yl,     shape,     xmudmi, xlb,   rmu, rho,
-     &             elemb_local_size(blk%i))
+     &             elemb_local_size(blk%i),
+     &             evl)
 c
 c.... calculate the integraton variables
 c
@@ -377,7 +382,7 @@ c*********************************************************************
 
 
         subroutine e3bSclr (blk,yl,      iBCB,    BCB,     shpb,    shglb,
-     &                      xlb,     rl,      sgn,     dwl)
+     &                      xlb,     rl,      sgn,     dwl,     evl)
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -394,7 +399,7 @@ c
         dimension lnode(27),                   sgn(npro,nshl),
      &            shape(npro,nshl),            shdrv(npro,nsd,nshl),
      &            rNa(npro),                   flux(npro)
-        real*8    dwl(bsz,nenl)
+        real*8    dwl(bsz,nenl),              evl(bsz,blk%s)
 
 c
 c.... compute the nodes which lie on the boundary (hierarchic)
@@ -419,7 +424,7 @@ c.... calculate the integraton variables
 c
         call e3bvarSclr (blk,yl,          shdrv,   xlb,
      &                   shape,       WdetJb,  bnorm,
-     &                   flux,        dwl )
+     &                   flux,        dwl,     evl )
 c        
 c.... -----------------> boundary conditions <-------------------
 c

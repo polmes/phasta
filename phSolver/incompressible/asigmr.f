@@ -38,6 +38,7 @@ c
      &            xl(bsz,blk%n,nsd),           dwl(bsz,blk%n),      
      &            rl(bsz,blk%s,nflow), 
      &            ql(bsz,blk%s,idflx),
+     &            evl(bsz,blk%s),
      &            cfll(bsz,blk%s)
 c        
         dimension xlhs(bsz,16,blk%s,blk%s)
@@ -82,6 +83,9 @@ c
         else
            rlsl = zero
         endif      
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(blk,effvisc, evl,    ien,    1,      'gather  ')
+        endif
 
 c
 c.... zero the matrices if they are being recalculated
@@ -101,7 +105,7 @@ c
      &            shgl,    xl,      rl,      
      &            ql,      xlhs, xmudmi, 
      &            sgn,     rerrl,  rlsl,
-     &            cfll     )
+     &            cfll,  evl)
 c
 c.... assemble the statistics residual
 c
@@ -146,7 +150,7 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-      use     turbSA  
+      use     turbSA   ! access to d2wall and effvisc
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -163,7 +167,7 @@ c
         real*8    yl(bsz,blk%s,ndofl),        acl(bsz,blk%s,ndofl),
      &            xl(bsz,blk%n,nsd),         
      &            rl(bsz,blk%s),              ql(bsz,blk%s,nsd),
-     &            dwl(bsz,blk%n),
+     &            dwl(bsz,blk%n),             evl(bsz,blk%s),
      &            cfll(bsz,blk%s),            cfllold(bsz,blk%s)            
 c        
         real*8    xSebe(bsz,blk%s,blk%s),      xmudmi(blk%e,blk%g) 
@@ -184,6 +188,10 @@ c
         if(iRANS.lt. 0) 
      &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
         call local (blk,qres,   ql,     ien,    nsd,    'gather  ')
+
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(blk,effvisc, evl,    ien,    1,      'gather  ')
+        endif
         if (iLSet.eq.2) then
           call local(blk,cflold, cfllold, ien,  1,  'gather  ')
         endif
@@ -202,7 +210,7 @@ c
      &              shgl,    xl,      dwl,
      &              rl,      ql,      xSebe,   
      &              sgn, xmudmi,  cfll,
-     &              cfllold)
+     &              cfllold, evl)
 c
 c.... assemble the residual
 c

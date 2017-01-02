@@ -1,5 +1,5 @@
       subroutine getDiff(blk, ith, dwl,yl, shape, xmudmi, xl, rmu,  rho,
-     &                    elem_size)
+     &                    elem_size, evl)
 c-----------------------------------------------------------------------
 c  compute and add the contribution of the turbulent
 c  eddy viscosity to the molecular viscosity.
@@ -14,7 +14,7 @@ c-----------------------------------------------------------------------
       real*8  yl(bsz,blk%s,ndof), rmu(blk%e), xmudmi(blk%e,blk%g),
      &        shape(blk%e,blk%s),   rho(blk%e),
      &        dwl(bsz,blk%n),     sclr(blk%e),
-     &        xl(bsz,blk%n,nsd)
+     &        xl(bsz,blk%n,nsd),  evl(bsz,blk%s)
       real*8 elem_size(blk%e)
       integer n, e
 
@@ -118,6 +118,8 @@ c
                                 ! element
             call EviscDESIC (blk,xl,rmu,xmudmi)
          endif
+      else if ((iDNS.gt.0).and.(itwmod.eq.-2)) then      ! eff visc wall function with DNS
+        call AddEddyViscDNS(blk,yl, shape, rmu, evl)
       endif                     ! check for LES or RANS
 c
       return
@@ -151,7 +153,7 @@ c
       return
       end
        
-      subroutine getdiffsclr(blk,shape, dwl, yl, diffus)
+      subroutine getdiffsclr(blk,shape, dwl, yl, diffus,evl)
 
       use turbSA
       use turbKE ! access to KE model constants
@@ -327,6 +329,64 @@ c     Loop over elements in this block
       endif
       return
       end subroutine AddEddyViscSA
+
+      subroutine AddEddyViscDNS(blk,yl,shape,rmu,evl)
+      use turbSA
+      use eblock
+      include "common.h"
+      type (LocalBlkData) blk
+c     INPUTS
+      double precision, intent(in), dimension(blk%e,blk%s,ndof) ::
+     &     yl
+      double precision, intent(in), dimension(blk%e,blk%s) ::
+     &     shape, evl
+c     INPUT-OUTPUTS
+      double precision, intent(inout), dimension(blk%e) ::
+     &     rmu
+c     LOCALS
+      logical, dimension(blk%s) ::
+     &     wallnode
+      integer e, n
+      double precision xki, xki3, fv1, evisc
+c
+c     Loop over elements in this block
+      do e = 1, blk%e
+c        assume no wall nodes on this element
+         wallnode(:) = .false.
+         if(itwmod.eq.-2) then  ! effective viscosity
+c           mark the wall nodes for this element, if there are any
+            do n = 1, blk%s
+               u1=yl(e,n,2)
+               u2=yl(e,n,3)
+               u3=yl(e,n,4)
+               if((u1.eq.zero).and.(u2.eq.zero).and.(u3.eq.zero))
+     &              then
+                  wallnode(n)=.true.
+               endif
+            enddo
+         endif
+c
+         if( any(wallnode(:)) ) then
+c if there are wall nodes for this elt, then we are using effective-
+c viscosity near-wall modeling, and eddy viscosity has been stored
+c at the wall nodes in place of the spalart-allmaras variable; the
+c eddy viscosity for the whole element is taken to be the avg of the
+c wall values
+            evisc = zero
+            nwnode=0
+            do n = 1, blk%s
+               if(wallnode(n)) then
+                  evisc = evisc + evl(e,n)
+                  nwnode = nwnode + 1
+               endif
+            enddo
+            evisc = evisc/nwnode
+            rmu(e) = rmu(e) + abs(evisc)
+c           write(*,*) "wall element visc = ", e, rmu(e)
+        endif
+      enddo
+      return
+      end subroutine AddEddyViscDNS
 
 
 

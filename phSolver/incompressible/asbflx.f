@@ -32,7 +32,7 @@ c
      &            flhsl(bsz,nshl,1),      fnrml(bsz,nshl,nsd),
      &            lnflx(npro),             lnode(27),
      &            ul(bsz,nshl,nsd),       acl(bsz,nshl,ndofl)
-        real*8 dwl(bsz,nenl)
+        real*8 dwl(bsz,nenl),          evl(bsz,blk%s)
         
         dimension xKebe(npro,9,nshl,nshl) 
 
@@ -56,7 +56,9 @@ c
         if(iRANS.eq.-2) then
            call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
-
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call localx(blk,effvisc, evl,    ien,    1,      'gather  ')
+        endif
         rl    = zero
         flhsl = zero
         fnrml = zero
@@ -64,7 +66,8 @@ c
         ires = 2
         call e3b  (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &             shpb,    shglb,
-     &             xlb,     rl,      sgn,     dwl,     xKebe)
+     &             xlb,     rl,      sgn,     dwl,     xKebe,
+     &             evl )
         ires = 1
 c
 c.... assemble the residuals

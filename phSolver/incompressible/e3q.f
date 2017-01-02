@@ -1,6 +1,6 @@
         subroutine e3q (blk,yl,      dwl,     shp,     shgl,
      &                  xl,      ql,      rmassl, 
-     &                  xmudmi,  sgn )
+     &                  xmudmi,  sgn,     evl )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -12,6 +12,7 @@ c  yl     (bsz,blk%s,ndof)       : Y variables
 c  shp    (nen,blk%g)            : element shape-functions
 c  shgl   (nsd,nen,blk%g)        : element local-grad-shape-functions
 c  xl     (bsz,blk%s,nsd)        : nodal coordinates at current step
+c  evl    (bsz,blk%s)            : eff. visc. adder for eff. visc. turb wall function
 c  
 c output:
 c  ql     (bsz,blk%s,idflx) : element RHS diffusion residual 
@@ -30,7 +31,7 @@ c
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),
      &            ql(bsz,blk%s,idflx),  rmassl(bsz,blk%s),
-     &            xmudmi(blk%e,blk%g)
+     &            xmudmi(blk%e,blk%g),   evl(bsz,blk%s)
 c
 c local arrays
 c
@@ -90,7 +91,8 @@ c
 c.... compute the viscosity
 c
         call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp,
-     &               elem_local_size(blk%i))
+     &               elem_local_size(blk%i),
+     &               evl)
 c
 c.... diffusive flux in x1-direction
 c
@@ -213,7 +215,7 @@ c
 
         subroutine e3qSclr (blk,yl,      dwl,     shp,     shgl,
      &                      xl,      ql,      rmassl, 
-     &                      sgn,     cfll )
+     &                      sgn,     evl,     cfll )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -231,7 +233,7 @@ c
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),
      &            ql(bsz,blk%s,nsd),     rmassl(bsz,blk%s),
-     &            cfll(bsz,blk%s)
+     &            evl(bsz,blk%s),        cfll(bsz,blk%s)
 c
 c local arrays
 c
@@ -294,7 +296,7 @@ c assemble contribution to CFL number
 c
 c.... compute diffusive flux vector at this integration point
 c
-        call getdiffsclr(blk,shape, dwl, yl, diffus)
+        call getdiffsclr(blk,shape, dwl, yl, diffus, evl)
 
 c
 c.... diffusive flux 

@@ -799,7 +799,7 @@ c
 c---------------------------------------------------------------------
         subroutine e3bvarSclr (blk,yl,        shdrv,    xlb,
      &                         shape,     WdetJb,   bnorm,
-     &                         flux,      dwl )
+     &                         flux,      dwl,      evl )
 
       use eblock
       include "common.h"
@@ -818,9 +818,10 @@ c
      &            v1(npro,nsd),              v2(npro,nsd),
      &            gradSl(npro,nsd),          gradS(npro,nsd)
 
-        real*8    diffus(npro),              dwl(bsz,nenl)
+        real*8    diffus(npro),              dwl(bsz,nenl),
+     &            evl(bsz,blk%s)
         
-        call getdiffsclr(blk,shape,dwl,yl,diffus)
+        call getdiffsclr(blk,shape,dwl,yl,diffus, evl)
 c
 c.... ---------------------->  Element Metrics  <-----------------------
 c

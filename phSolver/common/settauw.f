@@ -25,6 +25,7 @@ c calculate the traction magnitude for all nodes on the wall
 c
       trx=zero
       evisc=zero
+      effvisc = zero
       rm=datmat(1,2,1)
       do nodw = 1, numnp ! loop over nodes
       if ( otwn(nodw).ne.nodw ) then ! wall node check
@@ -92,17 +93,21 @@ c
          endif
 
          trx(nodw,:)=twoub*ull(:)
-         if(itwmod.eq.-2) then ! effective-viscosity
+         if (abs(itwmod) .eq. 2) then  ! effective vicosity
+           if((iRANS<0).and.(itwmod.eq.-2)) then ! w/ RANS (redundant logic here)
             tauw=ut*ut
             BC(nodw,7)=tauw*dw/ub-rm
-         endif
-         if(itwmod.eq.2) then ! effective-viscosity
+           else if ((iDNS.gt.0).and.(itwmod.eq.-2)) then ! DNS (redundant logic here)
+              tauw=ut*ut
+              effvisc(nodw)=tauw*dw/ub-rm
+           else if ((iLES>0).and.(itwmod.eq.2)) then ! LES
 c
 c  mag of u instantaneous
 c
             ullm=sqrt(ull(1)*ull(1)+ull(2)*ull(2)+ull(3)*ull(3))
             tauw=ut*ut*ullm/ub
             evisc(nodw)=tauw*dw/ub-rm
+           endif
          endif
          if((itwmod.eq.-1)) then ! slip-velocity RANS
             up=sqrt(

@@ -21,7 +21,7 @@ c     rmass  (numnp)            : lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
-      use turbsa      ! access to d2wall
+      use turbsa      ! access to d2wall & effvisc
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -36,7 +36,7 @@ c
      &            ql(bsz,blk%s,idflx),  rmassl(bsz,blk%s),
      &            xmudmi(blk%e,blk%g)
 c
-        dimension sgn(blk%e,blk%s)
+        dimension sgn(blk%e,blk%s),       evl(bsz,blk%s)
 c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
@@ -58,6 +58,11 @@ c
         if (iRANS .eq. -2) then ! kay-epsilon
            call localx (d2wall,   dwl,     ien,    1,     'gather  ')
         endif
+
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(blk,effvisc, evl,    ien,    1,      'gather  ')
+        endif
+
 c
 c.... get the element residuals 
 c
@@ -66,7 +71,7 @@ c
 
         call e3q  (blk,yl,         dwl,      shp,      shgl,    
      &             xl,         ql,       rmassl,
-     &             xmudmi,     sgn  )
+     &             xmudmi,     sgn,      evl  )
 
 c
 c.... assemble the diffusive flux residual 
@@ -108,7 +113,7 @@ c
      &            ql(bsz,blk%s,nsd),        rmassl(bsz,blk%s),
      &            cfll(bsz,blk%s)
 c
-        dimension sgn(blk%e,blk%s)
+        dimension sgn(blk%e,blk%s),       evl(bsz,blk%s)
 
         if (blk%o .gt. 1) then
            call getsgn(blk,ien,sgn)
@@ -121,6 +126,11 @@ c
         if (iRANS .eq. -2) then ! kay-epsilon
            call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
         endif
+
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(effvisc, evl,    ien,    1,      'gather  ')
+        endif
+
 c
 c.... get the element residuals 
 c
@@ -130,7 +140,7 @@ c
 
         call e3qSclr  (blk,yl,      dwl,    shp,    shgl,    
      &                 xl,      ql,     rmassl, 
-     &                 sgn,    cfll )
+     &                 sgn,     evl,    cfll )
 
 c
 c.... assemble the temperature diffusive flux residual 

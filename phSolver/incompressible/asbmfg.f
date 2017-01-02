@@ -25,7 +25,8 @@ c
      &            shglb(nsd,nshl,ngaussb),         
      &            ienb(npro,nshl),         materb(npro),
      &            iBCB(npro,ndiBCB),       BCB(npro,nshlb,ndBCB),
-     &            res(nshg,nflow),        dwl(bsz,nenl)        
+     &            res(nshg,nflow),        dwl(bsz,nenl),
+     &            evl(bsz,blk%s)        
 c
         dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
      &            rl(bsz,nshl,nflow),     sgn(npro,nshl),
@@ -50,6 +51,9 @@ c
            call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
 
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(blk,effvisc, evl, ienb, 1, 'gather  ')
+        endif
 c
 c.... zero the matrices if they are being recalculated
 c
@@ -66,7 +70,8 @@ c.... 3D
 c
         call e3b  (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &             shpb,    shglb,
-     &             xlb,     rl,      sgn,     dwl,     xKebe)
+     &             xlb,     rl,      sgn,     dwl,     xKebe,
+     &             evl)
 c
 c.... assemble the residual and the modified residual
 c
@@ -105,7 +110,7 @@ c
 c
         dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
      &            rl(bsz,nshl),     sgn(npro,nshl)
-        real*8 dwl(bsz,nshl)
+        real*8 dwl(bsz,nshl),          evl(bsz,blk%s)
 c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
@@ -120,13 +125,17 @@ c
         if(iRANS.eq.-2) then
            call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
+
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(blk,effvisc, evl,    ienb,    1,      'gather  ')
+        endif
 c
 c.... get the boundary element residuals
 c
         rl  = zero
 
         call e3bSclr  (blk,yl,      iBCB,    BCB,     shpb,    shglb,
-     &                 xlb,     rl,      sgn,     dwl)
+     &                 xlb,     rl,      sgn,     dwl,     evl)
 c
 c.... assemble the residual and the modified residual
 c
