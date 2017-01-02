@@ -188,7 +188,7 @@ c
       if (lhs .eq. 1) then
         allocate ( xlhs(bsz,16,nshlc,nshlc,BlockPool) )
       endif
-      if ( ierrcalc .eq. 1 ) allocate ( rerrl(bsz,nshlc,6,BlockPool) )
+      if ( ierrcalc .eq. 1 ) allocate ( rerrl(bsz,nshlc,6+isurf,BlockPool) )
       if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshlc,nResDims,BlockPool) )
 #ifdef HAVE_OMP
       do iblko = 1, nelblk, BlockPool
@@ -238,7 +238,7 @@ c
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
-              allocate ( rerrl(bsz,blk%s,6,BlockPool) )
+              allocate ( rerrl(bsz,blk%s,6+isurf,BlockPool) )
             endif
             if ( stsResFlg .eq. 1 ) then
               deallocate(StsVecl)
@@ -292,7 +292,7 @@ c
           endif
           if ( ierrcalc .eq. 1 ) then
             call local (blk, rerr, rerrl(:,:,:,ith),  
-     &                  mien(iblk)%p, 6, 'scatter ')
+     &                  mien(iblk)%p, 6+isurf, 'scatter ')
           endif
           nshl=blk%s  !nshl still used in these routines...temp solution
           npro=blk%e  !npro still used in these routines...temp solution
