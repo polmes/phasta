@@ -12,11 +12,10 @@ c
         dimension shp(MAXTOP,maxsh,MAXQPT),  
      &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
      &            shpb(MAXTOP,maxsh,MAXQPT),
-     &            shglb(MAXTOP,nsd,maxsh,MAXQPT),
-     &            x(numnp,nsd)
-
+     &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
 c
-        dimension rerrsm(nshg, 10), rerr(nshg,10), rmass(nshg)
+        dimension rerrsm(nshg, numerr), rerr(nshg,numerr), rmass(nshg),
+     &            x(nshg,3)
 c
         dimension ilwork(nlwork), iBC(nshg), iper(nshg)
 
@@ -75,7 +74,7 @@ c     and lumped mass matrix, rmass
        enddo
 c
        if (numpe > 1) then
-          call commu (rerrsm , ilwork,  10   , 'in ')
+          call commu (rerrsm , ilwork,  numerr   , 'in ')
           call commu (rmass  , ilwork,  1    , 'in ')
        endif       
 c
@@ -101,11 +100,11 @@ c.... invert the diagonal mass matrix and find q
 c
         rmass = one/rmass
        
-       do i=1, 10
+       do i=1, numerr
           rerrsm(:,i) = rmass*rerrsm(:,i)
        enddo
        if(numpe > 1) then
-          call commu (rerrsm, ilwork, 10, 'out')    
+          call commu (rerrsm, ilwork, numerr, 'out')    
        endif
 c
 c      copy the smoothed error overwriting the original error.
@@ -144,22 +143,22 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension rerr(nshg,10),               x(numnp,nsd),     
+        dimension rerr(nshg,numerr),               x(numnp,nsd),     
      &            shp(nshl,maxsh),  
      &            shgl(nsd,nshl,maxsh),
      &            ien(npro,nshl),
-     &            rerrsm(nshg,10),    rmass(nshg)
+     &            rerrsm(nshg,numerr),    rmass(nshg)
 c
 c.... element level declarations
 c
-        dimension rerrl(bsz,nshl,10),        xl(bsz,nenl,nsd),         
-     &            rerrsml(bsz,nshl,10),       rmassl(bsz,nshl)
+        dimension rerrl(bsz,nshl,numerr),        xl(bsz,nenl,nsd),         
+     &            rerrsml(bsz,nshl,numerr),       rmassl(bsz,nshl)
 c
         dimension sgn(npro,nshl),          shape(npro,nshl),
      &            shdrv(npro,nsd,nshl),    WdetJ(npro),
      &            dxidx(npro,nsd,nsd),     shg(npro,nshl,nsd)
 c
-        dimension error(npro,10)
+        dimension error(npro,numerr)
 c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
@@ -171,7 +170,7 @@ c
 c.... gather the variables
 c
 
-        call local(blk,rerr,   rerrl,  ien,    10,   'gather  ')
+        call local(blk,rerr,   rerrl,  ien,    numerr,   'gather  ')
         call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
@@ -198,12 +197,12 @@ c
      &                 shg,        WdetJ)
         error=zero
         do n = 1, nshl
-           do i=1,10
+           do i=1,numerr
               error(:,i)=error(:,i) + shape(:,n) * rerrl(1:blk%e,n,i)
            enddo
         enddo
         do i=1,nshl
-           do j=1,10
+           do j=1,numerr
               rerrsml(1:blk%e,i,j)  = rerrsml(1:blk%e,i,j)  
      &                       + shape(:,i)*WdetJ*error(:,j)
            enddo
@@ -217,7 +216,7 @@ c
 c
 c.... assemble the diffusive flux residual 
 c
-        call local (blk,rerrsm,   rerrsml,  ien,  10,'scatter ')
+        call local (blk,rerrsm,   rerrsml,  ien,  numerr,'scatter ')
         call local (blk,rmass,   rmassl,  ien,  1,  'scatter ')
 c
 

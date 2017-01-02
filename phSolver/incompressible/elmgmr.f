@@ -57,7 +57,7 @@ c
         real*8, allocatable, dimension(:,:,:,:,:) :: xlhs
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
-        real*8  rerr(nshg,10)
+        real*8  rerr(nshg,numerr)
 
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
         real*8, allocatable :: tmpshpb(:,:), tmpshglb(:,:,:)

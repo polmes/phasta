@@ -73,7 +73,7 @@ c
 c
         dimension rlsl(bsz,blk%s,6),         rlsli(blk%e,6)
 c
-        real*8    rerrl(bsz,blk%s,6), omega(3), divu(blk%e)
+        real*8    rerrl(bsz,blk%s,6+isurf), omega(3), divu(blk%e)
         dimension gyti(blk%e,nsd),            gradh(blk%e,nsd),
      &            sforce(blk%e,3),            weber(blk%e),
      &            Sclr(blk%e)
@@ -261,12 +261,10 @@ c
 c
 c.... -------------------> error calculation  <-----------------
 c     
-! OLD WAY       if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
-! NEW WAY only one point quadrature on the error
-       if((ierrcalc.eq.1).and.(nitr.eq.iter).and.(ith.eq.blk%g)) then
+        if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
           do ia=1,blk%s
              tmp=shpfun(:,ia)*WdetJ(:)
-             tmp1=shpfun(:,ia) !Qwt(lcsyst,ith) 
+             tmp1=shpfun(:,ia)*Qwt(lcsyst,ith) 
              rerrl(1:blk%e,ia,1) = rerrl(1:blk%e,ia,1) +
      &                       tmp1(1:blk%e)*rLui(1:blk%e,1)*rLui(1:blk%e,1)
              rerrl(1:blk%e,ia,2) = rerrl(1:blk%e,ia,2) +
@@ -280,6 +278,8 @@ c
      &                       tmp(1:blk%e)*divqi(1:blk%e,2)*divqi(1:blk%e,2)
              rerrl(1:blk%e,ia,6) = rerrl(1:blk%e,ia,6) +
      &                       tmp(1:blk%e)*divqi(1:blk%e,3)*divqi(1:blk%e,3)
+          if (isurf .eq. 1) rerrl(1:blk%e,ia,7) = rerrl(:,ia,7) +
+     &                       tmp(:)*divqi(:,idflow+1)*divqi(:,idflow+1)
           enddo
        endif
        distcalc=0  ! return to 1 if you want to compute T-S instability

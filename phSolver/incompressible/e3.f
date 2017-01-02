@@ -52,7 +52,7 @@ c
      &            cfll(bsz,blk%s),        evl(bsz,blk%s)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
-        real*8, allocatable, dimension(:,:,:,:) :: rl_qp
+        real*8, allocatable, dimension(:,:,:,:) :: rl_qp,rerrl_qp
 
         dimension xlhs(bsz,16,blk%s,blk%s)
 c
@@ -73,7 +73,7 @@ c
 
         dimension rlsl(bsz,blk%s,6),      rlsli(blk%e,6)
 
-        real*8    rerrl(bsz,blk%s,6)
+        real*8    rerrl(bsz,blk%s,6+isurf)
         integer   aa
 
 c
@@ -97,8 +97,10 @@ c
 ! natural place for rdelta = TMRC() but moved lower to time just loop 
 #ifdef HAVE_OMP_QP  
 	allocate( rl_qp(bsz,blk%s,nflow,blk%g))
+	allocate( rerrl_qp(bsz,blk%s,6+isurf,blk%g))
         allocate( xK_qp(bsz,16,blk%s,blk%s,blk%g))
         rl_qp=zero
+        rerrl_qp=zero
         xK_qp=zero
 #endif
 ! time just loop 
@@ -134,7 +136,12 @@ c
      &               WdetJ,       rho,       pres, 
      &               u1,          u2,        u3,              
      &               ql,          rLui,      src,
-     &               rerrl,       rlsl,      rlsli,
+#ifdef HAVE_OMP_QP
+     &               rerrl_qp(:,:,:,ith),      
+#else
+     &               rerrl,
+#endif
+     &               rlsl,      rlsli,
      &               dwl) 
 c
 c.... compute CFL number
@@ -201,6 +208,8 @@ c
       do i=1,blk%g
        rl(1:blk%e,1:blk%s,1:nflow)=rl(1:blk%e,1:blk%s,1:nflow)
      &                       +rl_qp(1:blk%e,1:blk%s,1:nflow,i)
+       rerrl(1:blk%e,1:blk%s,1:6+isurf)=rerrl(1:blk%e,1:blk%s,1:isurf+1)
+     &                       +rerrl_qp(1:blk%e,1:blk%s,1:isurf+1,i)
        xlhs(1:blk%e,1:12,1:blk%s,1:blk%s)=xlhs(1:blk%e,1:12,1:blk%s,1:blk%s)
      &                                +xK_qp(1:blk%e,1:12,1:blk%s,1:blk%s,i)
        xlhs(1:blk%e,16,1:blk%s,1:blk%s)=xlhs(1:blk%e,16,1:blk%s,1:blk%s)

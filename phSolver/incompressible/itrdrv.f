@@ -308,12 +308,7 @@ c.....open the necessary files to gather time series
 c
       lstep0 = lstep+1
       nsteprcr = nstep(1)+lstep
-c
-c.... loop through the time sequences
-c
-
-
-      do 3000 itsq = 1, ntseq
+      itsq = 1  ! the loop over itsq has been removed (FINALLY) though still leaving arrays for now.
          itseq = itsq
 
 c
@@ -548,7 +543,6 @@ c
                            ilss=1 ! throw switch (once per step)
                            y(:,7)=y(:,6) ! redistance field initialized
                            ac(:,7)   = zero
-c23456789012345678901234567890123456789012345678901234567890123456789012
                            if (iSolvLSSclr2.eq.2)  then
 !COMING SOON                             call get_bcredist(x,y,iBCredist,BCredist,
 !COMING SOON     &                                      primvert, primvertval(:,1))
@@ -815,53 +809,6 @@ c
 c.... update and the aerodynamic forces
 c
             call forces ( yold,  ilwork )
-            
-c
-c .. write out the instantaneous solution
-c
-2001    continue  ! we could get here by 2001 label if user requested stop
-        if ((irs .ge. 1) .and. ((mod(lstep, ntout) .eq. 0) .or.
-     &      (istep.eq.nstep(itseq)))) then
- 
-!so that we can see progress in force file close it so that it flushes
-!and  then reopen in append mode
-
-        if (myrank .eq. master) then
-           close(iforce)
-           open (unit=iforce, file=fforce, position='append')
-        endif
-
-!              Call to restar() will open restart file in write mode (and not append mode)
-!              that is needed as other fields are written in append mode
-
-           call restar ('out ',  yold  ,ac)
-
-           if(ivort == 1) then 
-             call write_field(myrank,'a','vorticity',9,vorticity,
-     &                       'd',nshg,5,lstep)
-           endif
-
-           call printmeminfo("itrdrv after checkpoint"//char(0))
-         else if(stopjob.eq.-2) then
-           if(myrank.eq.master) then
-             write(*,*) 'line 755 says no write before stopping'
-             write(*,*) 'istep,nstep,irs',istep,nstep(itseq),irs
-           endif    
-        endif  !just the instantaneous stuff for videos
-c
-c.... compute the consistent boundary flux
-c
-            if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
-               call Bflux ( yold,      acold,      uold,    x,
-     &                      shp,       shgl,       shpb,   
-     &                      shglb,     ilwork,     iBC,
-     &                      BC,        iper,       wallssVec)
-            endif
-
-           if(stopjob.eq.-2) goto 2003
-
-
-c 
 c ... update the flow history for the impedance convolution, filter it and write it out
 c    
             if(numImpSrfs.gt.zero) then
@@ -892,127 +839,48 @@ c...  dump TIME SERIES
                call genscale(yold,       x,       iper, 
      &                       iBC,     ifath,   velbar,
      &                       nsons)
-            endif
-c
-c....  print out results.
-c
-            ntoutv=max(ntout,100)   ! velb is not needed so often
-            if ((irs .ge. 1) .and. (mod(lstep, ntout) .eq. 0)) then
-               if( (mod(lstep, ntoutv) .eq. 0) .and.
-     &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
-     &              ((nsonmax.eq.1).and.(iLES.gt.0))))
-     &              call rwvelb  ('out ',  velbar  ,ifail)
-            endif
-c
-c.... end of the NSTEP and NTSEQ loops
-c
-
-
-c
+        endif
 c.... -------------------> error calculation  <-----------------
 c 
             if(ierrcalc.eq.1 .or. ioybar.eq.1) 
      &       call collectErrorYbar(ybar,yold,wallssVec,wallssVecBar,
      &               vorticity,yphbar,rerr,irank2ybar,irank2yphbar)
- 2003       continue ! we get here if stopjob equals lstep and this jumped over
-!           the statistics computation because we have no new data to average in
-!           rather we are just trying to output the last state that was not already
-!           written
 c
-c.... ---------------------->  Complete Restart  Processing  <----------------------
-c   
-!   for now it is the same frequency but need to change this
-!   soon.... but don't forget to change the field counter in
-!  new_interface.cc
-!
-        if ((irs .ge. 1) .and. (((mod(lstep, ntout) .eq. 0)) .or.
-     &      (istep.eq.nstep(itseq)))) then
 
-          lesId   = numeqns(1)
-          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-          if(myrank.eq.0)  then
-            tcormr1 = TMRC()
-          endif
-          if((nsolflow.eq.1).and.(ipresPrjFlag.eq.1)) then
-#ifdef HAVE_LESLIB
-           call saveLesRestart( lesId,  aperm , nshg, myrank, lstep,
-     &                    nPermDims )
-          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-          if(myrank.eq.0)  then
-            tcormr2 = TMRC()
-            write(6,*) 'call saveLesRestart for projection and'//
-     &           'pressure projection vectors', tcormr2-tcormr1
-          endif
-#endif 
-          endif
-
-          if(ierrcalc.eq.1) then
-c
-c.....smooth the error indicators
-c
-            do i=1,ierrsmooth
-              call errsmooth( rerr, x, iper, ilwork, shp, shgl, iBC )
-            end do
-            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-            if(myrank.eq.0)  then
-              tcormr1 = TMRC()
-            endif
-            call write_error(myrank, lstep, nshg, 10, rerr )
-            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-            if(myrank.eq.0)  then
-              tcormr2 = TMRC()
-              write(6,*) 'Time to write the error fields to the disks',
-     &            tcormr2-tcormr1
-            endif
-          endif ! ierrcalc
-
-          if(ioybar.eq.1) then
-              call write_field(myrank,'a','ybar',4,
-     &                  ybar,'d',nshg,irank2ybar,lstep)
-                 
-            if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
-              call write_field(myrank,'a','wssbar',6,
-     &             wallssVecBar,'d',nshg,3,lstep)
-            endif
-
-            if(nphasesincycle .gt. 0) then
-              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-              if(myrank.eq.0)  then
-                tcormr1 = TMRC()
-              endif
-              do iphase=1,nphasesincycle
-                 call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &              nphasesincycle,yphbar(:,:,iphase),'d',nshg,irank2yphbar,lstep)
-              end do
-              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-              if(myrank.eq.0)  then
-                tcormr2 = TMRC()
-                write(6,*) 'write all phase avg to the disks = ',
-     &                tcormr2-tcormr1
-              endif
-            endif !nphasesincyle
-          endif !ioybar
-
-          if(iRANS.lt.0) then
-            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-            if(myrank.eq.0)  then
-              tcormr1 = TMRC()
-            endif
-            call write_field(myrank,'a','dwal',4,d2wall,'d',
-     &                       nshg,1,lstep)
-            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-            if(myrank.eq.0)  then
-              tcormr2 = TMRC()
-              write(6,*) 'Time to write dwal to the disks = ',
-     &        tcormr2-tcormr1
-            endif
-          endif !iRANS
-
-        endif ! write out complete restart state
+c .. write out the instantaneous solution
+2001    continue  ! we could get here by 2001 label if user requested stop
+        if (((irs .ge. 1) .and. (mod(lstep, ntout) .eq. 0)) .or.
+     &      istep.eq.nstep(itseq)) then
+!so that we can see progress in force file close it so that it flushes
+!and  then reopen in append mode
+           close(iforce)
+           open (unit=iforce, file=fforce, position='append')
+           if(output_mode .eq. -1 ) then ! this is an in-memory adapt case
+             if(istep == nstp) then ! go ahead and take care of it
+               call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
+     &                       shglb,ilwork, iBC,BC,iper,wallsvec,
+     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar)
+             endif
+             if(ntout.le.lstep) then ! user also wants file output
+                  output_mode=0   ! only writing posix for now
+                 call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
+     &                       shglb,ilwork, iBC,BC,iper,wallsvec,
+     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar)
+                  output_mode=-1 ! reset to stream 
+             endif
+           else
+             call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
+     &                       shglb,ilwork, iBC,BC,iper,wallsvec,
+     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar)
+           endif
+        endif
         !next 2 lines are two ways to end early
         if(stopjob.eq.-2) goto 2002    
         if(istop.eq.1000) goto 2002 ! stop when delta small (see rstatic)
- 2000 continue
+ 2000 continue ! nstp loop
  2002 continue
 
 ! done with time stepping so deallocate fields already written
@@ -1059,10 +927,6 @@ c         call MPI_ABORT(MPI_COMM_WORLD, ierr)
 
          call destroyWallData
          call destroyfncorp
-
- 3000 continue
- 
-
 c
 c.... close history and aerodynamic forces files
 c
@@ -2314,11 +2178,237 @@ c
 c compute rms
 c
       if(icollectybar.eq.1) then
-                  rerr(:, 7)=rerr(:, 7)+(yold(:,1)-ybar(:,1))**2
-                  rerr(:, 8)=rerr(:, 8)+(yold(:,2)-ybar(:,2))**2
-                  rerr(:, 9)=rerr(:, 9)+(yold(:,3)-ybar(:,3))**2
-                  rerr(:,10)=rerr(:,10)+(yold(:,4)-ybar(:,4))**2
+! shift rerr so that if we are doing LS rerr(:,7) will be curvature and then rms quantities
+!shift to 8-11
+                 do j=1,4
+                  ie=isurf+7+j
+                  rerr(:, ie)=rerr(:, ie)+(yold(:,j)-ybar(:,j))**2
+                 enddo
       endif
       return
       end subroutine
 
+      subroutine checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
+     &                       shglb,ilwork, iBC,BC,iper,wallsvec,
+     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar)
+      use solvedata
+      use turbSA 
+      include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
+
+      dimension shp(MAXTOP,maxsh,MAXQPT),
+     &            shgl(MAXTOP,nsd,maxsh,MAXQPT),
+     &            iper(nshg),              iBC(nshg),
+     &            x(nshg,nsd),         ilwork(nlwork)
+
+      real*8    ac(nshg,ndof),          uold(nshg,nsd),           
+     &            yold(nshg,ndof),      acold(nshg,ndof),
+     &            BC(nshg,ndofBC),      velbar(nfath,ndof),
+     &            shpb(MAXTOP,maxsh,MAXQPT),
+     &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
+
+      real*8 ybar(nshg,irank2yphbar),vorticity(nshg,5)
+      real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
+      real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
+
+!              Call to restar() will open restart file in write mode (and not append mode)
+!              that is needed as other fields are written in append mode
+      call restar ('out ',  yold  ,ac)
+      if(ivort == 1) then 
+             call write_field(myrank,'a','vorticity',9,vorticity,
+     &                       'd',nshg,5,lstep)
+      endif
+      call printmeminfo("itrdrv after checkpoint"//char(0))
+       !just the instantaneous stuff for videos above but for now we continue to do all
+c.... compute the consistent boundary flux
+      if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
+               call Bflux ( yold,      acold,      uold,    x,
+     &                      shp,       shgl,       shpb,   
+     &                      shglb,     ilwork,     iBC,
+     &                      BC,        iper,       wallssVec)
+      endif
+c....  print out results.
+      if( (mod(lstep, ntoutv) .eq. 0) .and.
+     &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
+     &              ((nsonmax.eq.1).and.(iLES.gt.0))))
+     &              call rwvelb  ('out ',  velbar  ,ifail)
+      lesId   = numeqns(1)
+      if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      if(myrank.eq.0)  then
+        tcormr1 = TMRC()
+      endif
+      if((nsolflow.eq.1).and.(ipresPrjFlag.eq.1)) then
+#ifdef HAVE_LESLIB
+        call saveLesRestart( lesId,  aperm , nshg, myrank, lstep,
+     &                    nPermDims )
+        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(myrank.eq.0)  then
+          tcormr2 = TMRC()
+          write(6,*) 'call saveLesRestart for projection and'//
+     &         'pressure projection vectors', tcormr2-tcormr1
+        endif
+#endif 
+      endif
+
+      if(ierrcalc.eq.1) then
+c.....smooth the error indicators
+        do i=1,ierrsmooth
+          call errsmooth( rerr, x, iper, ilwork, shp, shgl, iBC )
+        end do
+        call LSbandError(rerr,yold)
+        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(myrank.eq.0)  then
+          tcormr1 = TMRC()
+        endif
+        call write_error(myrank, lstep, nshg, numerr, rerr )
+        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(myrank.eq.0)  then
+          tcormr2 = TMRC()
+          write(6,*) 'Time to write the error fields to the disks',
+     &        tcormr2-tcormr1
+        endif
+      endif ! ierrcalc
+      if(ioybar.eq.1) then
+        if(ivort == 1) then
+          call write_field(myrank,'a','ybar',4,
+     &              ybar,'d',nshg,17,lstep)
+        else
+          call write_field(myrank,'a','ybar',4,
+     &            ybar,'d',nshg,13,lstep)
+        endif
+        if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
+          call write_field(myrank,'a','wssbar',6,
+     &         wallssVecBar,'d',nshg,3,lstep)
+        endif
+
+        if(nphasesincycle .gt. 0) then
+          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+          if(myrank.eq.0)  then
+            tcormr1 = TMRC()
+          endif
+          do iphase=1,nphasesincycle
+            if(ivort == 1) then
+              call write_phavg2(myrank,'a','phase_average',13,iphase,
+     &          nphasesincycle,yphbar(:,:,iphase),'d',nshg,15,lstep)
+            else
+              call write_phavg2(myrank,'a','phase_average',13,iphase,
+     &            nphasesincycle,yphbar(:,:,iphase),'d',nshg,11,lstep)
+            endif
+          end do
+          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+          if(myrank.eq.0)  then
+            tcormr2 = TMRC()
+            write(6,*) 'write all phase avg to the disks = ',
+     &            tcormr2-tcormr1
+          endif
+        endif !nphasesincyle
+      endif !ioybar
+      if(iRANS.lt.0) then
+        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(myrank.eq.0)  then
+          tcormr1 = TMRC()
+        endif
+        call write_field(myrank,'a','dwal',4,d2wall,'d',
+     &                   nshg,1,lstep)
+        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if(myrank.eq.0)  then
+          tcormr2 = TMRC()
+          write(6,*) 'Time to write dwal to the disks = ',
+     &    tcormr2-tcormr1
+        endif
+      endif !iRANS
+      return
+      end subroutine
+
+      subroutine redistLoopDecision(i_redist_counter,istepc,
+     &              redist_toler_previous,iloop)
+      include "common.h"
+      logical iloop
+c
+c** Conditions for Redistancing Loop **
+c Here we test to see if the following conditions are met:
+c	no. of redistance iterations < i_redist_max_iter
+c	residual (redist_toler_curr) > redist_toler
+c If these are true then we continue in the redistance loop
+c
+                 if(i_redist_loop_flag.eq.1) then
+                   if (icode .eq. 21) then ! only check after a redistance update
+                     if((ilset.eq.2).and.(isclr.eq.2)) then !redistance condition
+                      if (redist_toler_curr.gt.redist_toler) then !condition 1
+                       if (i_redist_counter.lt.i_redist_max_iter) then ! condition 2
+                        i_redist_counter = i_redist_counter + 1
+                        istepc = istepc - 2  ! repeat the 20 21 step
+                        if(redist_toler_curr.gt.redist_toler_previous)
+     &                  then
+                         if(myrank.eq.master) then
+! it is explicit....diverging is not tested by residual                          write(*,*) "Warning: diverging!"
+                         endif
+                        endif
+                       else
+                        iloop = .false. 
+                        if(myrank.eq.master) then  
+                         write(*,*) "Exceeded Max # of the iterations: "
+     &                              , i_redist_max_iter
+                        endif
+                       endif
+                       redist_toler_previous=redist_toler_curr
+                      else
+                       if(myrank.eq.master) then
+                        write(*,*) "Redistance loop converged in ",
+     &                       i_redist_counter," iterations"
+                       endif
+                       iloop = .false. 
+                      endif
+                     endif
+                   endif !end of the redistance condition
+                 endif !end of the condition for the redistance loop
+c
+                 if (istepc .eq. seqsize) then
+                   iloop = .false.
+                 endif
+                 istepc = istepc + 1
+      return
+      end subroutine
+
+      subroutine LSbandError(rerr,yold)
+      include "common.h"
+      real*8 rerr(nshg,numerr),yold(nshg,ndof)
+               if(isurf.eq.1) then
+                 dxold=0.0035 ! initial mesh size  problem dependent
+                 nbuf=5 ! this sets how many elment layers (original mesh size) to refine
+!
+! This could easily be made multi-banded (e.g. dxold/2 for 10 layers  dxold/4 for 3 layers,  dxold/8 for error
+! but the idea is that these bands allow us to run for some time before needing to refine.
+! It could also be made smarter to use the local velocity of the interface  to determine which direction from the
+! interface to refine more/less (e.g. use current normal and velocity information to predict where the interface
+! will be in 50 (or other N) steps and then refine in the region between current interface and N-step future 
+! interface.
+! NOTE with the advent of local refinement, we will have to be more careful with the time step of our VOF method
+! Probably need to add local time stepping inner iteration to the VOF "solve" where we:
+!  1) compute the worst CFL for VOF,
+!  2) Determine the worst element time step,
+!  3) Find the integer multiple of a smaller time step that will "land on" the flow's time step
+!  4) Advance all VOF cells at that small time step for that integer number of time steps in correspondence to
+!     each flow step
+!  5) Potentially later we could do true local time stepping where element capable of a larger time step wait for 
+!     smaller time step elements to complete their substeps but this is a pain to load balance  and coordinate and 
+!     often not worth it for highly parallel problems.
+! 
+                 Ethresh=0.125  !This value comes from looking at ParaView, and finding an isosurface 
+                               !value that encloses the high curvature region using the level set 
+                               !limited function abs(rerr(:,10)/(1.0e-5+yold(:,6))
+                 rerr(:,6)=dxold
+                 where (abs(yold(:,6)).lt.dxold*nbuf)
+                    rerr(:,6)=dxold/two
+                 endwhere
+                 where ((abs(rerr(:,7)/(1.0e-5+yold(:,6))).gt.Ethresh).and.(abs(yold(:,6)).lt.dxold*epsilon_ls*2))
+                    rerr(:,6)=dxold/four
+                 endwhere
+               endif
+! As a rough go at addressing the above comments, there is now a variable substep
+! For now, substep should be manually set to the maximum error denominator
+! substep is set on line 360             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      return
+      end subroutine

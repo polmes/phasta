@@ -51,7 +51,7 @@ c
         dimension xmudmi(blk%e,blk%g)
         dimension sgn(blk%e,blk%s)
 c
-        real*8 rerrl(bsz,blk%s,6)
+        real*8 rerrl(bsz,blk%s,6+isurf)
 c
 c.... gather the variables
 c
