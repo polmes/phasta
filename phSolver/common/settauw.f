@@ -25,7 +25,6 @@ c calculate the traction magnitude for all nodes on the wall
 c
       trx=zero
       evisc=zero
-      effvisc = zero
       rm=datmat(1,2,1)
       do nodw = 1, numnp ! loop over nodes
       if ( otwn(nodw).ne.nodw ) then ! wall node check

@@ -278,7 +278,7 @@ c
      &                       tmp(1:blk%e)*divqi(1:blk%e,2)*divqi(1:blk%e,2)
              rerrl(1:blk%e,ia,6) = rerrl(1:blk%e,ia,6) +
      &                       tmp(1:blk%e)*divqi(1:blk%e,3)*divqi(1:blk%e,3)
-          if (isurf .eq. 1) rerrl(1:blk%e,ia,7) = rerrl(:,ia,7) +
+          if (isurf .eq. 1) rerrl(1:blk%e,ia,7) = rerrl(1:blk%e,ia,7) +
      &                       tmp(:)*divqi(:,idflow+1)*divqi(:,idflow+1)
           enddo
        endif

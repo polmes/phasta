@@ -175,7 +175,8 @@ c...........................................................................
 c...........................................................................
 
 c
-        common /levlset/ epsilon_ls, epsilon_lsd, dtlset, dtlset_cfl,
+        common /levlset/ esize(3),dband(3),
+     &                   epsilon_ls, epsilon_lsd, dtlset, dtlset_cfl,
      &                   redist_toler, redist_toler_curr,
      &                   r_int_buffer,r_int_elem_size, phvol(2),
      &                   AdjRedistVelCFL,

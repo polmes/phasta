@@ -244,6 +244,7 @@ int input_fform(phSolver::Input& inp)
       cout << endl;
       exit(1);
     }
+    vector<double> vec;
 
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=
  //                                          inp.GetValue("DES Edge Length");
@@ -270,6 +271,19 @@ int input_fform(phSolver::Input& inp)
 
     levlset.iLSet = ilset;
     if( ilset > 0) {
+
+    vec = inp.GetValue("Three Adapt Sizes");
+      levlset.esize[0] = vec[0];
+      levlset.esize[1] = vec[1];
+      levlset.esize[2] = vec[2];
+    vec.erase(vec.begin(),vec.end());
+
+    vec = inp.GetValue("Three Band Sizes");
+      levlset.dband[0] = vec[0];
+      levlset.dband[1] = vec[1];
+      levlset.dband[2] = vec[2];
+    vec.erase(vec.begin(),vec.end());
+
     levlset.epsilon_ls = inp.GetValue("Number of Elements Across Interface");
     levlset.epsilon_lsd = inp.GetValue("Number of Elements Across Interface for Redistancing");
     levlset.dtlset = inp.GetValue("Pseudo Time step for Redistancing");
@@ -335,7 +349,6 @@ int input_fform(phSolver::Input& inp)
      }
     }
 
-    vector<double> vec;
 
     // OUTPUT CONTROL KEY WORDS.
 

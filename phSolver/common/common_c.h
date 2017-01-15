@@ -347,6 +347,8 @@ extern "C" {
 
  
   extern struct { 
+    double esize[3];
+    double dband[3];
     double epsilon_ls;
     double epsilon_lsd;
     double dtlset;

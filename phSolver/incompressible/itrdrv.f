@@ -885,6 +885,13 @@ c .. write out the instantaneous solution
 
 ! done with time stepping so deallocate fields already written
 !
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          deallocate ( effvisc )
+        endif
+          deallocate(elem_local_size)
+          deallocate(elemb_local_size)
+
+          deallocate ( gmass )
  
           if(ioybar.eq.1) then
             deallocate(ybar)
@@ -2181,7 +2188,7 @@ c
 ! shift rerr so that if we are doing LS rerr(:,7) will be curvature and then rms quantities
 !shift to 8-11
                  do j=1,4
-                  ie=isurf+7+j
+                  ie=isurf+6+j
                   rerr(:, ie)=rerr(:, ie)+(yold(:,j)-ybar(:,j))**2
                  enddo
       endif
@@ -2230,10 +2237,10 @@ c.... compute the consistent boundary flux
      &                      BC,        iper,       wallssVec)
       endif
 c....  print out results.
-      if( (mod(lstep, ntoutv) .eq. 0) .and.
-     &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
-     &              ((nsonmax.eq.1).and.(iLES.gt.0))))
-     &              call rwvelb  ('out ',  velbar  ,ifail)
+cDEPRICATED       if( (mod(lstep, ntout) .eq. 0) .and.
+cDEPRICATED      &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
+cDEPRICATED      &              ((nsonmax.eq.1).and.(iLES.gt.0))))
+cDEPRICATED      &              call rwvelb  ('out ',  velbar  ,ifail)
       lesId   = numeqns(1)
       if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
@@ -2373,11 +2380,15 @@ c
       end subroutine
 
       subroutine LSbandError(rerr,yold)
+      use spat_var_eps   ! use spatially-varying epl_ls
       include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
+      real*8 errmax, errmaxg,sumELS,sumELSg
       real*8 rerr(nshg,numerr),yold(nshg,ndof)
                if(isurf.eq.1) then
-                 dxold=0.0035 ! initial mesh size  problem dependent
-                 nbuf=5 ! this sets how many elment layers (original mesh size) to refine
+!depricated                 dxold=0.0035 ! initial mesh size  problem dependent
+!depricated                 nbuf=5 ! this sets how many elment layers (original mesh size) to refine
 !
 ! This could easily be made multi-banded (e.g. dxold/2 for 10 layers  dxold/4 for 3 layers,  dxold/8 for error
 ! but the idea is that these bands allow us to run for some time before needing to refine.
@@ -2396,15 +2407,25 @@ c
 !     smaller time step elements to complete their substeps but this is a pain to load balance  and coordinate and 
 !     often not worth it for highly parallel problems.
 ! 
-                 Ethresh=0.125  !This value comes from looking at ParaView, and finding an isosurface 
+               errmax=maxval(abs(rerr(:,7)))
+               !Find the maximum across parts
+               if(numpe.gt.1) then
+                 call MPI_ALLREDUCE(errmax, errmaxg, 1,
+     &             MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr )
+                 errmax = errmaxg
+               endif
+               Ethresh=dband(1)*errmax
+
+!                 Ethresh=0.125  !This value comes from looking at ParaView, and finding an isosurface 
                                !value that encloses the high curvature region using the level set 
                                !limited function abs(rerr(:,10)/(1.0e-5+yold(:,6))
-                 rerr(:,6)=dxold
-                 where (abs(yold(:,6)).lt.dxold*nbuf)
-                    rerr(:,6)=dxold/two
+                 rerr(:,6)=esize(1) !dxold
+                 where (abs(yold(:,6)).lt.dband(2)) ! dxold*nbuf)
+                    rerr(:,6)=esize(2) ! dxold/two
                  endwhere
-                 where ((abs(rerr(:,7)/(1.0e-5+yold(:,6))).gt.Ethresh).and.(abs(yold(:,6)).lt.dxold*epsilon_ls*2))
-                    rerr(:,6)=dxold/four
+!                 where ((abs(rerr(:,7)/(1.0e-5+yold(:,6))).gt.Ethresh).and.(abs(yold(:,6)).lt.dxold*epsilon_ls*2))
+                 where ((abs(rerr(:,7)).gt.Ethresh).and.(abs(yold(:,6)).lt.dband(3))) !   dxold*epsilon_ls*2))
+                    rerr(:,6)=esize(3) ! dxold/four
                  endwhere
                endif
 ! As a rough go at addressing the above comments, there is now a variable substep

@@ -71,8 +71,10 @@ c
 c
 c Allocate memory for effvisc array used in DNS calculations
 c using a turbulence wall model
-      allocate ( effvisc(nshg) )
-      effvisc = zero
+      if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+        allocate ( effvisc(nshg) )
+        effvisc = zero
+      endif
 c
 c
 c.... ----------------------> Wall Normals  <--------------------------
