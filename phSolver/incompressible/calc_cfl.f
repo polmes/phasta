@@ -29,13 +29,14 @@ c
 c
         dimension gijd(blk%e,6),  rnu(blk%e),  
      &            rhoinv(blk%e), cfl_loc(blk%e)
+         if (ires == 1) then
 c
 c.... get the metric tensor
 c      
       call e3gijd(blk, dxidx, gijd )
 
-      rhoinv=one/rho
-      rnu=rmu*rhoinv
+!      rhoinv=one/rho
+!      rnu=rmu*rhoinv
 
        dt2 = ( u1 * ( gijd(:,1) * u1
      4		    + gijd(:,4) * u2
@@ -46,18 +47,22 @@ c
      9	     + u3 * ( gijd(:,6) * u1
      a		    + gijd(:,5) * u2
      1		    + gijd(:,3) * u3 ) ) 
-       dt3 = rnu ** 2
-     3	          * ( gijd(:,1) ** 2
-     4	            + gijd(:,2) ** 2
-     5		    + gijd(:,3) ** 2
-     6		    + 2.
-     7		  * ( gijd(:,4) ** 2
-     8		    + gijd(:,5) ** 2
-     9		    + gijd(:,6) ** 2 ) )
+!       dt3 = rnu ** 2
+!     3	          * ( gijd(:,1) ** 2
+!     4	            + gijd(:,2) ** 2
+!     5		    + gijd(:,3) ** 2
+!     6		    + 2.
+!     7		  * ( gijd(:,4) ** 2
+!     8		    + gijd(:,5) ** 2
+!     9		    + gijd(:,6) ** 2 ) )
 c
-         if (ires == 1) then
-            cfl_loc= cfl_loc+sqrt(max(dt2,dt3/two))/(Dtgl*two)
+!            cfl_loc= cfl_loc+sqrt(max(dt2,dt3/two))/(Dtgl*two)
+             dti=pt5/Dtgl
+            cfl_loc= cfl_loc+sqrt(dt2)*dti
          endif
+!         if(maxval(cfl_loc).gt.1) then  !debug
+!          goodstop=1
+!         endif 
 c     
 c.... return
 c

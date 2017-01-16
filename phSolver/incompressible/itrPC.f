@@ -287,3 +287,25 @@ c      use readarrays            !reads in uold and acold
       return
       end
 
+
+c-----------------------------------------------------------------------
+c
+c    Update solution at end of time step
+c
+c-----------------------------------------------------------------------
+      subroutine itrUpdateDist( yold,          acold,
+     &                          y,             ac )
+
+      include "common.h"
+      
+      real*8        yold(nshg,ndof),            acold(nshg,ndof),
+     &              y(nshg,ndof),               ac(nshg,ndof)
+
+c update the old value with the current solutions at n+1
+c
+      ac(:,7)    = zero
+      yold(:,7)  =  y(:,7)
+      acold(:,7) = ac(:,7)
+      
+      return
+      end

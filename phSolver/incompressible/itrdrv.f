@@ -679,7 +679,8 @@ c
 c ... update the old value for second level set scalar
 c
                      if (ilset.eq.2 .and. isclr.eq.2)  then
-!COMING SOON                         call itrUpdateDist( yold, acold, y, ac)
+!was COMING SOON???                         call itrUpdateDist( yold, acold, y, ac)
+                         call itrUpdateDist( yold, acold, y, ac)
                      endif   
 
                      endif      ! end of flow or scalar update
@@ -694,7 +695,7 @@ c
                  if(i_redist_loop_flag.eq.1) then
                    if (icode .eq. 21) then ! only check after a redistance update
                      if((ilset.eq.2).and.(isclr.eq.2)) then !redistance condition
-                      if (redist_toler_curr.gt.redist_toler) then !condition 1
+                      if ((redist_toler_curr.gt.redist_toler).or.(i_redist_counter.lt.20)) then !condition 1
                        if (i_redist_counter.lt.i_redist_max_iter) then ! condition 2
                         i_redist_counter = i_redist_counter + 1
                         istepc = istepc - 2  ! repeat the 20 21 step
@@ -731,17 +732,6 @@ c
 c**End of loop condition for Redistancing equation**
 c		 		  
                end do      ! end while loop over sequence steps
-           if((myrank.eq.0) .and. 
-     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
-            write(*,*) 'CLF Flow status: Step, CFLfl_max, dt'
-            write(*,7001) lstep+1, CFLfl_max, delt(itseq)
-           endif
-           if((myrank.eq.0) .and. (iLSet.eq.2) .and.   
-     &   ((CFLls_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
-            write(*,*) 'CLF LS status: Step, CFLls_max,  dt'
-            write(*,7001) lstep+1, CFLls_max, delt(itseq)
-           endif
- 7001      format(1p,i8,e10.3,e10.3)
 
 
 c
@@ -780,6 +770,17 @@ c
                Delt(1)=Deltt
                Dtgl =Dtglt
             endif          
+           if((myrank.eq.0) .and. 
+     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+            write(*,*) 'CLF Flow status: Step, CFLfl_max, dt'
+            write(*,7001) lstep+1, CFLfl_max, delt(itseq)
+           endif
+           if((myrank.eq.0) .and. (iLSet.eq.2) .and.   
+     &   ((CFLls_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+            write(*,*) 'CLF LS status: Step, CFLls_max,  dt'
+            write(*,7001) lstep+1, CFLls_max, dtlset
+           endif
+ 7001      format(1p,i8,e10.3,e10.3)
             call itrUpdate( yold,  acold,   uold,  y,    ac,   u)
             call itrBC (yold, acold,  iBC,  BC,  iper,ilwork)
 
