@@ -8,5 +8,5 @@ int phasta(phSolver::Input& ctrl);
 int phasta(phSolver::Input& ctrl, GRStream* in);
 int phasta(phSolver::Input& ctrl, RStream* out);
 int phasta(phSolver::Input& ctrl, GRStream* in, RStream* out);
-int testReadSolution( GRStream* in);
+void testReadSolution( GRStream* in);
 #endif

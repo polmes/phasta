@@ -99,10 +99,13 @@ namespace {
 
     workfc.numpe = size;
     workfc.myrank = myrank;
+    testReadSolution(grs);
 
     initPhastaCommonVars();
+    testReadSolution(grs);
     /* Input data  */
     ierr = input_fform(ctrl);
+    testReadSolution(grs);
     if(!ierr){
       sprintf(inpfilename,"%d-procs_case/",size);
       if( chdir( inpfilename ) ) {
@@ -111,6 +114,7 @@ namespace {
         return -1;
       }
       MPI_Barrier(MPI_COMM_WORLD);
+    testReadSolution(grs);
       input();
       /* now we can start the solver */
       proces();
@@ -136,9 +140,11 @@ int phasta(phSolver::Input& ctrl) {
 
 int phasta(phSolver::Input& ctrl, grstream grs) {
   assert(grs);
+  testReadSolution(grs);
   outpar.input_mode = -1; //FIXME magic value for streams
   outpar.output_mode = 1; //FIXME magic value for syncio
   streamio_set_gr(grs);
+  testReadSolution(grs);
   return run(ctrl);
 }
 

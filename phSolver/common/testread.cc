@@ -1,6 +1,12 @@
 #include <phasta.h>
 #include <phastaIO.h>
 #include <phstream.h>
+#include <iostream>
+#include <sstream>
+#include <stdlib.h>
+#include <assert.h>
+#include <unistd.h>
+
 void testReadSolution(grstream grs) {
       FILE* f = openGRStreamRead(grs,"restart");
       int params[128];
