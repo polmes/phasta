@@ -140,7 +140,7 @@ c
 #ifdef HAVE_MKL
       irc=mkl_enable_instructions(MKL_ENABLE_AVX512_MIC)
 #endif
-              idflx = 0
+        idflx = 0
         if(idiff >= 1 )  idflx= (nflow-1) * nsd
         if (isurf == 1) idflx=nflow*nsd
 
@@ -206,6 +206,7 @@ c
         numerr=10+isurf
         allocate(rerr(nshg,numerr)) 
         rerr = zero
+
 
         if(ierrcalc.eq.1 .or. ioybar.eq.1) then ! we need ybar for error too
           if (ivort == 1) then
@@ -304,6 +305,20 @@ c     &                                  primvertval(inode,2), inode
 c
 c.... -----------------> End of initialization <-----------------
 c
+!hack to write solution to file when using streams 
+      if(output_mode .eq. -1 ) then ! this is an in-memory adapt case
+        output_mode=0   ! only writing posix for now
+        lstepSave=lstep
+        lstep=lstep+10000  ! in SAM lstep was already written on the previous mesh.  Here we want solution on the new mesh
+                 call  checkpoint (y,ac,acold,uold,x,shp, shgl, shpb, 
+     &                       shglb,ilwork, iBC,BC,iper,wallsvec,
+     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar)
+! shift the number to keep them distinct
+        lstep=lstepSave
+        output_mode=-1 ! reset to stream 
+      endif
+!end hack
 c.....open the necessary files to gather time series
 c
       lstep0 = lstep+1
