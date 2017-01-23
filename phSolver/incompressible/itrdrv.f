@@ -1789,7 +1789,7 @@ c
          eqnType     = 2
          nDofs       = 1
          isclpresPrjflag = 0        
-         nPresPrjs   = 0       
+         isclrnPresPrjs   = 0       
          isclprjFlag     = 1
          indx=isolsc+2-nsolt ! complicated to keep epstol(2) for
                              ! temperature followed by scalars
@@ -1847,7 +1847,7 @@ c
      &                 eqnType,
      &                 nDofs,          minIters,       maxIters,
      &                 Kspace,         isclprjFlag,        nPrjs,
-     &                 isclpresPrjFlag,    nPresPrjs,      epstol(indx),
+     &                 isclpresPrjFlag,isclrnPresPrjs,      epstol(indx),
      &                 prestol,        iverbose,        statssclr,
      &                 nPermDimsS,     nTmpDimsS,   servername )
         endif

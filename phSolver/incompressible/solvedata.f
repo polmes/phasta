@@ -46,6 +46,7 @@ c-----------------------------------------------------------------------
       if(leslib.eq.1) then
         deallocate (aperm)
         deallocate (atemp)
+        nPermDims=0
       endif
       return
       end

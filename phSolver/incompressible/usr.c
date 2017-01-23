@@ -156,6 +156,7 @@ usrPointer(	UsrHd	usrHd,
 #define myflessolve FortranCInterface_GLOBAL_(myflessolve,MYFLESSOLVE)
 #define savelesrestart FortranCInterface_GLOBAL_(savelesrestart,SAVELESRESTART)
 #define readlesrestart FortranCInterface_GLOBAL_(readlesrestart,READLESRESTART)
+#define getvectstart FortranCInterface_GLOBAL_(getvectstart,GETVECTSTART)
 #define solverlicenseserver FortranCInterface_GLOBAL_(solverlicenseserver,SOLVERLICENSESERVER)
 
 
@@ -301,6 +302,22 @@ savelesrestart( Integer* lesId,
 }
 
 void
+getvectstart( Integer* lesId,
+              Integer* PresPrjSrcIdP,
+                 Integer* nPresPrjsP ,
+                 Integer* nPermDims ) {
+    int nPresPrjs, PresPrjSrcId;
+
+    nPresPrjs=*nPresPrjsP;
+    lesSetPar( lesArray[ *lesId ], LES_ACT_PRES_PRJS, (Real) nPresPrjs );
+    PresPrjSrcId=(Integer)lesGetPar( lesArray[ *lesId ], LES_PRES_PRJ_VEC_ID );
+    if ( PresPrjSrcId < 0 ) PresPrjSrcId += *nPermDims;
+    *PresPrjSrcIdP=PresPrjSrcId;
+
+}
+
+
+void
 readlesrestart( Integer* lesId,
                  Real*    aperm,
                  Integer* nshg,
@@ -343,6 +360,7 @@ readlesrestart( Integer* lesId,
 
     if ( !fileHandle ) return; // See phastaIO.cc for error fileHandle
 // move pressure projection vectors to top since they are the more common case
+    if(incomp.ipresPrjFlag==1) {
     phio_readheader(fileHandle, "pressure projection vectors", (void*)iarray,
                  &itwo, "integer", phasta_iotype );
 
@@ -374,7 +392,9 @@ readlesrestart( Integer* lesId,
     }
 
     free( projVec );
+    }
 // repeat for projection vectors
+    if(incomp.iprjFlag==1) {
     iarray[0] = -1; iarray[1] = -1; iarray[2] = -1;
 
     phio_readheader(fileHandle, "projection vectors", (void*)iarray,
@@ -408,6 +428,7 @@ readlesrestart( Integer* lesId,
     }
 
     free( projVec );
+    }
 
     phio_closefile(fileHandle);
 }

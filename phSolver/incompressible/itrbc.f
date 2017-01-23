@@ -107,6 +107,8 @@ c
            y(:,i) = y(iper(:),i)
            ac(:,i) = ac(iper(:),i)
 	enddo
+        if (ipresPrjFlag.eq.1) call ppv_periodicAndCommu(iper,ilwork)
+
 c
 c.... communications
 c 
@@ -122,6 +124,39 @@ c
            call rotabc(ac, iBC, 'out')
         endif
      
+c
+c.... return
+c
+        return
+        end
+
+        subroutine ppv_periodicAndCommu (iper, ilwork)
+c
+c----------------------------------------------------------------------
+c
+c This routine satisfies the boundary conditions on the isclr
+c
+c----------------------------------------------------------------------
+c
+        use solvedata
+        include "common.h"
+
+        dimension ilwork(nlwork),            iper(nshg)
+
+        if(nPermDims.lt.1) return ! nothing to do yet.
+        lesid=1
+        call getvectstart(lesid,iPPVstart,nPresPrjs,nPermDims)
+
+        iPPVstart=iPPVstart+1  ! fortran shift
+        idog=iPPVstart
+        do i=idog,idog+nPresPrjs -1
+          aperm(:,i)=aperm(iper(:),i)
+        enddo
+
+        if( numpe > 1) then 
+           call commu (aperm(:,iPPVstart), ilwork, nPresPrjs, 'out')
+        endif
+c
 c
 c.... return
 c
