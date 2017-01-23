@@ -100,13 +100,12 @@ namespace {
 
     workfc.numpe = size;
     workfc.myrank = myrank;
-    testReadSolution(streamio_get_gr());
+// leaving this in for debug syntax later...this is a way to do a test read of the stream
+//    testReadSolution(streamio_get_gr());
 
     initPhastaCommonVars();
-    testReadSolution(streamio_get_gr());
     /* Input data  */
     ierr = input_fform(ctrl);
-    testReadSolution(streamio_get_gr());
     if(!ierr){
       sprintf(inpfilename,"%d-procs_case/",size);
       if( chdir( inpfilename ) ) {
@@ -115,7 +114,6 @@ namespace {
         return -1;
       }
       MPI_Barrier(MPI_COMM_WORLD);
-    testReadSolution(streamio_get_gr());
       input();
       /* now we can start the solver */
       proces();
@@ -159,11 +157,10 @@ int phasta(phSolver::Input& ctrl, GRStream* grs, RStream* rs) {
   outpar.output_mode = -1; //FIXME magic value for streams
   assert(grs);
   assert(rs);
-  testReadSolution(grs);
   streamio_set_gr(grs);
-  testReadSolution(grs);
   streamio_set_r(rs);
-  testReadSolution(grs);
+// leaving this in for debug syntax of how to call funtion to read stream when grs if available 
+//  testReadSolution(grs);
   return run(ctrl);
 }
 
