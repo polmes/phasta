@@ -64,7 +64,6 @@ c
       character(len=1024) :: dataInt, dataDbl
       dataInt = c_char_'integer'//c_null_char
       dataDbl = c_char_'double'//c_null_char
-      numparts = numpe !This is the common settings. Beware if you try to compute several parts per process
 c
 c.... determine the step number to start with
 c
@@ -81,140 +80,11 @@ c
       write (fmt1,"('(''restart.'',i',i1,',1x)')") itmp
       write (fnamer,fmt1) irstart
       fnamer = trim(fnamer) // cname2(myrank+1)
-c.... Read restart files
-      iotime = TMRC()
-      if( input_mode .eq. -1 ) then
-        call streamio_setup_read(fhandle, geomRestartStream)
-      else if( input_mode .eq. 0 ) then
-        call posixio_setup(fhandle, c_char_'r')
-      else if( input_mode .ge. 1 ) then
-        call syncio_setup_read(nsynciofiles, fhandle)
-      end if
-      call phio_constructName(fhandle,
-     &        c_char_'restart' // char(0), fnamer)
-      call phstr_appendInt(fnamer, irstart)
-      call phstr_appendStr(fnamer, c_char_'.'//c_null_char)
-      call phio_openfile(fnamer, fhandle);
-
-      ithree=3
-
-      itmp = int(log10(float(myrank+1)))+1
-
-      intfromfile=0
-      call phio_readheader(fhandle,
-     & c_char_'solution' // char(0), 
-     & c_loc(intfromfile), ithree, dataInt, iotype)
-c
-c.... read the values of primitive variables into q
-c
-      allocate( qold(nshg,ndof) )
-      if(intfromfile(1).ne.0) then
-         nshg2=intfromfile(1)
-         ndof2=intfromfile(2)
-         lstep=intfromfile(3)
-         if(ndof2.ne.ndof) then
-
-         endif
-        if (nshg2 .ne. nshg)
-     &        call error ('restar  ', 'nshg   ', nshg)
-         allocate( qread(nshg,ndof2) )
-         iqsiz=nshg*ndof2
-         call phio_readdatablock(fhandle,
-     &    c_char_'solution' // char(0),
-     &    c_loc(qread),iqsiz, dataDbl,iotype)
-         qold(:,1:ndof)=qread(:,1:ndof)
-         deallocate(qread)
-      else
-         if (myrank.eq.master) then
-            if (matflg(1,1).eq.0) then ! compressible
-               warning='Solution is set to zero (with p and T to one)'
-            else
-               warning='Solution is set to zero'
-            endif
-            write(*,*) warning
-         endif
-         qold=zero
-         if (matflg(1,1).eq.0) then ! compressible
-            qold(:,1)=one ! avoid zero pressure
-            qold(:,nflow)=one ! avoid zero temperature
-         endif
-      endif
-
-      intfromfile=0
-      call phio_readheader(fhandle,
-     & c_char_'time derivative of solution' // char(0),
-     & c_loc(intfromfile), ithree, dataInt, iotype)
-      allocate( acold(nshg,ndof) )
-      if(intfromfile(1).ne.0) then
-         nshg2=intfromfile(1)
-         ndof2=intfromfile(2)
-         lstep=intfromfile(3)
-
-         if (nshg2 .ne. nshg)
-     &        call error ('restar  ', 'nshg   ', nshg)
-         allocate( acread(nshg,ndof2) )
-         acread=zero
-         iacsiz=nshg*ndof2
-         call phio_readdatablock(fhandle,
-     &    c_char_'time derivative of solution' // char(0),
-     &    c_loc(acread), iacsiz, dataDbl,iotype)
-         acold(:,1:ndof)=acread(:,1:ndof)
-         deallocate(acread)
-      else
-         if (myrank.eq.master) then
-            warning='Time derivative of solution is set to zero (SAFE)'
-            write(*,*) warning
-         endif
-         acold=zero
-      endif
-cc
-cc.... read the header and check it against the run data
-cc
-      if (ideformwall.eq.1) then
-
-          intfromfile=0
-          call phio_readheader(fhandle,
-     &     c_char_'displacement' // char(0),
-     &     c_loc(intfromfile), ithree, dataInt, iotype)
-
-         nshg2=intfromfile(1)
-         ndisp=intfromfile(2)
-         lstep=intfromfile(3)
-         if(ndisp.ne.nsd) then
-            warning='WARNING ndisp not equal nsd'
-            write(*,*) warning , ndisp
-         endif
-         if (nshg2 .ne. nshg) 
-     &        call error ('restar  ', 'nshg   ', nshg)
-c
-c.... read the values of primitive variables into uold
-c
-         allocate( uold(nshg,nsd) )
-         allocate( uread(nshg,nsd) )
-         
-         iusiz=nshg*nsd
-
-         call phio_readdatablock(fhandle,
-     &    c_char_'displacement' // char(0),
-     &    c_loc(uread), iusiz, dataDbl, iotype)
-
-         uold(:,1:nsd)=uread(:,1:nsd)
-       else
-         allocate( uold(nshg,nsd) )
-         uold(:,1:nsd) = zero
-       endif
-c
-c.... close c-binary files
-c
-      call phio_closefile(fhandle)
-      iotime = TMRC() - iotime
-      if (myrank.eq.master) then
-        write(*,*) 'time to read restart (seconds)', iotime
-      endif
 c
 c.... open input files
 c.... input the geometry parameters
 c
+      numparts = numpe !This is the common settings. Beware if you try to compute several parts per process
 
       itwo=2
       ione=1
@@ -591,6 +461,136 @@ c
         write(*,*) 'time to read geombc (seconds)', iotime
       endif
 
+c.... Read restart files
+      iotime = TMRC()
+      if( input_mode .eq. -1 ) then
+        call streamio_setup_read(fhandle, geomRestartStream)
+      else if( input_mode .eq. 0 ) then
+        call posixio_setup(fhandle, c_char_'r')
+      else if( input_mode .ge. 1 ) then
+        call syncio_setup_read(nsynciofiles, fhandle)
+      end if
+      call phio_constructName(fhandle,
+     &        c_char_'restart' // char(0), fnamer)
+      call phstr_appendInt(fnamer, irstart)
+      call phstr_appendStr(fnamer, c_char_'.'//c_null_char)
+      call phio_openfile(fnamer, fhandle);
+
+      ithree=3
+
+      itmp = int(log10(float(myrank+1)))+1
+
+      intfromfile=0
+      call phio_readheader(fhandle,
+     & c_char_'solution' // char(0), 
+     & c_loc(intfromfile), ithree, dataInt, iotype)
+c
+c.... read the values of primitive variables into q
+c
+      allocate( qold(nshg,ndof) )
+      if(intfromfile(1).ne.0) then
+         nshg2=intfromfile(1)
+         ndof2=intfromfile(2)
+         lstep=intfromfile(3)
+         if(ndof2.ne.ndof) then
+
+         endif
+        if (nshg2 .ne. nshg)
+     &        call error ('restar  ', 'nshg   ', nshg)
+         allocate( qread(nshg,ndof2) )
+         iqsiz=nshg*ndof2
+         call phio_readdatablock(fhandle,
+     &    c_char_'solution' // char(0),
+     &    c_loc(qread),iqsiz, dataDbl,iotype)
+         qold(:,1:ndof)=qread(:,1:ndof)
+         deallocate(qread)
+      else
+         if (myrank.eq.master) then
+            if (matflg(1,1).eq.0) then ! compressible
+               warning='Solution is set to zero (with p and T to one)'
+            else
+               warning='Solution is set to zero'
+            endif
+            write(*,*) warning
+         endif
+         qold=zero
+         if (matflg(1,1).eq.0) then ! compressible
+            qold(:,1)=one ! avoid zero pressure
+            qold(:,nflow)=one ! avoid zero temperature
+         endif
+      endif
+
+      intfromfile=0
+      call phio_readheader(fhandle,
+     & c_char_'time derivative of solution' // char(0),
+     & c_loc(intfromfile), ithree, dataInt, iotype)
+      allocate( acold(nshg,ndof) )
+      if(intfromfile(1).ne.0) then
+         nshg2=intfromfile(1)
+         ndof2=intfromfile(2)
+         lstep=intfromfile(3)
+
+         if (nshg2 .ne. nshg)
+     &        call error ('restar  ', 'nshg   ', nshg)
+         allocate( acread(nshg,ndof2) )
+         acread=zero
+         iacsiz=nshg*ndof2
+         call phio_readdatablock(fhandle,
+     &    c_char_'time derivative of solution' // char(0),
+     &    c_loc(acread), iacsiz, dataDbl,iotype)
+         acold(:,1:ndof)=acread(:,1:ndof)
+         deallocate(acread)
+      else
+         if (myrank.eq.master) then
+            warning='Time derivative of solution is set to zero (SAFE)'
+            write(*,*) warning
+         endif
+         acold=zero
+      endif
+cc
+cc.... read the header and check it against the run data
+cc
+      if (ideformwall.eq.1) then
+
+          intfromfile=0
+          call phio_readheader(fhandle,
+     &     c_char_'displacement' // char(0),
+     &     c_loc(intfromfile), ithree, dataInt, iotype)
+
+         nshg2=intfromfile(1)
+         ndisp=intfromfile(2)
+         lstep=intfromfile(3)
+         if(ndisp.ne.nsd) then
+            warning='WARNING ndisp not equal nsd'
+            write(*,*) warning , ndisp
+         endif
+         if (nshg2 .ne. nshg) 
+     &        call error ('restar  ', 'nshg   ', nshg)
+c
+c.... read the values of primitive variables into uold
+c
+         allocate( uold(nshg,nsd) )
+         allocate( uread(nshg,nsd) )
+         
+         iusiz=nshg*nsd
+
+         call phio_readdatablock(fhandle,
+     &    c_char_'displacement' // char(0),
+     &    c_loc(uread), iusiz, dataDbl, iotype)
+
+         uold(:,1:nsd)=uread(:,1:nsd)
+       else
+         allocate( uold(nshg,nsd) )
+         uold(:,1:nsd) = zero
+       endif
+c
+c.... close c-binary files
+c
+      call phio_closefile(fhandle)
+      iotime = TMRC() - iotime
+      if (myrank.eq.master) then
+        write(*,*) 'time to read restart (seconds)', iotime
+      endif
 
       deallocate(xread)
       if ( numpbc > 0 )  then
