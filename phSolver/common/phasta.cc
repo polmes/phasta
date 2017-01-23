@@ -36,6 +36,7 @@ using namespace std;
 #include "Input.h"
 #include "phstream.h"
 #include "streamio.h"
+#include "phasta.h"
 
 #include <FCMangle.h>
 #define input FortranCInterface_GLOBAL_(input,INPUT)
@@ -99,13 +100,13 @@ namespace {
 
     workfc.numpe = size;
     workfc.myrank = myrank;
-    testReadSolution(grs);
+    testReadSolution(streamio_get_gr());
 
     initPhastaCommonVars();
-    testReadSolution(grs);
+    testReadSolution(streamio_get_gr());
     /* Input data  */
     ierr = input_fform(ctrl);
-    testReadSolution(grs);
+    testReadSolution(streamio_get_gr());
     if(!ierr){
       sprintf(inpfilename,"%d-procs_case/",size);
       if( chdir( inpfilename ) ) {
@@ -114,7 +115,7 @@ namespace {
         return -1;
       }
       MPI_Barrier(MPI_COMM_WORLD);
-    testReadSolution(grs);
+    testReadSolution(streamio_get_gr());
       input();
       /* now we can start the solver */
       proces();
@@ -140,11 +141,9 @@ int phasta(phSolver::Input& ctrl) {
 
 int phasta(phSolver::Input& ctrl, grstream grs) {
   assert(grs);
-  testReadSolution(grs);
   outpar.input_mode = -1; //FIXME magic value for streams
   outpar.output_mode = 1; //FIXME magic value for syncio
   streamio_set_gr(grs);
-  testReadSolution(grs);
   return run(ctrl);
 }
 
@@ -160,8 +159,11 @@ int phasta(phSolver::Input& ctrl, GRStream* grs, RStream* rs) {
   outpar.output_mode = -1; //FIXME magic value for streams
   assert(grs);
   assert(rs);
+  testReadSolution(grs);
   streamio_set_gr(grs);
+  testReadSolution(grs);
   streamio_set_r(rs);
+  testReadSolution(grs);
   return run(ctrl);
 }
 
