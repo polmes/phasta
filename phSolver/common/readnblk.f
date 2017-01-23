@@ -370,7 +370,11 @@ c
 c.... generate the boundary element blocks
 c
       if( input_mode .eq. -1 ) then
-        call genbkb 
+        if(numelb.gt.0) then
+           call genbkb 
+        else
+           nelblb=0
+        endif
       else if( input_mode .eq. 0 ) then
         call genbkbPosix 
       else if( input_mode .ge. 1 ) then
