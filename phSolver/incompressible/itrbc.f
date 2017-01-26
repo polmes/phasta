@@ -146,16 +146,44 @@ c
         if(nPermDims.lt.1) return ! nothing to do yet.
         lesid=1
         call getvectstart(lesid,iPPVstart,nPresPrjs,nPermDims)
+        istart=iPPVstart+1
+        ifin=istart+nPresPrjs-1
+c
+c.... local periodic (and axisymmetric) boundary conditions (no communications)
+c
+           do j = 1,nshg
+              if ((btest(iBC(j),10)) .or. (btest(iBC(j),12))) then
+                 aperm(j,istart:ifin) = zero
+              endif
+           enddo
 
-        iPPVstart=iPPVstart+1  ! fortran shift
-        idog=iPPVstart
-        do i=idog,idog+nPresPrjs -1
-          aperm(:,i)=aperm(iper(:),i)
-        enddo
 
-        if( numpe > 1) then 
-           call commu (aperm(:,iPPVstart), ilwork, nPresPrjs, 'out')
+        if(numpe.gt.1) then
+c
+c.... nodes treated on another processor are eliminated
+c     
+           numtask = ilwork(1)
+           itkbeg = 1 
+    
+           do itask = 1, numtask
+    
+              iacc   = ilwork (itkbeg + 2)
+              numseg = ilwork (itkbeg + 4)
+    
+              if (iacc .eq. 0) then
+                 do is = 1,numseg
+                    isgbeg = ilwork (itkbeg + 3 + 2*is)
+                    lenseg = ilwork (itkbeg + 4 + 2*is)
+                    isgend = isgbeg + lenseg - 1 
+                    aperm(isgbeg:isgend,istart:ifin) = zero
+                 enddo
+              endif
+    
+              itkbeg = itkbeg + 4 + 2*numseg
+    
+           enddo
         endif
+
 c
 c
 c.... return
