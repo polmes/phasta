@@ -107,7 +107,7 @@ c
            y(:,i) = y(iper(:),i)
            ac(:,i) = ac(iper(:),i)
 	enddo
-        if (ipresPrjFlag.eq.1) call ppv_periodicAndCommu(iper,ilwork)
+        if (ipresPrjFlag.eq.1) call ppv_periodicAndCommu(iBC,iper,ilwork)
 
 c
 c.... communications
@@ -130,7 +130,7 @@ c
         return
         end
 
-        subroutine ppv_periodicAndCommu (iper, ilwork)
+        subroutine ppv_periodicAndCommu (iBC,iper, ilwork)
 c
 c----------------------------------------------------------------------
 c
@@ -141,7 +141,7 @@ c
         use solvedata
         include "common.h"
 
-        dimension ilwork(nlwork),            iper(nshg)
+        dimension iBC(nshg),  ilwork(nlwork),            iper(nshg)
 
         if(nPermDims.lt.1) return ! nothing to do yet.
         lesid=1
