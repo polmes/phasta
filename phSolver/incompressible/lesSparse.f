@@ -36,7 +36,9 @@ c
 c     
 c.... Clear the flowdiag
 c
+!SWAP  NEXT LINE IS TO GET PARALLEL CONSISTENCY
       if((flmpl.eq.1).or.(ipord.gt.1)) then
+!       if(1.eq.1) then
          do n = 1, nshg
             k = sparseloc( rowp(colm(n)), colm(n+1)-colm(n), n )
      &       + colm(n)-1

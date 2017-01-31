@@ -306,7 +306,8 @@ c
 c.... -----------------> End of initialization <-----------------
 c
 !hack to write solution to file when using streams 
-      if(output_mode .eq. -1 ) then ! this is an in-memory adapt case
+! disbled in next line      if(output_mode .eq. -1 ) then ! this is an in-memory adapt case
+      if(output_mode .eq. -10 ) then ! this is an in-memory adapt case
         output_mode=0   ! only writing posix for now
         lstepSave=lstep
         lstep=lstep+10000  ! in SAM lstep was already written on the previous mesh.  Here we want solution on the new mesh
