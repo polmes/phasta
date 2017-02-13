@@ -51,6 +51,8 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES XL)
 	set_source_files_properties(elmgmr.f PROPERTIES COMPILE_FLAGS "-qsuffix=cpp=f")
 	set_source_files_properties(hello.f PROPERTIES COMPILE_FLAGS "-qsuffix=cpp=f")
 	set_source_files_properties(e3b.f PROPERTIES COMPILE_FLAGS "-qsuffix=cpp=f")
+	set_source_files_properties(e3bvar.f PROPERTIES COMPILE_FLAGS "-qsuffix=cpp=f")
+	set_source_files_properties(lesSparse.f PROPERTIES COMPILE_FLAGS "-qsuffix=cpp=f")
 endif(CMAKE_Fortran_COMPILER_ID MATCHES XL)
 if(CMAKE_Fortran_COMPILER_ID MATCHES PGI)
 	#force preprocessing of solfar.f

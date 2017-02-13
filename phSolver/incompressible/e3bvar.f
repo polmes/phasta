@@ -785,7 +785,7 @@ c....   nothing happens
 123   continue
 
       endif
-#endif 
+#endif HAVE_DEFORMWALL
 c     
 c.... return
 c     
