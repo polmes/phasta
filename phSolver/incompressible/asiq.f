@@ -56,7 +56,7 @@ c
         call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
         call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
         if (iRANS .eq. -2) then ! kay-epsilon
-           call localx (d2wall,   dwl,     ien,    1,     'gather  ')
+           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
         endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
@@ -128,7 +128,7 @@ c
         endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
-          call local(effvisc, evl,    ien,    1,      'gather  ')
+          call local(blk,effvisc, evl,    ien,    1,      'gather  ')
         endif
 
 c

@@ -19,6 +19,8 @@ c-----------------------------------------------------------------------
       if(leslib.eq.1) then
         allocate (aperm(nshg,nPermDims))
         allocate (atemp(nshg,nTmpDims))
+        aperm=zero
+        atemp=zero
       endif
       return
       end
@@ -30,6 +32,8 @@ c-----------------------------------------------------------------------
       if(leslib.eq.1) then
         allocate (apermS(nshg,nPermDimsS,nsclrsol))
         allocate (atempS(nshg,nTmpDimsS))
+        apermS=zero
+        atempS=zero
       endif
       return
       end

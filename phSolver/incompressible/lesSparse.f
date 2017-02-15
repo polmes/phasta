@@ -108,6 +108,18 @@ c
 c     
 
 c
+c.... x2-velocity
+c
+! bc3lhs is now putting 1's on the diagonal when a dof is constrained 
+! when we have both axisymmetry and a comp1 (1024+16)=1040), 
+! rotabc takes those diagnonal values and rotates them which gives them a
+! component in the direction that is never zeroed which is of course wrong so lets zero them out for now
+!
+        where (iBC .eq. 1040 .or. iBC .eq. 1032 .or. iBC .eq. 1056)   ! bits of iBC= xy010zab 
+          flowDiag(:,2) = zero
+        endwhere
+
+c
       if(iabc==1)    !are there any axisym bc's
      &      call rotabc(flowdiag, iBC, 'in ')
 c
