@@ -182,7 +182,6 @@ c
      &          rmaxdyU, rmaxdyP, nrsmax,
      &          mproc(1)+1,jresmx,int(statsflow(4)),
      &          int(statsflow(1))
-           
            call flush(ihist)
         endif
 c        if(numpe>1) call MPI_BARRIER (MPI_COMM_WORLD,ierr)
@@ -220,6 +219,9 @@ c
         dimension res(nshg)
         dimension rtmp(nshg)
         real*8    y(nshg,ndof),    Dy(nshg), nrm
+c
+        real*8 CFL_max_tmp
+        integer iCFL_maxelem_tmp
 c        integer tmrc
 c
 c.... compute max delta y
@@ -248,6 +250,21 @@ c
 
         totres = resnrm / float(nshgt)
         totres = sqrt(totres)
+
+c     redistance tolerance
+         if (isclr.eq.2) then
+              redist_toler_curr = totres
+         endif
+
+c     redistance CFL
+         if ((iLSet.eq.2) .and. (isclr.gt.0)) then
+           CFL_max_tmp = CFLls_max
+           iCFL_maxelem_tmp = iCFLls_maxelem
+         else
+           CFL_max_tmp = CFLfl_max
+           iCFL_maxelem_tmp = iCFLfl_maxelem
+         endif
+        
 
 c        if (mod(impl(1),100)/10 .eq. 0) then  !not solving flow
            if (myrank .eq. master) then

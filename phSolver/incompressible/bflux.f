@@ -20,9 +20,9 @@ c----------------------------------------------------------------------
 c
       
       use pointer_data
+      use eblock
       
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
       include "mpif.h"
@@ -57,6 +57,9 @@ c
       character*19 fieldwss 
       integer irstin, isize, nitems, ndofwss
       integer iarray(50)  ! integers read from headers
+
+      real*8 cfltmp(nshg)
+      integer cflhitstmp(nshg)
 
       real*8, allocatable, dimension(:,:,:,:) :: xKebe, xGoC
       integer, allocatable, dimension(:,:)    :: ien2
@@ -155,7 +158,7 @@ c
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
      &                   xlhs, 
-     &                   rtmp)
+     &                   rtmp, cfltmp, cflhitstmp)
 c     
 !lhs=0            deallocate ( xKebe )
 !lhs=0            deallocate ( xGoC  )

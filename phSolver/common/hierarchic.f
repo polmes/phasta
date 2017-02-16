@@ -12,8 +12,8 @@ c     returns the matrix of mode signs used for negating higher order
 c     basis functions. Connectivity array is assumed to have negative
 c     signs on all modes to be negated.
 c------------------------------------------------------------------------
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
       dimension ien(blk%e,blk%s),  sgn(blk%e,blk%s)
@@ -34,8 +34,8 @@ c------------------------------------------------------------------------
 c     returns the matrix of element shape functions with the higher
 c     order modes correctly negated at the current quadrature point.
 c------------------------------------------------------------------------
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
       
@@ -241,7 +241,9 @@ c-----------------------------------------------------------------------
       subroutine evalAtInterp( ycoeff,  yvals,  x,   nvars, npts )
 
       use     pointer_data
+      use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       integer nvars, npts, nHits(nshg)
       
@@ -280,19 +282,19 @@ c
          allocate ( sgn(npro,nshl)       )
  
          write(*,*) 'blk not plumbed this far'
-         call getsgn(mien(iblk)%p,sgn)
+         call getsgn(blk,mien(iblk)%p,sgn)
          
          call localy( ycoeff, ycl, mien(iblk)%p, ndof,  'gather  ')
          call localx( x,      xl,  mien(iblk)%p, nsd,   'gather  ')
 
-         call eval  ( xl,       ycl,      yvl,      
+         call eval  ( blk, xl,       ycl,      yvl,      
      &                shp,      shgl,     sgn,      
      &                nvars,    npts    )
 
 c
 c.... average coefficients since stresses may be discontinuous
 c         
-         call localSum( yvals,    yvl,    mien(iblk)%p,  
+         call localSum( blk, yvals,    yvl,    mien(iblk)%p,  
      &                  nHits,    nVars)  
          
          
@@ -320,11 +322,13 @@ c
 c  evaluate in element coordinate system
 c
 c-----------------------------------------------------------------------
-      subroutine eval( xl,      ycl,     yvl,     
+      subroutine eval( blk,xl,      ycl,     yvl,     
      &                 shp,     shgl,    sgn,
      &                 nvars,   npts ) 
       
+      use eblock
       include "common.h"
+      type (LocalBlkData) blk
       
       integer nvars
 c
@@ -340,7 +344,7 @@ c
 c.... loop over interpolation points
 c
       do intp = 1, npts
-         call getshp(intp, shp,          shgl,      sgn, 
+         call getshp(blk,intp, shp,          shgl,      sgn, 
      &               shape,        shdrv)
       
 c

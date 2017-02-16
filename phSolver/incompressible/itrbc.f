@@ -107,6 +107,8 @@ c
            y(:,i) = y(iper(:),i)
            ac(:,i) = ac(iper(:),i)
 	enddo
+        if (ipresPrjFlag.eq.1) call ppv_periodicAndCommu(iBC,iper,ilwork)
+
 c
 c.... communications
 c 
@@ -122,6 +124,67 @@ c
            call rotabc(ac, iBC, 'out')
         endif
      
+c
+c.... return
+c
+        return
+        end
+
+        subroutine ppv_periodicAndCommu (iBC,iper, ilwork)
+c
+c----------------------------------------------------------------------
+c
+c This routine satisfies the boundary conditions on the isclr
+c
+c----------------------------------------------------------------------
+c
+        use solvedata
+        include "common.h"
+
+        dimension iBC(nshg),  ilwork(nlwork),            iper(nshg)
+
+        if(nPermDims.lt.1) return ! nothing to do yet.
+        lesid=1
+        call getvectstart(lesid,iPPVstart,nPresPrjs,nPermDims)
+        istart=iPPVstart+1
+        ifin=istart+nPresPrjs-1
+c
+c.... local periodic (and axisymmetric) boundary conditions (no communications)
+c
+           do j = 1,nshg
+              if ((btest(iBC(j),10)) .or. (btest(iBC(j),12))) then
+                 aperm(j,istart:ifin) = zero
+              endif
+           enddo
+
+
+        if(numpe.gt.1) then
+c
+c.... nodes treated on another processor are eliminated
+c     
+           numtask = ilwork(1)
+           itkbeg = 1 
+    
+           do itask = 1, numtask
+    
+              iacc   = ilwork (itkbeg + 2)
+              numseg = ilwork (itkbeg + 4)
+    
+              if (iacc .eq. 0) then
+                 do is = 1,numseg
+                    isgbeg = ilwork (itkbeg + 3 + 2*is)
+                    lenseg = ilwork (itkbeg + 4 + 2*is)
+                    isgend = isgbeg + lenseg - 1 
+                    aperm(isgbeg:isgend,istart:ifin) = zero
+                 enddo
+              endif
+    
+              itkbeg = itkbeg + 4 + 2*numseg
+    
+           enddo
+        endif
+
+c
 c
 c.... return
 c

@@ -90,7 +90,7 @@ c
             endif
            
            ! Synchronization for performance monitoring, as some parts do not include some topologies
-           call MPI_Barrier(MPI_COMM_WORLD,ierr) 
+!           call MPI_Barrier(MPI_COMM_WORLD,ierr) 
            call phio_readheader(fhandle, fname2 // char(0),
      &      c_loc(intfromfile), ieight, dataInt, iotype)
            neltp =intfromfile(1)
@@ -116,7 +116,7 @@ c
 c     
 c.... Read the boundary flux codes
 c
-           call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!           call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(input_mode.ge.1)then
                write (fname2,"('nbc codes',i1)") iblk
             else
@@ -131,7 +131,7 @@ c
 c     
 c.... read the boundary condition data
 c     
-           call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!           call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(input_mode.ge.1)then
                write (fname2,"('nbc values',i1)") iblk
             else

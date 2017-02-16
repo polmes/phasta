@@ -1,6 +1,6 @@
         subroutine e3q (blk,yl,      dwl,     shp,     shgl,
      &                  xl,      ql,      rmassl, 
-     &                  xmudmi,  sgn )
+     &                  xmudmi,  sgn,     evl )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -12,6 +12,7 @@ c  yl     (bsz,blk%s,ndof)       : Y variables
 c  shp    (nen,blk%g)            : element shape-functions
 c  shgl   (nsd,nen,blk%g)        : element local-grad-shape-functions
 c  xl     (bsz,blk%s,nsd)        : nodal coordinates at current step
+c  evl    (bsz,blk%s)            : eff. visc. adder for eff. visc. turb wall function
 c  
 c output:
 c  ql     (bsz,blk%s,idflx) : element RHS diffusion residual 
@@ -19,8 +20,10 @@ c  rmassl     (bsz,blk%s)        : element lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
+      use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
+c
+      include "common.h"
       type (LocalBlkData) blk
 
 c
@@ -28,7 +31,7 @@ c
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),
      &            ql(bsz,blk%s,idflx),  rmassl(bsz,blk%s),
-     &            xmudmi(blk%e,blk%g)
+     &            xmudmi(blk%e,blk%g),   evl(bsz,blk%s)
 c
 c local arrays
 c
@@ -87,7 +90,9 @@ c.... compute diffusive fluxes
 c
 c.... compute the viscosity
 c
-        call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp)
+        call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp,
+     &               elem_local_size(blk%i),
+     &               evl)
 c
 c.... diffusive flux in x1-direction
 c
@@ -151,6 +156,9 @@ c
         endif
       endif                     ! end of idiff=1 .or. 3 
 c
+c Compute gradient of level set scalar to be used to compute
+c normal vector later in qpbc & e3ivar
+c
       if(isurf .eq. 1) then
 c
 c.... initialize
@@ -182,7 +190,6 @@ c
      &                       + shape(:,i)*WdetJ*g2yti
            ql(1:blk%e,i,idflow+3)  = ql(1:blk%e,i,idflow+3)  
      &                       + shape(:,i)*WdetJ*g3yti
-           rmassl(1:blk%e,i) = rmassl(1:blk%e,i) + shape(:,i)*WdetJ
         enddo
       endif  !end of the isurf  
 c
@@ -208,7 +215,7 @@ c
 
         subroutine e3qSclr (blk,yl,      dwl,     shp,     shgl,
      &                      xl,      ql,      rmassl, 
-     &                      sgn )
+     &                      sgn,     evl,     cfll )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -217,15 +224,16 @@ c diffusive flux vector and the lumped mass matrix.
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c
         dimension yl(bsz,blk%s,ndof),    dwl(bsz,blk%n),
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),
-     &            ql(bsz,blk%s,nsd),     rmassl(bsz,blk%s)
+     &            ql(bsz,blk%s,nsd),     rmassl(bsz,blk%s),
+     &            evl(bsz,blk%s),        cfll(bsz,blk%s)
 c
 c local arrays
 c
@@ -238,6 +246,13 @@ c
      &            shdrv(blk%e,nsd,blk%s),    shpsum(blk%e)
 
         real*8 diffus(blk%e)
+        real*8 u1(blk%e), u2(blk%e), u3(blk%e)
+c
+c... needed for CFL calculation
+c
+      real*8 rmu_tmp(blk%e), rho_tmp(blk%e), cfll_loc(blk%e)
+      rmu_tmp = zero
+      rho_tmp = 1.0
 c
 c.... loop through the integration points
 c
@@ -263,12 +278,25 @@ c     formation of q
 c
         call e3qvarSclr   (blk,yl,        shdrv,   
      &                     xl,        gradT,
-     &                     dxidx,     WdetJ )        
+     &                     dxidx,     WdetJ,
+     &                     shape, u1,  u2,  u3 )        
+
+c
+c.... compute CFL number
+c
+        cfll_loc = zero
+        call calc_cfl(blk,       rho_tmp,      u1,       u2,
+     &                u3,        dxidx,    rmu_tmp,
+     &                cfll_loc)
+c assemble contribution to CFL number
+        do i=1,blk%s
+          cfll(1:blk%e,i) = cfll(1:blk%e,i) + shape(:,i)*cfll_loc
+        enddo
 
 c
 c.... compute diffusive flux vector at this integration point
 c
-        call getdiffsclr(blk,shape, dwl, yl, diffus)
+        call getdiffsclr(blk,shape, dwl, yl, diffus, evl)
 
 c
 c.... diffusive flux 

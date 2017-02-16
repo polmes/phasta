@@ -103,7 +103,7 @@ c
 
       real*8    tcorecp(2)
       
-      real*8    rerr(nshg,10),            rtmp(nshg,4),rtemp
+      real*8    rerr(nshg,numerr),            rtmp(nshg,4),rtemp
       
       real*8    msum(4),mval(4),cpusec(10)
 #ifdef HAVE_SVLS      
@@ -179,19 +179,6 @@ c####################################################################
          Val4(13:15,i) = lhs16(4:12:4,i) !lhsP(1:3,i)  !looks wrong
          Val4(4:12:4,i)= lhs16(13:15,i)  ! directly filled but looks wrong
       END DO
-! next code block replaced by 2 lines up 
-!      !Val4(4:12:4,:) = -lhsP(1:3,:)^t
-!      DO i=1, nshg
-!         Do j=colm(i), colm(i+1) - 1
-!            k = rowp(j)
-!            DO l=colm(k), colm(k+1) - 1
-!               IF (rowp(l) .EQ. i) THEN
-!                  Val4(4:12:4,l) = -lhsP(1:3,j)
-!                  EXIT
-!               END IF
-!            END DO
-!         END DO
-!      END DO
       CALL svLS_SOLVE(svLS_lhs, svLS_ls, dof, Res4, Val4, incL, 
      2   faceRes)
       
@@ -342,7 +329,8 @@ c
      &                   ilwork,     shp,        shgl, 
      &                   shpb,       shglb,      rowp,     
      &                   colm,       solinc,
-     &                   tcorecpscal
+     &                   tcorecpscal,
+     &                   cfl
 #ifdef HAVE_SVLS     
      &                   ,svLS_lhs,  svLS_ls,   svLS_nFaces)
 #else
@@ -402,7 +390,7 @@ c
 c
       real*8    lesP(nshg,1),               lesQ(nshg,1),
      &          solinc(nshg,1),           CGsol(nshg),
-     &          tcorecpscal(2)
+     &          tcorecpscal(2),           cfl(nshg)
 #ifdef HAVE_SVLS     
       TYPE(svLS_lhsType), INTENT(INOUT) :: svLS_lhs
       TYPE(svLS_lsType), INTENT(INOUT) ::  svLS_ls
@@ -425,7 +413,8 @@ c
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm
+     &             rowp,      colm,
+     &             cfl
 #ifdef HAVE_PETSC
      &             ,lhsPs )
 #else 

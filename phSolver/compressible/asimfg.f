@@ -34,7 +34,7 @@ c
         dimension  xmudmi(npro,ngauss)
         dimension sgn(npro,nshl)
 c
-        real*8 rerrl(npro,nshl,6), rerr(nshg,10)
+        real*8 rerrl(npro,nshl,6), rerr(nshg,numerr)
 c
 c
 c.... create the matrix of mode signs for the hierarchic basis 

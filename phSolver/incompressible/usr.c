@@ -156,6 +156,7 @@ usrPointer(	UsrHd	usrHd,
 #define myflessolve FortranCInterface_GLOBAL_(myflessolve,MYFLESSOLVE)
 #define savelesrestart FortranCInterface_GLOBAL_(savelesrestart,SAVELESRESTART)
 #define readlesrestart FortranCInterface_GLOBAL_(readlesrestart,READLESRESTART)
+#define getvectstart FortranCInterface_GLOBAL_(getvectstart,GETVECTSTART)
 #define solverlicenseserver FortranCInterface_GLOBAL_(solverlicenseserver,SOLVERLICENSESERVER)
 
 
@@ -250,32 +251,7 @@ savelesrestart( Integer* lesId,
     int size, nitems;
     double* projVec;
     int i, j, count;
-
-    nPrjs = (Integer) lesGetPar( lesArray[ *lesId ], LES_ACT_PRJS );
-    PrjSrcId = (Integer) lesGetPar( lesArray[ *lesId ], LES_PRJ_VEC_ID );
-
-    if ( PrjSrcId < 0 ) PrjSrcId += *nPermDims;
-
-    projVec = (double*)malloc( nPrjs * ( *nshg ) * sizeof( double ) );
-
-    count = 0;
-    for( i = PrjSrcId; i < PrjSrcId+nPrjs; i ++ ) {
-        for( j = 0 ; j < *nshg; j++ ) {
-            projVec[ count++ ] = aperm[ (*nshg) * i + j ];
-        }
-    }
-
-    iarray[ 0 ] = *nshg;
-    iarray[ 1 ] = nPrjs;
-    nitems = 2;
-    size = (*nshg)*nPrjs;
-
-    int name_length;
-    name_length = 18;
-    Write_Field(myrank,"a","projection vectors",&name_length, (void *)projVec,"d", nshg, &nPrjs, lstep);
-
-    free(projVec);
-
+// pressure projection vectors
     nPresPrjs = (Integer) lesGetPar( lesArray[ *lesId ], LES_ACT_PRES_PRJS );
     PresPrjSrcId =(Integer)lesGetPar( lesArray[ *lesId ], LES_PRES_PRJ_VEC_ID );
     if ( PresPrjSrcId < 0 ) PresPrjSrcId += *nPermDims;
@@ -294,11 +270,52 @@ savelesrestart( Integer* lesId,
     nitems = 2;
     size = (*nshg)*nPresPrjs;
 
+    int name_length;
     name_length = 27;
     Write_Field(myrank,"a","pressure projection vectors",&name_length, projVec,"d", nshg, &nPresPrjs, lstep);
 
     free( projVec);
+    nPrjs = (Integer) lesGetPar( lesArray[ *lesId ], LES_ACT_PRJS );
+// projection vectors
+    PrjSrcId = (Integer) lesGetPar( lesArray[ *lesId ], LES_PRJ_VEC_ID );
+
+    if ( PrjSrcId < 0 ) PrjSrcId += *nPermDims;
+
+    projVec = (double*)malloc( nPrjs * ( *nshg ) * sizeof( double ) );
+
+    count = 0;
+    for( i = PrjSrcId; i < PrjSrcId+nPrjs; i ++ ) {
+        for( j = 0 ; j < *nshg; j++ ) {
+            projVec[ count++ ] = aperm[ (*nshg) * i + j ];
+        }
+    }
+
+    iarray[ 0 ] = *nshg;
+    iarray[ 1 ] = nPrjs;
+    nitems = 2;
+    size = (*nshg)*nPrjs;
+
+    name_length = 18;
+    Write_Field(myrank,"a","projection vectors",&name_length, (void *)projVec,"d", nshg, &nPrjs, lstep);
+
+    free(projVec);
 }
+
+void
+getvectstart( Integer* lesId,
+              Integer* PresPrjSrcIdP,
+                 Integer* nPresPrjsP ,
+                 Integer* nPermDims ) {
+    int nPresPrjs, PresPrjSrcId;
+
+    nPresPrjs=*nPresPrjsP;
+    lesSetPar( lesArray[ *lesId ], LES_ACT_PRES_PRJS, (Real) nPresPrjs );
+    PresPrjSrcId=(Integer)lesGetPar( lesArray[ *lesId ], LES_PRES_PRJ_VEC_ID );
+    if ( PresPrjSrcId < 0 ) PresPrjSrcId += *nPermDims;
+    *PresPrjSrcIdP=PresPrjSrcId;
+
+}
+
 
 void
 readlesrestart( Integer* lesId,
@@ -342,40 +359,8 @@ readlesrestart( Integer* lesId,
     phio_openfile(filename, fileHandle);
 
     if ( !fileHandle ) return; // See phastaIO.cc for error fileHandle
-    phio_readheader(fileHandle, "projection vectors", (void*)iarray,
-                &itwo, "integer", phasta_iotype);
-
-    if ( iarray[0] != *nshg ) {
-        phio_closefile(fileHandle);
-        if(workfc.myrank==workfc.master)
-          printf("projection vectors are being initialized to zero (SAFE)\n");
-        return;
-    }
-
-    lnshg = iarray[ 0 ] ;
-    nPrjs = iarray[ 1 ] ;
-
-    size = (*nshg)*nPrjs;
-    projVec = (double*)malloc( size * sizeof( double ));
-
-    phio_readdatablock(fileHandle, "projection vectors", (void*)projVec,
-                    &size, "double", phasta_iotype );
-
-    lesSetPar( lesArray[ *lesId ], LES_ACT_PRJS, (Real) nPrjs );
-    PrjSrcId = (Integer) lesGetPar( lesArray[ *lesId ], LES_PRJ_VEC_ID );
-    if ( PrjSrcId < 0 ) PrjSrcId += *nPermDims;
-
-    count = 0;
-    for( i = PrjSrcId; i < PrjSrcId+nPrjs; i ++ ) {
-        for( j = 0 ; j < *nshg; j++ ) {
-            aperm[ (*nshg) * i + j ] = projVec[ count++ ] ;
-        }
-    }
-
-    free( projVec );
-
-    iarray[0] = -1; iarray[1] = -1; iarray[2] = -1;
-
+// move pressure projection vectors to top since they are the more common case
+    if(incomp.ipresPrjFlag==1) {
     phio_readheader(fileHandle, "pressure projection vectors", (void*)iarray,
                  &itwo, "integer", phasta_iotype );
 
@@ -407,6 +392,43 @@ readlesrestart( Integer* lesId,
     }
 
     free( projVec );
+    }
+// repeat for projection vectors
+    if(incomp.iprjFlag==1) {
+    iarray[0] = -1; iarray[1] = -1; iarray[2] = -1;
+
+    phio_readheader(fileHandle, "projection vectors", (void*)iarray,
+                &itwo, "integer", phasta_iotype);
+
+    if ( iarray[0] != *nshg ) {
+        phio_closefile(fileHandle);
+        if(workfc.myrank==workfc.master)
+          printf("projection vectors are being initialized to zero (SAFE)\n");
+        return;
+    }
+
+    lnshg = iarray[ 0 ] ;
+    nPrjs = iarray[ 1 ] ;
+
+    size = (*nshg)*nPrjs;
+    projVec = (double*)malloc( size * sizeof( double ));
+
+    phio_readdatablock(fileHandle, "projection vectors", (void*)projVec,
+                    &size, "double", phasta_iotype );
+
+    lesSetPar( lesArray[ *lesId ], LES_ACT_PRJS, (Real) nPrjs );
+    PrjSrcId = (Integer) lesGetPar( lesArray[ *lesId ], LES_PRJ_VEC_ID );
+    if ( PrjSrcId < 0 ) PrjSrcId += *nPermDims;
+
+    count = 0;
+    for( i = PrjSrcId; i < PrjSrcId+nPrjs; i ++ ) {
+        for( j = 0 ; j < *nshg; j++ ) {
+            aperm[ (*nshg) * i + j ] = projVec[ count++ ] ;
+        }
+    }
+
+    free( projVec );
+    }
 
     phio_closefile(fileHandle);
 }

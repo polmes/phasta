@@ -24,6 +24,7 @@ c
       use slpw
       use readarrays            ! used to access BCinp, nBC
       use specialBC ! filling acs here
+      use turbSA
       include "common.h"
 c
       dimension iBC(nshg),                nsurf(nshg),
@@ -67,6 +68,14 @@ c
          endwhere
       endif
            
+c
+c Allocate memory for effvisc array used in DNS calculations
+c using a turbulence wall model
+      if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+        allocate ( effvisc(nshg) )
+        effvisc = zero
+      endif
+c
 c
 c.... ----------------------> Wall Normals  <--------------------------
 c (calculate the normal and adjust BCinp to the true normal as needed)

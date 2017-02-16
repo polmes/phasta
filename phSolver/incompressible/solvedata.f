@@ -19,6 +19,8 @@ c-----------------------------------------------------------------------
       if(leslib.eq.1) then
         allocate (aperm(nshg,nPermDims))
         allocate (atemp(nshg,nTmpDims))
+        aperm=zero
+        atemp=zero
       endif
       return
       end
@@ -30,6 +32,8 @@ c-----------------------------------------------------------------------
       if(leslib.eq.1) then
         allocate (apermS(nshg,nPermDimsS,nsclrsol))
         allocate (atempS(nshg,nTmpDimsS))
+        apermS=zero
+        atempS=zero
       endif
       return
       end
@@ -39,10 +43,14 @@ c-----------------------------------------------------------------------
       subroutine dSDf 
       use solvedata
       include "common.h"
-      if(usingpetsc.ne.1) deallocate (lhs16)
+      if(usingpetsc.ne.1) then
+         deallocate (lhs16)
+         deallocate (lhsP)
+      endif
       if(leslib.eq.1) then
         deallocate (aperm)
         deallocate (atemp)
+        nPermDims=0
       endif
       return
       end

@@ -39,8 +39,8 @@ c-----------------------------------------------------------------------
       
       use     pointer_data
       use     pvsQbi
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
       

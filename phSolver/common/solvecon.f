@@ -10,13 +10,13 @@ c--------------------------------------------------------------------
 c
 c
       use pointer_data
+      use eblock
 c     
       include "common.h"
-      include "eblock.h"
-      type (LocalBlkData) blk
 
       include "mpif.h"
       include "auxmpi.h"      
+      type (LocalBlkData) blk
 c      
       dimension y(nshg,ndof),                    
      &          x(numnp,nsd),            iBC(nshg),
@@ -44,6 +44,7 @@ c
 c
 c ... loop over element blocks
 c
+      ith=1  ! not yet threaded
       do iblk = 1, nelblk
 c
 c.... set up the parameters
@@ -61,12 +62,14 @@ c
          npro   = lcblk(1,iblk+1) - iel
          ngauss = nint(lcsyst)
 
+
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
           blk%s   = lcblk(10,iblk)
           blk%e   = lcblk(1,iblk+1) - iel
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble the constarint factor, and mass matrix
 c     
@@ -77,7 +80,7 @@ c
          tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
          tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 c   
-         call volcon (blk,y,          x,             tmpshp,              
+         call volcon (blk,ith,y,          x,             tmpshp,              
      &                tmpshgl,    mien(iblk)%p,  rmass,     
      &                v_lambda1,  hprime,        v_lambda2)
 
@@ -153,7 +156,7 @@ c
 c
 c
 
-      subroutine volcon (blk,y,         x,      shp,      
+      subroutine volcon (blk,ith, y,         x,      shp,      
      &                   shgl,      ien,    rmass, 
      &                   v_lambda1, hprime, v_lambda2)
 
@@ -163,8 +166,9 @@ c This subroutine is to calculate the element contribution to the
 c constraint factor and mass matrix.
 c
 c---------------------------------------------------------------------
+      use  spat_var_eps !this module for the spatially varying epsilon_ls
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 c     
       dimension y(nshg,ndof),               x(numnp,nsd),              
@@ -200,14 +204,13 @@ c
 c$$$     &          ,hprimel(npro,nshl),      v_lambdal1(npro,nshl),
 c$$$     &          v_lambdal2(npro,nshl)
 c above arrays must be uncommented for alternate method included below (commented)
-      real epsilon_tmp
+	real*8 epsilon_tmp
 
 c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
 c
       if (ipord .gt. 1) then
-           write(*,*) 'blk not plumbed this far'
 
          call getsgn(blk,ien,sgn)
       endif
@@ -235,7 +238,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c
-         call getshp(blk,shp,          shgl,      sgn, 
+         call getshp(blk,intp, shp,          shgl,      sgn, 
      &               shape,        shdrv)
 c
 c.... initialize
@@ -250,8 +253,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-         write(*,*) 'broken blk not plumbed this far'
-         call e3metric(blk, blk, xl,         shdrv,        dxidx,  
+         call e3metric(blk, intp, xl,         shdrv,        dxidx,  
      &                  shg,        WdetJ)
 
 c
@@ -263,13 +265,13 @@ c
             sclrtmp = sclrtmp + shape(1:npro,i) * ycl(1:npro,i,6) !d^0
          enddo
 
+         do i=1,npro
          if (isclr .eq. 2) then
-            epsilon_tmp = epsilon_lsd
+           epsilon_tmp = epsilon_lsd*elem_local_size(blk%i -1+i)
          else
-            epsilon_tmp = epsilon_ls
+           epsilon_tmp = epsilon_ls*elem_local_size(blk%i -1+i)
          endif
 
-         do i=1,npro
             if (abs (Sclrtmp(i)) .le. epsilon_tmp) then
                h_prime(i) = (0.5/epsilon_tmp) * (1 
      &                    + cos(pi*Sclrtmp(i)/epsilon_tmp))

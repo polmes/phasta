@@ -34,6 +34,11 @@ c
          if (iRANS.lt.0) then
             ull(:)=y(otwn(nodw),1:3)
          endif
+         if (iDNS.gt.0) then  ! wall model w/o turb model
+c for now will use the local off-the-wall velocity but will need to
+c make this an averaged velocity in the future.
+            ull(:)=y(otwn(nodw),1:3)
+         end if
          ub=ull(1)*wnrm(nodw,1) !
      &     +ull(2)*wnrm(nodw,2) ! store u.n here for now
      &     +ull(3)*wnrm(nodw,3) !
@@ -87,17 +92,21 @@ c
          endif
 
          trx(nodw,:)=twoub*ull(:)
-         if(itwmod.eq.-2) then ! effective-viscosity
+         if (abs(itwmod) .eq. 2) then  ! effective vicosity
+           if((iRANS<0).and.(itwmod.eq.-2)) then ! w/ RANS (redundant logic here)
             tauw=ut*ut
             BC(nodw,7)=tauw*dw/ub-rm
-         endif
-         if(itwmod.eq.2) then ! effective-viscosity
+           else if ((iDNS.gt.0).and.(itwmod.eq.-2)) then ! DNS (redundant logic here)
+              tauw=ut*ut
+              effvisc(nodw)=tauw*dw/ub-rm
+           else if ((iLES>0).and.(itwmod.eq.2)) then ! LES
 c
 c  mag of u instantaneous
 c
             ullm=sqrt(ull(1)*ull(1)+ull(2)*ull(2)+ull(3)*ull(3))
             tauw=ut*ut*ullm/ub
             evisc(nodw)=tauw*dw/ub-rm
+           endif
          endif
          if((itwmod.eq.-1)) then ! slip-velocity RANS
             up=sqrt(
@@ -135,10 +144,10 @@ c For all elements in this block that lie on a wall, assign the traction
             if(btest(miBCB(iblk)%p(i,1),4)) then ! wall elt
                do j = 1, nenbl
                   if(itwmod.eq.-2) then ! effective-viscosity
-                     mBCB(iblk)%p(i,j,3:5)=0.0
+                     mBCB(iblk)%p(i,j,3:5)=0.0  ! set traction to zero - won't use it
                   endif
                   if((itwmod.eq.-1).or.(itwmod.eq.1)) then ! slip-velocity
-                     mBCB(iblk)%p(i,j,3:5)=trx(mienb(iblk)%p(i,j),:)
+                     mBCB(iblk)%p(i,j,3:5)=trx(mienb(iblk)%p(i,j),:) ! set traction
                   endif
                enddo
             endif
@@ -183,6 +192,13 @@ c
         end
 
         function utau(u,y,rm,nodw,x)
+c---------------------------------------------------------------------------
+c
+c  Computes the friction velocity, u_tau, that is consistent
+c  with the off-the-wall parallel velocity (u) and normal distance (y).
+c  The Spalding (1961) composite log-law formula is used within.
+c
+c---------------------------------------------------------------------------
         implicit none
         real*8 u,err,utau,yrmi,y,rm,yp,up,kup,f,dfds,rat,efac
         real*8 kup2,kup3,pt5,sxth,kappa
@@ -197,6 +213,15 @@ c
         kappa=0.4
 c$$$        B=5.5
         efac=0.1108 ! exp(-kappa*B)
+c
+c This is an iterative solve   
+c    1 - guess u_tau
+c    2 - compute difference between y+=y*u_tau/visc and that from Spalding (f term below)
+c    3 - compute gradient of difference wrt u_tau (dfds term below)
+c    4 - compute correction on u_tau: du_tau = df / (dfds)
+c    5 - update u_tau = u_tau_old + correction
+c    6 - iterate again if not within tolerance
+c
         do iter=1,500
            yp=yrmi*utau
            up=u/utau

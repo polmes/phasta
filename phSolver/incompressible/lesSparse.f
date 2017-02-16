@@ -36,7 +36,9 @@ c
 c     
 c.... Clear the flowdiag
 c
+!SWAP  NEXT LINE IS TO GET PARALLEL CONSISTENCY
       if((flmpl.eq.1).or.(ipord.gt.1)) then
+!       if(1.eq.1) then
          do n = 1, nshg
             k = sparseloc( rowp(colm(n)), colm(n+1)-colm(n), n )
      &       + colm(n)-1
@@ -104,6 +106,18 @@ c
          enddo
       endif
 c     
+
+c
+c.... x2-velocity
+c
+! bc3lhs is now putting 1's on the diagonal when a dof is constrained 
+! when we have both axisymmetry and a comp1 (1024+16)=1040), 
+! rotabc takes those diagnonal values and rotates them which gives them a
+! component in the direction that is never zeroed which is of course wrong so lets zero them out for now
+!
+        where (iBC .eq. 1040 .or. iBC .eq. 1032 .or. iBC .eq. 1056)   ! bits of iBC= xy010zab 
+          flowDiag(:,2) = zero
+        endwhere
 
 c
       if(iabc==1)    !are there any axisym bc's

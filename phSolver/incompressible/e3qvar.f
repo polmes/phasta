@@ -9,20 +9,20 @@ c  This routine computes the variables at integration point
 c  necessary for the computation of the diffusive flux vector.
 c
 c input:
-c  yl     (npro,blk%s,ndof)      : primitive variables
-c  shgl   (npro,nsd,blk%s)     : element local-grad-shape-functions
-c  xl     (npro,blk%n,nsd)       : nodal coordinates at current step
+c  yl     (blk%e,blk%s,ndof)      : primitive variables
+c  shgl   (blk%e,nsd,blk%s)     : element local-grad-shape-functions
+c  xl     (blk%e,blk%n,nsd)       : nodal coordinates at current step
 c
 c output:
-c  g1yi   (npro,ndof)           : grad-y in direction 1
-c  g2yi   (npro,ndof)           : grad-y in direction 2
-c  g3yi   (npro,ndof)           : grad-y in direction 3
-c  shg    (npro,blk%s,nsd)       : element global grad-shape-functions
-c  dxidx  (npro,nsd,nsd)        : inverse of deformation gradient
-c  WdetJ  (npro)                : weighted Jacobian
-c  u1     (npro)                : x1-velocity component
-c  u2     (npro)                : x2-velocity component
-c  u3     (npro)                : x3-velocity component
+c  g1yi   (blk%e,ndof)           : grad-y in direction 1
+c  g2yi   (blk%e,ndof)           : grad-y in direction 2
+c  g3yi   (blk%e,ndof)           : grad-y in direction 3
+c  shg    (blk%e,blk%s,nsd)       : element global grad-shape-functions
+c  dxidx  (blk%e,nsd,nsd)        : inverse of deformation gradient
+c  WdetJ  (blk%e)                : weighted Jacobian
+c  u1     (blk%e)                : x1-velocity component
+c  u2     (blk%e)                : x2-velocity component
+c  u3     (blk%e)                : x3-velocity component
 c
 c
 c Zdenek Johan, Summer 1990. (Modified from e2ivar.f)
@@ -30,8 +30,8 @@ c Zdenek Johan, Winter 1991. (Fortran 90)
 c Kenneth Jansen, Winter 1997. Primitive Variables
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c
@@ -149,10 +149,12 @@ c     compute the variables for the local scalar diffusion
 c
 c-----------------------------------------------------------------------
       subroutine e3qvarSclr  (blk,yl,       shgl,         xl, 
-     &                        gradT,    dxidx,        WdetJ )
+     &                        gradT,    dxidx,        WdetJ,
+     &                        shape,
+     &                        u1,       u2,           u3 )
 
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
 
@@ -162,7 +164,10 @@ c
       real*8   yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
      &         shgl(blk%e,nsd,blk%s),   xl(bsz,blk%n,nsd),
      &         dxidx(blk%e,nsd,nsd),   WdetJ(blk%e),
-     &         gradT(blk%e,nsd)
+     &         gradT(blk%e,nsd),       shape(blk%e,blk%s),
+     &         u1(blk%e),
+     &         u2(blk%e),              u3(blk%e),
+     &         sign_levelset(blk%e)
 c
 c  local arrays
 c
@@ -183,6 +188,15 @@ c
          gradT(:,2) = gradT(:,2) + shg(:,n,2) * yl(1:blk%e,n,id)
          gradT(:,3) = gradT(:,3) + shg(:,n,3) * yl(1:blk%e,n,id)
       enddo
+
+c
+c.... Compute the advection velocity for Level Set Scalars
+c
+      if (iLSet .eq. 2) then
+        call e3LSVel ( blk,    gradT,  yl,   shape,
+     &                 u1,     u2,    u3, sign_levelset)
+      endif
+
 c
 c.... return
 c

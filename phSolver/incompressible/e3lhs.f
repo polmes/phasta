@@ -28,9 +28,9 @@ c     xlhs(blk%e,16,blk%s,blk%s) : left hand side
 c
 c
 c------------------------------------------------------------------------
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      type (LocalBlkData) blk
 
 
       dimension u1(blk%e),         u2(blk%e),       u3(blk%e),
@@ -279,9 +279,9 @@ c------------------------------------------------------------------------
      &                       xSebe )
 
 c
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      type (LocalBlkData) blk
 
 
       real*8    uMod(blk%e,nsd),
@@ -329,7 +329,8 @@ c
 c.... compute mass term for stab u_j N_{a,j} tau N_b (note that a and b
 c            flipped on both sides below)
 c
-            xSebe(1:blk%e,b,aa) = xSebe(1:blk%e,b,aa) + t1(1:blk%e,2)*shpfun(1:blk%e,aa)
+            xSebe(1:blk%e,b,aa) = xSebe(1:blk%e,b,aa) + t1(:,2)*shpfun(:,aa)*
+     &                                      almi*(one-flmpl)
          enddo
       enddo
 c

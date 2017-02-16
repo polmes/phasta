@@ -5,9 +5,9 @@ c     matrices.
 c-----------------------------------------------------------------------
       use     stats
       use     pointer_data
+      use eblock
       
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
       real*8  x(numnp,3)

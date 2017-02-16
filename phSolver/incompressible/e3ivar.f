@@ -48,8 +48,9 @@ c Christian Whiting, Winter 1999. (uBar formulation)
 c
 c----------------------------------------------------------------------
 c
+      use  spat_var_eps ! for spatially varying epsilon_ls
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
 c
@@ -72,10 +73,11 @@ c
 c
         dimension rlsl(bsz,blk%s,6),         rlsli(blk%e,6)
 c
-        real*8    rerrl(bsz,blk%s,6), omega(3), divu(blk%e)
+        real*8    rerrl(bsz,blk%s,6+isurf), omega(3), divu(blk%e)
         dimension gyti(blk%e,nsd),            gradh(blk%e,nsd),
      &            sforce(blk%e,3),            weber(blk%e),
      &            Sclr(blk%e)
+      real*8 epsilon_ls_tmp
 c
 c.... ------------->  Primitive variables at int. point  <--------------
 c
@@ -195,6 +197,8 @@ c
 c     
           if (isurf .eq. 1) then   
 c     .... divergence of normal calculation (curvature)
+c  note ql(:,:,idflx-2 through idflx) contains the normal vector
+c  e3q computed grad(phi) and qpbc divided by the magnitude of grad(phi).
              do n=1, blk%s
                 divqi(1:blk%e,idflow+1) = divqi(1:blk%e,idflow+1) 
      &               + shg(1:blk%e,n,1)*ql(1:blk%e,n,idflx-2)
@@ -217,14 +221,19 @@ c
                    gyti(i,3) = gyti(i,3) + shg(i,n,3) * yl(i,n,6)
 c     
                 enddo
-
-                if (abs (sclr(i)) .le. epsilon_ls) then
-                   gradh(i,1) = 0.5/epsilon_ls * (1.0 
-     &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,1)
-                   gradh(i,2) = 0.5/epsilon_ls * (1.0 
-     &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,2) 
-                   gradh(i,3) = 0.5/epsilon_ls * (1.0 
-     &                  + cos(pi*Sclr(i)/epsilon_ls)) * gyti(i,3)
+c
+c..Now we have to use spatially varied epsilon_ls
+c
+                epsilon_ls_tmp = epsilon_ls * 
+     &               elem_local_size(blk%i +i-1)
+  
+                if (abs (sclr(i)) .le. epsilon_ls_tmp) then
+                   gradh(i,1) = 0.5/epsilon_ls_tmp * (1.0 
+     &                  + cos(pi*Sclr(i)/epsilon_ls_tmp)) * gyti(i,1)
+                   gradh(i,2) = 0.5/epsilon_ls_tmp * (1.0 
+     &                  + cos(pi*Sclr(i)/epsilon_ls_tmp)) * gyti(i,2) 
+                   gradh(i,3) = 0.5/epsilon_ls_tmp * (1.0 
+     &                  + cos(pi*Sclr(i)/epsilon_ls_tmp)) * gyti(i,3)
                 endif
              enddo              !end of the loop over blk%e
 c     
@@ -248,24 +257,14 @@ c
        call e3resStrongPDE(blk,
      &      aci,  u1,   u2,   u3,   Temp, rho,  xx,
      &            g1yi, g2yi, g3yi,
-     &      rLui, src, divqi)
-c
-c.... take care of the surface tension force term here
-c
-       if (isurf .eq. 1) then  ! note multiplied by density in e3res.f 
-          src(:,1) = src(:,1) + sforce(:,1)
-          src(:,2) = src(:,2) + sforce(:,2)
-          src(:,3) = src(:,3) + sforce(:,3)
-       endif       
+     &      rLui, src, divqi, sforce)      
 c
 c.... -------------------> error calculation  <-----------------
 c     
-! OLD WAY       if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
-! NEW WAY only one point quadrature on the error
-       if((ierrcalc.eq.1).and.(nitr.eq.iter).and.(ith.eq.ngauss)) then
+        if((ierrcalc.eq.1).and.(nitr.eq.iter)) then
           do ia=1,blk%s
              tmp=shpfun(:,ia)*WdetJ(:)
-             tmp1=shpfun(:,ia) !Qwt(lcsyst,ith) 
+             tmp1=shpfun(:,ia)*Qwt(lcsyst,ith) 
              rerrl(1:blk%e,ia,1) = rerrl(1:blk%e,ia,1) +
      &                       tmp1(1:blk%e)*rLui(1:blk%e,1)*rLui(1:blk%e,1)
              rerrl(1:blk%e,ia,2) = rerrl(1:blk%e,ia,2) +
@@ -279,6 +278,8 @@ c
      &                       tmp(1:blk%e)*divqi(1:blk%e,2)*divqi(1:blk%e,2)
              rerrl(1:blk%e,ia,6) = rerrl(1:blk%e,ia,6) +
      &                       tmp(1:blk%e)*divqi(1:blk%e,3)*divqi(1:blk%e,3)
+          if (isurf .eq. 1) rerrl(1:blk%e,ia,7) = rerrl(1:blk%e,ia,7) +
+     &                       tmp(:)*divqi(:,idflow+1)*divqi(:,idflow+1)
           enddo
        endif
        distcalc=0  ! return to 1 if you want to compute T-S instability
@@ -323,11 +324,13 @@ c-----------------------------------------------------------------------
      &                      u1,          u2,        u3,              
      &                      ql,          rLS ,       SrcR,
      &                      SrcL,        uMod,      dwl,
-     &                      diffus,      srcRat)
+     &                      diffus,      srcRat,
+     &                      cfll)
 c
+      use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
       include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      type (LocalBlkData) blk
 
 c
 c  passed arrays
@@ -344,7 +347,8 @@ c
      &          SrcR(blk%e),                 SrcL(blk%e),
      &          dwl(bsz,blk%n),            diffus(blk%e),
      &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
-     &          divqi(blk%e)   
+     &          divqi(blk%e) ,
+     &          cfll(bsz,blk%s)   
 c
       dimension tmp(blk%e), srcRat(blk%e)
       real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),
@@ -461,17 +465,24 @@ c
              write(*,*) 'Not sure if we can handle level set with K-E'
              write(*,*) '(different uMods? correct value of rho?)'
           endif
+          sforce=zero ! until we bring sforce computation to scalar solve
           divqi=zero  ! until we reconstruct q_flow for scalar solve
           call e3resStrongPDE( blk,
      &         aci,  u1,   u2,   u3,   Temp, rho,  x,
      &               g1yi, g2yi, g3yi,
-     &         rLui, src, divqi)
-          src(:,1)=u1           !
-          src(:,2)=u2           ! store u in src memory
-          src(:,3)=u3           !
-c         e3uBar calculates Tau_M and assembles uBar
-          call getdiff(blk,ntp,dwl, yl, shpfun, xmudmi, xl, rmu, rho)
-          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
+     &         rLui, src, divqi,sforce)
+c     this call to getdiff is for the flow diffusive properties
+          call getdiff(blk,ith,dwl, yl, shpfun, xmudmi, xl, rmu, rho,
+     &               elem_local_size(blk%i),
+     &               evl)
+! bad to have a separate routine for something like Tau that may vary          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
+! changing to call e3stab that now has conditionals to skip computation of tauc and taubar so should be o.k. that they are note
+! dimensioned in this case since memory not accessed
+          call e3stab (blk, rho,          u1,       u2,
+     &                 u3,           dxidx,    rLui,
+     &                 rmu,          tauC,     tauM,
+     &                 tauBar,       uBar )
+
           u1=ubar(:,1)          ! the entire scalar residual
           u2=ubar(:,2)          ! is based on the modified
           u3=ubar(:,3)          ! velocity for conservation
@@ -497,11 +508,12 @@ c
 
 
        if(nosource.ne.1) then
-        call e3sourceSclr ( Sclr,         Sdot,      gradS,  dwl,
+        srcRat = zero
+        call e3sourceSclr ( blk, Sclr,         Sdot,      gradS,  dwl,
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,
      &                      xl,           srcR,      srcL,   uMod,
-     &                      srcRat)
+     &                      srcRat,  cfll )
        else
         srcRat = zero
         srcR   = zero

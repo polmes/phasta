@@ -8,10 +8,9 @@ c-----------------------------------------------------------------------
       subroutine e3metric(blk,ith,  xl,      shgl,     dxidx,
      &                      shg,     WdetJ)
 
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
-
       
       real*8     xl(bsz,blk%n,nsd),    shgl(blk%e,nsd,blk%s),
      &           dxidx(blk%e,nsd,nsd),  shg(blk%e,blk%s,nsd), 

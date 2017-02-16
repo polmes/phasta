@@ -20,8 +20,8 @@ c     qres  (numnp,nsd,nsd)  : residual vector for diffusive flux
 c
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c

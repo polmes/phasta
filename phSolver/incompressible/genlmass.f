@@ -1,9 +1,9 @@
-        subroutine genlmass (x, shp,shgl)
+        subroutine genlmass (x, shp,shgl, iBC, iper, ilwork)
 c
         use pointer_data
 c
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
         include "mpif.h"
@@ -12,6 +12,7 @@ c
 c
         real*8 shp(MAXTOP,maxsh,MAXQPT),   
      &            shgl(MAXTOP,nsd,maxsh,MAXQPT) 
+        integer iBC(nshg), iper(nshg), ilwork(nlwork)
 c
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
         
@@ -64,7 +65,29 @@ c
 c.... end of interior element loop
 c
        enddo
+c
+c.... -------------------->   communications <-------------------------
+c
+         if (numpe > 1) then
+            call commu (gmass, ilwork, 1, 'in ')
+         end if
+c
+c  take care of periodic boundary conditions on mass matrix
+c
+       do j= 1,nshg
+         if ((btest(iBC(j),10))) then
+           i = iper(j)
+           gmass(i) = gmass(i) + gmass(j)
+         endif
+       enddo
 
+       do j= 1,nshg
+         if ((btest(iBC(j),10))) then
+           i = iper(j)
+           gmass(j) = gmass(i)
+         endif
+       enddo
+c
       return
       end
 
@@ -80,8 +103,8 @@ c
 c Ken Jansen, Winter 2000.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 c
         real*8 x(numnp,nsd),              

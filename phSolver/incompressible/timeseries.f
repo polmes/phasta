@@ -2,8 +2,8 @@
       subroutine timeseries(blk,ycl, xl, ien, sgn)
 
       use timedata
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
 

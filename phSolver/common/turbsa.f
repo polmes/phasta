@@ -8,6 +8,7 @@ c-----------------------------------------------------------------------
       real*8, allocatable ::  d2wall(:)
       real*8, allocatable ::  wnrm(:,:)
       integer, allocatable :: otwn(:)
+      real*8, allocatable :: effvisc(:)
       real*8  saCb1, saCb2, saCw1, saCw2, saCw3, saCv1, saSigma,
      &        saKappa, saKappaP2Inv, saCv2P3, saCw3P6, saSigmaInv
       integer, allocatable :: sidmapg(:) ! list of all surfID's, low to high

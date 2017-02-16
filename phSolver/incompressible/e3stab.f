@@ -25,9 +25,9 @@ c Zdenek Johan, Summer 1990.  (Modified from e2tau.f)
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-        include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      use eblock
+      include "common.h"
+      type (LocalBlkData) blk
 
 c
         dimension rho(blk%e),                 u1(blk%e),
@@ -98,7 +98,7 @@ c
          fact = sqrt(tauM)
          dtsi=one/dts
          ff=taucfct/dtsfct
-         tauC =rho* pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3))*ff
+         if(icode.eq.0) tauC =rho* pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3))*ff
          tauM = one/fact
       else if(itau.eq.1)  then  ! new tau
 
@@ -128,9 +128,11 @@ c
 c
 c  we can calculate tauC more efficiently now
 c
-         tauC=tauM*(one+tauM*rmu*rmu)
-         tauC=one/tauC
-         tauC=taucfct*sqrt(tauC)
+         if(icode.eq.0) then
+           tauC=tauM*(one+tauM*rmu*rmu)
+           tauC=one/tauC
+           tauC=taucfct*sqrt(tauC)
+         endif
 c
 c
 c...  momentum tau
@@ -188,9 +190,11 @@ cdebugcheck         tauBar = pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3)) !*dtsi
 c
 c  we can calculate tauC more efficiently now
 c
-         tauC=tauM*(one+tauM*rmu*rmu)
-         tauC=one/tauC
-         tauC=sqrt(tauC)*taucfct
+         if(icode.eq.0) then
+           tauC=tauM*(one+tauM*rmu*rmu)
+           tauC=one/tauC
+           tauC=sqrt(tauC)*taucfct
+        endif
 c
 c
 c...  momentum tau
@@ -225,8 +229,7 @@ c  4 comes from the bi-unit mapping). If you want to limit sooner the formula
 c  would be  ".01-factor"=minCFL^2*4
 c
 
-         tauM = rho ** 2
-     1		    * ( four*taubar + fact
+         tauM =  ( four*taubar + fact
      2		    + fff * rmu** 2
      3		    * ( gijd(:,1) ** 2
      4		      + gijd(:,2) ** 2
@@ -237,8 +240,6 @@ c
      9		        + gijd(:,6) ** 2 ) ) 
      b              +omegasq)
          fact=sqrt(tauM)
-c         tauBar = pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3)) !*dtsi
-      
         tauM=one/fact           ! turn it right side up.
       else if(itau.eq.3)  then  ! compressible tau
 
@@ -268,7 +269,7 @@ c
 c  we can calculate tauC more efficiently now
 c
          tauM=sqrt(tauM/fact)*two
-         tauC=pt5*tauM*min(one,pt5*tauM/rmu)*taucfct
+         if(icode.eq.0) tauC=pt5*tauM*min(one,pt5*tauM/rmu)*taucfct
 c
 c
 c...  momentum tau
@@ -294,10 +295,11 @@ c
          dts= one/( Dtgl*dtsfct)
          tauM =min(dts,min(fact,fact*fact*unorm*pt33/rmu))
       endif
+      if(icode.eq.0) then
 c
 c.... calculate tauBar
 c
-      tauBar = rLui(:,1) * ( gijd(:,1) * rLui(:,1)
+        tauBar = rLui(:,1) * ( gijd(:,1) * rLui(:,1)
      &                       + gijd(:,4) * rLui(:,2)
      &                       + gijd(:,6) * rLui(:,3) )
      &         + rLui(:,2) * ( gijd(:,4) * rLui(:,1)
@@ -306,9 +308,10 @@ c
      &         + rLui(:,3) * ( gijd(:,6) * rLui(:,1)
      &                       + gijd(:,5) * rLui(:,2)
      &                       + gijd(:,3) * rLui(:,3) )
-      where ( tauBar .ne. 0.0 ) 
-         tauBar = tauM / sqrt(tauBar)
-      endwhere
+        where ( tauBar .ne. 0.0 ) 
+           tauBar = tauM / sqrt(tauBar)
+        endwhere
+      endif
 
 c
 c.... compute the modified velocity, uBar
@@ -330,8 +333,8 @@ c-----------------------------------------------------------------------
       subroutine e3uBar (blk,rho,          ui,         dxidx,     
      &                   rLui,         rmu,        uBar )         
 
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
       real*8     rho(blk%e),            ui(blk%e,nsd),
@@ -396,8 +399,8 @@ c get the metric tensor g_{ij}=xi_{k,i} xi_{k,j}.
 c-----------------------------------------------------------------------
       subroutine e3gijd(blk, dxidx,  gijd )
       
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
       
       real*8  dxidx(blk%e,nsd,nsd),  gijd(blk%e,6),
@@ -493,9 +496,9 @@ c------------------------------------------------------------------------
      &                       srcRat )
 c
 c
-        include "common.h"
-        include "eblock.h"
-        type (LocalBlkData) blk
+      use eblock
+      include "common.h"
+      type (LocalBlkData) blk
 
 c
         real*8    rho(blk%e),                 uMod(blk%e,nsd),
@@ -531,12 +534,14 @@ c
            fff = 64.0d0
         endif
 
-      dts  =  (Dtgl*dtsfct)
+      dts  =  (Dtgl*dtsfctsclr)
 !      dts=  min(Dtgl,28800.0d0)*dtsfct      !28800 = 1600*180 / 10
 !      dts=  min(Dtgl,2880.0d0)*dtsfct      !2880 = 1600*180 / 100
 !      dts=  min(Dtgl,288.0d0)*dtsfct        !288 = 1600*180 / 1000
 
 c        if(iRANS.ne.-2) srcRat=srcR
+! ADDING THIS BACK FROM JR thesis work....check 
+        if(iLSet.eq.2) srcRat=srcR
         tauT = 
      1         (two*dts)**2 
      2       + srcRat ** 2

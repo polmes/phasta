@@ -6,8 +6,12 @@ c---------------------------------------------------------------------------
 
       use stats
       use rlssave   ! Use the resolved Leonard stresses at the nodes.
+      use  spat_var_eps ! for spatially varying epsilon_ls
+      use  eblock
+      use turbSA    ! for access to effvisc
 
       include "common.h"
+      type (LocalBlkData) blk
 
       dimension y(nshg,5),                  ac(nshg,5),
      &          x(numnp,nsd),               ien(npro,nshl),
@@ -40,6 +44,7 @@ c---------------------------------------------------------------------------
      &          vol(nshg),                 diss(nshg,3),
      &          rmu(npro)
 
+      dimension evl(npro,nshl)
       real*8    omega(3), divu(npro)
 
 c.... Note that the xmudmi passed in here is 
@@ -62,10 +67,14 @@ c.... Localization
          call local (qres,   ql,     ien, nsd*nsd, 'gather  ')
       endif
 
+        if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
+          call local(effvisc, evl,    ien,    1,      'gather  ')
+        endif
+
       if ( idiff==2 .and. ires .eq. 1 ) then
          call e3ql (yl,        shpo,       shglo, 
      &              xl,        ql,        xmudmi, 
-     &              sgn)
+     &              sgn,       evl)
       endif
 
       if( (iLES.gt.10).and.(iLES.lt.20)) then ! bardina 
@@ -237,9 +246,12 @@ c
              shpfun(i,n) = shp(n,intp)
           enddo
        enddo
+ 
+       write(*,*) 'advLES.f is not updated for thread changes yet'
 
-        call getdiff(intp, yl, shpfun, xmudmif,xl, rmu, rho)
-
+        call getdiff(blk,ith, yl, shpfun, xmudmif,xl, rmu, rho,
+     &               elem_local_size(blk%i),
+     &               evl)
 
        divqi = zero
        if ( idiff >= 1 ) then

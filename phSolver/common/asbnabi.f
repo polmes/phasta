@@ -10,8 +10,8 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use pvsQbi
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c
@@ -171,8 +171,8 @@ c Irene Vignon - copied from AsBNABI, Fall 2005.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use pvsQbi
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c

@@ -264,6 +264,11 @@ void lesCp ( UsrHd   usrHd,
     dstpnt   = usrPointer ( usrHd, dstId, dstOff, nDims ) ;
 
     dim      = usrHd->nNodes ;
+//  next two lines were an attempt to bring PHASTA's periodic structure into leslib but
+//  this diverged and thus effort discontinued....might debug later to understand why.
+//    commOut ( srcpnt, usrHd->ilwork, &nDims,
+//              usrHd->iper, usrHd->iBC, usrHd->BC );
+
 
     flesCp( srcpnt, dstpnt, &nDims, &dim ) ;
 }

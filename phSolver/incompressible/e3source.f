@@ -1,4 +1,4 @@
-      subroutine e3source(xx, src)
+      subroutine e3source(blk,xx, src)
 c-----------------------------------------------------------------------
 c
 c  this routine computes the body force term.
@@ -8,9 +8,11 @@ c  the z-coordinate
 c
 c-----------------------------------------------------------------------
 
+      use  eblock
       include "common.h"
+      type (LocalBlkData) blk
       
-      real*8   xx(npro,nsd), src(npro,nsd)
+      real*8   xx(blk%e,nsd), src(blk%e,nsd)
 
       real*8   nu
 
@@ -21,7 +23,7 @@ c  This is the body force which will drive a swirl in a pipe flow
 c     
          bigR    = 0.5d0
          dpdz    = datmat(1,5,1)
-         do iel = 1, npro
+         do iel = 1, blk%e
             
             r   = sqrt( xx(iel,1)**2 + xx(iel,2)**2)
             rP5 = (r/bigR)**5
@@ -44,7 +46,7 @@ c$$$         om2=omag*e2
 c$$$         om3=omag*e3
 c$$$         w=0
 c$$$      
-c$$$         do iel = 1, npro
+c$$$         do iel = 1, blk%e
 c$$$         
 c$$$            x = xx(iel,1)
 c$$$            y = xx(iel,2)
@@ -166,7 +168,7 @@ c$$$      src(iel,3) =       fza
 c$$$      enddo
 !Analytic lid case
    
-      do iel = 1, npro
+      do iel = 1, blk%e
             x = xx(iel,1)
             y = xx(iel,2)
             z = xx(iel,3)
@@ -207,12 +209,12 @@ c
 
 
 
-      subroutine e3sourceSclr ( Sclr,      Sdot,      gradS,
+      subroutine e3sourceSclr ( blk, Sclr,      Sdot,      gradS,
      &                          dwl,       shape_funct,     shg,   
      &                          yl,        dxidx,     rmu,
      &                          u1,        u2,        u3,   xl,
      &                          srcR,      srcL,      uMod,
-     &                          srcRat) 
+     &                          srcRat,    cfll) 
 
 
 c-----------------------------------------------------------------------
@@ -234,34 +236,39 @@ c
 c-----------------------------------------------------------------------
       use     turbSA
       use turbKE
+      use  spat_var_eps ! for spatially varying epsilon_ls
+      use  eblock
       include "common.h"
+      type (LocalBlkData) blk
 c coming in      
-      real*8  Sclr(npro),          Sdot(npro),
-     &        gradS(npro,nsd),     dwl(bsz,nenl),
-     &        shape_funct(npro,nshl),    shg(npro,nshl,nsd),
-     &        yl(bsz,nshl,ndof),  dxidx(npro,nsd,nsd),
-     &        rmu(npro),           u1(npro),
-     &        u2(npro),            u3(npro),
-     &        xl(bsz,nenl,nsd)
+      real*8  Sclr(blk%e),          Sdot(blk%e),
+     &        gradS(blk%e,nsd),     dwl(bsz,blk%n),
+     &        shape_funct(blk%e,blk%s),    shg(blk%e,blk%s,nsd),
+     &        yl(bsz,blk%s,ndof),  dxidx(blk%e,nsd,nsd),
+     &        rmu(blk%e),           u1(blk%e),
+     &        u2(blk%e),            u3(blk%e),
+     &        xl(bsz,blk%n,nsd),
+     &        cfll(bsz,blk%s)
 c going out
-      real*8  srcR(npro),          srcL(npro),
-     &        uMod(npro,nsd)
+      real*8  srcR(blk%e),          srcL(blk%e),
+     &        uMod(blk%e,nsd),      cfl_loc(blk%e)
 c used locally
 
-      real*8  gradV(npro,nsd,nsd), absVort(npro),dwall(npro)
+      real*8  gradV(blk%e,nsd,nsd), absVort(blk%e),dwall(blk%e)
       real*8  chi,    chiP3,   fv1,   fv2,     st,    r,
      &        g,      fw,      s,     viscInv, k2d2Inv,
      &        dP2Inv, sixth,   tmp,   tmp1,    p,     dp,
      &        fv1p,   fv2p,    stp,         gp,      fwp,   rp,
-     &        chiP2,  mytmp(npro),         sign_levelset(npro),
-     &        sclr_ls(npro)
+     &        chiP2,  mytmp(blk%e),         sign_levelset(blk%e),
+     &        sclr_ls(blk%e)
       real*8  SclrNN,qfac,dx,dy,dz,dmax
       real*8  rd,fd,dwallsqqfact,ep
 c    Kay-Epsilon
-      real*8 Ry(npro), Rt(npro), RtP2(npro), f2(npro), f1(npro),
-     &       kay(npro), epsilon(npro), fmu(npro), fmui(npro),
-     &       srcjac(npro,4), srcRat(npro)
+      real*8 Ry(blk%e), Rt(blk%e), RtP2(blk%e), f2(blk%e), f1(blk%e),
+     &       kay(blk%e), epsilon(blk%e), fmu(blk%e), fmui(blk%e),
+     &       srcjac(blk%e,4), srcRat(blk%e)
       integer e,n
+      real*8 small,epsilon_lsd_tmp
 c----------------------------------------------------------------------
 c
 c           --             --              --           --
@@ -282,22 +289,22 @@ c
 c.... compute the global gradient of u
 c
          gradV = zero
-         do n = 1, nshl
+         do n = 1, blk%s
 c
 c          du_i/dx_j
 c
 c           i j   indices match array where V is the velocity (u in our notes)
-            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(1:npro,n,2)
-            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(1:npro,n,3)
-            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(1:npro,n,4)
+            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(1:blk%e,n,2)
+            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(1:blk%e,n,3)
+            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(1:blk%e,n,4)
 c
-            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(1:npro,n,2)
-            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(1:npro,n,3)
-            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(1:npro,n,4)
+            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(1:blk%e,n,2)
+            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(1:blk%e,n,3)
+            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(1:blk%e,n,4)
 c
-            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(1:npro,n,2)
-            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(1:npro,n,3)
-            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(1:npro,n,4)
+            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(1:blk%e,n,2)
+            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(1:blk%e,n,3)
+            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(1:blk%e,n,4)
 c                                             a j     u   a i
 c from our notes where we had N_{a,j} = dN_a/dx_j  note that i is off by one because p was first in yl vector
 c
@@ -309,15 +316,15 @@ c
      &                  + (gradV(:,3,1) - gradV(:,1,3)) ** 2
      &                  + (gradV(:,1,2) - gradV(:,2,1)) ** 2 )
          dwall = zero
-         do n = 1, nenl
-            dwall     = dwall + shape_funct(:,n) * dwl(1:npro,n)
+         do n = 1, blk%n
+            dwall     = dwall + shape_funct(:,n) * dwl(1:blk%e,n)
          enddo
 
          sixth   = 1.0/6.0
 c
 c.... compute source and its jacobian
 c
-         do e = 1, npro
+         do e = 1, blk%e
             SclrNN= max(Sclr(e),zero) 
 c trip after the plane x-z=-1   
 c           if((xl(e,1,1)-xl(e,1,3)-0.1) .lt. zero) SclrNN=zero
@@ -448,36 +455,36 @@ c
 c.... compute the global gradient of u
 c
          gradV = zero
-         do n = 1, nshl
+         do n = 1, blk%s
 c
 c          du_i/dx_j
 c
 c           i j   indices match array where V is the velocity (u in our notes)
-            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(1:npro,n,2)
-            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(1:npro,n,3)
-            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(1:npro,n,4)
+            gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(1:blk%e,n,2)
+            gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(1:blk%e,n,3)
+            gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(1:blk%e,n,4)
 c
-            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(1:npro,n,2)
-            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(1:npro,n,3)
-            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(1:npro,n,4)
+            gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(1:blk%e,n,2)
+            gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(1:blk%e,n,3)
+            gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(1:blk%e,n,4)
 c
-            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(1:npro,n,2)
-            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(1:npro,n,3)
-            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(1:npro,n,4)
+            gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(1:blk%e,n,2)
+            gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(1:blk%e,n,3)
+            gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(1:blk%e,n,4)
 c                                             a j     u   a i
 c from our notes where we had N_{a,j} = dN_a/dx_j  note that i is off by one because p was first in yl vector
 c
          enddo
 
          dwall = zero
-         do n = 1, nenl
-            dwall     = dwall + shape_funct(:,n) * dwl(1:npro,n)
+         do n = 1, blk%n
+            dwall     = dwall + shape_funct(:,n) * dwl(1:blk%e,n)
          enddo
 
          kay(:)=zero
          epsilon(:)=zero
-         do ii=1,npro
-            do jj = 1, nshl
+         do ii=1,blk%e
+            do jj = 1, blk%s
                kay(ii) =  kay(ii) + shape_funct(ii,jj) * yl(ii,jj,6)
                epsilon(ii) =  epsilon(ii) 
      &              + shape_funct(ii,jj) * yl(ii,jj,7)
@@ -493,19 +500,29 @@ c        no source term in the LHS yet
          if(isclr.eq.2) srcL = srcJac(:,4)
          iadvdiff=0 ! scalar advection-diffusion flag
          if(iadvdiff.eq.1)then
-            srcL(:)=zero
-            srcR(:)=zero
-            srcRat(:)=zero
+            srcL(1:blk%e)=zero
+            srcR(1:blk%e)=zero
+            srcRat(1:blk%e)=zero
          endif
 c
 c.... No source terms with the form (beta_i)*(phi,_i) for K or E
 c
-         uMod(:,1) = u1(:) - zero
-         uMod(:,2) = u2(:) - zero
-         uMod(:,3) = u3(:) - zero
+         uMod(1:blk%e,1) = u1(1:blk%e) - zero
+         uMod(1:blk%e,2) = u2(1:blk%e) - zero
+         uMod(1:blk%e,3) = u3(1:blk%e) - zero
 
       
       elseif (iLSet.ne.0) then
+
+         cfl_loc = zero
+         do n = 1, blk%s
+           cfl_loc   = cfl_loc + shape_funct(:,n) * cfll(1:blk%e,n)
+         enddo
+
+         call e3LSVel ( blk, gradS,  yl,   shape_funct, 
+     &                  u1,     u2,   u3, sign_levelset)
+
+
          if (isclr.eq.1)  then
             
             srcR = zero
@@ -513,70 +530,38 @@ c
 
          elseif (isclr.eq.2) then !we are redistancing level-sets
 
-!   If Sclr(:,1).gt.zero, result of sign_term function 1
-!   If Sclr(:,1).eq.zero, result of sign_term function 0
-!   If Sclr(:,1).lt.zero, result of sign_term function -1
-
-            sclr_ls = zero      !zero out temp variable
-        
-            do ii=1,npro
-
-               do jj = 1, nshl  ! first find the value of levelset at point ii
-                  
-                  sclr_ls(ii) =  sclr_ls(ii) 
-     &                        + shape_funct(ii,jj) * yl(ii,jj,6)
-
-               enddo
-               
-               if (sclr_ls(ii) .gt. epsilon_ls)then
-            
-                  sign_levelset(ii) = one
-                  
-               elseif  (abs(sclr_ls(ii)) .le. epsilon_ls)then
-                  
-                  sign_levelset(ii) = sclr_ls(ii)/epsilon_ls 
-     &                  + sin(pi*sclr_ls(ii)/epsilon_ls)/pi
-                  
-               elseif (sclr_ls(ii) .lt. epsilon_ls) then
-                  
-                  sign_levelset(ii) = - one
-                  
-               endif
-               
-               srcR(ii) = sign_levelset(ii)
-               
-            enddo
-            
+            srcR = sign_levelset
             srcL =  zero   
 
-!   The redistancing equation can be written in the following form
-!
-!   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
-!
-!   This is rewritten in the form
-!
-!   d_{,t} + u * d_{,i} = sign(phi)
-!
+         endif
 
-!   For the redistancing equation the "velocity" term is calculated as 
-!   follows
+         umod(1:blk%e,1) = u1      ! These are for the LHS
+         umod(1:blk%e,2) = u2
+         umod(1:blk%e,3) = u3 
 
-
-
-            mytmp = sign_levelset / sqrt( gradS(:,1)*gradS(:,1) 
-     &                            + gradS(:,2)*gradS(:,2) 
-     &                            + gradS(:,3)*gradS(:,3)) 
-
-            uMod(:,1) = mytmp * gradS(:,1) ! These are for the LHS
-            uMod(:,2) = mytmp * gradS(:,2)
-            uMod(:,3) = mytmp * gradS(:,3)
-
-            u1 = umod(:,1)      ! These are for the RHS
-            u2 = umod(:,2)
-            u3 = umod(:,3)
-
-
-         endif    ! close of scalar 2 of level set
+c Adjust local redistancing velocity to maintain a minimum CFL number.
+c This is an attempt to adjust the local velocity rather than the 
+c psuedo time step to control CFL number
+         if ((i_AdjRedistVel.eq.1).and.(isclr.eq.2)) then
+           do ipro = 1, blk%e
+            if (cfl_loc(ipro) .gt. AdjRedistVelCFL) then
+c             write(*,5001) ipro, u1(ipro), u2(ipro), u3(ipro),
+c     &                     cfl_loc(ipro)
+             u1(ipro) = u1(ipro) * AdjRedistVelCFL / cfl_loc(ipro)
+             u2(ipro) = u2(ipro) * AdjRedistVelCFL / cfl_loc(ipro)
+             u3(ipro) = u3(ipro) * AdjRedistVelCFL / cfl_loc(ipro)
+             uMod(ipro,1) = u1(ipro)
+             uMod(ipro,2) = u2(ipro)
+             uMod(ipro,3) = u3(ipro)
+c             write(*,5002) u1(ipro),u2(ipro),u3(ipro)
+ 5001        format("Modified elemen ",i10," with u1, u2, u3 = ",
+     &               3(1x,e12.5)," with CFL = ",e12.5)
+ 5002        format("      now u1, u2, u3 = ",3(1x,e12.5))
+            endif
+           enddo
+        
+          endif
+c
 
       else        ! NOT turbulence and NOT level set so this is a simple
                   ! scalar. If your scalar equation has a source term
@@ -591,4 +576,106 @@ c
       end
 
 
+!^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+!******************************************************************
+!-------------------------------------------------------------------
+
+
+
+      subroutine e3LSVel (blk, gradS,  yl,   shape_funct, 
+     &                     u1,     u2,   u3,  sign_levelset)
+
+
+c-----------------------------------------------------------------------
+c
+c     calculate the coefficients for the Spalart-Allmaras 
+c     turbulence model and its jacobian
+c
+c     input: 
+c             gradS :   spatial gradient of Sclr
+c
+c     output:
+c
+c-----------------------------------------------------------------------
+      use  spat_var_eps ! for spatially varying epsilon_ls
+      use  eblock
+      include "common.h"
+      type (LocalBlkData) blk
+c coming in      
+      real*8  gradS(blk%e,nsd), 
+     &        shape_funct(blk%e,blk%s),
+     &        yl(bsz,blk%n,ndof), 
+     &        u1(blk%e),
+     &        u2(blk%e),            u3(blk%e)
+c used locally
+
+      real*8  mytmp(blk%e),         sign_levelset(blk%e),
+     &        sclr_ls(blk%e)
+      real*8 small,epsilon_lsd_tmp
+c
+
+c
+c.... compute primitive variables
+c
+      u1   = zero
+      u2   = zero
+      u3   = zero
+c
+c For Level Set Scalar 1
+      if (isclr.eq.1)  then
+        do n = 1, blk%s
+           u1   = u1   + shape_funct(1:blk%e,n) * yl(1:blk%e,n,2)
+           u2   = u2   + shape_funct(1:blk%e,n) * yl(1:blk%e,n,3)
+           u3   = u3   + shape_funct(1:blk%e,n) * yl(1:blk%e,n,4)
+        enddo
+      elseif (isclr.eq.2) then !we are redistancing level-sets
+         sclr_ls = zero      !zero out temp variable
+      
+         do ii=1,blk%e
+           do jj = 1, blk%s  ! first find the value of levelset at point ii
+c
+c sign(phi) should be based on the distance field        
+c                  
+             sclr_ls(ii) =  sclr_ls(ii) 
+     &                      + shape_funct(ii,jj) * yl(ii,jj,7)
+           enddo
+
+           epsilon_lsd_tmp = epsilon_lsd * 
+     &             elem_local_size(blk%i -1+ii)
+
+           if (sclr_ls(ii) .gt. epsilon_lsd_tmp)then
+              sign_levelset(ii) = one
+           elseif  (abs(sclr_ls(ii)) .le. epsilon_lsd_tmp)then
+              sign_levelset(ii) = sclr_ls(ii)/epsilon_lsd_tmp 
+     &              + sin(pi*sclr_ls(ii)/epsilon_lsd_tmp)/pi
+           elseif (sclr_ls(ii) .lt. -epsilon_lsd_tmp) then
+              sign_levelset(ii) = - one
+           endif
+         enddo
+            
+
+!   The redistancing equation can be written in the following form
+!
+!   d_{,t} + sign(phi)*( d_{,i}/|d_{,i}| )* d_{,i} = sign(phi)
+!
+!   This is rewritten in the form
+!
+!   d_{,t} + u * d_{,i} = sign(phi)
+!
+
+!   For the redistancing equation the "velocity" term is calculated as 
+!   follows
+
+         small = 1e-10
+         mytmp = sign_levelset / (sqrt( gradS(1:blk%e,1)*gradS(:,1) 
+     &                         + gradS(1:blk%e,2)*gradS(:,2) 
+     &                         + gradS(1:blk%e,3)*gradS(:,3)) + small) 
+
+         u1 = mytmp * gradS(1:blk%e,1) 
+         u2 = mytmp * gradS(1:blk%e,2)
+         u3 = mytmp * gradS(1:blk%e,3)
+      endif
+
+      return
+      end
 

@@ -1,18 +1,21 @@
-      subroutine getDiff(blk, ith, dwl,yl, shape, xmudmi, xl, rmu,  rho)
+      subroutine getDiff(blk, ith, dwl,yl, shape, xmudmi, xl, rmu,  rho,
+     &                    elem_size, evl)
 c-----------------------------------------------------------------------
 c  compute and add the contribution of the turbulent
 c  eddy viscosity to the molecular viscosity.
 c-----------------------------------------------------------------------
       use     turbSA
+      use  spat_var_eps !* for spatially varying epsilon_ls  
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
 
       real*8  yl(bsz,blk%s,ndof), rmu(blk%e), xmudmi(blk%e,blk%g),
      &        shape(blk%e,blk%s),   rho(blk%e),
      &        dwl(bsz,blk%n),     sclr(blk%e),
-     &        xl(bsz,blk%n,nsd)
+     &        xl(bsz,blk%n,nsd),  evl(bsz,blk%s)
+      real*8 elem_size(blk%e)
       integer n, e
 
       real*8  epsilon_ls, kay, epsilon
@@ -53,16 +56,32 @@ c
          do n = 1, blk%s
             Sclr = Sclr + shape(1:blk%e,n) * yl(1:blk%e,n,isc)
          enddo
+         if (icode .ge. 20) then !scalar 2
          do i= 1, blk%e
-            if (sclr(i) .lt. - epsilon_ls)then
-               prop_blend(i) = zero
-            elseif  (abs(sclr(i)) .le. epsilon_ls)then
-               prop_blend(i) = 0.5*(one + Sclr(i)/epsilon_ls +
-     &              (sin(pi*Sclr(i)/epsilon_ls))/pi )
-            elseif (sclr(i) .gt. epsilon_ls) then
-               prop_blend(i) = one
-            endif
-         enddo
+	     epsilon_lsd_tmp = epsilon_lsd*elem_size(i)
+c
+             if (sclr(i) .lt. - epsilon_lsd_tmp) then
+                 prop_blend(i) = zero
+              elseif  (abs(sclr(i)) .le. epsilon_lsd_tmp) then
+                 prop_blend(i) = 0.5*(one + Sclr(i) / epsilon_lsd_tmp +
+     &                           (sin(pi*Sclr(i)/epsilon_lsd_tmp))/pi)
+              elseif (sclr(i) .gt. epsilon_lsd_tmp) then
+                 prop_blend(i) = one
+              endif
+           enddo
+        else !scalar 1 or flow
+            do i= 1, blk%e
+              epsilon_ls_tmp = epsilon_ls*elem_size(i)
+              if (sclr(i) .lt. - epsilon_ls_tmp) then
+                 prop_blend(i) = zero	
+              elseif  (abs(sclr(i)) .le. epsilon_ls_tmp) then
+                 prop_blend(i) = 0.5*(one + Sclr(i)/epsilon_ls_tmp +
+     &                           (sin(pi*Sclr(i)/epsilon_ls_tmp))/pi)
+              elseif (sclr(i) .gt. epsilon_ls_tmp) then
+                 prop_blend(i) = one
+              endif
+           enddo
+        endif
 c
         rho = datmat(1,1,2) + (datmat(1,1,1)-datmat(1,1,2))*prop_blend
         rmu = datmat(1,2,2) + (datmat(1,2,1)-datmat(1,2,2))*prop_blend
@@ -99,6 +118,8 @@ c
                                 ! element
             call EviscDESIC (blk,xl,rmu,xmudmi)
          endif
+      else if ((iDNS.gt.0).and.(itwmod.eq.-2)) then      ! eff visc wall function with DNS
+        call AddEddyViscDNS(blk,yl, shape, rmu, evl)
       endif                     ! check for LES or RANS
 c
       return
@@ -106,9 +127,10 @@ c
 
       subroutine EviscDESIC(blk,xl,xmut,xmudmi)
      
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
+      
       real*8 xmut(blk%e),xl(bsz,blk%n,nsd),xmudmi(blk%e,blk%g)
 
 
@@ -131,12 +153,12 @@ c
       return
       end
        
-      subroutine getdiffsclr(blk,shape, dwl, yl, diffus)
+      subroutine getdiffsclr(blk,shape, dwl, yl, diffus,evl)
 
       use turbSA
       use turbKE ! access to KE model constants
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
       
       real*8   diffus(blk%e), rho(blk%e)
@@ -197,8 +219,8 @@ c
 
       subroutine AddEddyViscSA(blk, yl,shape,rmu)
       use turbSA
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
@@ -214,7 +236,7 @@ c     LOCALS
       integer e, n
       double precision xki, xki3, fv1, evisc
   
-      if(itwmod.eq.-2) then
+      if(itwmod.eq.-2) then  ! effective viscosity
         do e = 1, blk%e
 c         assume no wall nodes on this element
           wallnode(:) = .false.
@@ -308,12 +330,70 @@ c     Loop over elements in this block
       return
       end subroutine AddEddyViscSA
 
+      subroutine AddEddyViscDNS(blk,yl,shape,rmu,evl)
+      use turbSA
+      use eblock
+      include "common.h"
+      type (LocalBlkData) blk
+c     INPUTS
+      double precision, intent(in), dimension(blk%e,blk%s,ndof) ::
+     &     yl
+      double precision, intent(in), dimension(blk%e,blk%s) ::
+     &     shape, evl
+c     INPUT-OUTPUTS
+      double precision, intent(inout), dimension(blk%e) ::
+     &     rmu
+c     LOCALS
+      logical, dimension(blk%s) ::
+     &     wallnode
+      integer e, n
+      double precision xki, xki3, fv1, evisc
+c
+c     Loop over elements in this block
+      do e = 1, blk%e
+c        assume no wall nodes on this element
+         wallnode(:) = .false.
+         if(itwmod.eq.-2) then  ! effective viscosity
+c           mark the wall nodes for this element, if there are any
+            do n = 1, blk%s
+               u1=yl(e,n,2)
+               u2=yl(e,n,3)
+               u3=yl(e,n,4)
+               if((u1.eq.zero).and.(u2.eq.zero).and.(u3.eq.zero))
+     &              then
+                  wallnode(n)=.true.
+               endif
+            enddo
+         endif
+c
+         if( any(wallnode(:)) ) then
+c if there are wall nodes for this elt, then we are using effective-
+c viscosity near-wall modeling, and eddy viscosity has been stored
+c at the wall nodes in place of the spalart-allmaras variable; the
+c eddy viscosity for the whole element is taken to be the avg of the
+c wall values
+            evisc = zero
+            nwnode=0
+            do n = 1, blk%s
+               if(wallnode(n)) then
+                  evisc = evisc + evl(e,n)
+                  nwnode = nwnode + 1
+               endif
+            enddo
+            evisc = evisc/nwnode
+            rmu(e) = rmu(e) + abs(evisc)
+c           write(*,*) "wall element visc = ", e, rmu(e)
+        endif
+      enddo
+      return
+      end subroutine AddEddyViscDNS
+
 
 
       subroutine AddSAVar(blk,yl,shape,rmu)
       use turbSA
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::
@@ -372,8 +452,8 @@ c in all these cases, the S-A variable is calculated normally
 
       subroutine AddEddyViscKE(blk, yl, dwl, shape, rho, sigmaInv, rmu)
       use turbKE ! access to KE model constants
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 c     INPUTS
       double precision, intent(in), dimension(bsz,blk%s,ndof) ::

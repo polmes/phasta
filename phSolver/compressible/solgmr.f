@@ -59,7 +59,7 @@ c
      &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
      &            shpb(MAXTOP,maxsh,MAXQPT),
      &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
-      real*8    rerr(nshg,10)
+      real*8    rerr(nshg,numerr)
 c     
 c.... *******************>> Element Data Formation <<******************
 c
@@ -430,7 +430,7 @@ c
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), 
      &          shpb(MAXTOP,maxsh,MAXQPT),
      &          shglb(MAXTOP,nsd,maxsh,MAXQPT) 
-      real*8    rerr(nshg,10)
+      real*8    rerr(nshg,numerr)
 c      
 c     
 c.... *******************>> Element Data Formation <<******************

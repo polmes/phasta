@@ -26,9 +26,10 @@ c
       use pointer_data  ! brings in the pointers for the blocked arrays
       use local_mass
       use timedata
+      use eblock
 c
       include "common.h"
-      include "eblock.h"
+      include "mpif.h"
       type (LocalBlkData) blk
 
 c
@@ -56,12 +57,14 @@ c
         real*8, allocatable, dimension(:,:,:,:,:) :: xlhs
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
-        real*8  rerr(nshg,10)
+        real*8  rerr(nshg,numerr)
 
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
         real*8, allocatable :: tmpshpb(:,:), tmpshglb(:,:,:)
 
         real*8 spmasstot(20),  ebres(nshg)
+        real*8 cfl(nshg), CFLfl_maxtmp
+        integer icflhits(nshg)
 c
 c.... set up the timer
 c
@@ -110,6 +113,7 @@ c
           blk%l = lcblk(3,iblk)
           blk%g = nint(blk%l)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (tmpshp)
@@ -163,6 +167,8 @@ c
 c
 c.... loop over the element-blocks
 c
+        cfl = zero
+        icflhits = 0
 c
 c.... allocate the element matrices
 c
@@ -173,7 +179,7 @@ c
       BlockPool=1
 #endif
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
-      allocate ( rl (bsz,nshlc,ndof,BlockPool) )
+      allocate ( rl(bsz,nshlc,nflow,BlockPool) )
       allocate (tmpshp(nshlc,MAXQPT))
       allocate (tmpshgl(nsd,nshlc,MAXQPT))
       lcsyst= lcblk(3,1)
@@ -182,7 +188,7 @@ c
       if (lhs .eq. 1) then
         allocate ( xlhs(bsz,16,nshlc,nshlc,BlockPool) )
       endif
-      if ( ierrcalc .eq. 1 ) allocate ( rerrl (bsz,nshlc,6,BlockPool) )
+      if ( ierrcalc .eq. 1 ) allocate ( rerrl(bsz,nshlc,6+isurf,BlockPool) )
       if ( stsResFlg .eq. 1 ) allocate ( StsVecl (bsz,nshlc,nResDims,BlockPool) )
 #ifdef HAVE_OMP
       do iblko = 1, nelblk, BlockPool
@@ -215,10 +221,11 @@ c
           blk%l = lcblk(3,iblk)
           blk%g = nint(blk%l)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (rl)
-            allocate ( rl (bsz,blk%s,ndof,BlockPool) )
+            allocate ( rl(bsz,blk%s,nflow,BlockPool) )
             deallocate (tmpshp)
             deallocate (tmpshgl)
             allocate (tmpshp(blk%s,MAXQPT))
@@ -231,7 +238,7 @@ c
             endif
             if ( ierrcalc .eq. 1 ) then
               deallocate (rerrl)
-              allocate ( rerrl (bsz,blk%s,6,BlockPool) )
+              allocate ( rerrl(bsz,blk%s,6+isurf,BlockPool) )
             endif
             if ( stsResFlg .eq. 1 ) then
               deallocate(StsVecl)
@@ -250,7 +257,8 @@ c
      &                 rl(:,:,:,ith),
      &                 qres,              
      &                 xlhs(:,:,:,:,ith),   rerrl(:,:,:,ith), 
-     &                 StsVecl(:,:,:,ith) )
+     &                 StsVecl(:,:,:,ith),
+     &                 cfl,                 icflhits )
 #ifdef HAVE_OMP
          endif ! this is the skip if threads available but blocks finished
         enddo !threaded loop closes here
@@ -284,7 +292,7 @@ c
           endif
           if ( ierrcalc .eq. 1 ) then
             call local (blk, rerr, rerrl(:,:,:,ith),  
-     &                  mien(iblk)%p, 6, 'scatter ')
+     &                  mien(iblk)%p, 6+isurf, 'scatter ')
           endif
           nshl=blk%s  !nshl still used in these routines...temp solution
           npro=blk%e  !npro still used in these routines...temp solution
@@ -331,7 +339,34 @@ c
         call lmassadd(ac,res,rowp,colm,lhs16,gmass)
       endif
 
-      have_local_mass = 1
+       have_local_mass = 1
+
+c  Divide CFL number by the number of contributors to get
+c  the average CFL number.
+       cfl = cfl / icflhits
+
+c
+c Find element with worst (largest) CFL number
+c
+        CFLfl_max = cfl(1)
+        iCFLfl_maxelem = 1
+        do i = 1, nshg
+          if (cfl(i) .gt. CFLfl_max) then
+            CFLfl_max = cfl(i)
+            iCFLfl_maxelem = i
+          endif
+        enddo
+c
+c Communicate with other processors to get maximum CFL number over
+c all processors
+c
+        if(numpe. gt. 1) then
+           call MPI_ALLREDUCE (CFLfl_max, CFLfl_maxtmp, 1,
+     &       MPI_DOUBLE_PRECISION,MPI_MAX, MPI_COMM_WORLD,ierr)
+        else
+           CFLfl_maxtmp = CFLfl_max
+        endif
+        CFLfl_max = CFLfl_maxtmp 
 c
 c.... time average statistics
 c       
@@ -386,7 +421,7 @@ c
           else
              ngaussb = nintb(lcsyst)
           endif
-! note the following is the volumen element characteristics as needed for 
+! note the following is the volume element characteristics as needed for 
 ! routines like getdiff, getdiffsclr, getshpb which were already converted for
 ! threading and thus need to dimension based on this data.  
 ! debug to confirm
@@ -397,6 +432,7 @@ c
           blk%g = nintb(lcsyst)
           blk%l = lcblkb(3,iblk)
           blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)
 c
 c.... allocate the element matrices
 c
@@ -495,7 +531,8 @@ c      call timer ('Back    ')
      &                       shp,       shgl,      iBC,
      &                       BC,        shpb,      shglb,
      &                       res,       iper,      ilwork,
-     &                       rowp,      colm      
+     &                       rowp,      colm,
+     &                       cfl      
 #ifdef HAVE_PETSC
      &                       ,lhsPs)
 #else
@@ -510,12 +547,12 @@ c solver.
 c
 c----------------------------------------------------------------------
 c
-        use solvedata
-        use pointer_data
-        use local_mass
+      use solvedata
+      use pointer_data
+      use local_mass
+      use eblock
 c
-        include "common.h"
-      include "eblock.h"
+      include "common.h"
       type (LocalBlkData) blk
         include "mpif.h"
 c
@@ -535,6 +572,8 @@ c
 
 
         real*8, allocatable, dimension(:,:,:) :: xSebe
+        real*8  cfl(nshg), CFLls_maxtmp, cflold(nshg)
+        integer icflhits(nshg)
         real*8, allocatable :: tmpshp(:,:), tmpshgl(:,:,:)
         real*8, allocatable :: tmpshpb(:,:), tmpshglb(:,:,:)
 c
@@ -553,6 +592,8 @@ c of the diffusive flux vector, q, and lumped mass matrix, rmass
 c
         qres = zero
         rmass = zero
+        icflhits = 0
+        cfl = zero
 
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
       allocate (tmpshp(nshlc,MAXQPT))
@@ -577,6 +618,7 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (tmpshp)
@@ -594,10 +636,14 @@ c     and lumped mass matrix, rmass
      &                       tmpshp, 
      &                       tmpshgl, 
      &                       mien(iblk)%p,     qres,                   
-     &                       rmass )
+     &                       rmass, cfl, icflhits )
        
            enddo
-       
+
+c  Divide CFL number by the number of contributors to get
+c  the average CFL number.
+           cfl = cfl / icflhits
+
 c
 c.... form the diffusive flux approximation
 c
@@ -621,6 +667,9 @@ c
            flxID = zero
         endif
 
+        icflhits = 0
+        cflold = cfl
+        cfl = zero
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
       allocate (tmpshp(nshlc,MAXQPT))
       allocate (tmpshgl(nsd,nshlc,MAXQPT))
@@ -646,6 +695,7 @@ c
           blk%g = nint(lcsyst)
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
           if(blk%s.ne.nshlc) then  ! never true in monotopology but makes code 
             nshlc=blk%s
             deallocate (tmpshp)
@@ -667,7 +717,8 @@ c
      &                 tmpshp,
      &                 tmpshgl,
      &                 mien(iblk)%p,        res,
-     &                 qres,                xSebe, mxmudmi(iblk)%p )
+     &                 qres,                xSebe, mxmudmi(iblk)%p,
+     &                 cfl,  icflhits, cflold )
 c
 c.... satisfy the BC's on the implicit LHS
 c     
@@ -706,6 +757,34 @@ c
        endif
 
        have_local_mass = 1
+
+c  Divide CFL number by the number of contributors to get
+c  the average CFL number.
+       cfl = cfl / icflhits
+
+c
+c Find element with worst (largest) CFL number
+c
+        CFLls_max = cfl(1)
+        iCFLls_maxelem = 1
+        do i = 1, nshg
+          if (cfl(i) .gt. CFLls_max) then
+            CFLls_max = cfl(i)
+            iCFLls_maxelem = i
+          endif
+        enddo
+c
+c Communicate with other processors to get maximum CFL number over
+c all processors
+c
+        if(numpe. gt. 1) then
+           call MPI_ALLREDUCE (CFLls_max, CFLls_maxtmp, 1,
+     &       MPI_DOUBLE_PRECISION,MPI_MAX, MPI_COMM_WORLD,ierr)
+        else
+           CFLls_maxtmp = CFLls_max
+        endif
+        CFLls_max = CFLls_maxtmp
+
 c
 c
 c  call DtN routine which updates the flux to be consistent with the
@@ -740,7 +819,7 @@ c
           else
              ngaussb = nintb(lcsyst)
           endif
-! note the following is the volumen element characteristics as needed for 
+! note the following is the volume element characteristics as needed for 
 ! routines like getdiff, getdiffsclr, getshpb which were already converted for
 ! threading and thus need to dimension based on this data.  
 ! debug to confirm
@@ -751,6 +830,7 @@ c
           blk%g = nintb(lcsyst)
           blk%l = lcblkb(3,iblk)
           blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)
 c
 c localize the dtn boundary condition
 c

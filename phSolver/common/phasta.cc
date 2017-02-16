@@ -36,6 +36,7 @@ using namespace std;
 #include "Input.h"
 #include "phstream.h"
 #include "streamio.h"
+#include "phasta.h"
 
 #include <FCMangle.h>
 #define input FortranCInterface_GLOBAL_(input,INPUT)
@@ -99,6 +100,8 @@ namespace {
 
     workfc.numpe = size;
     workfc.myrank = myrank;
+// leaving this in for debug syntax later...this is a way to do a test read of the stream
+//    testReadSolution(streamio_get_gr());
 
     initPhastaCommonVars();
     /* Input data  */
@@ -156,6 +159,8 @@ int phasta(phSolver::Input& ctrl, GRStream* grs, RStream* rs) {
   assert(rs);
   streamio_set_gr(grs);
   streamio_set_r(rs);
+// leaving this in for debug syntax of how to call funtion to read stream when grs if available 
+//  testReadSolution(grs);
   return run(ctrl);
 }
 
@@ -176,7 +181,7 @@ int phasta( int argc, char *argv[] ) {
     stack_size_lim.rlim_cur = RLIM_INFINITY;
     stack_size_lim.rlim_max = RLIM_INFINITY;
     rlim_result = setrlimit(RLIMIT_STACK, &stack_size_lim);
-    if(myrank == 1) fprintf(stderr, "Attempting to set ulimit from phasta exec ");
+    if(myrank == 0) fprintf(stderr, "Attempting to set ulimit from phasta exec ");
     if(rlim_result == -1) perror("setrlimit: ");
 #endif
 

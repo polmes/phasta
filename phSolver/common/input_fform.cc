@@ -235,12 +235,16 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "DDES" ) {
       turbvari.iles  = -2;
       turbvari.irans = -1;
- 
+    } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
+      turbvari.irans = 0;
+      turbvari.iles  = 0;
+      turbvari.idns = 1;
     } else {
       cout << " Turbulence Model: Only Legal Values ( No-Model, LES, RANS-SA, RANS-KE, DES97, DDES )";
       cout << endl;
       exit(1);
     }
+    vector<double> vec;
 
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=
  //                                          inp.GetValue("DES Edge Length");
@@ -267,11 +271,37 @@ int input_fform(phSolver::Input& inp)
 
     levlset.iLSet = ilset;
     if( ilset > 0) {
+
+    vec = inp.GetValue("Three Adapt Sizes");
+      levlset.esize[0] = vec[0];
+      levlset.esize[1] = vec[1];
+      levlset.esize[2] = vec[2];
+    vec.erase(vec.begin(),vec.end());
+
+    vec = inp.GetValue("Three Band Sizes");
+      levlset.dband[0] = vec[0];
+      levlset.dband[1] = vec[1];
+      levlset.dband[2] = vec[2];
+    vec.erase(vec.begin(),vec.end());
+
     levlset.epsilon_ls = inp.GetValue("Number of Elements Across Interface");
     levlset.epsilon_lsd = inp.GetValue("Number of Elements Across Interface for Redistancing");
     levlset.dtlset = inp.GetValue("Pseudo Time step for Redistancing");
-    levlset.iExpLSSclr2 = inp.GetValue("Explicit Solve for Redistance Field");
-    levlset.iExpLSSclr1 = inp.GetValue("Explicit Solve for Scalar 1 Field");
+    levlset.dtlset_cfl = inp.GetValue("Base pseudo time step for redistancing on CFL number");
+    if (levlset.dtlset_cfl > 0.0) {
+       levlset.i_dtlset_cfl = 1; }
+    else {
+       levlset.i_dtlset_cfl = 0;
+    }
+    levlset.AdjRedistVelCFL = inp.GetValue("Adjust Redistance Velocity to Satisfy CFL Limit");
+    if (levlset.AdjRedistVelCFL > 0.0) {
+       levlset.i_AdjRedistVel = 1; }
+    else { 
+       levlset.i_AdjRedistVel = 0;
+    }
+    levlset.iSolvLSSclr2 = inp.GetValue("Solve for Redistance Field");
+    levlset.iSolvLSSclr1 = inp.GetValue("Solve for Scalar 1 Field");
+    levlset.i_focusredist = inp.GetValue("Focus redistancing about interface");
     if ((string)inp.GetValue("Apply Volume Constraint") == "True" ) {
       levlset.ivconstraint = 1; } 
     else if((string)inp.GetValue("Apply Volume Constraint") == "False" ) {
@@ -281,9 +311,44 @@ int input_fform(phSolver::Input& inp)
       cout << endl;
       exit(1);
     }   
+//*********************
+     if ((string)inp.GetValue("Redistance loop") == "True" ) {
+       levlset.i_redist_loop_flag = 1; }
+     else if((string)inp.GetValue("Redistance loop") == "False" ) {
+       levlset.i_redist_loop_flag = 0; }
+     else {
+       cout << "Redistance loop: Only Legal Values (True, False) ";
+       cout << endl;
+       exit(1);
+     }
+     levlset.redist_toler = inp.GetValue("Tolerance for redistance loop");
+     levlset.i_redist_max_iter = inp.GetValue("Maximum number of redistance iterations");
+     levlset.i_spat_var_eps_flag = inp.GetValue("Use spatial varying epsilon_ls");
+//*******************
+// For checking proximity of the interface to large elements
+     if ((string)inp.GetValue("Check proximity of interface to large elements") == "True" ) {
+       levlset.i_check_prox = 1; }
+     else if((string)inp.GetValue("Check proximity of interface to large elements") == "False" ) {
+       levlset.i_check_prox = 0; }
+     else {
+       cout << "Check proximity of interface to large elements: Only Legal Values (True, False) ";
+       cout << endl;
+       exit(1);
+     }
+     levlset.r_int_buffer = inp.GetValue("Check proximity interface buffer thickness");
+     levlset.r_int_elem_size = inp.GetValue("Check proximity maximum element size");
+// For output of gradient of level set function
+     if ((string)inp.GetValue("Output level set gradient") == "True" ) {
+       levlset.i_gradphi = 1; }
+     else if((string)inp.GetValue("Output level set gradient") == "False" ) {
+       levlset.i_gradphi = 0; }
+     else {
+       cout << "Output level set gradient: Only Legal Values (True, False) ";
+       cout << endl;
+       exit(1);
+     }
     }
 
-    vector<double> vec;
 
     // OUTPUT CONTROL KEY WORDS.
 
@@ -390,38 +455,39 @@ int input_fform(phSolver::Input& inp)
     vec.erase(vec.begin(),vec.end());
 
     //Material Properties Keywords 
-    matdat.nummat = levlset.iLSet+1;
+    matdat.nummat = 1;
+    if( levlset.iLSet > 0) matdat.nummat = 2;
     if((string)inp.GetValue("Shear Law") == "Constant Viscosity") 
-      for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][1] = 0;
+      for(i=0; i < matdat.nummat; i++) matdat.matflg[i][1] = 0;
 
     if((string)inp.GetValue("Bulk Viscosity Law") == "Constant Bulk Viscosity") 
-      for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][2] = 0;
+      for(i=0; i < matdat.nummat; i++) matdat.matflg[i][2] = 0;
 
     mmatpar.pr = inp.GetValue("Prandtl Number"); 
 
     if((string)inp.GetValue("Conductivity Law") == "Constant Conductivity") 
-      for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][3] = 0;
+      for(i=0; i < matdat.nummat; i++) matdat.matflg[i][3] = 0;
 
     vec = inp.GetValue("Density");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][0][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
 
     vec = inp.GetValue("Viscosity");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][1][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
 
 //      vec = inp.GetValue("Specific Heat");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][2][0] = 0;
     }
 //      vec.erase(vec.begin(),vec.end());
 
     vec = inp.GetValue("Thermal Conductivity");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][3][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
@@ -438,22 +504,22 @@ int input_fform(phSolver::Input& inp)
     turbvar.rmutarget = inp.GetValue("Target Viscosity For Step NSTEP");
 
     if ( (string)inp.GetValue("Body Force Option") == "None" ) {
-      for( i=0; i< levlset.iLSet +1 ; i++)  matdat.matflg[i][4] = 0;
+      for( i=0; i< matdat.nummat ; i++)  matdat.matflg[i][4] = 0;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Vector" ) {
-      for( i=0; i< levlset.iLSet +1 ; i++)  matdat.matflg[i][4] = 1;
+      for( i=0; i< matdat.nummat ; i++)  matdat.matflg[i][4] = 1;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "User e3source.f" ) {
-      for( i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 3;
+      for( i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 3;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Boussinesq" ) {
-      for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 2;
+      for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 2;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Cooling Analytic" ) {
-      for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 4;
+      for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 4;
     }
     else if ( (string)inp.GetValue("Body Force Option") == "Cooling Initial Condition" ) {
-      for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 5;
+      for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 5;
     }
 
     // the following block of stuff is common to all cooling type sponges. 
@@ -488,7 +554,7 @@ int input_fform(phSolver::Input& inp)
     }
 
     vec = inp.GetValue("Body Force");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][4][0] = vec[0+i*3];
       matdat.datmat[i][4][1] = vec[1+i*3];
       matdat.datmat[i][4][2] = vec[2+i*3];
@@ -496,7 +562,7 @@ int input_fform(phSolver::Input& inp)
     vec.erase(vec.begin(),vec.end());
 
     vec = inp.GetValue("Body Force Pressure Gradient");
-    for(i=0; i< levlset.iLSet +1 ; i++){
+    for(i=0; i< matdat.nummat ; i++){
       matdat.datmat[i][6][0] = vec[0+i*3];
       matdat.datmat[i][6][1] = vec[1+i*3];
       matdat.datmat[i][6][2] = vec[2+i*3];
@@ -677,6 +743,7 @@ int input_fform(phSolver::Input& inp)
       genpar.itau = 11;
 
     genpar.dtsfct = inp.GetValue("Tau Time Constant");
+    genpar.dtsfctsclr = inp.GetValue("Tau Time Constant for Scalars");
     genpar.taucfct = inp.GetValue("Tau C Scale Factor");
 
 	genpar.iLHScond = inp.GetValue("LHS BC heat flux enable");
@@ -803,6 +870,15 @@ int input_fform(phSolver::Input& inp)
         }
 
       }
+//
+// could be turbulence wall model in DNS (i.e. no turb. model)
+//
+// will assume we are using RANS models here
+//
+    } else if (turbvari.idns > 0) {
+      if((string)inp.GetValue("Turbulence Wall Model Type") == "Slip Velocity") turbvar.itwmod = -1;
+      else if((string)inp.GetValue("Turbulence Wall Model Type") == "Effective Viscosity") turbvar.itwmod = -2;
+      else  turbvar.itwmod = 0;
     }
   
     // SPEBC MODELING PARAMETERS

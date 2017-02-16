@@ -46,8 +46,8 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c----------------------------------------------------------------------
 c
       use        turbsa
+      use eblock
       include "common.h"
-      include "eblock.h"
       type (LocalBlkData) blk
 
 c
@@ -785,7 +785,7 @@ c....   nothing happens
 123   continue
 
       endif
-#endif 
+#endif HAVE_DEFORMWALL
 c     
 c.... return
 c     
@@ -799,10 +799,10 @@ c
 c---------------------------------------------------------------------
         subroutine e3bvarSclr (blk,yl,        shdrv,    xlb,
      &                         shape,     WdetJb,   bnorm,
-     &                         flux,      dwl )
+     &                         flux,      dwl,      evl )
 
-        include "common.h"
-      include "eblock.h"
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c
@@ -818,9 +818,10 @@ c
      &            v1(npro,nsd),              v2(npro,nsd),
      &            gradSl(npro,nsd),          gradS(npro,nsd)
 
-        real*8    diffus(npro),              dwl(bsz,nenl)
+        real*8    diffus(npro),              dwl(bsz,nenl),
+     &            evl(bsz,blk%s)
         
-        call getdiffsclr(blk,shape,dwl,yl,diffus)
+        call getdiffsclr(blk,shape,dwl,yl,diffus, evl)
 c
 c.... ---------------------->  Element Metrics  <-----------------------
 c

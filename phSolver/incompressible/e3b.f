@@ -1,6 +1,7 @@
         subroutine e3b (blk,ul,      yl,      acl,     iBCB,    BCB,     
      &                  shpb,    shglb,
-     &                  xlb,     rl,      sgn,     dwl,     xKebe)
+     &                  xlb,     rl,      sgn,     dwl,     xKebe,
+     &                  evl)
 c
 c----------------------------------------------------------------------
 c
@@ -33,6 +34,7 @@ c                                  BCB (6) : heat flux
 c  shpb   (nen,ngaussb)           : boundary element shape-functions
 c  shglb  (nsd,nen,ngaussb)       : boundary element grad-shape-functions
 c  xlb    (bsz,nenl,nsd)       : nodal coordinates at current step
+c  evl    (bsz,nshl)           : eff. viscosity adder for eff. visc. turb wall function
 c
 c output:
 c  rl     (bsz,nshl,nflow)      : element residual
@@ -49,8 +51,10 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004
 c----------------------------------------------------------------------
 c
-        include "common.h"
-      include "eblock.h"
+      use turbSA		! need otwn(nshg)
+      use spat_var_eps   ! use spatially-varying epl_ls
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c
@@ -79,7 +83,8 @@ c
      &            shape(npro,nshl),        shdrv(npro,nsd,nshl),
      &            rNa(npro,4)
 
-        real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl)
+        real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl),
+     &            evl(bsz,blk%s)
 c
 !disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
@@ -121,7 +126,9 @@ c
 c
 c.... get necessary fluid properties (including eddy viscosity)
 c
-        call getdiff(blk,intp,dwl, yl,     shape,     xmudmi, xlb,   rmu, rho)
+        call getdiff(blk,intp, dwl, yl,     shape,     xmudmi, xlb,   rmu, rho,
+     &             elemb_local_size(blk%i),
+     &             evl)
 c
 c.... calculate the integraton variables
 c
@@ -206,7 +213,7 @@ c
      &                      + shape(iel,nodlcl)*BCB(iel,n,5)
               enddo
            endif
-!KJ CHANGE      if(ideformwall.eq.1) then
+!      if(ideformwall.eq.1) then
 c
 c.... turbulence wall (as a way of checking for deformable wall stiffness)
 c
@@ -222,7 +229,7 @@ c
 !disable              xKebe(iel,:,:,:) = zero
 !disable              rKwall_glob(iel,:,:,:) = zero                 ! no stiffness: not a wall element
            endif
-!KJ CHANGE      endif
+!      endif
 
         enddo                                               ! end of bc loop
 c
@@ -243,7 +250,7 @@ c                 pres(iel) = zero
 c
 c whatever is zeroed here will beome part of the post-processed surface
 c                 "traction force"
-!KJ CHANGE         if(ideformwall.eq.1) then
+!         if(ideformwall.eq.1) then
 c
 c uncomment the next two lines to get all of the t vector coming from
 c                 Alberto's wall motion model.
@@ -261,7 +268,7 @@ c
                   rlkwall(iel,1,:)=walln1*bnorm(iel,:)
                   rlkwall(iel,2,:)=walln2*bnorm(iel,:)
                   rlkwall(iel,3,:)=walln3*bnorm(iel,:)
-!KJ CHANGE              endif
+!              endif
              endif
            enddo
         endif
@@ -375,9 +382,9 @@ c*********************************************************************
 
 
         subroutine e3bSclr (blk,yl,      iBCB,    BCB,     shpb,    shglb,
-     &                      xlb,     rl,      sgn,     dwl)
-        include "common.h"
-      include "eblock.h"
+     &                      xlb,     rl,      sgn,     dwl,     evl)
+      use eblock
+      include "common.h"
       type (LocalBlkData) blk
 
 c
@@ -392,7 +399,7 @@ c
         dimension lnode(27),                   sgn(npro,nshl),
      &            shape(npro,nshl),            shdrv(npro,nsd,nshl),
      &            rNa(npro),                   flux(npro)
-        real*8    dwl(bsz,nenl)
+        real*8    dwl(bsz,nenl),              evl(bsz,blk%s)
 
 c
 c.... compute the nodes which lie on the boundary (hierarchic)
@@ -417,7 +424,7 @@ c.... calculate the integraton variables
 c
         call e3bvarSclr (blk,yl,          shdrv,   xlb,
      &                   shape,       WdetJb,  bnorm,
-     &                   flux,        dwl )
+     &                   flux,        dwl,     evl )
 c        
 c.... -----------------> boundary conditions <-------------------
 c
