@@ -391,9 +391,12 @@ void queryphmpiio(const char filename[],int *nfields, int *nppf)
     FILE * fileHandle;
     char* fname = StringStripper( filename );
 
-    double t0 = phiotmrc();
+    phioTime t0,t1;
+    phastaio_time(&t0);
     fileHandle = fopen (fname,"rb");
-    phastaio_addOpenTime(phiotmrc()-t0);
+    phastaio_time(&t1);
+    const size_t elapsed = phastaio_time_diff(&t0,&t1);
+    phastaio_addOpenTime(elapsed);
     if (fileHandle == NULL ) {
       printf("\nError: File %s doesn't exist! Please check!\n",fname);
     }
@@ -488,9 +491,12 @@ void queryphmpiio(const char filename[],int *nfields, int *nppf)
         printf("Error queryphmpiio: The file you opened is not of syncIO new format, please check! read_out_tag = %s\n",read_out_tag);
         exit(1);
       }
-      double t0 = phiotmrc();
+      phioTime t0,t1;
+      phastaio_time(&t0);
       fclose(fileHandle);
-      phastaio_addCloseTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addCloseTime(elapsed);
       free(SerialFile->masterHeader);
       free(SerialFile);
     } //end of else
@@ -888,11 +894,14 @@ void openfile(const char filename[], const char mode[], int*  fileDescriptor )
     char* fname = StringStripper( filename );
     char* imode = StringStripper( mode );
 
-    double t0 = phiotmrc();
+    phioTime t0,t1;
+    phastaio_time(&t0);
     if ( cscompare( "read", imode ) ) file = fopen(fname, "rb" );
     else if( cscompare( "write", imode ) ) file = fopen(fname, "wb" );
     else if( cscompare( "append", imode ) ) file = fopen(fname, "ab" );
-    phastaio_addOpenTime(phiotmrc()-t0);
+    phastaio_time(&t1);
+    const size_t elapsed = phastaio_time_diff(&t0,&t1);
+    phastaio_addOpenTime(elapsed);
 
     if ( !file ){
       fprintf(stderr,"Error openfile: unable to open file %s\n",fname);
@@ -919,13 +928,16 @@ void openfile(const char filename[], const char mode[], int*  fileDescriptor )
       //	      if (PhastaIOActiveFiles[i]->myrank == 0)
       //                printf("\n **********\nRead open ... ... regular version\n");
 
-      double t0 = phiotmrc();
+      phioTime t0,t1;
+      phastaio_time(&t0);
       rc = MPI_File_open( PhastaIOActiveFiles[i]->local_comm,
           fname,
           MPI_MODE_RDONLY,
           MPI_INFO_NULL,
           &(PhastaIOActiveFiles[i]->file_handle) );
-      phastaio_addOpenTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addOpenTime(elapsed);
 
       if(rc)
       {
@@ -1038,13 +1050,16 @@ void openfile(const char filename[], const char mode[], int*  fileDescriptor )
     } // end of if "read"
     else if( cscompare( "write", imode ) )
     {
-      double t0 = phiotmrc();
+      phioTime t0,t1;
+      phastaio_time(&t0);
       rc = MPI_File_open( PhastaIOActiveFiles[i]->local_comm,
           fname,
           MPI_MODE_WRONLY | MPI_MODE_CREATE,
           MPI_INFO_NULL,
           &(PhastaIOActiveFiles[i]->file_handle) );
-      phastaio_addOpenTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addOpenTime(elapsed);
       if(rc != MPI_SUCCESS)
       {
         *fileDescriptor = UNABLE_TO_OPEN_FILE;
@@ -1088,9 +1103,12 @@ void closefile( int* fileDescriptor, const char mode[] )
       fflush( fileArray[ *fileDescriptor - 1 ] );
     }
 
-    double t0 = phiotmrc();
+    phioTime t0,t1;
+    phastaio_time(&t0);
     fclose( fileArray[ *fileDescriptor - 1 ] );
-    phastaio_addCloseTime(phiotmrc()-t0);
+    phastaio_time(&t1);
+    const size_t elapsed = phastaio_time_diff(&t0,&t1);
+    phastaio_addCloseTime(elapsed);
     free (imode);
   }
   else {
@@ -1209,9 +1227,12 @@ void closefile( int* fileDescriptor, const char mode[] )
     }
 
     //if( irank == 0 ) printf("gonna file_close(), myrank = %d\n", irank);
-    double t0 = phiotmrc();
+    phioTime t0,t1;
+    phastaio_time(&t0);
     MPI_File_close( &( PhastaIOActiveFiles[i]->file_handle ) );
-    phastaio_addCloseTime(phiotmrc()-t0);
+    phastaio_time(&t1);
+    const size_t elapsed = phastaio_time_diff(&t0,&t1);
+    phastaio_addCloseTime(elapsed);
     free ( imode );
   }
 
@@ -1413,7 +1434,8 @@ void readDataBlock(
 {
   isBinary(iotype);
   size_t type_size = typeSize( datatype );
-  double t0 = phiotmrc();
+  phioTime t0,t1;
+  phastaio_time(&t0);
   if ( binary_format ) {
     char junk = '\0';
     fread( valueArray, type_size, nItems, fileObject );
@@ -1430,7 +1452,9 @@ void readDataBlock(
     }
     free (ts1);
   }
-  phastaio_addReadTime(phiotmrc()-t0);
+  phastaio_time(&t1);
+  const size_t elapsed = phastaio_time_diff(&t0,&t1);
+  phastaio_addReadTime(elapsed);
   phastaio_addReadBytes(nItems*type_size);
 }
 
@@ -1508,7 +1532,8 @@ void readdatablock(
       //MR CHANGE END
     {
 
-      double t0 = phiotmrc();
+      phioTime t0,t1;
+      phastaio_time(&t0);
       MPI_File_read_at_all_begin( PhastaIOActiveFiles[i]->file_handle,
           PhastaIOActiveFiles[i]->my_offset + DB_HEADER_SIZE,
           valueArray,
@@ -1518,7 +1543,9 @@ void readdatablock(
           valueArray,
           &read_data_status );
       data_size=8*nUnits;
-      phastaio_addReadTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addReadTime(elapsed);
       phastaio_addReadBytes(nUnits*sizeof(double));
     }
     //MR CHANGE
@@ -1526,7 +1553,8 @@ void readdatablock(
     else if ( cscompare ( "integer" , ts2))
       //MR CHANGE END
     {
-      double t0 = phiotmrc();
+      phioTime t0,t1;
+      phastaio_time(&t0);
       MPI_File_read_at_all_begin(PhastaIOActiveFiles[i]->file_handle,
           PhastaIOActiveFiles[i]->my_offset + DB_HEADER_SIZE,
           valueArray,
@@ -1536,7 +1564,9 @@ void readdatablock(
           valueArray,
           &read_data_status );
       data_size=4*nUnits;
-      phastaio_addReadTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addReadTime(elapsed);
       phastaio_addReadBytes(nUnits*sizeof(int));
     }
     else
@@ -1773,7 +1803,8 @@ void writeDataBlock(
 {
   isBinary( iotype );
   size_t type_size = typeSize( datatype );
-  double t0 = phiotmrc();
+  phioTime t0,t1;
+  phastaio_time(&t0);
   if ( binary_format ) {
     fwrite( valueArray, type_size, nItems, f );
     fprintf( f,"\n");
@@ -1790,7 +1821,9 @@ void writeDataBlock(
     }
     free (ts1);
   }
-  phastaio_addWriteTime(phiotmrc()-t0);
+  phastaio_time(&t1);
+  const size_t elapsed = phastaio_time_diff(&t0,&t1);
+  phastaio_addWriteTime(elapsed);
   phastaio_addWriteBytes(nItems*type_size);
 }
 
@@ -1882,7 +1915,8 @@ void writedatablock(
       //MR CHANGE END
     {
       memcpy((PhastaIOActiveFiles[i]->double_chunk+DB_HEADER_SIZE/sizeof(double)), valueArray, nUnits*sizeof(double));
-      double t0 = phiotmrc();
+      phioTime t0,t1;
+      phastaio_time(&t0);
       MPI_File_write_at_all_begin( PhastaIOActiveFiles[i]->file_handle,
           PhastaIOActiveFiles[i]->my_offset,
           PhastaIOActiveFiles[i]->double_chunk,
@@ -1893,7 +1927,9 @@ void writedatablock(
           PhastaIOActiveFiles[i]->double_chunk,
           &write_data_status );
       data_size=8*nUnits;
-      phastaio_addWriteTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addWriteTime(elapsed);
       phastaio_addWriteBytes((nUnits*sizeof(double))+DB_HEADER_SIZE);
     }
     //MR CHANGE
@@ -1902,7 +1938,8 @@ void writedatablock(
       //MR CHANGE END
     {
       memcpy((PhastaIOActiveFiles[i]->int_chunk+DB_HEADER_SIZE/sizeof(int)), valueArray, nUnits*sizeof(int));
-      double t0 = phiotmrc();
+  phioTime t0,t1;
+  phastaio_time(&t0);
       MPI_File_write_at_all_begin( PhastaIOActiveFiles[i]->file_handle,
           PhastaIOActiveFiles[i]->my_offset,
           PhastaIOActiveFiles[i]->int_chunk,
@@ -1912,7 +1949,9 @@ void writedatablock(
           PhastaIOActiveFiles[i]->int_chunk,
           &write_data_status );
       data_size=4*nUnits;
-      phastaio_addWriteTime(phiotmrc()-t0);
+      phastaio_time(&t1);
+      const size_t elapsed = phastaio_time_diff(&t0,&t1);
+      phastaio_addWriteTime(elapsed);
       phastaio_addWriteBytes((nUnits*sizeof(int))+DB_HEADER_SIZE);
     }
     else {
