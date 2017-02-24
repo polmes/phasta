@@ -788,15 +788,15 @@ c
             endif          
            if((myrank.eq.0) .and. 
      &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
-            write(*,*) 'CFL Flow status: Step, CFLfl_max, dt'
-            write(*,7001) lstep+1, CFLfl_max, delt(itseq)
+            write(*,7001) 'CFL Flow  Step  CFLfl_max  dt',
+     &                    lstep+1, CFLfl_max, delt(itseq)
            endif
            if((myrank.eq.0) .and. (iLSet.eq.2) .and.   
      &   ((CFLls_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
-            write(*,*) 'CFL LS status: Step, CFLls_max,  dt'
-            write(*,7001) lstep+1, CFLls_max, dtlset
+            write(*,7001) 'CFL LS    Step  CFLls_max  dt',
+     &                    lstep+1, CFLls_max, dtlset
            endif
- 7001      format(1p,i8,e10.3,e10.3)
+ 7001      format(a42,1p,i8,e10.3,e10.3)
             call itrUpdate( yold,  acold,   uold,  y,    ac,   u)
             call itrBC (yold, acold,  iBC,  BC,  iper,ilwork)
 
