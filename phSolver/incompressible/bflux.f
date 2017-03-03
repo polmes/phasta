@@ -59,6 +59,7 @@ c
       integer iarray(50)  ! integers read from headers
 
       real*8 cfltmp(nshg)
+      real*8 StsVecl !stub
       integer cflhitstmp(nshg)
 
       real*8, allocatable, dimension(:,:,:,:) :: xKebe, xGoC
@@ -158,7 +159,7 @@ c
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
      &                   xlhs, 
-     &                   rtmp, cfltmp, cflhitstmp)
+     &                   rtmp, StsVecl, cfltmp, cflhitstmp)
 c     
 !lhs=0            deallocate ( xKebe )
 !lhs=0            deallocate ( xGoC  )
