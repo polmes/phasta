@@ -32,6 +32,7 @@ using namespace std;
 #include <sys/resource.h>
 #endif
 
+#include "phasta_version.h"
 #include "common_c.h"
 #include "Input.h"
 #include "phiostats.h"
@@ -98,6 +99,9 @@ namespace {
     char inpfilename[100];
     MPI_Comm_size (MPI_COMM_WORLD, &size);
     MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+
+    if(!myrank)
+      printf("PHASTA Git hash %s\n", phasta_version());
 
     workfc.numpe = size;
     workfc.myrank = myrank;
@@ -172,9 +176,10 @@ int phasta( int argc, char *argv[] ) {
     char inpfilename[100];
     char* pauseDebugger = getenv("catchDebugger");
 
-
     MPI_Comm_size (MPI_COMM_WORLD, &size);
     MPI_Comm_rank (MPI_COMM_WORLD, &myrank);
+    if(!myrank)
+      printf("PHASTA Git hash %s\n", phasta_version());
 
 #if defined(__linux__) && !defined(__bgq__)
 /* BM's proposed fix to the stacksize issue */
