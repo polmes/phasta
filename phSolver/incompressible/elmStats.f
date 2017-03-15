@@ -110,12 +110,12 @@ c-----------------------------------------------------------------------
       ierrcalctmp=ierrcalc ! save the current value of ierrcalc
       ierrcalc=0           ! set it to zero so that we don't calculate error
                            ! here (which would overflow memory around rjunk)
-      call ElmGMR (y,         ac,         x,
+      call ElmGMR (u,         y,         ac,         x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       
-     &             rjunk   )
+     &             rowp,      colm,       lhsK,      
+     &             lhsP,      rerr,       GradV  )
       stsResFlg = 0
       ierrcalc=ierrcalctmp  ! reset it back to original value
       return 
