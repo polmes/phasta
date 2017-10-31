@@ -59,7 +59,47 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
         if(matflg(1,1).eq.0)then ! compressible code
           call INIprofile(BC,y,x)
           call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-        endif
+        else  ! IC flow
+         if( isetInitial.eq.1) then !override  IC/BC from solver.inp
+          if(myrank.eq.0) then
+            write(*,*) 'isetInitial=1 so BCs and ICs set to'
+          endif !rank 0  warning
+          if(max(xvel_ini,max(yvel_ini,zvel_ini)).gt.-100) then !artificial threshold to use values
+           if(myrank.eq.0) then
+             write(*,*) 'overrided non-zero BCs with u, v, w', xvel_ini,yvel_ini,zvel_ini
+           endif !rank 0  warning
+           where(ibits(iBC,3,3) .eq. 7 .and. BC(:,3).gt. 1e-7)   
+! alter the BC values too but only non-zero comp3s
+             BC(:,3)=xvel_ini
+             BC(:,4)=yvel_ini
+             BC(:,5)=zvel_ini
+           endwhere
+           if(lstep.eq.0 ) then !override  IC from solver.inp
+             if(myrank.eq.0) then
+               write(*,*) 'overrided IC with u, v, w', xvel_ini,yvel_ini,zvel_ini
+             endif !rank 0  warning
+             y(:,1)=xvel_ini
+             y(:,2)=yvel_ini
+             y(:,3)=zvel_ini
+           endif ! end of overide for velocity vector from restart
+          endif ! end threshold (> -100) limited velocity over-rides
+          if(evis_ini.gt.0) then ! can prevent by setting negative if you just want to overide velocity
+            if(myrank.eq.0) then
+              write(*,*) 'evisc BC', evis_ini
+            endif !rank 0  warning
+            where(btest(iBC,6) .and. BC(:,7).gt.1e-10)
+! alter the BC values too but only non-zero scalar1 (e.g., inflows not walls)
+              BC(:,7)=evis_ini
+            endwhere
+            if (lstep.eq.0) then
+              y(:,6)=evis_ini
+              if(myrank.eq.0) then
+                write(*,*) 'evisc IC', evis_ini
+              endif ! rank 0  warning
+            endif ! lstep=0 so we over-rode the IC
+          endif ! evis_ini gt.0 override data in BC and possibly IC
+         endif ! isetInitial=1
+        endif  ! not compressible which is incompressible
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
         if((itwmod.gt.0) 
