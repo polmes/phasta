@@ -62,10 +62,10 @@ void printmeminfo( const char *msg) {
     rdiffheapavail = rheapavailnew - memstats.rheapavail;
     rdiffstack = rstacknew - memstats.rstack;
     rdiffstackavail = rstackavailnew - memstats.rstackavail;
-
+/*
     printf("MEM %s (rank %d ): allocated heap: %6.2f MB ( %6.2f MB), avail. heap: %6.2f MB (%6.2f MB), allocated stack: %6.2f MB ( %6.2f MB), avail. stack: %6.2f MB ( %6.2f MB),\n", 
                 msg, workfc.myrank, rheapnew, rdiffheap, rheapavailnew, rdiffheapavail, rstacknew, rdiffstack, rstackavailnew, rdiffstackavail );
-  
+*/  
     memstats.rheap = rheapnew;
     memstats.rheapavail = rheapavailnew;
     memstats.rstack = rstacknew;

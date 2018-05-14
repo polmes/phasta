@@ -332,11 +332,11 @@ c
          lstep=intfromfile(3)
          allocate( qread(nshg2,ndof2) )
 
-         if (nshg2 .ne. nshg) then 
-           write(*,*) 'nshg from geombc and nshg2 from restart differ'
-     &                //' on rank', myrank, ' :',nshg,nshg2,
-     &               ' - Probably mixing phasta files'
-         endif
+c         if (nshg2 .ne. nshg) then 
+c           write(*,*) 'nshg from geombc and nshg2 from restart differ'
+c     &                //' on rank', myrank, ' :',nshg,nshg2,
+c     &               ' - Probably mixing phasta files'
+c         endif
          call mpi_barrier(mpi_comm_world, ierr)
 
          iqsiz=nshg2*ndof2
@@ -621,26 +621,31 @@ c
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
           call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
-
+          if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
           if(iybar == 1) then
+            if(myrank==0) write(*,*)'ndofybar = ',ndofybar
             call commuMax (ybar, point2ilwork, ndofybar, 'in '//char(0))
             call commuMax (ybar, point2ilwork, ndofybar, 'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
+            if(myrank==0) write(*,*)'commu of ybar is done!'
           endif
 
          ! errors
           if(ierror == 1) then
+            if(myrank==0) write(*,*)'ndoferrors = ',ndoferrors
             call commuMax (errors, point2ilwork, ndoferrors, 
      &                                             'in '//char(0))
             call commuMax (errors, point2ilwork, ndoferrors, 
      &                                             'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
+            if(myrank==0) write(*,*)'commu of errors is done!'
           endif
 
           ! phase_average
           if(numphavg .gt. 0) then
             do iphavg = 1,numphavg
+              if(myrank==0) write(*,*)'ndofyphbar = ',ndofyphbar
               call commuMax (yphbar(:,:,iphavg), point2ilwork,
      &                                  ndofyphbar, 'in '//char(0))
               call commuMax (yphbar(:,:,iphavg), point2ilwork,
@@ -651,16 +656,20 @@ c
 
           ! vorticity
           if(ivort == 1) then
+            if(myrank==0) write(*,*)'ndofvort = ',ndofvort
             call commuMax (vort, point2ilwork, ndofvort, 'in '//char(0))
             call commuMax (vort, point2ilwork, ndofvort, 'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
+            if(myrank==0) write(*,*)'commu of vorticity is done!'
           endif
 
          ! dwal
           if(idwal == 1) then
+            if(myrank==0) write(*,*)'ndofdwal = ',1
             call commuMax (dwal, point2ilwork, 1, 'in '//char(0))
             call commuMax (dwal, point2ilwork, 1, 'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
+            if(myrank==0) write(*,*)'commu of dwal is done!'
           endif
       endif
 
