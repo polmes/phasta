@@ -44,7 +44,7 @@ c
       real*8, allocatable :: uread(:,:), acread(:,:)
       real*8, allocatable :: BCinpread(:,:)
       real*8 globmax,globmin
-      integer, allocatable :: iperread(:), iBCtmpread(:)
+      integer, allocatable :: iperread(:), iBCtmpread(:), iBC(:)
       integer, allocatable :: ilworkread(:), nBCread(:)
       character*10 cname2
       character*30 fmt1
@@ -597,16 +597,84 @@ c
         point2ilwork = ilworkread
         deallocate(ilworkread)
 
-        call closefile( igeom, "read"//char(0) )
-        call finalizephmpiio( igeom )
+c        call closefile( igeom, "read"//char(0) )
+c        call finalizephmpiio( igeom )
 
         call ctypes (point2ilwork)
          
       else
         nlwork=1
-        allocate( point2ilwork(1))
+        allocate( point2ilwork(1) )
         nshg0 = nshg
       endif
+
+c
+c.... read the boundary condition mapping array
+c
+      ione=1
+      write (temp1,"('(''bc mapping array@'',i',i1,',A1)')") itmp
+      write (fname2,temp1) (myrank+1),'?'
+      call readheader(igeom,fname2 // char(0),nshg,ione,
+     & 'integer' // char(0),iotype)
+      allocate( nBC(nshg) )
+
+      allocate( nBCread(nshg) )
+
+      call readdatablock(igeom,fname2 // char(0),nBCread,nshg,
+     & 'integer' // char(0),iotype)
+
+      nBC=nBCread
+      deallocate( nBCread )
+c
+c.... read the temporary iBC array
+c
+      ione=1
+      write (temp1,"('(''bc codes array@'',i',i1,',A1)')") itmp
+      write (fname2,temp1) (myrank+1),'?'
+      call readheader(igeom,fname2 // char(0) ,numpbc,ione,
+     & 'integer' // char(0),iotype)
+
+      if ( numpbc > 0 ) then
+        allocate( iBCtmp(numpbc) )
+        allocate( iBCtmpread(numpbc) )
+      else
+        allocate( iBCtmp(1) )
+        allocate( iBCtmpread(1) )
+      endif
+      call readdatablock(igeom,fname2 // char(0),iBCtmpread,numpbc,
+     &  'integer' // char(0),iotype)
+
+      if ( numpbc > 0 ) then
+         iBCtmp=iBCtmpread
+      else  ! sometimes a partition has no BC's
+         deallocate( iBCtmpread )
+         iBCtmp=0
+      endif
+
+c
+c.... read periodic boundary conditions
+c
+
+      ione=1
+      write (temp1,"('(''periodic masters array@'',i',i1,',A1)')") itmp
+      write (fname2,temp1) (myrank+1),'?'
+
+      call readheader(igeom,fname2 // char(0) ,nshg,
+     &     ione, 'integer' // char(0), iotype)
+      allocate( point2iper(nshg) )
+      allocate( iperread(nshg) )
+      call readdatablock(igeom,fname2 // char(0),iperread,nshg,
+     &                      'integer' // char(0),iotype)
+      point2iper=iperread
+      deallocate( iperread )
+      call closefile( igeom, "read"//char(0) )
+      call finalizephmpiio( igeom )
+
+c
+c.... set the iBC array
+c
+      allocate( iBC(nshg) )
+      where (nBC(:) .ne. 0) iBC(:) = iBCtmp(nBC(:))
 
 c
 c.... -------------------->   communications <-------------------------
@@ -620,6 +688,17 @@ c
          ! solution
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
           call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
+          do k = 1,ndof
+             do j = 1,nshg 
+                if ((btest(iBC(j),10))) then
+                   i = point2iper(j)
+                   qold(j,k) = qold(i,k)
+                   !qold(j,k) = max( qold(i,k), qold(j,k) )
+                   !qold(i,k) = qold(j,k)
+                endif
+             enddo
+          enddo 
+c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
           if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
