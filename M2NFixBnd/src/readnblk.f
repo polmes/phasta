@@ -43,7 +43,7 @@ c
       real*8, allocatable :: xread(:,:), qread(:,:), qread1(:)
       real*8, allocatable :: uread(:,:), acread(:,:)
       real*8, allocatable :: BCinpread(:,:)
-      real*8 globmax,globmin
+      real*8 globmax,globmini,localmax
       integer, allocatable :: iperread(:), iBCtmpread(:), iBC(:)
       integer, allocatable :: ilworkread(:), nBCread(:)
       character*10 cname2
@@ -687,19 +687,19 @@ c
       if (numpe > 1) then
          ! solution
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
-          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           do k = 1,ndof
              do j = 1,nshg 
                 if ((btest(iBC(j),10))) then
-                   i = point2iper(j)
-                   qold(j,k) = qold(i,k)
-                   !qold(j,k) = max( qold(i,k), qold(j,k) )
-                   !qold(i,k) = qold(j,k)
+                   i = point2iper(j) ! i is the periodic owner of j 
+                   localmax = max( qold(i,k), qold(j,k) ) ! get the max
+                   qold(i,k) = localmax ! assign max to periodic owner
+                   qold(j,k) = localmax ! assign max to periodic non-owner
                 endif
              enddo
           enddo 
-c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
+          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
+
           if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
           if(iybar == 1) then
