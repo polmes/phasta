@@ -74,7 +74,7 @@ c
       elseif (n .eq. 13 ) then ! for error
          kdof = 11 
 !      elseif (n .eq. 22 ) then
-      elseif (n .eq. 18 ) then
+      elseif (n .eq. 17 ) then
          kdof = 12
       elseif (n .eq. 16 ) then
          kdof = 13
@@ -241,13 +241,10 @@ c
                  isgbeg = ilwork (itkbeg + 3 + 2*is)
                  lenseg = ilwork (itkbeg + 4 + 2*is)
                  isgend = isgbeg + lenseg - 1
-c                 global(isgbeg:isgend,idof) = global(isgbeg:isgend,idof)
-c     &                                + rtemp (itemp:itemp+lenseg-1,jdl)
                  do k=isgbeg,isgend  ! break this into an explicit loop an max instead of accumulate
                  global(k,idof) = max(global(k,idof),rtemp (itemp,jdl))
-                 itemp=itemp+1   ! advance this index one at a time instead of in lenseg jumps
                  enddo
-c                 itemp = itemp + lenseg
+                 itemp = itemp + lenseg
                   enddo
                enddo
             endif ! end of receive (iacc=1)

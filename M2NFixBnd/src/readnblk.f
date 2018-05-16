@@ -43,7 +43,7 @@ c
       real*8, allocatable :: xread(:,:), qread(:,:), qread1(:)
       real*8, allocatable :: uread(:,:), acread(:,:)
       real*8, allocatable :: BCinpread(:,:)
-      real*8 globmax,globmin
+      real*8 globmax,globmin,localmax
       integer, allocatable :: iperread(:), iBCtmpread(:), iBC(:)
       integer, allocatable :: ilworkread(:), nBCread(:)
       character*10 cname2
@@ -60,6 +60,7 @@ c
       integer :: itmp, itmp2
       integer :: irstart, irstartmap, iybar
       integer :: ierror, numphavg, ivort, idwal, idebug, iphavg
+      integer :: nhmst, nhslv, nholes
 
       integer intfromfile(50) ! integers read from headers
       logical exinput
@@ -104,6 +105,7 @@ c
         call mpi_bcast(numphavg,1,MPI_INTEGER,0,mpi_comm_world,ierr)
         call mpi_bcast(ivort,1,MPI_INTEGER,0,mpi_comm_world,ierr)
         call mpi_bcast(idwal,1,MPI_INTEGER,0,mpi_comm_world,ierr)
+        call mpi_bcast(idebug,1,MPI_INTEGER,0,mpi_comm_world,ierr)
       endif
 
       if(myrank == 0 ) then
@@ -332,11 +334,10 @@ c
          lstep=intfromfile(3)
          allocate( qread(nshg2,ndof2) )
 
-c         if (nshg2 .ne. nshg) then 
-c           write(*,*) 'nshg from geombc and nshg2 from restart differ'
-c     &                //' on rank', myrank, ' :',nshg,nshg2,
-c     &               ' - Probably mixing phasta files'
-c         endif
+         if(idebug == 1)
+     &      write(*,*) 'nshg from geombc and nshg2 from restart'
+     &                //' on rank', myrank, ' are :',nshg,nshg2
+
          call mpi_barrier(mpi_comm_world, ierr)
 
          iqsiz=nshg2*ndof2
@@ -361,6 +362,14 @@ c         endif
          endif
       endif
 
+      if(idebug == 1) then
+         nholes = 0
+         do i=1,nshg
+            if(qold(i,5).lt.-4.9382716e32) nholes=nholes + 1
+         enddo
+         write(*,*)'# of holes before commu at rank',
+     &         myrank,' is ',nholes
+      endif
 c
 c    Read the ybar
 c
@@ -687,24 +696,33 @@ c
       if (numpe > 1) then
          ! solution
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
-          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           do k = 1,ndof
              do j = 1,nshg 
                 if ((btest(iBC(j),10))) then
-                   i = point2iper(j)
-                   qold(j,k) = qold(i,k)
-                   !qold(j,k) = max( qold(i,k), qold(j,k) )
-                   !qold(i,k) = qold(j,k)
+                   i = point2iper(j) ! i is the periodic owner of j
+                   localmax = max( qold(i,k), qold(j,k) ) ! get the max
+                   !qold(i,k) = localmax ! assign max to periodic owner
+                   qold(j,k) = localmax ! assign max to periodic non-owner
                 endif
              enddo
-          enddo 
-c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
+          enddo
+          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
           if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
           if(iybar == 1) then
             if(myrank==0) write(*,*)'ndofybar = ',ndofybar
             call commuMax (ybar, point2ilwork, ndofybar, 'in '//char(0))
+            do k = 1,ndofybar
+               do j = 1,nshg 
+                  if ((btest(iBC(j),10))) then
+                     i = point2iper(j) ! i is the periodic owner of j 
+                     localmax = max( ybar(i,k), ybar(j,k) ) ! get the max
+                     !ybar(i,k) = localmax ! assign max to periodic owner
+                     ybar(j,k) = localmax ! assign max to periodic non-owner
+                  endif
+               enddo
+            enddo
             call commuMax (ybar, point2ilwork, ndofybar, 'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
             if(myrank==0) write(*,*)'commu of ybar is done!'
@@ -715,6 +733,16 @@ c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
             if(myrank==0) write(*,*)'ndoferrors = ',ndoferrors
             call commuMax (errors, point2ilwork, ndoferrors, 
      &                                             'in '//char(0))
+            do k = 1,ndoferrors
+               do j = 1,nshg 
+                  if ((btest(iBC(j),10))) then
+                     i = point2iper(j) ! i is the periodic owner of j 
+                     localmax = max( errors(i,k), errors(j,k) ) ! get the max
+                     !errors(i,k) = localmax ! assign max to periodic owner
+                     errors(j,k) = localmax ! assign max to periodic non-owner
+                  endif
+               enddo
+            enddo
             call commuMax (errors, point2ilwork, ndoferrors, 
      &                                             'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
@@ -727,6 +755,17 @@ c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
               if(myrank==0) write(*,*)'ndofyphbar = ',ndofyphbar
               call commuMax (yphbar(:,:,iphavg), point2ilwork,
      &                                  ndofyphbar, 'in '//char(0))
+              do k = 1,ndofyphbar
+                 do j = 1,nshg
+                    if ((btest(iBC(j),10))) then
+                       i = point2iper(j) ! i is the periodic owner of j 
+                       localmax = max( yphbar(i,k,iphavg), 
+     &                                 yphbar(j,k,iphavg) ) ! get the max
+                       !yphbar(i,k,iphavg) = localmax ! assign max to periodic owner
+                       yphbar(j,k,iphavg) = localmax ! assign max to periodic non-owner
+                    endif
+                 enddo
+              enddo
               call commuMax (yphbar(:,:,iphavg), point2ilwork,
      &                                  ndofyphbar, 'out'//char(0))
               call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
@@ -737,6 +776,16 @@ c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           if(ivort == 1) then
             if(myrank==0) write(*,*)'ndofvort = ',ndofvort
             call commuMax (vort, point2ilwork, ndofvort, 'in '//char(0))
+            do k = 1,ndofvort
+               do j = 1,nshg
+                  if ((btest(iBC(j),10))) then
+                     i = point2iper(j) ! i is the periodic owner of j 
+                     localmax = max( vort(i,k), vort(j,k) ) ! get the max
+                     !vort(i,k) = localmax ! assign max to periodic owner
+                     vort(j,k) = localmax ! assign max to periodic non-owner
+                  endif
+               enddo
+            enddo
             call commuMax (vort, point2ilwork, ndofvort, 'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
             if(myrank==0) write(*,*)'commu of vorticity is done!'
@@ -746,12 +795,60 @@ c          call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           if(idwal == 1) then
             if(myrank==0) write(*,*)'ndofdwal = ',1
             call commuMax (dwal, point2ilwork, 1, 'in '//char(0))
+            do j = 1,nshg
+               if ((btest(iBC(j),10))) then
+                  i = point2iper(j) ! i is the periodic owner of j 
+                  localmax = max( dwal(i), dwal(j) ) ! get the max
+                  !dwal(i) = localmax ! assign max to periodic owner
+                  dwal(j) = localmax ! assign max to periodic non-owner
+               endif
+            enddo
             call commuMax (dwal, point2ilwork, 1, 'out'//char(0))
             call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
             if(myrank==0) write(*,*)'commu of dwal is done!'
           endif
       endif
 
+      nholes = 0 
+      do i=1,nshg
+         if(qold(i,5) .lt. -4.9382716e32) nholes = nholes + 1 
+      enddo
+      if(idebug==1) write(*,*)'# of holes after commu at rank',
+     &         myrank,' is ',nholes
+      if(nholes.gt.0 .and. idebug.eq.0) 
+     &   call error ('commu', 'isHoles ', 1)
+
+c
+c.... debug the potential holes in the reduced fields
+c
+
+      if(idebug == 1) then
+         nhmst  = 0
+         nhslv  = 0
+         itkbeg = 1
+         numtask= point2ilwork(1)
+         do j=1,numtask         ! time to do all the segments that needed to be
+                                ! assembled into the global vector
+            iacc   = point2ilwork (itkbeg + 2)
+            numseg = point2ilwork (itkbeg + 4)
+         
+            do is = 1,numseg
+               isgbeg = point2ilwork (itkbeg + 3 + 2*is)
+               lenseg = point2ilwork (itkbeg + 4 + 2*is)
+               isgend = isgbeg + lenseg - 1 
+               do k = isgbeg,isgend 
+                  if(qold(k,5).lt. -4.9382716e32) then
+                     write(*,*)'A hole is detected at rank:',myrank
+                     if(iacc==0) nhslv=nhslv+1
+                     if(iacc==1) nhmst=mhmst+1 
+                  endif
+               enddo
+            enddo
+            itkbeg = itkbeg + 4 + 2*numseg
+         enddo
+         write(*,*)'Rank:',myrank,'Holes among master vtx:',nhmst,
+     &   'Holes among slave vtx:',nhslv
+      endif
 c
 c.... -------------------->  Print Min and Max of each field  <-------------------------
 c

@@ -689,7 +689,7 @@
 !
       if (idebug == 1) then
         call mpi_barrier(mpi_comm_world, ierr) 
-        do i=1,numpe
+        do i=0,numpe
           if(myrank == i) then
             write(*,926) myrank, (icountN(j),j=1,irankN)
           endif
@@ -1416,6 +1416,17 @@
         else ! Links are missing
           nsynciofilesred = nsynciofiles
         endif
+      endif
+
+      if(idebug == 1) then
+         nholes = 0 
+         if(myrank.lt.irankN) then
+            do i=1,nshgN
+               if(qoldN(i,5).lt.-4.9382716e32)nholes=nholes+1 
+            enddo
+            write(*,*)'# of holes after M2N at rank',
+     &         myrank,' is ',nholes
+         endif
       endif
 
       call Write_M2N_SolOnly(myrank,irankN,lstep,nshgN,ndof,qoldN)
