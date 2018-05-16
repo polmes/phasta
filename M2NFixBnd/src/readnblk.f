@@ -708,6 +708,7 @@ c
           enddo
           call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
+
           if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
           if(iybar == 1) then
