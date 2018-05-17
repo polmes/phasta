@@ -60,7 +60,7 @@ c
       integer :: itmp, itmp2
       integer :: irstart, irstartmap, iybar
       integer :: ierror, numphavg, ivort, idwal, idebug, iphavg
-      integer :: nhmst, nhslv, nholes
+      integer :: nhmst, nhslv, nholes, nTempdot
 
       integer intfromfile(50) ! integers read from headers
       logical exinput
@@ -364,11 +364,15 @@ c
 
       if(idebug == 1) then
          nholes = 0
+         nTempdot = 0
          do i=1,nshg
             if(qold(i,5).lt.-4.9382716e32) nholes=nholes + 1
+            if(qold(i,5) .gt. 0.0d0) nTempdot = nTempdot + 1
          enddo
          write(*,*)'# of holes before commu at rank',
      &         myrank,' is ',nholes
+         write(*,*)'# of positive temperature vtx before commu at rank',
+     &         myrank,' is ',nTempdot
       endif
 c
 c    Read the ybar
@@ -698,8 +702,11 @@ c
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
           do k = 1,ndof
              do j = 1,nshg 
-                if ((btest(iBC(j),10))) then
+                !if ((btest(iBC(j),10))) then
+                if (point2iper(j) > 0 ) then
                    i = point2iper(j) ! i is the periodic owner of j
+                   if(i.gt.nshg) call error ('readnblk', 'iperErr ', 1)
+                   if(i.eq.0) call error ('readnblk', 'iperErr ', 1)
                    localmax = max( qold(i,k), qold(j,k) ) ! get the max
                    qold(i,k) = localmax ! assign max to periodic owner
                    qold(j,k) = localmax ! assign max to periodic non-owner
@@ -709,6 +716,25 @@ c
           call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
 
+          if(idebug==1) then
+          nholes = 0
+          nTempdot = 0
+          write(fname1,'(I7.7)') myrank
+          fname1 = "iper"//trim(fname1)//".log"
+          open(unit=myrank,file=fname1)  
+          do i=1,nshg
+             if(qold(i,5) .lt. -4.9382716e32) nholes = nholes + 1  
+             if(qold(i,5) .gt. 0.0d0) nTempdot = nTempdot + 1
+             write(myrank,*) myrank,i,point2iper(i),
+     &          iBC(i),btest(iBC(i),10)
+          enddo
+          close(myrank)
+          write(*,*)'# of holes right after commu at rank',
+     &         myrank,' is ',nholes
+          write(*,*)'# of positive temperature vtx after commu at rank',
+     &         myrank,' is ',nTempdot
+          endif
+
           if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
           if(iybar == 1) then
@@ -716,7 +742,8 @@ c
             call commuMax (ybar, point2ilwork, ndofybar, 'in '//char(0))
             do k = 1,ndofybar
                do j = 1,nshg 
-                  if ((btest(iBC(j),10))) then
+                  !if ((btest(iBC(j),10))) then
+                  if (point2iper(j) > 0 ) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( ybar(i,k), ybar(j,k) ) ! get the max
                      ybar(i,k) = localmax ! assign max to periodic owner
@@ -736,7 +763,8 @@ c
      &                                             'in '//char(0))
             do k = 1,ndoferrors
                do j = 1,nshg 
-                  if ((btest(iBC(j),10))) then
+                  !if ((btest(iBC(j),10))) then
+                  if (point2iper(j) > 0 ) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( errors(i,k), errors(j,k) ) ! get the max
                      errors(i,k) = localmax ! assign max to periodic owner
@@ -758,7 +786,8 @@ c
      &                                  ndofyphbar, 'in '//char(0))
               do k = 1,ndofyphbar
                  do j = 1,nshg
-                    if ((btest(iBC(j),10))) then
+                    !if ((btest(iBC(j),10))) then
+                    if (point2iper(j) > 0 ) then
                        i = point2iper(j) ! i is the periodic owner of j 
                        localmax = max( yphbar(i,k,iphavg), 
      &                                 yphbar(j,k,iphavg) ) ! get the max
@@ -779,7 +808,8 @@ c
             call commuMax (vort, point2ilwork, ndofvort, 'in '//char(0))
             do k = 1,ndofvort
                do j = 1,nshg
-                  if ((btest(iBC(j),10))) then
+                  !if ((btest(iBC(j),10))) then
+                  if (point2iper(j) > 0 ) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( vort(i,k), vort(j,k) ) ! get the max
                      vort(i,k) = localmax ! assign max to periodic owner
@@ -797,7 +827,8 @@ c
             if(myrank==0) write(*,*)'ndofdwal = ',1
             call commuMax (dwal, point2ilwork, 1, 'in '//char(0))
             do j = 1,nshg
-               if ((btest(iBC(j),10))) then
+               !if ((btest(iBC(j),10))) then
+               if (point2iper(j) > 0 ) then
                   i = point2iper(j) ! i is the periodic owner of j 
                   localmax = max( dwal(i), dwal(j) ) ! get the max
                   dwal(i) = localmax ! assign max to periodic owner
@@ -809,15 +840,6 @@ c
             if(myrank==0) write(*,*)'commu of dwal is done!'
           endif
       endif
-
-      nholes = 0 
-      do i=1,nshg
-         if(qold(i,5) .lt. -4.9382716e32) nholes = nholes + 1 
-      enddo
-      if(idebug==1) write(*,*)'# of holes after commu at rank',
-     &         myrank,' is ',nholes
-      if(nholes.gt.0 .and. idebug.eq.0) 
-     &   call error ('commu', 'isHoles ', 1)
 
 c
 c.... debug the potential holes in the reduced fields
