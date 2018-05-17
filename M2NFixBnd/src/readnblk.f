@@ -701,7 +701,7 @@ c
                 if ((btest(iBC(j),10))) then
                    i = point2iper(j) ! i is the periodic owner of j
                    localmax = max( qold(i,k), qold(j,k) ) ! get the max
-                   !qold(i,k) = localmax ! assign max to periodic owner
+                   qold(i,k) = localmax ! assign max to periodic owner
                    qold(j,k) = localmax ! assign max to periodic non-owner
                 endif
              enddo
@@ -719,7 +719,7 @@ c
                   if ((btest(iBC(j),10))) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( ybar(i,k), ybar(j,k) ) ! get the max
-                     !ybar(i,k) = localmax ! assign max to periodic owner
+                     ybar(i,k) = localmax ! assign max to periodic owner
                      ybar(j,k) = localmax ! assign max to periodic non-owner
                   endif
                enddo
@@ -739,7 +739,7 @@ c
                   if ((btest(iBC(j),10))) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( errors(i,k), errors(j,k) ) ! get the max
-                     !errors(i,k) = localmax ! assign max to periodic owner
+                     errors(i,k) = localmax ! assign max to periodic owner
                      errors(j,k) = localmax ! assign max to periodic non-owner
                   endif
                enddo
@@ -762,7 +762,7 @@ c
                        i = point2iper(j) ! i is the periodic owner of j 
                        localmax = max( yphbar(i,k,iphavg), 
      &                                 yphbar(j,k,iphavg) ) ! get the max
-                       !yphbar(i,k,iphavg) = localmax ! assign max to periodic owner
+                       yphbar(i,k,iphavg) = localmax ! assign max to periodic owner
                        yphbar(j,k,iphavg) = localmax ! assign max to periodic non-owner
                     endif
                  enddo
@@ -782,7 +782,7 @@ c
                   if ((btest(iBC(j),10))) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( vort(i,k), vort(j,k) ) ! get the max
-                     !vort(i,k) = localmax ! assign max to periodic owner
+                     vort(i,k) = localmax ! assign max to periodic owner
                      vort(j,k) = localmax ! assign max to periodic non-owner
                   endif
                enddo
@@ -800,7 +800,7 @@ c
                if ((btest(iBC(j),10))) then
                   i = point2iper(j) ! i is the periodic owner of j 
                   localmax = max( dwal(i), dwal(j) ) ! get the max
-                  !dwal(i) = localmax ! assign max to periodic owner
+                  dwal(i) = localmax ! assign max to periodic owner
                   dwal(j) = localmax ! assign max to periodic non-owner
                endif
             enddo
