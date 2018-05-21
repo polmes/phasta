@@ -610,9 +610,6 @@ c
         point2ilwork = ilworkread
         deallocate(ilworkread)
 
-c        call closefile( igeom, "read"//char(0) )
-c        call finalizephmpiio( igeom )
-
         call ctypes (point2ilwork)
          
       else
@@ -702,11 +699,9 @@ c
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
           do k = 1,ndof
              do j = 1,nshg 
-                !if ((btest(iBC(j),10))) then
-                if (point2iper(j) > 0 ) then
+                if (btest(iBC(j),10) .and. point2iper(j) > 0 ) then
                    i = point2iper(j) ! i is the periodic owner of j
                    if(i.gt.nshg) call error ('readnblk', 'iperErr ', 1)
-                   if(i.eq.0) call error ('readnblk', 'iperErr ', 1)
                    localmax = max( qold(i,k), qold(j,k) ) ! get the max
                    qold(i,k) = localmax ! assign max to periodic owner
                    qold(j,k) = localmax ! assign max to periodic non-owner
@@ -733,7 +728,7 @@ c
      &         myrank,' is ',nholes
           write(*,*)'# of positive temperature vtx after commu at rank',
      &         myrank,' is ',nTempdot
-          endif
+          endif !idebug == 1
 
           if(myrank==0) write(*,*)'commu of solution is done!'
           ! ybar
@@ -742,8 +737,7 @@ c
             call commuMax (ybar, point2ilwork, ndofybar, 'in '//char(0))
             do k = 1,ndofybar
                do j = 1,nshg 
-                  !if ((btest(iBC(j),10))) then
-                  if (point2iper(j) > 0 ) then
+                  if (btest(iBC(j),10) .and. point2iper(j) > 0 ) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( ybar(i,k), ybar(j,k) ) ! get the max
                      ybar(i,k) = localmax ! assign max to periodic owner
@@ -763,8 +757,7 @@ c
      &                                             'in '//char(0))
             do k = 1,ndoferrors
                do j = 1,nshg 
-                  !if ((btest(iBC(j),10))) then
-                  if (point2iper(j) > 0 ) then
+                  if (btest(iBC(j),10) .and. point2iper(j) > 0 ) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( errors(i,k), errors(j,k) ) ! get the max
                      errors(i,k) = localmax ! assign max to periodic owner
@@ -786,8 +779,7 @@ c
      &                                  ndofyphbar, 'in '//char(0))
               do k = 1,ndofyphbar
                  do j = 1,nshg
-                    !if ((btest(iBC(j),10))) then
-                    if (point2iper(j) > 0 ) then
+                    if (btest(iBC(j),10) .and. point2iper(j) > 0 ) then
                        i = point2iper(j) ! i is the periodic owner of j 
                        localmax = max( yphbar(i,k,iphavg), 
      &                                 yphbar(j,k,iphavg) ) ! get the max
@@ -808,8 +800,7 @@ c
             call commuMax (vort, point2ilwork, ndofvort, 'in '//char(0))
             do k = 1,ndofvort
                do j = 1,nshg
-                  !if ((btest(iBC(j),10))) then
-                  if (point2iper(j) > 0 ) then
+                  if (btest(iBC(j),10) .and. point2iper(j) > 0 ) then
                      i = point2iper(j) ! i is the periodic owner of j 
                      localmax = max( vort(i,k), vort(j,k) ) ! get the max
                      vort(i,k) = localmax ! assign max to periodic owner
@@ -827,8 +818,7 @@ c
             if(myrank==0) write(*,*)'ndofdwal = ',1
             call commuMax (dwal, point2ilwork, 1, 'in '//char(0))
             do j = 1,nshg
-               !if ((btest(iBC(j),10))) then
-               if (point2iper(j) > 0 ) then
+               if (btest(iBC(j),10) .and. point2iper(j) > 0 ) then
                   i = point2iper(j) ! i is the periodic owner of j 
                   localmax = max( dwal(i), dwal(j) ) ! get the max
                   dwal(i) = localmax ! assign max to periodic owner
