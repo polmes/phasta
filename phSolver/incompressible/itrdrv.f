@@ -182,6 +182,7 @@ c.... open history and aerodynamic forces files
 c
         if (myrank .eq. master) then
            open (unit=ihist,  file=fhist,  status='unknown')
+           fforce='forces'//trim(cname2(lstep))//'.dat'
            open (unit=iforce, file=fforce, status='unknown')
            open (unit=76, file="fort.76", status='unknown')
            if(numImpSrfs.gt.0 .or. numRCRSrfs.gt.0) then
