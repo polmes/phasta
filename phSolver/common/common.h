@@ -63,10 +63,14 @@ c from different modules
      &                   rmutarget, pzero,  wtavei, 
      &                   dtavei, dke,  fwr1, flump, DES_SA_hmin,
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
-     &                   nlist, nintf(MAXTOP)
+     &                   nlist, nintf(MAXTOP),
+     &                   STGDelBL, STGUo, STGModeGrow, STGMeshGrow, 
+     &                   STGeps, STGdesol, STGdes(3)
         common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
-     &                   ierrsmooth, iramp
+     &                   ierrsmooth, iramp, 
+     &                   iSTG, iSTGSurfID, iSTGChan, iSTGnModes, 
+     &                   iSTGspec
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,

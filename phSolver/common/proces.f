@@ -42,7 +42,9 @@ c     &            nsons(nfath)
 c
 c stuff to interpolate profiles at inlet
 c
-        real*8 bcinterp(100,ndof+1),interp_mask(ndof)
+        real*8, allocatable :: bcinterp(:,:)
+        integer interp_mask(ndof)
+        integer Map2ICfromBC(ndof)
         logical exlog
 
         !Duct
@@ -79,7 +81,7 @@ c
 c
 c.... RANS turbulence model
 c
-        if (iRANS .lt. 0) then
+        if (iRANS .lt. 0.or.iSTG.eq.1) then
            call initTurb( point2x )
         endif
 c
@@ -100,6 +102,11 @@ c
         if(matflg(5,1).ge.4) then ! cool case (sponge)
            call initSponge( y,point2x) 
         endif
+
+        if(iSTG.eq.1) then 
+           call initSTG(point2x)
+        endif
+
 c
 c
 c.... adjust BC's to interpolate from file
@@ -107,17 +114,45 @@ c
         
         inquire(file="inlet.dat",exist=exlog)
         if(exlog) then
-           open (unit=654,file="inlet.dat",status="old")
-           read(654,*) ninterp,ibcmatch,(interp_mask(j),j=1,ndof)
-           do i=1,ninterp
-              read(654,*) (bcinterp(i,j),j=1,ndof+1) ! distance to wall+
-                        ! ndof but note order of BC's
-                        ! p,t,u,v,w,scalars. Also note that must be in
-                        ! increasing distance from the wall order.
 
+           !display to screen if BC's will be adjusted from file
+           if(myrank == 0)write(*,*)"adjusting BC's from file"
+
+           !open inlet.dat file for reading
+           open (unit=654,file="inlet.dat",status="old")
+
+           !read inlet.dat meta data
+           read(654,*) ninterp,ICset,iBCset,isrfidmatch,(interp_mask(j),j=1,ndof)
+           !ninterp = number of data points to interpolate between
+           !ICset = 0,1 depending on whether IC need to be set
+           !iBCset = 0,1 depending on whether BCs need to be set
+           !isrfidmatch = surf ID where BCs need to be set
+           !interp_mask(j) = 0,1 whether p,T,u,v,w,scalar needs to be set
+
+
+           if(ICset.eq.1) then  ! we need a map that takes IC# and returns IC #
+             Map2ICfromBC(1)=4
+             Map2ICfromBC(2)=5
+             Map2ICfromBC(3)=1
+             Map2ICfromBC(4)=2
+             Map2ICfromBC(5)=3
+             do j=6,ndof  ! scalars have an identity map
+               Map2ICfromBC(j)=j
+             enddo
+           endif
+            
+ 
+           allocate(bcinterp(ninterp,ndof+1))
+
+           !loop through all lines in file to read in dwall,p,T,u,v,w,scalar
+           !note: values must be in increasing distance from wall order
+           do i=1,ninterp
+              read(654,*) (bcinterp(i,j),j=1,ndof+1)
            enddo
            do i=1,nshg  ! only correct for linears at this time
-              if(mod(iBC(i),1024).eq.ibcmatch) then
+              iBcon = 0
+              if((ndsurf(i).eq.isrfidmatch).and.(iBCset.eq.1)) iBCon=1
+              if((IBCon.eq.1).or.(ICset.eq.1)) then ! need to compute the bounding points and interpolator, xi
                  iupper=0
                  do j=2,ninterp
                     if(bcinterp(j,1).gt.d2wall(i)) then !bound found
@@ -127,41 +162,41 @@ c
                        exit
                     endif
                  enddo
-                 if(iupper.eq.0) then
-                    write(*,*) 'failure in finterp, ynint=',d2wall(i)
-                    stop
+                 if(iupper.eq.0) then ! node is higher than interpolating stack
+! so use the top of interpolating stack
+                    iupper=ninterp
+                    xi=1.0
                  endif
-                 if(interp_mask(1).ne.zero) then 
-                    BC(i,1)=(xi*bcinterp(iupper,2)
-     &                +(one-xi)*bcinterp(iupper-1,2))*interp_mask(1)
-                 endif
-                 if(interp_mask(2).ne.zero) then 
-                    BC(i,2)=(xi*bcinterp(iupper,3)
-     &                +(one-xi)*bcinterp(iupper-1,3))*interp_mask(2)
-                 endif
-                 if(interp_mask(3).ne.zero) then 
-                    BC(i,3)=(xi*bcinterp(iupper,4)
-     &                +(one-xi)*bcinterp(iupper-1,4))*interp_mask(3)
-                 endif
-                 if(interp_masK(4).ne.zero) then 
-                    BC(i,4)=(xi*bcinterp(iupper,5)
-     &                +(one-xi)*bcinterp(iupper-1,5))*interp_mask(4)
-                 endif
-                 if(interp_mask(5).ne.zero) then 
-                    BC(i,5)=(xi*bcinterp(iupper,6)
-     &                +(one-xi)*bcinterp(iupper-1,6))*interp_mask(5)
-                 endif
-                 if(interp_mask(6).ne.zero) then 
-                    BC(i,7)=(xi*bcinterp(iupper,7)
-     &                +(one-xi)*bcinterp(iupper-1,7))*interp_mask(6)
-                 endif
-                 if(interp_mask(7).ne.zero) then 
-                    BC(i,8)=(xi*bcinterp(iupper,8)
-     &                +(one-xi)*bcinterp(iupper-1,8))*interp_mask(7)
-                 endif
-              endif
+                 if(iBCon.eq.1) then
+                   do j=1,nflow
+                     if(interp_mask(j).eq.1) then 
+                        BC(i,j)=(xi*bcinterp(iupper,j+1)
+     &                    +(one-xi)*bcinterp(iupper-1,j+1))
+                     endif
+                   enddo
+                   if(solheat.eq.1) 
+     &                  BC(i,2)=(i*bcinterp(iupper,3)
+     &                    +(one-xi)*bcinterp(iupper-1,3))
+                   do j=1,nsclr
+                     if(interp_mask(j+5).eq.1) then 
+                        BC(i,j+6)=(xi*bcinterp(iupper,j+6)
+     &                    +(one-xi)*bcinterp(iupper-1,j+6))
+                     endif
+                   enddo
+                 endif ! IBCon
+                 if(ICset.eq.1) then  ! note at this time no mask so all IC's are getting set
+! we could add a separate mask for IC or potentially use the same one (permuted through the map)
+! but it is really not that hard to get profiles for all needed variables. 
+                   do j=1,ndof   ! BC index
+                        ic=Map2ICfromBC(j) !map to IC index
+                        y(i,ic)=(xi*bcinterp(iupper,j+1)
+     &                    +(one-xi)*bcinterp(iupper-1,j+1))
+                   enddo
+                 endif ! ICset
+
+              endif ! either IBC active or icset active
            enddo
-        endif
+        endif  ! inflow.dat existed
 c$$$$$$$$$$$$$$$$$$$$
 
 !======================================================================

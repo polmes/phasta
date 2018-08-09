@@ -325,10 +325,15 @@ void countfieldstowriterestart()
 
   }
 
-  if(turbvari.irans < 0) {
+  if(turbvari.irans < 0||turbvari.iSTG== 1) {
     nfields++; /*dwal*/
   }
-
+ 
+  /* STG random variables */
+  if(turbvari.iSTG==1) {
+    nfields++; /* STG random vars */
+    nfields++; /* BCs */
+  }
   outpar.nsynciofieldswriterestart = nfields;
 
   if(workfc.myrank == 0) {

@@ -24,7 +24,7 @@ c
       use slpw
       use readarrays            ! used to access BCinp, nBC
       use specialBC ! filling acs here
-      use turbSA
+      use STG_BC
       include "common.h"
 c
       dimension iBC(nshg),                nsurf(nshg),
@@ -96,6 +96,12 @@ c
       if(myrank.eq.0) write(*,*) 'Navier is set to ', navier
       if(navier.eq.1)then ! zero navier means Euler simulation
          call genBC1 (BCtmp,  iBC,  BC)
+cc ....  Quick fix to deal with problem with inflow BC in geombc files
+cc ...   seen at a restart with STG
+         if (lstep.ne.0.and.iSTG.eq.1) then
+            BC=BCrestart
+            deallocate(BCrestart)
+         endif
       else   !enabling for IC code now
 c      elseif(matflg(1,1).eq.0)then !  compressible code 
          allocate(BCtmpg(nshg,ndof+7))

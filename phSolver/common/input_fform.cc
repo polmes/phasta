@@ -244,11 +244,32 @@ int input_fform(phSolver::Input& inp)
       cout << endl;
       exit(1);
     }
-    vector<double> vec;
+      // STG inflow BCs
+      if((string)inp.GetValue("Use STGinflow BCs") == "True" ) {
+        turbvari.iSTG=1;
+        turbvari.iSTGSurfID=(int)inp.GetValue("STG SurfID");
+        turbvar.STGDelBL=(double)inp.GetValue("STG BL Height");
+        turbvar.STGUo=(double)inp.GetValue("STG U_0");
+        turbvar.STGModeGrow=(double)inp.GetValue("STG Mode Growth");
+        turbvar.STGMeshGrow=(double)inp.GetValue("STG Mesh Growth");
+        turbvar.STGeps=(double)inp.GetValue("STG Dissip. Rate");
+        if((string)inp.GetValue("STG Channel") == "True" ) {
+           turbvari.iSTGChan=1;
+           } 
+        if((string)inp.GetValue("Collect STG Energy Spectrum Data")=="True"){
+            turbvari.iSTGspec= 1;
+            } 
+        turbvar.STGdesol=(double)inp.GetValue("STG Energy Distance Tolerance");   
+        vector<double> readDist;
+        readDist = inp.GetValue("Energy Spectrum at Distances");
+        for (i=0;i<=2;i++){
+            turbvar.STGdes[i]=readDist[i];
+            }
+      }
 
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=
  //                                          inp.GetValue("DES Edge Length");
-
+    vector<double> vec; 
     if (turbvari.irans<0 && turbvari.iles<0)
       turbvar.DES_SA_hmin=(double)inp.GetValue("DES SA Minimum Edge Length");
 

@@ -145,6 +145,14 @@ extern "C" {
     int idim;
     int nlist;
     int nintf[MAXTOP];
+    double STGDelBL;
+    double STGUo;
+    double STGModeGrow;
+    double STGMeshGrow;
+    double STGeps;
+    double STGdesol;
+    double STGdes[3];
+
   } turbvar ;
 
   extern struct {
@@ -156,6 +164,11 @@ extern "C" {
     int nohomog;
     int ierrsmooth;
     int iramp;
+    int iSTG;
+    int iSTGSurfID;
+    int iSTGChan;
+    int iSTGnModes;
+    int iSTGspec;
 
 /*      int itwmod; */
 /*      double rtavei; */

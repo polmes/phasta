@@ -37,9 +37,11 @@ c
       use syncio
       use posixio
       use streamio
+      use STG_BC
       include "common.h"
 
       real*8, target, allocatable :: xread(:,:), qread(:,:), acread(:,:)
+      real*8, target, allocatable :: STGread(:,:), BCrestartRead(:,:)
       real*8, target, allocatable :: uread(:,:)
       real*8, target, allocatable :: BCinpread(:,:)
       real*8 :: iotime
@@ -47,6 +49,7 @@ c
       integer, target, allocatable :: ilworkread(:), nBCread(:)
       integer, target, allocatable :: fncorpread(:)
       integer fncorpsize
+      integer irandVars, iSTGsiz
       character*10 cname2, cname2nd
       character*8 mach2
       character*30 fmt1
@@ -560,6 +563,72 @@ c
          endif
          acold=zero
       endif
+
+
+cc
+cc.... Read the STG  fields if lstep is not equal to zero
+cc
+      if (lstep.ne.0.and.iSTG.eq.1) then
+cc....   First read the STG random variables
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'STG_rnd' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nKWave=intfromfile(1)
+           irandVars=intfromfile(2)
+           if (myrank.eq.master) then
+             write(*,*) 'nKWave for STG inflow is set to : ',nKWave
+             write(*,*) 'Number of random variables is : ', irandVars
+           endif
+           allocate(STGread(nKWave,irandVars))
+           allocate(STGrnd(nKWave,irandVars))
+           iSTGsiz=nKWave*irandVars
+           call phio_readdatablock(fhandle,
+     &       c_char_'STG_rnd' // char(0),
+     &       c_loc(STGread),iSTGsiz, dataDbl,iotype)
+      
+           STGrnd=STGread
+           deallocate(STGread)
+
+         else
+           if (myrank.eq.master) then
+             warning='The random variables for the STG 
+     &                   inflow were not read and set to zero'
+             write(*,*) warning
+           endif
+           STGrnd=zero
+         endif
+
+cc....   Now read the BC array. This was a quick fix to problem with inflow BC value set
+cc....   in SimModeler and present in the geombc files
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'BCs' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           allocate(BCrestartRead(nshg,ndofBC))
+           allocate(BCrestart(nshg,ndofBC))
+           iSTGsiz=nshg*ndofBC
+           call phio_readdatablock(fhandle,
+     &       c_char_'BCs' // char(0),
+     &       c_loc(BCrestartRead),iSTGsiz, dataDbl,iotype)
+      
+           BCrestart=BCrestartRead
+           deallocate(BCrestartRead)
+
+         else
+           if (myrank.eq.master) then
+             warning='BCs from restart were not read'
+             write(*,*) warning
+           endif
+           !BCrestart=zero
+         endif
+
+      endif  ! end of the STG fields
+
 cc
 cc.... read the header and check it against the run data
 cc

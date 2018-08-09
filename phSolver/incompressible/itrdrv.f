@@ -41,6 +41,7 @@ c
       use solvedata
       use iso_c_binding
       use spat_var_eps !use spatial varying eps_ls
+      use STG_BC
 
 c      use readarrays !reads in uold and acold
       
@@ -386,6 +387,11 @@ c
         endif
 
          do 2000 istp = 1, nstp
+           tcurrent= (lstep+1)*Delt(1)
+           if(iSTG.eq.1) then
+             call applySTG(tcurrent,BC,x)
+           endif
+
            if(iramp.eq.1) 
      &        call BCprofileScale(vbc_prof,BC,yold)
 
@@ -928,6 +934,8 @@ c .. write out the instantaneous solution
           if(iRANS.lt.0) then
             deallocate(d2wall)
           endif
+
+          if(iSTG.eq.1) deallocate(STGrnd)
 
          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
@@ -2218,6 +2226,7 @@ c
      &                       vorticity,irank2ybar,irank2yphbar)
       use solvedata
       use turbSA 
+      use STG_BC
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -2329,7 +2338,7 @@ c.....smooth the error indicators
           endif
         endif !nphasesincyle
       endif !ioybar
-      if(iRANS.lt.0) then
+      if(iRANS.lt.0.or.iSTG.eq.1) then
         if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr1 = TMRC()
@@ -2343,6 +2352,42 @@ c.....smooth the error indicators
      &    tcormr2-tcormr1
         endif
       endif !iRANS
+
+cc....    Write the STG fields to be read in the next run
+c         STGrnd(:,1:3)=dVect
+c         STGrnd(:,4)=phiVect
+c         STGrnd(:,5:7)=sigVect        
+          if(iSTG.eq.1) then
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+cc ......   Write the STG random variables
+            call write_field(myrank,'a','STG_rnd',7,STGrnd,'d',
+     &                       nKWave,7,lstep)
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write STG_rnd to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+cc ......   Write the BC array. Quick fix to problem with inflow BC in geombc files
+            call write_field(myrank,'a','BCs',3,BC,'d',
+     &                       nshg,ndofBC,lstep)
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write BCs to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+
+          endif ! end of STG fields
+
       return
       end subroutine
 
