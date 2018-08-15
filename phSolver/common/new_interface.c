@@ -328,6 +328,10 @@ void countfieldstowriterestart()
   if(turbvari.irans < 0||turbvari.iSTG== 1) {
     nfields++; /*dwal*/
   }
+  
+  if(outpar.ioform == 2) {
+    nfields++; /*conservative stats*/
+  }
  
   /* STG random variables */
   if(turbvari.iSTG==1) {

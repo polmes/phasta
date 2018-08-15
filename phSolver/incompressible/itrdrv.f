@@ -2249,6 +2249,10 @@ c
 !              Call to restar() will open restart file in write mode (and not append mode)
 !              that is needed as other fields are written in append mode
       call restar ('out ',  yold  ,ac)
+c ...
+c     If the conservative statistics are wanted, write them to restart
+      if ( ioform.eq.2) call stsWriteStats(istp)
+c ...
       if(ivort == 1) then 
              call write_field(myrank,'a','vorticity',9,vorticity,
      &                       'd',nshg,5,lstep)

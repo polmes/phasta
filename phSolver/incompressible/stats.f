@@ -358,10 +358,10 @@ c
          enddo
       endif
       
-      if ( mod(nTimeStep,stsWriteFreq) .eq. 0 .or. 
-     &     nTimeStep .eq. nstep(itseq) ) then
-         call stsWriteStats()
-      endif
+c      if ( mod(nTimeStep,stsWriteFreq) .eq. 0 .or. 
+c     &     nTimeStep .eq. nstep(itseq) ) then
+c         call stsWriteStats()
+c      endif
 
 c$$$      if ( mod( nTimeStep, stsResetFreq) .eq. 0 ) then
 c$$$         stsPres    = 0.0
@@ -380,7 +380,7 @@ c$$$      endif
 c-----------------------------------------------------------------------
 c     collect the desired statistics 
 c-----------------------------------------------------------------------
-      subroutine stsWriteStats()
+      subroutine stsWriteStats(istp)
       
       use     stats
       include "common.h"
@@ -390,23 +390,7 @@ c-----------------------------------------------------------------------
       character*5  cname
       character*1  dash
       real*8       outvec(nshg,19)
-c
-c.... open the output file
-c
-      iofile = 39
-      step2 = lstep+1  ! current time step
-      itmp  = 1
-      itmp1 = 1
-      if (step1 .gt. 0) itmp  = int(log10(float(step1)))+1
-      if (step2 .gt. 0) itmp1 = int(log10(float(step2)))+1
-      dash = '-'
-      write (fmt1,
-     &     "('(''stats.'',i',i1,',a1,i',i1,',1x)')")
-     &     itmp,itmp1
-      write (fname,fmt1) step1,dash,step2
-      fname = trim(fname) // cname(myrank+1)
-      open ( unit = iofile, file = fname, status = 'unknown',
-     &       form = 'unformatted')
+      integer      istp
 c
 c.... write the statistics
 c
@@ -419,13 +403,14 @@ c      outvec(:,2:4)   = stsVelReg(:,:)
       outvec(:,13)    = zero   ! later wil be tempSqr
       outvec(:,14:19) = stsStress(:,:)
       
-      write (iofile) numnp, nshg, nTimeStep
-      write (iofile) outvec(1:nshg,:)
-      close (iofile)
+c     Divide by the current time step number because the statistics are
+c     just added to each other, not time averaged
+      outvec = outvec / istp
+      
+      call write_field(myrank,'a','conservativestats',17,outvec,
+     &                       'd',nshg,19,lstep)
 
-c$$$      write (iofile) numnp, numnp, nTimeStep
-c$$$      write (iofile) outvec(1:numnp,:)
-c$$$      close (iofile)
+
       
       iofile2 = 40
 c$$$      open (unit=iofile2,file='stats.asc',status='unknown')
