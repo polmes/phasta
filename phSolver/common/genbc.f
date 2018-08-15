@@ -25,6 +25,7 @@ c
       use readarrays            ! used to access BCinp, nBC
       use specialBC ! filling acs here
       use STG_BC
+      use turbSA
       include "common.h"
 c
       dimension iBC(nshg),                nsurf(nshg),
