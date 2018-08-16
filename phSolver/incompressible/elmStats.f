@@ -96,7 +96,7 @@ c-----------------------------------------------------------------------
      &        shp(MAXTOP,maxsh,MAXQPT),  shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &        shpb(MAXTOP,maxsh,MAXQPT),
      &        shglb(MAXTOP,nsd,maxsh,MAXQPT),
-     &        BC(nshg,ndofBC), res(nshg,ndof)
+     &        BC(nshg,ndofBC), res(nshg,ndof), GradV(nshg,nsdsq) 
 
       integer iBC(nshg),                iper(nshg),
      &        ilwork(nlwork),           rowp(nshg,nnz),
@@ -110,12 +110,15 @@ c-----------------------------------------------------------------------
       ierrcalctmp=ierrcalc ! save the current value of ierrcalc
       ierrcalc=0           ! set it to zero so that we don't calculate error
                            ! here (which would overflow memory around rjunk)
-      call ElmGMR (u,         y,         ac,         x,
+      call ElmGMR (u,         y,     ac,    x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
      &             res,       iper,       ilwork,   
-     &             rowp,      colm,       lhsK,      
-     &             lhsP,      rerr,       GradV  )
+     &             rowp,      colm,      
+#ifdef HAVE_PETSC
+     &             lhsPETSc,
+#endif
+     &             rerr,       GradV   )      
       stsResFlg = 0
       ierrcalc=ierrcalctmp  ! reset it back to original value
       return 
