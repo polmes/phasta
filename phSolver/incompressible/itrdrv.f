@@ -315,7 +315,7 @@ c
                  call  checkpoint (y,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
 ! shift the number to keep them distinct
         lstep=lstepSave
         output_mode=-1 ! reset to stream 
@@ -884,21 +884,21 @@ c .. write out the instantaneous solution
                call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
              endif
              if(ntout.le.lstep) then ! user also wants file output
                   output_mode=0   ! only writing posix for now
                  call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
                   output_mode=-1 ! reset to stream 
              endif
            else
              call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
            endif
         endif
         !next 2 lines are two ways to end early
@@ -2224,7 +2224,7 @@ c
       subroutine checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
       use solvedata
       use turbSA 
       use STG_BC
@@ -2246,6 +2246,7 @@ c
       real*8 ybar(nshg,irank2yphbar),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
+      integer istp
 
 !              Call to restar() will open restart file in write mode (and not append mode)
 !              that is needed as other fields are written in append mode
