@@ -84,7 +84,7 @@ c
 c-----------------------------------------------------------------------
 c  Assemble the residual for the statistics
 c-----------------------------------------------------------------------
-      subroutine elmStatsRes( y,        ac,    x,      shp,     shgl, 
+      subroutine elmStatsRes( y,        ac,    u, x,      shp,     shgl, 
      &                        shpb,     shglb,       iBC,     BC, 
      &                        iper,     ilwork,      rowp,    colm)
       
@@ -93,6 +93,7 @@ c-----------------------------------------------------------------------
       
       
       real*8  y(nshg,ndof),             ac(nshg,ndof), x(numnp,nsd),
+     &        u(nshg,nsd),
      &        shp(MAXTOP,maxsh,MAXQPT),  shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &        shpb(MAXTOP,maxsh,MAXQPT),
      &        shglb(MAXTOP,nsd,maxsh,MAXQPT),
@@ -110,6 +111,7 @@ c-----------------------------------------------------------------------
       ierrcalctmp=ierrcalc ! save the current value of ierrcalc
       ierrcalc=0           ! set it to zero so that we don't calculate error
                            ! here (which would overflow memory around rjunk)
+      if(myrank.eq.master) write(*,*) 'calling ElmGMR'
       call ElmGMR (u,         y,     ac,    x,
      &             shp,       shgl,       iBC,       
      &             BC,        shpb,       shglb,
@@ -119,6 +121,7 @@ c-----------------------------------------------------------------------
      &             lhsPETSc,
 #endif
      &             rerr,       GradV   )      
+      write(*,*) 'after elmGMR'
       stsResFlg = 0
       ierrcalc=ierrcalctmp  ! reset it back to original value
       return 

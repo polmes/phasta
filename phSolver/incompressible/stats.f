@@ -224,15 +224,16 @@ c
       call itrYAlpha( uold,     yold,     acold,
      &                u,        y,        ac,  
      &                uAlpha,   yAlpha,   acAlpha)
-      
+      if(myrank.eq.master) write(*,*) 'after itrYAlpha'      
 c
 c.... assemble the residual
 c
       if (stsType .eq. 1) then
-         call elmStatsRes( yAlpha,   acAlpha,     x,       shp,   shgl, 
+         if(myrank.eq.master) write(*,*) 'calling elmStatsRes'
+         call elmStatsRes( yAlpha,   acAlpha,     uAlpha, x,       shp,   shgl, 
      &                     shpb,     shglb,       iBC,     BC, 
-     &                     iper,     ilwork,      rowp,    colm )
-
+     &                     iper,     ilwork, rowp, colm )
+         if(myrank.eq.master) write(*,*) 'after elmStatsRes'
 c
 c.... compute the statistics
 c
