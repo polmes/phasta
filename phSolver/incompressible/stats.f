@@ -193,6 +193,8 @@ c-----------------------------------------------------------------------
       use     stats
 
       include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
       
       real*8  y(nshg,ndof),             yold(nshg,ndof),
      &        ac(nshg,ndof),            acold(nshg,ndof),
@@ -233,6 +235,7 @@ c
          call elmStatsRes( yAlpha,   acAlpha,     uAlpha, x,       shp,   shgl, 
      &                     shpb,     shglb,       iBC,     BC, 
      &                     iper,     ilwork, rowp, colm )
+         call MPI_BARRIER(MPI_COMM_WORLD,ierr) 
          if(myrank.eq.master) write(*,*) 'after elmStatsRes'
 c
 c.... compute the statistics
@@ -358,6 +361,9 @@ c
 
          enddo
       endif
+
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      if(myrank.eq.master) write(*,*)'end of stsGetStats'
       
 c      if ( mod(nTimeStep,stsWriteFreq) .eq. 0 .or. 
 c     &     nTimeStep .eq. nstep(itseq) ) then

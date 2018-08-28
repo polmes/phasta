@@ -30,6 +30,7 @@ c
 c
       include "common.h"
       include "mpif.h"
+      include "auxmpi.h"
       type (LocalBlkData) blk
 
 c
@@ -141,7 +142,8 @@ c     and lumped mass matrix, rmass
      &                   mien(iblk)%p,     mxmudmi(iblk)%p,  
      &                   qres,             rmass )
         enddo
-       
+       !call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+       !if(myrank.eq.master) write(*,* 'After first block loop in ElmGMR'
 c
 c.... form the diffusive flux approximation
 c
@@ -330,7 +332,13 @@ c
         deallocate ( xlhs )
       endif
       if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
-      if ( stsResFlg .eq. 1 )          deallocate ( StsVecl  )
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      if(myrank.eq.master) write(*,*) 'before deallocate StsVecl'
+      if ( stsResFlg .eq. 1 ) then
+         deallocate ( StsVecl  )
+         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+         if(myrank.eq.master) write(*,*) 'deallocated StsVecl'
+      endif
 c
 c.... add in lumped mass contributions if needed
 c
@@ -369,12 +377,16 @@ c
         CFLfl_max = CFLfl_maxtmp 
 c
 c.... time average statistics
-c       
+c     
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      if(myrank.eq.master) write(*,*)'before if statement'  
       if ( stsResFlg .eq. 1 ) then
 
           if (numpe > 1) then
              call commu (stsVec, ilwork, nResDims  , 'in ')
           endif
+          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          if(myrank.eq.master) write(*,*)'after first commu'
           do j = 1,nshg
              if (btest(iBC(j),10)) then
                 i = iper(j)
@@ -389,9 +401,13 @@ c
           if (numpe > 1) then
              call commu (stsVec, ilwork, nResDims  , 'out')
           endif
+          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          if(myrank.eq.master) write(*,*)'after second commu'
           return
           
        endif
+       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+       if(myrank.eq.master) write(*,*)'after if statement'
 c
 c.... -------------------->   boundary elements   <--------------------
 c

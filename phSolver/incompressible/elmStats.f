@@ -90,6 +90,8 @@ c-----------------------------------------------------------------------
       
       use     stats
       include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
       
       
       real*8  y(nshg,ndof),             ac(nshg,ndof), x(numnp,nsd),
@@ -97,20 +99,23 @@ c-----------------------------------------------------------------------
      &        shp(MAXTOP,maxsh,MAXQPT),  shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &        shpb(MAXTOP,maxsh,MAXQPT),
      &        shglb(MAXTOP,nsd,maxsh,MAXQPT),
-     &        BC(nshg,ndofBC), res(nshg,ndof), GradV(nshg,nsdsq) 
+     &        BC(nshg,ndofBC), res(nshg,ndof) 
 
       integer iBC(nshg),                iper(nshg),
-     &        ilwork(nlwork),           rowp(nshg,nnz),
+     &        ilwork(nlwork),           rowp(nshg*nnz),
      &        colm(nshg+1)
+      dimension GradV(nshg,nsdsq) 
       
 
       lhs    = 0
       stsVec = zero
-      
+      GradV=zero     
+ 
       stsResFlg = 1
       ierrcalctmp=ierrcalc ! save the current value of ierrcalc
       ierrcalc=0           ! set it to zero so that we don't calculate error
                            ! here (which would overflow memory around rjunk)
+      !call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       if(myrank.eq.master) write(*,*) 'calling ElmGMR'
       call ElmGMR (u,         y,     ac,    x,
      &             shp,       shgl,       iBC,       
@@ -121,7 +126,8 @@ c-----------------------------------------------------------------------
      &             lhsPETSc,
 #endif
      &             rerr,       GradV   )      
-      write(*,*) 'after elmGMR'
+      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+      if(myrank.eq.master) write(*,*) 'after ElmGMR in elmStatsRes'
       stsResFlg = 0
       ierrcalc=ierrcalctmp  ! reset it back to original value
       return 

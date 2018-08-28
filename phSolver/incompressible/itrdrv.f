@@ -777,6 +777,7 @@ c
      &                           shp,    shgl,     shpb,   shglb,
      &                           iBC,    BC,       iper,   ilwork,
      &                           rowp,   colm)
+               call MPI_BARRIER(MPI_COMM_WORLD,ierr)
                if(myrank.eq.master) write(*,*) 'after stsGetStats'
             endif
 
@@ -932,7 +933,7 @@ c .. write out the instantaneous solution
           if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
             deallocate(wallssVec) 
           endif
-          if(iRANS.lt.0) then
+          if(iRANS.lt.0.or.iSTG.eq.1) then
             deallocate(d2wall)
           endif
 
