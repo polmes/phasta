@@ -86,6 +86,7 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
         endif
         !Find the spacing
         STGmeth=0;
+        alphaGR=STGMeshGrow    ! growth rate of boundary layer mesh
         call findSTG_mesh_hs(x)
         !loop over STG Plane find lcut->kCut->kMax
         allocate(le(nNSurf),lt(nNSurf),kCut(nNSurf))
@@ -131,7 +132,6 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
             call exit       
         endif
         !find other variables
-        alphaGR=STGMeshGrow    ! growth rate of boundary layer mesh
         uNaught=STGUo
         kappa=0.41
         b=5.2
