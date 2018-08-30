@@ -2123,14 +2123,17 @@ c beginning of cycle is considered as ncycles_startphaseavg*nstepsincycle+1
 
                   ! find number of steps between phases
                   nstepsbtwphase = nstepsincycle/nphasesincycle ! integer value
+                  if(istep.eq.-10) then ! aborted attempt to fix
+                    itest=mod(lstep-1,nstepsincyle) !8005/120=85
+                    iphase=itest/nstepsbtwphase  ! 85/5 =17
+                  endif
                   if(mod(istep-1,nstepsincycle).eq.0) then
-                     iphase = 1 ! init. to one in beginning of every cycle
-                     icyclesinavg = icyclesinavg + 1
+                     iphase = 1 ! init. to one in beginning of every cycle icyclesinavg = icyclesinavg + 1
                   endif
 
                   icollectphase = 0
-                  istepincycle = mod(istep,nstepsincycle)
-                  if(istepincycle.eq.0) istepincycle=nstepsincycle
+                  istepincycle = mod(istep,nstepsincycle)   ! 1/120=0
+                  if(istepincycle.eq.0) istepincycle=nstepsincycle  !120
                   if(istepincycle.eq.iphase*nstepsbtwphase) then
                      icollectphase = 1
                      iphase = iphase+1 ! use 'iphase-1' below
