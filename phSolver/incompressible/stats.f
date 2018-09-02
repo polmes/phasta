@@ -231,12 +231,11 @@ c
 c.... assemble the residual
 c
       if (stsType .eq. 1) then
-         if(myrank.eq.master) write(*,*) 'calling elmStatsRes'
          call elmStatsRes( yAlpha,   acAlpha,     uAlpha, x,       shp,   shgl, 
      &                     shpb,     shglb,       iBC,     BC, 
      &                     iper,     ilwork, rowp, colm )
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr) 
-         if(myrank.eq.master) write(*,*) 'after elmStatsRes'
+!         call MPI_BARRIER(MPI_COMM_WORLD,ierr) 
+!         if(myrank.eq.master) write(*,*) 'after elmStatsRes'
 c
 c.... compute the statistics
 c
