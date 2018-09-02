@@ -771,13 +771,11 @@ c
 c.... obtain the time average statistics
 c
             if (ioform .eq. 2) then
-               if(myrank.eq.master) write(*,*) 'before stsGetStats'
                call stsGetStats( y,      yold,     ac,     acold,
      &                           u,      uold,     x,
      &                           shp,    shgl,     shpb,   shglb,
      &                           iBC,    BC,       iper,   ilwork,
      &                           rowp,   colm)
-               if(myrank.eq.master) write(*,*) 'after stsGetStats'
             endif
 
 c     
