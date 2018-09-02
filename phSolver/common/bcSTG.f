@@ -43,7 +43,12 @@
         include "mpif.h"
         include "auxmpi.h"
         real*8, allocatable :: rTemp(:),tdump(:)
-        real*8, allocatable :: tempdump(:,:),writeToFile(:,:)
+        real*8, allocatable :: tempdump(:,:)
+        double precision, allocatable ::writeTOFile(:,:),thisData(:,:)
+        double precision, allocatable ::writeTOFile_a(:,:)
+        double precision, allocatable ::nNSurfs(:,:), nNSurfs_a(:,:)
+        double precision, allocatable :: tempAllo(:,:)
+        double precision :: temp
         real*8, dimension(3) :: tHat,bHat 
         real*8 :: x(numnp,nsd)
         real*8  :: theta
@@ -56,12 +61,14 @@
         real*8 :: norm
 
         logical exlog
-        integer :: stopflag,pp,ii,jj,kk,rr
+        integer,allocatable :: sta(:),holdSurf(:),markHold(:)
+        integer :: stopflag,pp,ii,jj,kk,prs,newtype
 
 
         leMax=zero
         kMax=zero
         deltaBLSTG=STGDelBL
+        alphaGR=STGMeshGrow    ! growth rate of boundary layer mesh
 ! Initialize Fourier Modes for STG        
         !begin by finding nKWave
         !Read in STGinflow 
@@ -198,95 +205,206 @@ c       If not the first time step, the random variables were read from the rest
         allocate(uBar(nNsurf,nsd),duBardy(nNsurf),duBardyADJ(nNsurf)) 
 
 
+        inquire(file='xyzts.dat',exist=exts)
 ! Check to see if time statistics are wanted and where they are wanted
-        if(iSTGspec.eq.1) then
-
+        if(iSTGspec.eq.1.and.(.not.exts.or.lstep.eq.0))then
+            if(myRank.eq.master)then
+            write(*,*) "Finding Probe Points and Writing to xyzts.dat"
+            endif
             allocate(tdump(4))
             do i=1,4
                 tdump(i)=0.0
             enddo
             !check to see if xyzts.dat exists and if it does save the points it has in it
-           inquire(file='xyzts.dat',exist=exts) 
+           inquire(file='xyzts_add.dat',exist=exts) 
            if(exts.and.myrank.eq.master)then
-               open(unit=626,file='xyzts.dat',status='old')
+               open(unit=626,file='xyzts_add.dat',status='old')
                read(626,*) tdump(1),tdump(2),tdump(3),tdump(4)
                 allocate(tempdump(int(tdump(1)),3))
                do jj=1,int(tdump(1))
                    read(626,*) tempdump(jj,1),tempdump(jj,2),tempdump(jj,3)
                enddo
-               close(626,STATUS='DELETE')
+               close(626,status='DELETE')
             endif
-            !find the points at user-defined downstream distanc(s) STGdes and tolerance 
-            !(STGdesol) for the points within that range(assume downstream in the +xdir)
+            inquire(file='xyzts.dat',exist=exts)
+            if(exts)then
+               open(unit=626,file='xyzts.dat',status='old')
+               close(626,status='DELETE')
+            endif
+            !accumulate the STG surface nodes on master, broadcast them to all 
+            
+            allocate(sta(MPI_STATUS_SIZE))
+            call MPI_COMM_SIZE(MPI_COMM_WORLD,prs,ierr)
+            if(myRank.eq.master)then 
+                !make an array that will hold all of the amounts of surface points for each process
+                allocate(holdSurf(prs))
+            endif
+            !Halt all proccesses
+            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            !Gather nNSurf into holdSurf in the master process
+            call MPI_GATHER(nNSurf,1,MPI_INT,holdSurf,1,MPI_INT,master
+     &          ,MPI_COMM_WORLD,ierr)
+            !add up lengths and allocate nNSurfs_a
+            nNSurfs_tot=0
+            if(myRank.eq.master)then
+                do ii=1,prs
+                    nNSurfs_tot=nNSurfs_tot+holdSurf(ii)
+                enddo
+                !Assign the final Gathered array of surface positions
+                allocate(nNSurfs_a(nNSurfs_tot,3))
+            endif
+            !Create a MPI vector type (real8,real8,real8) 
+            call MPI_TYPE_CONTIGUOUS(3,MPI_DOUBLE_PRECISION,
+     &          newtype,ierr)
+            call MPI_TYPE_COMMIT(newtype,ierr)
+            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            !Send from each non-master proccess the position vectors of the nNSurf nodes
+            if(myRank.ne.master.and.nNSurf.ne.0) then
+                !create an array sending pos vectors of nNSurf nodes
+                call MPI_SEND(x(stgSurf,:),nNSurf,
+     &          newtype,master,5253,MPI_COMM_WORLD,ierr)
+            endif
+            
+            !Recieve from each proccess to master
+            if(myRank.eq.master)then
+                cou=1
+                i=1
+                do while(i.le.prs)
+                    if(i-1.eq.master)then
+                        nNSurfs_a(cou:cou+nNSurf-1,:)=x(stgSurf,:)
+                        cou=cou+nNSurf
+                    elseif(holdSurf(i).ne.0)then
+                        allocate(thisData(holdSurf(i),3))
+                        thisData=0.0
+                        call MPI_RECV(thisData,holdSurf(i),
+     &                       newtype,i-1,5253,
+     &                      MPI_COMM_WORLD,sta,ierr)
+                        nNSurfs_a(cou:cou+holdSurf(i)-1,1:3)=thisData
+                        deallocate(thisData)
+                        cou=cou+holdSurf(i)
+                    endif
+                    i=i+1
+                enddo
+            endif
+            !Brodcast nNsurfs_a to all proccesses
+            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            call MPI_BCAST(nNSurfs_tot,1,MPI_INTEGER,master,
+     &          MPI_COMM_WORLD,ierr)
+            if(myRank.ne.master)then
+                allocate(nNSurfs_a(nNSurfs_tot,3))
+            endif
+            call MPI_BCAST(nNSurfs_a,nNSurfs_tot,newtype,master,
+     &          MPI_COMM_WORLD,ierr)
+
+            !FIND POINTS ON this PROCCESS TO WRITE TO XYZTS.DAT
+
+              next=1
+              do i=1,nshg!local accumulation
+                  if(d2Wall(i).gt.1e-15.and.
+     &                d2Wall(i).lt.deltaBLSTG.and.
+     &                size(writeToFile_a,DIM=1).le.iSTGEngPNTS)then
+                      mark=0
+                      NNcheck=1
+                      do while(NNcheck.le.nNSurfs_tot.and.mark.ne.1)
+                          jj=1
+                          do while(jj.le.size(STGdes).and.mark.ne.1)!loop over all input downstream distances
+                              if(abs(nNSurfs_a(NNcheck,1)+STGdes(jj)
+     &                            -x(i,1)).lt.STGdesol)then
+                                  mark=1
+                                  !reAssignment of writeToFile_a
+                                  if(allocated(writeToFile_a))then
+                                      next=next+1
+                                      deallocate(writeToFile_a)
+                                  endif
+                                  allocate(writeToFile_a(next,3))
+                                  if(allocated(tempAllo))then
+                                      writeToFile_a(1:next-1,:)=tempAllo
+                                  endif
+                                  writeToFile_a(next,:)=x(i,:)
+                                  if(allocated(tempAllo))then
+                                      deallocate(tempAllo)
+                                  endif
+                                  allocate(tempAllo(next,3))
+                                  tempAllo=writeToFile_a
+                              endif
+                              jj=jj+1
+                          enddo
+                          NNcheck=NNcheck+1
+                      enddo
+                  endif
+              enddo
+
             stopFlag=0
-            pp=0
-            ii=1
-            do while (ii.le.nshg)
-                jj=1
-                do while(jj.le.size(STGdes).and.stopFlag.ne.1)
-                    kk=1
-                    do while(kk.lt.nNsurf.and.stopFlag.ne.1)
-                        if(abs(x(ii,1)-(x(stgSurf(kk),1)+STGdes(jj))).lt.STGdesol.and.
-     &                    d2Wall(ii).lt.deltaBLSTG.and.
-     &                    d2Wall(ii).gt.1e-15)then
-                            pp=pp+1
-                            stopFlag=1
+                if(myRank.eq.master)then
+                    do ip=0,prs-1
+                        if(ip.eq.master)then
+                            StopFlag=stopFlag+size(writeToFile_a,DIM=1)
+                        else
+                            NNCheck=0
+                            call MPI_RECV(NNCheck,1,MPI_INTEGER,ip,
+     &                          5111,MPI_COMM_WORLD,sta,ierr)
+                            if(recvTot.ne.-1)then
+                                stopFlag=stopFlag+NNCheck
+                            endif
                         endif
                         kk=kk+1    
                     enddo
-                    jj=jj+1
-                enddo
-                ii=ii+1
-                if(stopFlag.eq.1)then
-                    stopFlag=0
+                else
+                    if(.not.allocated(writeToFile_a))then
+                        call MPI_SEND(-1,1,
+     &                  MPI_INTEGER,master,5111,MPI_COMM_WORLD,ierr)
+                    else
+                        NNCheck=size(writeToFile_a,DIM=1)
+                        call MPI_SEND(NNCheck,1,
+     &                  MPI_INTEGER,master,5111,MPI_COMM_WORLD,ierr)
+                    endif
                 endif
-            enddo
-            allocate(writeToFile(pp+int(tdump(1)),3))
-            pp=0
-            stopFlag=0
-            ii=1
-            do while (ii.le.nshg)
-                jj=1
-                do while(jj.le.size(STGdes).and.stopFlag.ne.1)
-                    kk=1
-                    do while(kk.lt.nNsurf.and.stopFlag.ne.1)
-                        if(abs(x(ii,1)-(x(stgSurf(kk),1)+STGdes(jj))).lt.STGdesol.and.
-     &                    d2Wall(ii).lt.deltaBLSTG.and.
-     &                    d2Wall(ii).gt.1e-15)then
-                            pp=pp+1
-                            writeToFile(pp,1)=x(ii,1)
-                            writeToFile(pp,2)=x(ii,2)
-                            writeToFile(pp,3)=x(ii,3)
-                            stopFlag=1
-                        endif
-                        kk=kk+1    
+
+              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            jj=0
+            do ip=0,prs-1!loop over proccesses number
+                if(myrank.eq.master)then
+                    write(*,*) "Writing Probe Points to xyzts.dat
+     &              from proccess: ",ip
+                endif
+              !write to xyzts.dat one by one
+              if(ip.ne.myRank)then
+                  call MPI_BCAST(jj,1,MPI_INTEGER,ip,MPI_COMM_WORLD,
+     &            ierr)
+              else
+
+            !write to the xyzts.dat file for ip proccess
+                open (unit=626,file="xyzts.dat",position="append")
+                if(ip.eq.0)then
+                    if(stopFlag.gt.iSTGEngPNTS)then
+                        write(626,*) iSTGEngPNTS,1,1,1,1
+                    else
+                        write(626,*) stopFlag,1,1,1,1
+                    endif
+                endif
+                if(.not.allocated(writeTOFile_a))then
+                    call MPI_BCAST(jj,1,MPI_INTEGER,ip,MPI_COMM_WORLD,
+     &              ierr)
+                    close(626)
+                else
+                    ii=1
+                    do while(ii.le.size(writeTOFile_a,dim=1)
+     &                  .and.jj.lt.iSTGEngPNTS )
+                        write(626,'(F18.15,F18.15,F18.15)')
+     &  writeTOFile_a(ii,1), writeTOFile_a(ii,2), writeTOFile_a(ii,3)
+                        ii=ii+1
+                        jj=jj+1
                     enddo
-                    jj=jj+1
-                enddo
-                ii=ii+1
-                if(stopFlag.eq.1)then
-                    stopFlag=0
+                    close(626)
+                    call MPI_BCAST(jj,1,MPI_INTEGER,ip,MPI_COMM_WORLD,
+     &              ierr)
                 endif
+              endif
             enddo
 
 
-            if(int(tdump(1)).ne.0) then
-                do rr=1,int(tdump(1))
-                    writeToFile(pp+rr,1)=tempdump(rr,1)
-                    writeToFile(pp+rr,2)=tempdump(rr,2)
-                    writeToFile(pp+rr,3)=tempdump(rr,3)
-                enddo
-                deallocate(tempdump,tdump)
-            endif
-
-            !write to the xyzts.dat file
-
-            open (unit=626,file="xyzts.dat")
-            write(626,*) size(writeToFile,dim=1),1,1,1,1
-            do ii=1,size(writeToFile,dim=1)
-                write(626,*) writeToFile(ii,1), writeToFile(ii,2), writeToFile(ii,3)
-            enddo
-            close(626)
+            !xyzts.dat file must exist before other proccesses hit ln 687 "c...DUMP TIME SERIES"
+            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
                
                    
@@ -316,7 +434,7 @@ c       If not the first time step, the random variables were read from the rest
       real*8 :: eng(nNSurf,nKWave),totEng(nNSurf)
       real*8 :: kN(nKWave)
       real*8 :: uPrime(nNSurf,3)
-      real*8 :: reyS(6), turbVisc
+      real*8 :: reyS(6), turbVisc, dist, sumBC
       engTot=zero
       uBar_Tol=0.01
         !This statement clears then recreates two files pertaining to 
@@ -357,12 +475,13 @@ c        call openFiles()
             
         enddo 
         do n=1,nNSurf
-!        call findUBarandDeriv(x,n,reyS,turbVisc)
             if(iLES.ne.0) then
-                if(d2Wall(stgSurf(n)).gt.1e-15.and.
-     &              d2Wall(stgSurf(n)).lt.1.0*deltaBLSTG)then
+                call findUBarandDeriv(x,n,reyS,turbVisc)
+                dist=d2Wall(stgSurf(n))
+                if(abs(dist).gt.1e-15.and.
+     &              dist.lt.1.0*deltaBLSTG)then
                 !Find Reynold's Stress/cholesky decomp
-                    call findUBarandDeriv(x,n,reyS,turbVisc)
+!                    call findUBarandDeriv(x,n,reyS,turbVisc)
                     Cho(1,1)=sqrt(reyS(1))
                     Cho(1,2)=0
                     Cho(1,3)=0
@@ -407,24 +526,22 @@ c        call openFiles()
                     uPrime(n,2)=0.0
                     uPrime(n,3)=0.0
                 endif
-!Begin U calculation over the plane at this Time Step
-        !oLength (xPoints=1)
-!       do integer pCount=1,pLength
-!           do integer qCount=1,qLength
-!          PUT INFLOW COMPUTATIONS HERE   
-!          dwwall(n),x(n,1:3), t, prepped data structures 
-!         plus stuff that depends on inputs that still needs to be computed
-!          -> u=umean+u, v, w
-                BC(stgSurf(n),3)=uBar(n,1)+uPrime(n,1)            
-                BC(stgSurf(n),4)=uBar(n,2)+uPrime(n,2)            
-                BC(stgSurf(n),5)=uBar(n,3)+uPrime(n,3)            
+                sumBC=BC(stgSurf(n),3)+BC(stgSurf(n),4)+BC(stgSurf(n),5)
+                if(sumBC.ne.zero) then ! protect no slip BC from getting overwritten
+                   BC(stgSurf(n),3)=uBar(n,1)+uPrime(n,1)            
+                   BC(stgSurf(n),4)=uBar(n,2)+uPrime(n,2)            
+                   BC(stgSurf(n),5)=uBar(n,3)+uPrime(n,3)   
+                endif         
             else ! iLES.ne.0
 !   if the model is not scale-resolving (RANS) then don't include u' but include eddy visc
                 call findUBarandDeriv(x,n,reyS,turbVisc)
-                BC(stgSurf(n),3)=uBar(n,1)            
-                BC(stgSurf(n),4)=uBar(n,2)
-                BC(stgSurf(n),5)=uBar(n,3)  
-                BC(stgSurf(n),7)=turbVisc
+                sumBC=BC(stgSurf(n),3)+BC(stgSurf(n),4)+BC(stgSurf(n),5)
+                if(sumBC.ne.zero) then ! protect no slip BC from getting overwritten
+                   BC(stgSurf(n),3)=uBar(n,1)            
+                   BC(stgSurf(n),4)=uBar(n,2)
+                   BC(stgSurf(n),5)=uBar(n,3)  
+                   BC(stgSurf(n),7)=turbVisc
+                endif
             endif ! end if iLES ne 0              
 !                if(istep.eq.0) write(122,*) BC(stgSurf(n),3),BC(stgSurf(n),4), BC(stgSurf(n),5) 
         enddo 
