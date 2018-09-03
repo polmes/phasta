@@ -332,12 +332,12 @@ c
         deallocate ( xlhs )
       endif
       if ( ierrcalc .eq. 1 )   deallocate ( rerrl  )
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      if(myrank.eq.master) write(*,*) 'before deallocate StsVecl'
+!      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!      if(myrank.eq.master) write(*,*) 'before deallocate StsVecl'
       if ( stsResFlg .eq. 1 ) then
          deallocate ( StsVecl  )
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-         if(myrank.eq.master) write(*,*) 'deallocated StsVecl'
+!         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!         if(myrank.eq.master) write(*,*) 'deallocated StsVecl'
       endif
 c
 c.... add in lumped mass contributions if needed
@@ -378,15 +378,15 @@ c
 c
 c.... time average statistics
 c     
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      if(myrank.eq.master) write(*,*)'before if statement'  
+!      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!      if(myrank.eq.master) write(*,*)'before if statement'  
       if ( stsResFlg .eq. 1 ) then
 
           if (numpe > 1) then
              call commu (stsVec, ilwork, nResDims  , 'in ')
           endif
-          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-          if(myrank.eq.master) write(*,*)'after first commu'
+!          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!          if(myrank.eq.master) write(*,*)'after first commu'
           do j = 1,nshg
              if (btest(iBC(j),10)) then
                 i = iper(j)
@@ -401,13 +401,13 @@ c
           if (numpe > 1) then
              call commu (stsVec, ilwork, nResDims  , 'out')
           endif
-          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-          if(myrank.eq.master) write(*,*)'after second commu'
+!          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!          if(myrank.eq.master) write(*,*)'after second commu'
           return
           
        endif
-       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-       if(myrank.eq.master) write(*,*)'after if statement'
+!       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!       if(myrank.eq.master) write(*,*)'after if statement'
 c
 c.... -------------------->   boundary elements   <--------------------
 c
