@@ -104,7 +104,7 @@ c-----------------------------------------------------------------------
       integer iBC(nshg),                iper(nshg),
      &        ilwork(nlwork),           rowp(nshg*nnz),
      &        colm(nshg+1)
-      dimension GradV(nshg,nsdsq) 
+      dimension GradV(nshg,nsdsq), rerr(nshg,numerr) 
       
 
       lhs    = 0

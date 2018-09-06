@@ -191,7 +191,6 @@ c-----------------------------------------------------------------------
      &                        rowp,   colm   )
       
       use     stats
-
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -210,7 +209,7 @@ c-----------------------------------------------------------------------
       
       
       real*8  yAlpha(nshg,ndof),      acAlpha(nshg,ndof),
-     &        uAlpha(nshg,nsd),
+     &        uAlpha(nshg,nsd),       reg,
      &        res(nResDims),          MInv(6),
      &        DInv(3),                B(3),
      &        CInv(6)
@@ -220,13 +219,13 @@ c-----------------------------------------------------------------------
       integer i
       
       nTimeStep = nTimeStep + 1
+      
 c
 c.... compute solution at n+alpha
 c
       call itrYAlpha( uold,     yold,     acold,
      &                u,        y,        ac,  
      &                uAlpha,   yAlpha,   acAlpha)
-      if(myrank.eq.master) write(*,*) 'after itrYAlpha'      
 c
 c.... assemble the residual
 c
@@ -361,9 +360,6 @@ c
          enddo
       endif
 
-      call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-      if(myrank.eq.master) write(*,*)'end of stsGetStats'
-      
 c      if ( mod(nTimeStep,stsWriteFreq) .eq. 0 .or. 
 c     &     nTimeStep .eq. nstep(itseq) ) then
 c         call stsWriteStats()
