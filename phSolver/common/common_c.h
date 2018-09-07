@@ -145,6 +145,7 @@ extern "C" {
     int idim;
     int nlist;
     int nintf[MAXTOP];
+    double ddesConsts[2];
     double STGDelBL;
     double STGUo;
     double STGModeGrow;

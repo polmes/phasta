@@ -235,6 +235,9 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "DDES" ) {
       turbvari.iles  = -2;
       turbvari.irans = -1;
+    } else if ((string)inp.GetValue("Turbulence Model") == "IDDES" ) {
+      turbvari.iles  = -3;
+      turbvari.irans = -1;
     } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
       turbvari.irans = 0;
       turbvari.iles  = 0;
@@ -271,6 +274,12 @@ int input_fform(phSolver::Input& inp)
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=
  //                                          inp.GetValue("DES Edge Length");
     vector<double> vec; 
+    if (turbvari.irans==-1 && turbvari.iles==-3) {
+       vec = inp.GetValue("IDDES Constants");
+       for(i=0; i<2 ; i++){
+          turbvar.ddesConsts[i]=vec[i];
+       }
+    }
     if (turbvari.irans<0 && turbvari.iles<0)
       turbvar.DES_SA_hmin=(double)inp.GetValue("DES SA Minimum Edge Length");
 

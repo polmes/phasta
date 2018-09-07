@@ -269,6 +269,15 @@ c    Kay-Epsilon
      &       srcjac(blk%e,4), srcRat(blk%e)
       integer e,n
       real*8 small,epsilon_lsd_tmp
+
+c    IDDES
+      real*8 delta, hmax, hwn, rdt, EV, fdt, fB, fdtilde,
+     &       alpha, fe, Psi, fe1, fe2, ft, fl, rdl, ct,
+     &       cl, visc, ctnFct
+
+c    For Debug
+      real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
+      integer nnum
 c----------------------------------------------------------------------
 c
 c           --             --              --           --
@@ -321,6 +330,16 @@ c
          enddo
 
          sixth   = 1.0/6.0
+
+c ----   Some constants for IDDES model
+         if (iles.eq.-3) then
+            visc = datmat(1,2,1) ! value of the viscosity 
+            ctnFct = saCb1*saKappaP2Inv/(saCw1*0.424) ! for IDDES
+            ct = ddesConsts(2) !1.63  
+            cl = ddesConsts(1) !3.55
+c            if(myrank.eq.master) write(*,*) "cl=",cl," ct=",ct
+         endif
+
 c
 c.... compute source and its jacobian
 c
@@ -352,8 +371,19 @@ c     &              SclrNN=zero
                dx=maxval(xl(e,:,1))-minval(xl(e,:,1))
                dy=maxval(xl(e,:,2))-minval(xl(e,:,2))
                dz=maxval(xl(e,:,3))-minval(xl(e,:,3))
-               dmax=max(dx,max(dy,dz))
-               dmax=0.325*dmax
+               if (iles.eq.-1.or.iles.eq.-2) then ! regular DES and DDES
+                  dmax=max(dx,max(dy,dz))
+                  dmax=0.325*dmax
+               elseif (iles.eq.-3) then ! IDDES
+c                 hmax is the maximum local grid spacing, that is the
+c                 isotropic mesh size just outside the boundary layer
+c                 at that location in the mesh
+                  hmax = max(dx,max(dy,dz)) ! definition in IDDES paper
+c                  hmax = 0.05 ! hard codes for channel flow test case
+c                 hwn is the local step in the wall normal direction
+                  hwn = maxval(dwl(e,:)) - minval(dwl(e,:))
+                  delta=min(hmax,max(0.15*dwall(e),max(0.15*hmax,hwn))) !Cw=0.15 
+               endif
 
                if(iles .eq. -1) then  ! Original  DES97
                  dwall(e) = min(dmax,dwall(e))
@@ -373,7 +403,13 @@ c     &              SclrNN=zero
                  dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
                  rd = SclrNN*saKappaP2Inv/dwallsqqfact
                  fd = one-tanh((8.0000000000000000d0*rd)**3)
+c                 dOld = dwall(e) 
                  dwall(e) = dwall(e)-fd*max(zero,dwall(e)-dmax)
+c                 if (maxval(xl(e,:,1)).lt.0.06 .and. 
+c     &              maxval(xl(e,:,3)).lt.0.03) then
+c                    write(*,*) dOld,dwall(e),dmax,rd,fd
+c                 endif
+               
 
                endif
 
@@ -383,32 +419,86 @@ c     &              SclrNN=zero
             
             k2d2Inv = dP2Inv * saKappaP2Inv
          
-            viscInv = 1.0/datmat(1,2,1)
+            viscInv = 1.0/datmat(1,2,1) ! viscosity is stored in array datmat passed through common
             chi     = SclrNN * viscInv !skipping the kiy kie for now
             chiP2   = chi * chi 
             chiP3   = chi * chiP2
            
             ep=zero
-            if(Sclr(e).gt.zero) ep=one
+            if(Sclr(e).gt.zero) ep=one ! production only if nu_tilda is positive
 
             tmp     = 1.0 / ( chiP3 + saCv1P3 )
             fv1     = chiP3 * tmp
-            fv1p    = 3.0 * viscInv * saCv1P3 * chiP2 * tmp**2
+            fv1p    = 3.0 * viscInv * saCv1P3 * chiP2 * tmp**2 ! derivative of fv1 wrt scalar nu_tilda (SclrNN)
             
             tmp     = 1.0 / (1.0 + chi * fv1)
             fv2     = 1.0 - chi * tmp
-            fv2p    = (chiP2 * fv1p - viscInv) * tmp**2
-            
+            fv2p    = (chiP2 * fv1p - viscInv) * tmp**2 ! derivative of fv2 wrt scalar nu_tilda (SclrNN)
+           
+c --------- IDDES Model Implementation
+            if (iles.eq.-3) then ! IDDES
+               qfac = sqrt(
+     &                gradV(e,1,1)**2+gradV(e,1,2)**2+gradV(e,1,3)**2
+     &              + gradV(e,2,1)**2+gradV(e,2,2)**2+gradV(e,2,3)**2
+     &              + gradV(e,3,1)**2+gradV(e,3,2)**2+gradV(e,3,3)**2 )
+               qfac = max(qfac,1.0d-10)
+c               dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
+               dwallsqqfact = dwall(e)**2*qfac
+               EV = SclrNN*fv1 
+               rdt = EV*saKappaP2Inv/dwallsqqfact
+               rd = SclrNN*saKappaP2Inv/dwallsqqfact
+               fdt = one-tanh((8.00d0*rdt)**3)
+               alpha = 0.25000d0-dwall(e)/hmax
+               fB = min(two*exp(-9.0000000000000000d0*alpha**2), one)
+               fdtilde = max((one-fdt), fB)
+C               fdtilde = fB
+               if (alpha.ge.zero) then
+                  fe1 = two*exp(-11.0900d0*alpha**2)
+               elseif (alpha.lt.zero) then
+                  fe1 = two*exp(-9.00d0*alpha**2)
+               endif
+               ft = tanh((ct**2*rdt)**3)
+               rdl = visc*saKappaP2Inv/dwallsqqfact
+               fl = tanh((cl**2*rdl)**10)
+               fe2 = one-max(ft,fl)
+               tmp = (one-ctnFct*fv2)/fv1
+               tmp = min(100.0d0, tmp)
+               Psi = sqrt(tmp)
+c               Psi = 1.0
+               fe = max((fe1-one),zero)*Psi*fe2
+c               dOld = dwall(e)
+c               Psi=one
+               dwall(e) = fdtilde*(one+fe)*dwall(e)
+     &                    + (one-fdtilde)*0.325*Psi*delta
+c               if (maxval(xl(e,:,1)).lt.0.06 .and. 
+c     &              maxval(xl(e,:,3)).lt.0.03) then
+c                  write(*,*) dOld,dwall(e),hmax,hwn,delta,
+c     &                       rdt,fdt,alpha,fB,fe1,ft,
+c     &                       rdl,fl,fe2,Psi,fe
+c               endif
+c =========    for debug
+c               rd = SclrNN*saKappaP2Inv/dwallsqqfact
+c               fd = one-tanh((8.0000000000000000d0*rd)**3)
+c               dwallDDES(e) = dwall(e)-fd*max(zero,dwall(e)-0.325*hmax)
+c               diffD(e) = dwallDDES(e) - dwallIDDES(e)
+c               dwall(e) = dwallIDDES(e)
+c =========    end for debug            
+            endif
+c --------- End of IDDES Model Implementation
+
+            if (dwall(e) .ne. 0) dP2Inv = 1.0 / dwall(e)**2
+            k2d2Inv = dP2Inv * saKappaP2Inv
+
             s       = absVort(e) !prd(e,2)
             tmp     = SclrNN * k2d2Inv !eOkdP2
-            st      = s + fv2 * tmp
-            stp     = ep*k2d2Inv * fv2 + tmp*fv2p
+            st      = s + fv2 * tmp ! S-tilda
+            stp     = ep*k2d2Inv * fv2 + tmp*fv2p ! derivative of S_tilda wrt scalar
             
             r       = zero
             rp      = zero
             if (st .gt. epsM ) then
                 r = tmp / st
-                r       = min( max(r, -8.0d0), 8.0d0)
+                r = min( max(r, -8.0d0), 8.0d0) ! why 8 not 10, and why max(r,-8)
                 rp = k2d2Inv / st**2 * (ep*st - SclrNN*stp)
             endif
             rP5     = r * (r * r) ** 2
@@ -425,8 +515,9 @@ c     &              SclrNN=zero
 
             tmp1     = saCw1 * dP2Inv*SclrNN
             prat     = ep*saCb1*st  !prodRat
-            srcRat(e)= prat - ep*fw * tmp1
+            srcRat(e)= prat - ep*fw * tmp1 ! =c_b1*S_tilda - f_w*c_w1*nu_tilda/d^2 = production - destruction terms divided by nu_tilda (SclrNN)
  
+c           Compute the source terms contribution to the Jacobian (LHS)
             tmp     = zero
             if(prat .lt. zero) tmp=prat
             if(stp .lt. zero) tmp=tmp+SaCb1*stp*SclrNN
@@ -434,7 +525,7 @@ c     &              SclrNN=zero
             if(fwp  .gt. zero) tmp=tmp-tmp1*SclrNN*fwp
  
             srcL(e)  = -1.0*tmp
-            srcR(e)   = srcRat(e)*SclrNN
+            srcR(e)   = srcRat(e)*SclrNN ! full source term= production - destruction
          enddo
 c
 c.... One source term has the form (beta_i)*(phi,_i).  Since
@@ -445,7 +536,10 @@ c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.  Here, the term
 c     is given by beta_i=(cb_2)*(phi,_i)/(sigma)
 c
-
+c uMod = velocity - constants-grad of scalar nu_tilda.
+c this is done because there is a term in the diffusion of nu_tilda that looks like a cross diffusion,
+c so two gradients multiplied by each other. This means it can be grouped with the velocity, which is also
+c multiplied by the gradient of nu_tilda to make the modified velocity. 
          tmp = saCb2 * saSigmaInv
          uMod(:,1) = u1(:) - tmp * gradS(:,1)
          uMod(:,2) = u2(:) - tmp * gradS(:,2)

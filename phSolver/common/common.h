@@ -63,7 +63,7 @@ c from different modules
      &                   rmutarget, pzero,  wtavei, 
      &                   dtavei, dke,  fwr1, flump, DES_SA_hmin,
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
-     &                   nlist, nintf(MAXTOP),
+     &                   nlist, nintf(MAXTOP), ddesConsts(2),
      &                   STGDelBL, STGUo, STGModeGrow, STGMeshGrow, 
      &                   STGeps, STGdesol, STGdes(3)
         common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,

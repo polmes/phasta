@@ -102,7 +102,9 @@ c
         if(matflg(5,1).ge.4) then ! cool case (sponge)
            call initSponge( y,point2x) 
         endif
-
+c
+c....  initialize the STG inflow arrays
+c
         if(iSTG.eq.1) then 
            call initSTG(point2x)
         endif
@@ -196,7 +198,7 @@ c
 
               endif ! either IBC active or icset active
            enddo
-        endif  ! inflow.dat existed
+        endif  ! inlet.dat existed
 c$$$$$$$$$$$$$$$$$$$$
 
 !======================================================================
