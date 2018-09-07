@@ -434,7 +434,7 @@ c       If not the first time step of STG, the random variables were read from t
       real*8 :: eng(nNSurf,nKWave),totEng(nNSurf)
       real*8 :: kN(nKWave)
       real*8 :: uPrime(nNSurf,3)
-      real*8 :: reyS(6), turbVisc, dist, sumBC
+      real*8 :: reyS(6), turbVisc, dist, sumBC, tmp
       integer :: noTurbMod
       
 
@@ -485,16 +485,32 @@ c        call openFiles()
                 if(abs(dist).gt.1e-15.and.
      &              dist.lt.1.0*deltaBLSTG)then
                 !Find Reynold's Stress/cholesky decomp
-!                    call findUBarandDeriv(x,n,reyS,turbVisc)
-                    Cho(1,1)=sqrt(reyS(1))
+                    if (reyS(1).gt.zero) then
+                       Cho(1,1)=sqrt(reyS(1))
+                    else
+!                       write(*,*) 'WARNING: reyS(1) <= 0'
+                       Cho(1,1)=sqrt(1.0e-3)
+                    endif
                     Cho(1,2)=0
                     Cho(1,3)=0
                     Cho(2,1)=reyS(4)/Cho(1,1)
-                    Cho(2,2)=sqrt(reyS(2)-((Cho(2,1))**2))
+                    tmp=reyS(2)-((Cho(2,1))**2)
+                    if (tmp.gt.zero) then
+                       Cho(2,2)=sqrt(tmp)
+                    else
+!                       write(*,*) 'WARNING: reyS(2)>=Cho(2,1)^2'
+                       Cho(2,2)=sqrt(1e-3)
+                    endif
                     Cho(2,3)=0
                     Cho(3,1)=reyS(5)/Cho(1,1)
                     Cho(3,2)=(reyS(6)-Cho(2,1)*Cho(3,1))/Cho(2,2)
-                    Cho(3,3)=sqrt(reyS(3)-(Cho(3,1)**2)-(Cho(3,2)**2))
+                    tmp=reyS(3)-(Cho(3,1)**2)-(Cho(3,2)**2)
+                    if (tmp.gt.zero) then
+                       Cho(3,3)=sqrt(tmp)
+                    else
+!                       write(*,*) 'WARNING: problem with Cho(3,3)'
+                       Cho(3,3)=sqrt(1e-3)
+                    endif
                     !assign qN,r',and v'
                     vPrime1=0.0
                     vPrime2=0.0
@@ -553,7 +569,20 @@ c        call openFiles()
 
 !Close varification Files
 !        call closeFiles()
-     
+
+
+!        Loop to check if just put NaNs or Infs in the BC array
+!         do n=1,nNSurf
+!             do j=3,5
+!               if(BC(stgsurf(n),j).ne.BC(stgsurf(n),j)) then
+!                 write (*,*) 'Found a NaN in BC array, clm ', j
+!               endif
+!               if(abs(BC(stgsurf(n),j)).gt.1e3) then
+!                 write(*,*) 'Found a big number in BC array, clm ',j
+!               endif
+!             enddo
+!         enddo
+ 
        end
 
 
