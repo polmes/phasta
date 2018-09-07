@@ -151,7 +151,7 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
         allocate (dVect(nKWave,3),sigVect(nKWave,3),phiVect(nKWave))
 
 c       Compute the random variables only on the first step
-        if (lstep.eq.0) then
+        if (lstep.eq.iSTGStart) then
           call random_seed()
           call random_number(rTemp)
           do id=1,nKWave
@@ -194,7 +194,7 @@ c          Put all needed random numbers in a single array to be written to rest
            STGrnd(:,4)=phiVect
            STGrnd(:,5:7)=sigVect
 
-c       If not the first time step, the random variables were read from the restart files
+c       If not the first time step of STG, the random variables were read from the restart files
         else
            dVect=STGrnd(:,1:3)
            phiVect=STGrnd(:,4)
@@ -207,7 +207,7 @@ c       If not the first time step, the random variables were read from the rest
 
         inquire(file='xyzts.dat',exist=exts)
 ! Check to see if time statistics are wanted and where they are wanted
-        if(iSTGspec.eq.1.and.(.not.exts.or.lstep.eq.0))then
+        if(iSTGspec.eq.1.and.(.not.exts.or.lstep.eq.iSTGStart))then
             if(myRank.eq.master)then
             write(*,*) "Finding Probe Points and Writing to xyzts.dat"
             endif
@@ -435,16 +435,20 @@ c       If not the first time step, the random variables were read from the rest
       real*8 :: kN(nKWave)
       real*8 :: uPrime(nNSurf,3)
       real*8 :: reyS(6), turbVisc, dist, sumBC
-      engTot=zero
-      uBar_Tol=0.01
+      integer :: noTurbMod
+      
+
+       noTurbMod=iRANS+iLES ! 0 only if No-Model is selected (DNS)
+       engTot=zero
+       uBar_Tol=0.01
         !This statement clears then recreates two files pertaining to 
         !STG inflow plane coordinates and current U output
 c        call openFiles()
 
        uBar=zero
-
-        leta=(nu**3/STGeps)**0.25 ! Kolmogorov length scale
-        keta=2.0*atan2(0.0,-1.0)/leta ! Kolmogorov wave number
+   
+       leta=(nu**3/STGeps)**0.25 ! Kolmogorov length scale
+       keta=2.0*atan2(0.0,-1.0)/leta ! Kolmogorov wave number
         do n=1,nNSurf
             totEng(n)=0.0
             !This is for the energySpectrum for the n Point
@@ -475,7 +479,7 @@ c        call openFiles()
             
         enddo 
         do n=1,nNSurf
-            if(iLES.ne.0) then
+            if(iLES.ne.0.or.noTurbMod.eq.0) then
                 call findUBarandDeriv(x,n,reyS,turbVisc)
                 dist=d2Wall(stgSurf(n))
                 if(abs(dist).gt.1e-15.and.

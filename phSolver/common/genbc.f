@@ -99,7 +99,7 @@ c
          call genBC1 (BCtmp,  iBC,  BC)
 cc ....  Quick fix to deal with problem with inflow BC in geombc files
 cc ...   seen at a restart with STG
-         if (lstep.ne.0.and.iSTG.eq.1) then
+         if (lstep.ne.iSTGStart.and.iSTG.eq.1) then
             BC=BCrestart
             deallocate(BCrestart)
          endif

@@ -387,7 +387,7 @@ c
         endif
 
          do 2000 istp = 1, nstp
-           tcurrent= (lstep+1)*Delt(1)
+           tcurrent= (lstep+1-iSTGStart)*Delt(1)
            if(iSTG.eq.1) then
              call applySTG(tcurrent,BC,x)
            endif

@@ -566,9 +566,9 @@ c
 
 
 cc
-cc.... Read the STG  fields if lstep is not equal to zero
+cc.... Read the STG  fields if lstep not equal to iSTGStart
 cc
-      if (lstep.ne.0.and.iSTG.eq.1) then
+      if (lstep.ne.iSTGStart.and.iSTG.eq.1) then
 cc....   First read the STG random variables
          intfromfile=0
          call phio_readheader(fhandle,

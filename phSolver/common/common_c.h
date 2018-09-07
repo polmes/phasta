@@ -169,6 +169,7 @@ extern "C" {
     int iSTGChan;
     int iSTGnModes;
     int iSTGspec;
+    int iSTGStart;
 
 /*      int itwmod; */
 /*      double rtavei; */

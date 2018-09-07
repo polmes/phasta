@@ -247,6 +247,7 @@ int input_fform(phSolver::Input& inp)
       // STG inflow BCs
       if((string)inp.GetValue("Use STGinflow BCs") == "True" ) {
         turbvari.iSTG=1;
+        turbvari.iSTGStart=(int)inp.GetValue("STG Start Step");
         turbvari.iSTGSurfID=(int)inp.GetValue("STG SurfID");
         turbvar.STGDelBL=(double)inp.GetValue("STG BL Height");
         turbvar.STGUo=(double)inp.GetValue("STG U_0");
