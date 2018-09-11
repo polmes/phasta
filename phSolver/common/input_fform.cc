@@ -274,6 +274,10 @@ int input_fform(phSolver::Input& inp)
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=
  //                                          inp.GetValue("DES Edge Length");
     vector<double> vec; 
+
+    if (turbvari.irans!=0)
+      turbvari.idwalmode=(int)inp.GetValue("Mode to Compute dwal");
+
     if (turbvari.irans==-1 && turbvari.iles==-3) {
        vec = inp.GetValue("IDDES Constants");
        for(i=0; i<2 ; i++){

@@ -113,6 +113,8 @@ extern "C" {
     double birth;
     double death;
     double comtim;
+    int stopjob;
+    int allocated_seconds;
   } timer4 ;
 
   extern struct { 
@@ -165,6 +167,7 @@ extern "C" {
     int nohomog;
     int ierrsmooth;
     int iramp;
+    int idwalmode;
     int iSTG;
     int iSTGSurfID;
     int iSTGChan;

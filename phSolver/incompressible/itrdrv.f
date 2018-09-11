@@ -188,6 +188,7 @@ c.... open history and aerodynamic forces files
 c
         if (myrank .eq. master) then
            open (unit=ihist,  file=fhist,  status='unknown')
+           fforce='forces'//trim(cname2(lstep))//'.dat'
            open (unit=iforce, file=fforce, status='unknown')
            open (unit=76, file="fort.76", status='unknown')
            if(numImpSrfs.gt.0 .or. numRCRSrfs.gt.0) then
@@ -422,7 +423,11 @@ c
             enddo
         endif
 
+        stopjob=-1
          do 2000 istp = 1, nstp
+           call TimeRemainingIntoDoubleRunCheck()
+
+c...       STG Inflow
            tcurrent= (lstep+1-iSTGStart)*Delt(1)
            if(iSTG.eq.1) then
              call applySTG(tcurrent,BC,x)
@@ -431,7 +436,7 @@ c
            if(iramp.eq.1) 
      &        call BCprofileScale(vbc_prof,BC,yold)
 
-           call rerun_check(stopjob)
+           call rerun_check()
            if(myrank.eq.master) write(*,*) 
      &         'stopjob,lstep,istep', stopjob,lstep,istep
            if(stopjob.eq.lstep) then
@@ -942,6 +947,7 @@ c .. write out the instantaneous solution
         if(istop.eq.1000) goto 2002 ! stop when delta small (see rstatic)
  2000 continue ! nstp loop
  2002 continue
+        call clearDoubleRunCheck()
 
 ! done with time stepping so deallocate fields already written
 !
@@ -2069,6 +2075,7 @@ c averaging procedure justified only for identical time step sizes
 c ybar(:,13) is average of eddy viscosity
 c ybar(:,14:16) is average vorticity components
 c ybar(:,17) is average vorticity magnitude
+c ybar(:,19) is average Q
 c istep is number of time step
 c
       icollectybar = 0
@@ -2279,7 +2286,7 @@ c
      &            shpb(MAXTOP,maxsh,MAXQPT),
      &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
 
-      real*8 ybar(nshg,irank2yphbar),vorticity(nshg,5)
+      real*8 ybar(nshg,irank2ybar),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
       integer istp
@@ -2346,13 +2353,8 @@ c.....smooth the error indicators
         endif
       endif ! ierrcalc
       if(ioybar.eq.1) then
-        if(ivort == 1) then
           call write_field(myrank,'a','ybar',4,
-     &              ybar,'d',nshg,17,lstep)
-        else
-          call write_field(myrank,'a','ybar',4,
-     &            ybar,'d',nshg,13,lstep)
-        endif
+     &              ybar,'d',nshg,irank2ybar,lstep)
         if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
           call write_field(myrank,'a','wssbar',6,
      &         wallssVecBar,'d',nshg,3,lstep)
@@ -2364,13 +2366,8 @@ c.....smooth the error indicators
             tcormr1 = TMRC()
           endif
           do iphase=1,nphasesincycle
-            if(ivort == 1) then
               call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &          nphasesincycle,yphbar(:,:,iphase),'d',nshg,15,lstep)
-            else
-              call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &            nphasesincycle,yphbar(:,:,iphase),'d',nshg,11,lstep)
-            endif
+     &          nphasesincycle,yphbar(:,:,iphase),'d',nshg,irank2yphbar,lstep)
           end do
           if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
           if(myrank.eq.0)  then

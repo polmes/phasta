@@ -26,12 +26,14 @@ c        myrank=mrank
         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         rsec=TMRC()
         ttim(100) = rsec
+        call TimeRemainingIntoDoubleRunCheck()
 
         epsM = sqrt(epsilon(one))
 c
 c.... read in and block all data
 c
         call readnblk()
+        call TimeRemainingIntoDoubleRunCheck()
 c
 c.... open the echo file (echo closed at exit)
 c
@@ -61,7 +63,7 @@ c
           if (iALE .lt. 0 .or. iALE .gt. 1)
      &                     call error ('input   ','iALE    ',iALE)
 c
-          if (icoord .lt. 0 .or. icoord .gt. 1)
+          if (icoord .lt. 0 .or. icoord .gt. 2)
      &                     call error ('input   ','icoord  ',icoord)
 c
           if (navier .lt. 0 .or. navier .gt. 1)

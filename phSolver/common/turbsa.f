@@ -66,7 +66,12 @@ c-----------------------------------------------------------------------
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
       ! First we try to read the d2wall field from either the restart files or the d2wall files
-      call read_d2wall(myrank,numnp,d2wall,ifoundd2wall)
+      if(idwalmode.lt.2) then  ! skip if user wants it recomputed
+          call read_d2wall(myrank,numnp,d2wall,ifoundd2wall)
+      else
+          idwalmode=idwalmode-2  ! 2 goes to 0 which is a recompute allgather style 3 goes to 1 which is a recompute BCAST
+          ifoundd2wall=0
+      endif
 
       if(ifoundd2wall.eq.0) then   ! d2wall was not found so calculate the distance
         if(myrank.eq.master) then
@@ -93,23 +98,36 @@ c
             enddo
          enddo
          nwalli=sum(npwmark(1:numnp))
-         markNeeded=1
-         if (nwalli.eq.0) then
-             markNeeded=0
-             nwalli=1 !  patch for mpi's lack of imagination
-         endif
-         allocate (xwi(nwalli,nsd))
+         if(idwalmode.eq.0) then ! allgather requires creating a false wall node on each rank...BCAST way does not because we can cycle those parts
+           markNeeded=1
+           if (nwalli.eq.0) then
+               markNeeded=0
+               nwalli=1 !  patch for mpi's lack of imagination
+           endif
+           allocate (xwi(nwalli,nsd))
  
-         if(markneeded.eq.1) then         
-           nwalli=0
-           do i = 1,numnp
-              if(npwmark(i).eq.1)  then
-                nwalli=nwalli+1
-                xwi(nwalli,1:nsd)=x(i,1:nsd)
-              endif
-           enddo
-         else
-           xwi=1.0e32 ! fix for mpi's lack of imagination
+           if(markneeded.eq.1) then         
+             nwalli=0
+             do i = 1,numnp
+                if(npwmark(i).eq.1)  then
+                  nwalli=nwalli+1
+                  xwi(nwalli,1:nsd)=x(i,1:nsd)
+                endif
+             enddo
+           else
+             xwi=1.0e32 ! fix for mpi's lack of imagination
+           endif
+         else ! BCAST 
+           if(nwalli.gt.0) then
+             allocate (xwi(nwalli,nsd))
+             icount=0
+             do i = 1,numnp
+                 if(npwmark(i).eq.1)  then
+                   icount=icount+1
+                   xwi(icount,1:nsd)=x(i,1:nsd)
+                 endif
+              enddo
+           endif
          endif
 c
 c  Pool "number of welts" info from all processors
@@ -136,7 +154,8 @@ c the local information is the global information for single-processor
             nwall=nwalli
             nwallt=nwalli
          endif                  ! if-else for multiple processors
-c
+       if(myrank.eq.0) write(*,*) maxval(nwall),nwallt,' max-on-part and total wall nodes found'
+      if(idwalmode.eq.0) then  ! allgather approach
 c  Make all-processor wallnode-coord collage
 c
          allocate (xw(nwallt,nsd))
@@ -183,23 +202,71 @@ c  save the distance in this node's position of d2wall if it's
 c  shorter than currently stored distance
 c
          d2wall=1.0e32
+         iTenPercent=nwallt/10
+         do j=1, nwallt
+            do i=1,numnp
+               distance =  ( x(i,1) - xw(j,1) )**2
+     &              +( x(i,2) - xw(j,2) )**2
+     &              +( x(i,3) - xw(j,3) )**2
+               if ( d2wall(i).gt.distance ) d2wall(i) = distance
+            enddo
+            if(myrank.eq.0) then
+              iprog=mod(j,iTenPercent)
+              if(iprog.eq.0) write(*,*) 100.0*j/nwallt, '% of dwal processed'
+            endif
+         enddo
+         deallocate(xw)
+      else  ! BCAST lower memory route no-global wall node list
+        d2wall=1.0e32
+        iTenPercent=numpe/10
+         do k=1,numpe
+           if(myrank.eq.0) then
+!             write(*,*) k,nwall(k)
+             iprog=mod(k,iTenPercent)
+             if(iprog.eq.0) write(*,*) 100.0*k/numpe, '% of parts dwal processed'
+!             write(*,*) k,nwall(k),iprog
+           endif
+           nwallk=nwall(k)
+           if(nwallk.eq.0) cycle
+           if(numpe.gt.1) then
+            call MPI_BCAST(nwallk,1,MPI_INTEGER,k-1,MPI_COMM_WORLD,ierr)
+            allocate (xw(nwallk,nsd))
+            if(myrank.eq.(k-1)) xw=xwi
+!            call MPI_BCAST(xw(:,1),nwallk,MPI_DOUBLE_PRECISION,k-1,MPI_COMM_WORLD,ierr)
+!            call MPI_BCAST(xw(:,2),nwallk,MPI_DOUBLE_PRECISION,k-1,MPI_COMM_WORLD,ierr)
+!            call MPI_BCAST(xw(:,3),nwallk,MPI_DOUBLE_PRECISION,k-1,MPI_COMM_WORLD,ierr)
+            call MPI_BCAST(xw,nwallk*nsd,MPI_DOUBLE_PRECISION,k-1,MPI_COMM_WORLD,ierr)
+           else
+             xw=xwi
+           endif
+
+c
+c  For each point, loop over wall nodes and calculate distance; 
+c  save the distance in this node's position of d2wall if it's 
+c  shorter than currently stored distance
+c
+
          do i=1,numnp
-            do j=1, nwallt
+            do j=1, nwallk
                distance =  ( x(i,1) - xw(j,1) )**2
      &              +( x(i,2) - xw(j,2) )**2
      &              +( x(i,3) - xw(j,3) )**2
                if ( d2wall(i).gt.distance ) d2wall(i) = distance
             enddo
          enddo
-         d2wall=sqrt(d2wall)
-c
-         deallocate(xwi)
          deallocate(xw)
-      endif
+       enddo !numnpe
+      endif ! low memory route
+
+      d2wall=sqrt(d2wall)
+          
+c
+      if(nwalli.gt.0) deallocate(xwi)
+      endif ! needed to compute dwal
 
       call MPI_BARRIER(MPI_COMM_WORLD,ierr)
       if(myrank.eq.master) then
-        write (*,*) 'leaving initTurb'
+        write (*,*) 'leaving initTurb maxval(d2wall)=',maxval(d2wall)
       endif
 
       return

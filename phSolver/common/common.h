@@ -27,7 +27,7 @@ c
 c the common block nomodule holds all the things which have been removed
 c from different modules
      
-        integer seqsize, stepseq,bsz,BlockPool
+        integer seqsize, stepseq,bsz,BlockPool, stopjob,allocated_seconds
         integer consrv_sclr_conv_vel
         integer spongecontinuity, spongemomentum1, spongemomentum2
         integer spongeenergy, spongemomentum3
@@ -53,7 +53,7 @@ c from different modules
 	common /workfc/ master, numpe, myrank,BlockPool,ieqswork
 	common /fronts/ maxfront, nlwork
 	common /newdim/ nshgt, minowned,maxowned, numper, nshg0
-	common /timer4/ birth, death, comtim
+	common /timer4/ birth, death, comtim,stopjob,allocated_seconds
         common /extrat/ ttim(100)
         common /spongevar/ zoutSponge, radSponge, zinSponge,
      &            grthOSponge,grthISponge,betamax,
@@ -68,7 +68,7 @@ c from different modules
      &                   STGeps, STGdesol, STGdes(3)
         common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
-     &                   ierrsmooth, iramp, 
+     &                   ierrsmooth, iramp, idwalmode,
      &                   iSTG, iSTGSurfID, iSTGChan, iSTGnModes, 
      &                   iSTGspec, iSTGStart
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
