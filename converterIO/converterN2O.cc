@@ -5,6 +5,8 @@
 //#define OMPI_SKIP_MPICXX 1 //Added in the CMakeList.txt file
 #include <mpi.h>
 #include <math.h>
+#include <unistd.h>
+#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "phastaIO.h"
@@ -118,6 +120,7 @@ int main(int argc, char *argv[]) {
   int N_geombc = N_geombc_double + N_geombc_integer;
   int readHandle, GPID;
   char fname[255],fieldtag[255];
+  char dirname[1024];
 
   int irestart;
 
@@ -324,16 +327,53 @@ int main(int argc, char *argv[]) {
   int magic_number = 362436;
   int* mptr = &magic_number;
   int nitems = 1;
+  int ret;
 
-//MR CHANGE
   bzero((void*)fname,255);
   sprintf(fname,"./%d-procs_case-1PPP",N_parts);
-  if(0<mkdir(fname,0777)) { printf("ERROR - Could not create procs_case-1PPP directory\n"); return 1; }
-//MR CHANGE END
+  if(myrank == 0) {
+    ret=mkdir(fname,0777);
+    if(ret<0) {
+      if(errno == EEXIST) {
+       // acceptable
+      } else {
+        printf("ERROR - Could not create procs_case-1PPP directory\n"); 
+        return 1; 
+      }
+    }
+    printf("mkdir 1PPP succeeded on %d \n", myrank);
 
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  ret=chdir(fname);
+  if(ret<0) {
+      printf("ERROR - Could not chdir procs_case-1PPP directory\n"); 
+      return 1; 
+  }
+  if(myrank == 0) printf("chdir to 1PPP succeeded on %d \n", myrank);
+
+  // newer versions of phastaIO do the fanout for posix but assume that calling program is already in the 
+  // posix part_case directory. 
   bzero((void*)fname,255);
-  sprintf(fname,"./%d-procs_case-1PPP/restart.%d.%d",N_parts,N_steps,myrank+1);
+  sprintf(fname,"restart.%d.%d",N_steps,myrank+1);
+  if(myrank ==0) {
+     printf( "rank0 is going to open file %s \n",fname);
+     bzero((void*)dirname,sizeof(dirname));
+     getcwd(dirname, sizeof(dirname));
+     printf("in a fanout created in phastaIO underneath %s \n", dirname);
+  }
   openfile(fname,"write", &irstou);
+
+/* Doubtful that we need to come back to top dir but this would do it.
+    ret=chdir("..");
+      if(ret<0) {
+          printf("ERROR - Could not chdir back to cwd  \n"); 
+          return 1; 
+      }
+      bzero((void*)dirname,sizeof(dirname));
+      getcwd(dirname, sizeof(dirname));
+      printf("current working director is %s \n", fname);
+*/
 
   /* writing the top ascii header for the restart file */
 

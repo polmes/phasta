@@ -689,7 +689,7 @@
 !
       if (idebug == 1) then
         call mpi_barrier(mpi_comm_world, ierr) 
-        do i=0,numpe
+        do i=0,numpe-1
           if(myrank == i) then
             write(*,926) myrank, (icountN(j),j=1,irankN)
           endif

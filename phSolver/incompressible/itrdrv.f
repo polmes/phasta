@@ -85,7 +85,6 @@ c
 
         real*8 vbc_prof(nshg,3)
 
-        integer stopjob
         character*10 cname2
         character*5  cname
         integer i_redist_counter

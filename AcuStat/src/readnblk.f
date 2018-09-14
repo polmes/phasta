@@ -43,6 +43,7 @@ c
       real*8, allocatable :: uread(:,:), acread(:,:)
       real*8, allocatable :: BCinpread(:,:)
       real*8 globmax,globmin
+      integer, allocatable :: iwtTot(:), iwtQTot(:)
       integer, allocatable :: iperread(:), iBCtmpread(:)
       integer, allocatable :: ilworkread(:), nBCread(:)
       character*10 cname2
@@ -78,7 +79,7 @@ c
       rFnlz=0
       rWrite=0
 
-      debug = 0
+      debug = 1  ! added the option of 2 to get more verbosity
 
       numts=-1
 
@@ -93,6 +94,7 @@ c
           read(24,*) numphavg
           read(24,*) ivort
           read(24,*) idwal
+          read(24,*) iStepsPerCycle
         else
            write(*,*) 'ERROR: Input file ',
      &                 trim(fnamer),' does not exist!'
@@ -156,6 +158,13 @@ c
       call MPI_Bcast(numphavg,1,MPI_INTEGER,0,MPI_COMM_WORLD, ierr)
       call MPI_Bcast(idwal,1,MPI_INTEGER,0,MPI_COMM_WORLD, ierr)
       call MPI_Bcast(ivort,1,MPI_INTEGER,0,MPI_COMM_WORLD, ierr)
+      call MPI_Bcast(iStepsPerCycle,1,MPI_INTEGER,0,MPI_COMM_WORLD, ierr)
+      if(numphavg .gt. 0) then
+          allocate(iwtTot(numphavg))
+          allocate(iwtQTot(numphavg))
+          iwtTot=0
+          iwtQTot=0
+      endif
 
 !      write(*,*) 'my rank is: ',myrank,numts
 
@@ -186,10 +195,45 @@ c
 !
         timestep = tablets(its,1)
         sumts = tablets(its,2)
+! because not all versions of phasta collect Qbar KEJ put another
+! column into the ts table for Q  Note it is always either 0 if the Q
+! was not collected for that step or equal to the second if it was.
         sumtsQ = tablets(its,3)
         totsumts = totsumts + sumts
         totsumtsQ=totsumtsQ + sumtsQ
+        if(numphavg.gt.0) then
+! note that the phase-averaging in phasta was mistakenly keyed off of
+! istep (which starts at zero for every run) instead of lstep, the
+! actual step number.  For this reason, if you ever stop on anything but
+! zero phase,then phases in file will be off.  Luckily we can correct
+! for  such mistakes here by introducing a new variable, iphShift which
+! can be calculated  with knowledge of the number of time steps per cycle
+! which is a new required variable with this version.
+          itsStart=timestep-sumts
+          iCycleStep=mod(itsStart,iStepsPerCycle)
+          iphShift=(iCycleStep*numphavg)/iStepsPerCycle ! will be zero if old way
+          if((debug.ge.1).and.(myrank.eq.0)) then
+            write(*,*) 'itsStart,iCycleStep,iphShift'
+            write(*,*) itsStart, iCycleStep,iphShift 
+          endif
+!
+!  computing weights is also more complicated because not every phase 
+!  will have the same weight if not all complete cycles
+          iwtmin=sumts/iStepsPerCycle  !integer round down brings this to minimum
+        
+! we now have the possibility that there will be a certain number of
+! phases that have one more than the rest.  This number is
 
+          iextraPhases=(sumts*numphavg)/iStepsPercycle-iwtmin*numphavg
+          if((debug .ge. 1) .and. (myrank .eq. 0)) then
+             write(*,*) 'iwtmin,iextraphases'
+             write(*,*) iwtmin,iextraPhases
+          endif
+! and they will be ifrst iextraPhases encountered in the phase averaging
+! below so this number will help us know which iwt to bump one up from
+! the iwtmin computed above (think of wrapping around at the end).
+        endif
+         
 !
 !       Get the right restart files
 !
@@ -199,7 +243,7 @@ c
         write (fnamer,fmt1) timestep
         fnamer = trim(fnamer) // cname2(color+1)
 
-        if(debug==1) then
+        if ((myrank .eq. 0) .and. ( debug .ge. 1 )) then
          write(*,*)myrank,timestep,nfiles,numparts,trim(adjustl(fnamer))
         endif
 
@@ -324,7 +368,7 @@ c
 !            write(*,*) temp1  !   ('phase_average',i1,'@',i1,A1)
             write (fname1,temp1) iphavg,(myrank+1),'?'
             fname1 = trim(fname1)
-            if(debug == 1) then
+            if(debug == 2) then
               if(myrank == 0 .or. myrank  == numpe-1) then
                 write(*,*)'Rank: ',myrank,'- phase: ',
      &                     iphavg,' - field: ',trim(fname1)
@@ -361,17 +405,40 @@ c
      &sumts,sumtsq'
           write(*,*)ndofybar,ndofyphbar,totsumts,totsumtsQ,sumts,sumtsq
             endif
-            ! Weight correctly the field and accumulate for average 
-        if(ndofybar.eq.ndofybar1) then ! we are as big as the biggest but last may have different weight
-          qyphbarcumul(:,1:ndofyphbar-1,iphavg) = qyphbarcumul(:,1:ndofyphbar-1,iphavg) 
-     &                               + qread (:,1:ndofyphbar-1)*sumts
-          qyphbarcumul(:,ndofyphbar,iphavg) = qyphbarcumul(:,ndofyphbar,iphavg) 
-     &                               + qread (:,ndofyphbar)*sumtsQ
-        else ! these are pre-Q files in mixed case..this one is small so sumts covers all 
-          qyphbarcumul(:,1:ndofyphbar,iphavg) = qyphbarcumul(:,1:ndofyphbar,iphavg) 
-     &                               + qread (:,1:ndofyphbar)*sumts
-        endif
+!
+!     fix to code to allow phaseShift from runs that did not stop on
+!     phase 0/24
 
+            iphavgC=mod(iphavg+iphShift,numphavg)
+            if(iphavgC.eq.0) iphavgC=numphavg
+! and they will be ifrst iextraPhases encountered in the phase averaging
+! below so this number will help us know which iwt to bump one up from
+! the iwtmin computed above (think of wrapping around at the end).
+            iwt=iwtmin
+            if(iphavg.le.iextraPhases) iwt=iwt+1
+            iwtQ=0
+            if(sumtsQ.eq.sumts) iwtQ=iwt
+
+            if(((iphavg .eq.1) .and. (debug .ge. 1)) .and. (myrank.eq.0) ) then
+              write(*,*) 'iphavg,iphAvgC,iwt,iwtQ'
+              write(*,*) iphavg,iphAvgC,iwt, iwtQ
+            endif
+
+            ! Weight correctly the field and accumulate for average 
+            if(ndofybar.eq.ndofybar1) then ! we are as big as the biggest but last may have different weight
+              qyphbarcumul(:,1:ndofyphbar-1,iphavgC) = 
+     &        qyphbarcumul(:,1:ndofyphbar-1,iphavgC) +
+     &              qread (:,1:ndofyphbar-1)*iwt
+              qyphbarcumul(:,  ndofyphbar  ,iphavgC) = 
+     &        qyphbarcumul(:,  ndofyphbar  ,iphavgC) + 
+     &              qread (:,  ndofyphbar)*iwtQ
+            else ! these are pre-Q files in mixed case..this one is small so sumts covers all 
+              qyphbarcumul(:,1:ndofyphbar,iphavgC) = 
+     &        qyphbarcumul(:,1:ndofyphbar,iphavgC) +
+     &              qread (:,1:ndofyphbar)*iwt
+            endif
+            iwtTot(iphavgC)=iwtTot(iphavgC)+iwt
+            iwtQTot(iphavgC)=iwtQTot(iphavgC)+iwtQ
             rStat=rStat+ TMRC()-rdelta
             deallocate(qread)
           enddo
@@ -505,10 +572,13 @@ c
       if(numphavg .gt. 0) then
        do iphavg = 1,numphavg
          if(totsumts.eq.totsumsQ)  then
-           qyphbarcumul(:,1:ndofyphbar,iphavg) = qyphbarcumul(:,1:ndofyphbar,iphavg)/totsumts
+           qyphbarcumul(:,1:ndofyphbar,iphavg) = 
+     &     qyphbarcumul(:,1:ndofyphbar,iphavg)/iwtTot(iphavg)
          else ! more fields in the some files but that means different samples
-           qyphbarcumul(:,1:ndofyphbar1-1,iphavg) = qyphbarcumul(:,1:ndofyphbar1-1,iphavg)/totsumts
-           qyphbarcumul(:,ndofyphbar1,iphavg) = qyphbarcumul(:,ndofyphbar1,iphavg)/totsumtsQ
+           qyphbarcumul(:,1:ndofyphbar1-1,iphavg) = 
+     &     qyphbarcumul(:,1:ndofyphbar1-1,iphavg)/iwtTot(iphavg)
+           qyphbarcumul(:,  ndofyphbar1  ,iphavg) = 
+     &     qyphbarcumul(:,  ndofyphbar1  ,iphavg)/iwtQTot(iphavg)
          endif
        enddo
       endif

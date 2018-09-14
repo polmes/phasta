@@ -118,7 +118,7 @@ c
         if(exlog) then
 
            !display to screen if BC's will be adjusted from file
-           if(myrank == 0)write(*,*)"adjusting BC's from file"
+           if(myrank == 0)write(*,*)"adjusting BCs or ICs from inlet.dat file"
 
            !open inlet.dat file for reading
            open (unit=654,file="inlet.dat",status="old")
