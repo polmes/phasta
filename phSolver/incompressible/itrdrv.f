@@ -833,8 +833,9 @@ c
                Delt(1)=Deltt
                Dtgl =Dtglt
             endif          
-           if((myrank.eq.0) .and. 
-     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+!           if((myrank.eq.0) .and. 
+!     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+           if((myrank.eq.0)) then 
             write(*,7001) 'CFL Flow  Step  CFLfl_max  dt',
      &                    lstep+1, CFLfl_max, delt(itseq)
            endif
