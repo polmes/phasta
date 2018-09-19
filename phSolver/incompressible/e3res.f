@@ -158,7 +158,7 @@ c                                                      vvvvv
          rGNa(:,3,2) = rGNa(:,3,2) - rlsli(:,6)*rho(:)
          rGNa(:,3,3) = rGNa(:,3,3) - rlsli(:,3)*rho(:)
       endif  
-   
+  
       tmp1        = tauM * rLui(:,1) 
       tmp2        = tauM * rLui(:,2) 
       tmp3        = tauM * rLui(:,3)
@@ -251,7 +251,7 @@ c
      &                + shg(1:blk%e,aa,1) * rGNa(1:blk%e,3,1)
      &                + shg(1:blk%e,aa,2) * rGNa(1:blk%e,3,2)
      &                + shg(1:blk%e,aa,3) * rGNa(1:blk%e,3,3) )
-      
+
       enddo                 
 c
 c.... return
