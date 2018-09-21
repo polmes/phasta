@@ -811,13 +811,12 @@ c
 c.... obtain the time average statistics
 c
             if (ioform .eq. 2) then
+               icode=0 ! needed so that tauC and tauBar are computed again
                call stsGetStats( y,      yold,     ac,     acold,
      &                           u,      uold,     x,
      &                           shp,    shgl,     shpb,   shglb,
      &                           iBC,    BC,       iper,   ilwork,
      &                           rowp,   colm)
-!               call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-!               if(myrank.eq.master) write(*,*) 'after stsGetStats'
             endif
 
 c     
