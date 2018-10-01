@@ -72,7 +72,7 @@ c-----------------------------------------------------------------------
           idwalmode=idwalmode-2  ! 2 goes to 0 which is a recompute allgather style 3 goes to 1 which is a recompute BCAST
           ifoundd2wall=0
       endif
-
+      
       if(ifoundd2wall.eq.0) then   ! d2wall was not found so calculate the distance
         if(myrank.eq.master) then
           write (*,*) 'Computing the d2wall field'

@@ -132,6 +132,9 @@ c ----  Variables for random initial condition field
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
+
+        real*8 diff
+
 !--------------------------------------------------------------------
 !     Setting up svLS
 #ifdef HAVE_SVLS
@@ -500,7 +503,21 @@ c
 c.... -----------------------> predictor phase <-----------------------
 c
             call itrPredict(yold, y,   acold,  ac ,  uold,  u, iBC)
-            call itrBC (y,  ac,  iBC,  BC,  iper,ilwork)
+            call itrBCX (y,  ac,  iBC,  BC,  iper,ilwork,x)
+!            do i=1,numnp
+!               diff=(x(i,1)-x(iper(i),1))+(x(i,2)-x(iper(i),2))
+!               if (abs(diff).gt.1.0e-16) then
+!                 write(*,*) 'nodes not aligned on iper pair'
+!                 write(*,*) 'node misalignment in iper pair is: ',diff
+!               endif
+!            enddo
+!            do i=1,nshg
+!               diff=maxval(abs(y(i,:)-y(iper(i),:)))
+!               if (diff.ne.zero) then
+!                  write(*,*) 'solution does not match on iper node pair'
+!                  write(*,*) 'solution diff in iper pair is: ',diff
+!               endif
+!            enddo
 
             if(nsolt.eq.1) then
                isclr=0
@@ -713,7 +730,7 @@ c     Delt(1)= Deltt ! Give a pseudo time step
                 iupdate=icode/10  ! what to update
                 if(icode.eq.1) then !update flow  
                   call itrCorrect ( y,    ac,    u,   solinc, iBC)
-                  call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
+                  call itrBCX (y,  ac,  iBC,  BC, iper, ilwork,x)
                 else  ! update scalar
                   isclr=iupdate  !unless
                   if(icode.eq.6) isclr=0
@@ -845,7 +862,7 @@ c
            endif
  7001      format(a42,1p,i8,e10.3,e10.3)
             call itrUpdate( yold,  acold,   uold,  y,    ac,   u)
-            call itrBC (yold, acold,  iBC,  BC,  iper,ilwork)
+            call itrBCX (yold, acold,  iBC,  BC,  iper,ilwork,x)
 
             istep = istep + 1
             lstep = lstep + 1
