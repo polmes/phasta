@@ -27,6 +27,7 @@ c ilwork array appear below.
 c
 c---------------------------------------------------------------------
 c
+      use turbsa
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -40,7 +41,6 @@ c
  
       character*3 code
  
-      real*8 ysend(maxfront,1,numpe), yrec(maxfront,numpe,1), diff
 
       if(impistat2.eq.1) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
       if(impistat.gt.0) rDelIRecv = zero
@@ -200,7 +200,7 @@ c
                  do i=istart,iend
                     if (x(i,3).lt.1e-4.or.x(i,3).gt.1.4999) then
                        if(global(i,1).ne.(x(i,1)+x(i,2))) then
-                         write(*,*) 'WARNING!!'
+!                         write(*,*) 'WARNING!!'
                        endif
                     endif
                  enddo
@@ -267,8 +267,10 @@ c
                  iend=istart+length-1
                  do i=istart,iend
 !                    write(*,*) x(i,1),x(i,2),x(i,3)
-                    if (x(i,3).lt.1e-4.or.x(i,3).gt.1.4999) then
-                       global(i,1)=x(i,1)+x(i,2)
+                    if (x(i,3).lt.1e-4.or.x(i,3).gt.0.13599) then
+                       if (d2wall(i).ge.0.0574) then
+                          global(i,3)=zero !x(i,1)+x(i,2)
+                       endif
                     endif
                  enddo
             enddo

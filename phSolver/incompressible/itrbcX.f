@@ -106,10 +106,10 @@ c.... hack to set spanwise (z) velocity to zero above the BL in case
 c.... where periodicity results in divergence of residuals
 c
         do i=1,nshg
-           if (btest(iBC(i),10).and.ihaved2wall.eq.1) then
-              if (d2wall(i).gt.0.1) then
-                 y(i,:) = x(i,1)+x(i,2)
-                 y(iper(i),:) = x(i,1)+x(i,2)
+           if (btest(iBC(i),10)) then
+              if (d2wall(i).gt.0.0574) then
+                 y(i,3) = zero !x(i,1)+x(i,2)
+                 y(iper(i),3) = zero !x(i,1)+x(i,2)
               endif
            endif
         enddo
