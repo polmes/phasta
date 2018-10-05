@@ -105,6 +105,20 @@ c.... read and generate the boundary condition codes (iBC array)
 c
         call geniBC (iBC)
 c
+c.... modify the iBC array to take out the comp1 on the side walls of the Boeing Bump
+c.... careful not to change the iBC at the side wall nodes that are on the no slip wall
+c.... and those at the inflow
+c
+        do i=1,nshg
+           if (x(i,3).lt.0.001.or.x(i,3).gt.1.499) then
+                if (x(i,2).gt.1e-10.and.x(i,2).lt.(1-1e-10)) then
+                  if (x(i,1).gt.1e-10) then
+                     iBC(i) = iBC(i)-32
+                  endif
+                endif
+           endif
+        enddo
+c
 c.... read and generate the essential boundary conditions (BC array)
 c
         call genBC  (iBC,   BC,   point2x,
