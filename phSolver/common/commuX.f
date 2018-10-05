@@ -41,7 +41,6 @@ c
  
       character*3 code
  
-
       if(impistat2.eq.1) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
       if(impistat.gt.0) rDelIRecv = zero
       if(impistat.gt.0) rDelISend = zero
@@ -179,32 +178,32 @@ c
 !            ilast=(sevsegtype(itask,kdof)+1)/4
 !            write(*,*) 'last node is: ',x(ilast,1),x(ilast,2),x(ilast,3)
 !            write(*,*) 'all node coordinates are:'
-            do is=1,numseg
-                 istart=ilwork(itkbeg+3+2*is)
-                 length=ilwork(itkbeg+4+2*is)
-                 iend=istart+length-1
-                 do i=istart,iend
+!            do is=1,numseg
+!                 istart=ilwork(itkbeg+3+2*is)
+!                 length=ilwork(itkbeg+4+2*is)
+!                 iend=istart+length-1
+!                 do i=istart,iend
 !                   write(*,*) x(i,1),x(i,2),x(i,3)
-                 enddo
-            enddo
+!                 enddo
+!            enddo
 !            write(*,*) 'all x velocities are:'
 !            do i=isgbeg,isgbeg+sevsegtype(itask,kdof)
 !                 write(*,*) global(i,1),global(i,2),global(i,3)
 !            enddo
             call MPI_IRECV(global(isgbeg, 1), 1, sevsegtype(itask,kdof), 
      &                     iother, itag, MPI_COMM_WORLD, req(m), ierr)
-            do is=1,numseg
-                 istart=ilwork(itkbeg+3+2*is)
-                 length=ilwork(itkbeg+4+2*is)
-                 iend=istart+length-1
-                 do i=istart,iend
-                    if (x(i,3).lt.1e-4.or.x(i,3).gt.1.4999) then
-                       if(global(i,1).ne.(x(i,1)+x(i,2))) then
+!            do is=1,numseg
+!                 istart=ilwork(itkbeg+3+2*is)
+!                 length=ilwork(itkbeg+4+2*is)
+!                 iend=istart+length-1
+!                 do i=istart,iend
+!                    if (x(i,3).lt.1e-4.or.x(i,3).gt.1.4999) then
+!                       if(global(i,1).ne.(x(i,1)+x(i,2))) then
 !                         write(*,*) 'WARNING!!'
-                       endif
-                    endif
-                 enddo
-            enddo
+!                       endif
+!                    endif
+!                 enddo
+!            enddo
             if(impistat.gt.0) rDelIRecv = TMRC()-rmpitmr
             if(impistat.eq.1) then 
               rIRecv = rIRecv+rDelIRecv
@@ -261,19 +260,19 @@ c
 !            ilast=(sevsegtype(itask,kdof)+1)/4
 !            write(*,*) 'last node is: ',x(ilast,1),x(ilast,2),x(ilast,3) 
 !            write(*,*) 'all node coordinates are:'
-            do is=1,numseg
-                 istart=ilwork(itkbeg+3+2*is)
-                 length=ilwork(itkbeg+4+2*is)
-                 iend=istart+length-1
-                 do i=istart,iend
+!            do is=1,numseg
+!                 istart=ilwork(itkbeg+3+2*is)
+!                 length=ilwork(itkbeg+4+2*is)
+!                 iend=istart+length-1
+!                 do i=istart,iend
 !                    write(*,*) x(i,1),x(i,2),x(i,3)
-                    if (x(i,3).lt.1e-4.or.x(i,3).gt.0.13599) then
-                       if (d2wall(i).ge.0.0574) then
-                          global(i,3)=zero !x(i,1)+x(i,2)
-                       endif
-                    endif
-                 enddo
-            enddo
+!                    if (x(i,3).lt.1e-4.or.x(i,3).gt.0.13599) then
+!                       if (d2wall(i).ge.0.0574) then
+!                          global(i,3)=zero !x(i,1)+x(i,2)
+!                       endif
+!                    endif
+!                 enddo
+!            enddo
 !            write(*,*) 'all x velocities are:'
 !            do i=isgbeg,isgbeg+sevsegtype(itask,kdof)
 !                 write(*,*) global(i,1),global(i,2),global(i,3)
