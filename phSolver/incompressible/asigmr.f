@@ -123,7 +123,7 @@ c
 
         if (exts.and.ires.ne.2) then
            if ((iter.eq.1).and.(mod(lstep,freq).eq.0)) then
-              call timeseries(yl,xl,ien,sgn)
+              call timeseries(blk,yl,xl,ien,sgn)
            endif
         endif
         

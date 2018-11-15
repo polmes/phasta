@@ -483,12 +483,12 @@ c        call openFiles()
                 call findUBarandDeriv(x,n,reyS,turbVisc)
                 dist=d2Wall(stgSurf(n))
                 if(abs(dist).gt.1e-15.and.
-     &              dist.lt.1.0*deltaBLSTG)then
+     &              dist.lt.1.2*deltaBLSTG)then
                 !Find Reynold's Stress/cholesky decomp
                     if (reyS(1).gt.zero) then
                        Cho(1,1)=sqrt(reyS(1))
                     else
-!                       write(*,*) 'WARNING: reyS(1) <= 0'
+                       write(*,*) 'WARNING: reyS(1) <= 0 at y= ',dist
                        Cho(1,1)=sqrt(1.0e-3)
                     endif
                     Cho(1,2)=0
@@ -498,8 +498,10 @@ c        call openFiles()
                     if (tmp.gt.zero) then
                        Cho(2,2)=sqrt(tmp)
                     else
-!                       write(*,*) 'WARNING: reyS(2)>=Cho(2,1)^2'
-                       Cho(2,2)=sqrt(1e-3)
+                       write(*,*) 'WARNING: reyS(2)>=Cho(2,1)^2 at y= ',
+     &                             dist
+                       !Cho(2,2)=sqrt(1e-3)
+                       Cho(2,2)=-one*1.150*Cho(2,1)
                     endif
                     Cho(2,3)=0
                     Cho(3,1)=reyS(5)/Cho(1,1)
@@ -508,8 +510,9 @@ c        call openFiles()
                     if (tmp.gt.zero) then
                        Cho(3,3)=sqrt(tmp)
                     else
-!                       write(*,*) 'WARNING: problem with Cho(3,3)'
-                       Cho(3,3)=sqrt(1e-3)
+                       write(*,*) 'WARNING: problem with Cho(3,3) at
+     &                              y=',dist
+                       Cho(3,3)=sqrt(1.0e-3)
                     endif
                     !assign qN,r',and v'
                     vPrime1=0.0
