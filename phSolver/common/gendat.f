@@ -109,6 +109,7 @@ c.... modify the iBC array to take out the comp1 on the side walls of the Boeing
 c.... careful not to change the iBC at the side wall nodes that are on the no slip wall
 c.... and those at the inflow
 c
+        if (iNoSymm.eq.1) then
         do i=1,nshg
            ! if node is on side walls
            if (x(i,3).lt.1.0e-6.or.x(i,3).gt.0.1359999) then 
@@ -126,6 +127,7 @@ c
                 endif
            endif
         enddo
+        endif
 c
 c.... read and generate the essential boundary conditions (BC array)
 c

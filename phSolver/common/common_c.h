@@ -476,6 +476,7 @@ extern "C" {
     int leslib;
     int svLSFlag;
     int svLSType;
+    int iNoSymm;
   } inpdat ;
 
   extern struct { 

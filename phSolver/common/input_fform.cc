@@ -838,6 +838,9 @@ int input_fform(phSolver::Input& inp)
          == "True") ? sclrs.nosource = 1 : sclrs.nosource = 0;
     sclrs.tdecay=inp.GetValue("Decay Multiplier for Scalars");
 
+    // Boundary Condition Control
+    inpdat.iNoSymm=inp.GetValue("Remove No Penetration Vel BC");
+
     // TURBULENCE MODELING PARAMETER
     int tpturb = turbvari.iles-turbvari.irans;
     int ifrule;
