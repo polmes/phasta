@@ -427,7 +427,7 @@ c       If not the first time step of STG, the random variables were read from t
       
       real*8 :: ke
       real*8 :: midTemp,hTemp,lTemp,uBar_Tol,ka,qN,totqN,rPrime1,rPrime2 
-      real*8 :: rPrime3,dNdotRPrime,vPrime1,vPrime2,vPrime3
+      real*8 :: rPrime3,dNdotRPrime,vPrime1,vPrime2,vPrime3,rPrime1Den
       real*8 :: turbKin,lAta
       real*8 :: fcut,leta,keta,feta
       real*8, dimension(3,3) :: Cho
@@ -529,7 +529,8 @@ c        call openFiles()
                             qN=(eng(n,k)*(kN(k)-kN(k-1)))/totEng(n)
                             totqN=totqN+qN
                         endif
-                        rPrime1=(2.0*atan2(0.0,-1.0)*(x(stgSurf(n),1)-uNaught*t))/(kN(k)*leMax)
+                        rPrime1Den = kN(k)*min(leMax,10.0*2*atan2(0.0,-1.0)/kN(k))
+                        rPrime1=(2.0*atan2(0.0,-1.0)*(x(stgSurf(n),1)-uNaught*t))/rPrime1Den
                         rPrime2=x(stgSurf(n),2)
                         rPrime3=x(stgSurf(n),3)
                         dNdotRPrime=dVect(k,1)*rPrime1+dVect(k,2)*rPrime2+dVect(k,3)*rPrime3
