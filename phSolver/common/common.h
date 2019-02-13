@@ -212,7 +212,7 @@ c
      &                  istretchOutlet, iremoveStabTimeTerm, iLHScond
 
 c
-        integer :: svLSType, svLSFlag, iNoSymm
+        integer :: svLSType, svLSFlag, iNoSymm, iRandomIC
         common /inpdat/ epstol(6),  Delt(MAXTS),    CFLfl(MAXTS),
      &                  CFLsl(MAXTS),   nstep(MAXTS),   niter(MAXTS),
      &                  impl(MAXTS),    rhoinf(MAXTS),
@@ -220,7 +220,8 @@ c
      &                  CFLfl_max, iCFLfl_maxelem, iflag_cfl_dt,
      &                  CFLfl_limit, timestart, CFLls_max, 
      &                  iCFLls_maxelem,
-     &                  leslib,     svLSFlag,   svLSType, iNoSymm
+     &                  leslib,     svLSFlag,   svLSType, iNoSymm,
+     &                  iRandomIC
 c
         common /intdat/ intg(2,MAXTS),  intpt(3),       intptb(3)
 c

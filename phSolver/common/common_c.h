@@ -477,6 +477,7 @@ extern "C" {
     int svLSFlag;
     int svLSType;
     int iNoSymm;
+    int iRandomIC;
   } inpdat ;
 
   extern struct { 

@@ -210,33 +210,23 @@ c
 
 c ----- Add a random fluctiation to the initial velocity field
 c ----- to start the WMLES branch of the IDDES model
-c        call random_seed
-cc        call random_seed(size=seed_size)
-cc        allocate(seed1(seed_size))
-cc        call random_seed(get=seed1)
-cc        randtmp=time
-cc        seed1=314159265+2*randtmp
-cc        call random_seed(put=seed1)
-c        do kk=1, nshg
-c           do ik=1,3
-c              call random_number(r) ! r is a random number between 0 and 1
-cc              write(*,*) r
-c              if (ik.eq.1) then
-cc                 y(kk,ik) = y(kk,ik) + (6*0.2*r-0.6)
-c                 var = yold(kk,ik) 
-c                 yold(kk,ik) = var + (0.3*r*var-0.15*var) 
-c              else
-ccc                 y(kk,ik) = y(kk,ik) + (0.2*r-0.1)
-c                 yold(kk,ik) = yold(kk,ik) + (0.3*r-0.15)
-c              endif
-c           enddo
-c        enddo
-cc        deallocate(seed1)
-c        yold(:,6) = 5.40e-5 ! not when doing LES
+        if (iRandomIC.eq.1) then
+          call random_seed
+          do kk=1, nshg
+           if (d2wall(kk).lt.STGDelBL) then
+             do ik=1,3
+               call random_number(r) ! r is a random number between 0 and 1
+               if (ik.eq.1) then
+                 var = yold(kk,ik) 
+                 yold(kk,ik) = var + (0.2*r*var-0.1*var) 
+               else
+                 yold(kk,ik) = yold(kk,ik) + (0.2*r-0.1)
+               endif
+             enddo
+           endif
+          enddo
+        endif
 c ----- End of modification to the initial velocity field
-
-
-
 
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
