@@ -783,8 +783,10 @@ c
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem1,inod,i)
+     &                     - BC(in,6) * xlhs(iel,ire21,inod,i) 
                xlhs(iel,iadj2,inod,i) = xlhs(iel,iadj2,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem2,inod,i) 
+     &                     - BC(in,6) * xlhs(iel,ire22,inod,i) 
                xlhs(iel,iadj3,inod,i) = xlhs(iel,iadj3,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem3,inod,i) 
      &                     - BC(in,6) * xlhs(iel,ire23,inod,i) 
