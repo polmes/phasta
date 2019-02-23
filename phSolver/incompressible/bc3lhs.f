@@ -771,32 +771,20 @@ c
 c  now adjust the first row_block-9 for EACH row nshl for EACH element 
 c
 
-            iadj1=9
+            iadj1=1
             iadj2=iadj1+1
             iadj3=iadj2+1
-            irem1=1
+            irem1=5
             irem2=irem1+1
             irem3=irem2+1
-            ire21=5
+            ire21=9
             ire22=ire21+1
             ire23=ire22+1
             do i = 1, nshl
-!This matches older code and seems to work but possibly because this
-!combo not actually used
-!               xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
-!     &                     - BC(in,4) * xlhs(iel,irem1,inod,i)
-!               xlhs(iel,iadj2,inod,i) = xlhs(iel,iadj2,inod,i) 
-!     &                     - BC(in,4) * xlhs(iel,irem2,inod,i) 
-!               xlhs(iel,iadj3,inod,i) = xlhs(iel,iadj3,inod,i) 
-!     &                     - BC(in,4) * xlhs(iel,irem3,inod,i) 
-!     &                     - BC(in,6) * xlhs(iel,ire23,inod,i) 
-!doubtful above is right but in first pass matching JRT-posix code
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
-     &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
-     &                     - BC(in,6) * xlhs(iel,ire21,inod,i) 
+     &                     - BC(in,4) * xlhs(iel,irem1,inod,i)
                xlhs(iel,iadj2,inod,i) = xlhs(iel,iadj2,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem2,inod,i) 
-     &                     - BC(in,6) * xlhs(iel,ire22,inod,i) 
                xlhs(iel,iadj3,inod,i) = xlhs(iel,iadj3,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem3,inod,i) 
      &                     - BC(in,6) * xlhs(iel,ire23,inod,i) 
