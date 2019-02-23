@@ -69,7 +69,6 @@ c
 ! ordered like this   
 !note as of 16-Sept-25  mapping this directly to 4x4 system to eliminate the need for
 ! xKebe....Suspect there was a  transpose problem here  that is fixed at same time
-! This version rejects the transpose
 
 ! index map
 !xKebe -> xlhs
@@ -84,7 +83,10 @@ c
 !  4 5 6
 !  7 8 9
 
-
+! should be 
+!  1 5 9
+!  2 6 10
+!  3 7 11
 
 
 c
@@ -92,12 +94,12 @@ c  adjusting the second column for the eventual removal of the first
 c  column of the block-9 submatrix
 c
             irem1=1
-            irem2=irem1+4
-            irem3=irem2+4
+            irem2=irem1+1
+            irem3=irem2+1
 
-            iadj1=2
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj1=5
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,4) * xlhs(iel,irem1,i,inod) 
@@ -108,16 +110,16 @@ c
 
             enddo
 ! block status ' denotes colunn 1 projected off.
-!  1 2' 3 COMMENTS NOT FIXED UNTIL THIS WORKS
+!  1 5' 9
 !  2 6' 10
 !  3 7' 11
 c
 c  adjusting the third column for the eventual removal of the first
 c  column of the block-9 submatrix
 c
-            iadj1=3
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj1=9
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,5) * xlhs(iel,irem1,i,inod) 
@@ -149,12 +151,12 @@ c
 c  now adjust the second row_block-9 for EACH row nshl for EACH element 
 c
 
-            iadj1=5
-            iadj2=iadj1+1
-            iadj3=iadj2+1
+            iadj1=2
+            iadj2=iadj1+4
+            iadj3=iadj2+4
             irem1=1
-            irem2=irem1+1
-            irem3=irem2+1
+            irem2=irem1+4
+            irem3=irem2+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
@@ -170,9 +172,9 @@ c
 !  0 7' 11'
 
 
-            iadj1=9
-            iadj2=iadj1+1
-            iadj3=iadj2+1
+            iadj1=3
+            iadj2=iadj1+4
+            iadj3=iadj2+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,5) * xlhs(iel,irem1,inod,i) 
@@ -228,13 +230,13 @@ c
 c  adjusting the first column for the eventual removal of the second
 c  column of the block-9 submatrix
 c
-            irem1=2
-            irem2=irem1+4
-            irem3=irem2+4
+            irem1=5
+            irem2=irem1+1
+            irem3=irem2+1
 
             iadj1=1
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,4) * xlhs(iel,irem1,i,inod) 
@@ -252,9 +254,9 @@ c
 c  adjusting the third column for the eventual removal of the second
 c  column of the block-9 submatrix
 c
-            iadj1=3
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj1=9
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,5) * xlhs(iel,irem1,i,inod) 
@@ -287,11 +289,11 @@ c  now adjust the first row_block-9 for EACH row nshl for EACH element
 c
 
             iadj1=1
-            iadj2=iadj1+1
-            iadj3=iadj2+1
-            irem1=5
-            irem2=irem1+1
-            irem3=irem2+1
+            iadj2=iadj1+4
+            iadj3=iadj2+4
+            irem1=2
+            irem2=irem1+4
+            irem3=irem2+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
@@ -307,9 +309,9 @@ c
 !  3'  0 11'
 
 
-            iadj1=9
-            iadj2=iadj1+1
-            iadj3=iadj2+1
+            iadj1=3
+            iadj2=iadj1+4
+            iadj3=iadj2+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,5) * xlhs(iel,irem1,inod,i) 
@@ -365,13 +367,13 @@ c
 c  adjusting the first column for the eventual removal of the third
 c  column of the block-9 submatrix
 c
-            irem1=3
-            irem2=irem1+4
-            irem3=irem2+4
+            irem1=9
+            irem2=irem1+1
+            irem3=irem2+1
 
             iadj1=1
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,4) * xlhs(iel,irem1,i,inod) 
@@ -389,9 +391,9 @@ c
 c  adjusting the second  column for the eventual removal of the third
 c  column of the block-9 submatrix
 c
-            iadj1=2
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj1=5
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,5) * xlhs(iel,irem1,i,inod) 
@@ -424,11 +426,11 @@ c  now adjust the first row_block-9 for EACH row nshl for EACH element
 c
 
             iadj1=1
-            iadj2=iadj1+1
-            iadj3=iadj2+1
-            irem1=9
-            irem2=irem1+1
-            irem3=irem2+1
+            iadj2=iadj1+4
+            iadj3=iadj2+4
+            irem1=3
+            irem2=irem1+4
+            irem3=irem2+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
@@ -444,9 +446,9 @@ c
 !  3'  7' 0
 
 
-            iadj1=5
-            iadj2=iadj1+1
-            iadj3=iadj2+1
+            iadj1=2
+            iadj2=iadj1+4
+            iadj3=iadj2+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,5) * xlhs(iel,irem1,inod,i) 
@@ -504,16 +506,16 @@ c  adjusting the 3rd column for the eventual removal of the first and second
 c  column of the block-9 submatrix
 c
             irem1=1
-            irem2=irem1+4
-            irem3=irem2+4
+            irem2=irem1+1
+            irem3=irem2+1
 
-            ire21=2
-            ire22=ire21+4
-            ire23=ire22+4
+            ire21=5
+            ire22=ire21+1
+            ire23=ire22+1
 
-            iadj1=3
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj1=9
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,4) * xlhs(iel,irem1,i,inod) 
@@ -553,15 +555,15 @@ c
 c  now adjust the 3rd row_block-9 for EACH row nshl for EACH element 
 c
 
-            iadj1=9
-            iadj2=iadj1+1
-            iadj3=iadj2+1
+            iadj1=3
+            iadj2=iadj1+4
+            iadj3=iadj2+4
             irem1=1
-            irem2=irem1+1
-            irem3=irem2+1
-            ire21=5
-            ire22=ire21+1
-            ire23=ire22+1
+            irem2=irem1+4
+            irem3=irem2+4
+            ire21=2
+            ire22=ire21+4
+            ire23=ire22+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
@@ -613,16 +615,16 @@ c  adjusting the 2nd column for the eventual removal of the first and third
 c  column of the block-9 submatrix
 c
             irem1=1
-            irem2=irem1+4
-            irem3=irem2+4
+            irem2=irem1+1
+            irem3=irem2+1
 
-            ire21=3
-            ire22=ire21+4
-            ire23=ire22+4
+            ire21=9
+            ire22=ire21+1
+            ire23=ire22+1
 
-            iadj1=2
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj1=5
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,4) * xlhs(iel,irem1,i,inod) 
@@ -662,15 +664,15 @@ c
 c  now adjust the 2nd row_block-9 for EACH row nshl for EACH element 
 c
 
-            iadj1=5
-            iadj2=iadj1+1
-            iadj3=iadj2+1
+            iadj1=2
+            iadj2=iadj1+4
+            iadj3=iadj2+4
             irem1=1
-            irem2=irem1+1
-            irem3=irem2+1
-            ire21=9
-            ire22=ire21+1
-            ire23=ire22+1
+            irem2=irem1+4
+            irem3=irem2+4
+            ire21=3
+            ire22=ire21+4
+            ire23=ire22+4
             do i = 1, nshl
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
@@ -721,17 +723,17 @@ c
 c  adjusting the first column for the eventual removal of the second and third
 c  column of the block-9 submatrix
 c
-            irem1=2
-            irem2=irem1+4
-            irem3=irem2+4
+            irem1=5
+            irem2=irem1+1
+            irem3=irem2+1
 
-            ire21=3
-            ire22=ire21+4
-            ire23=ire22+4
+            ire21=9
+            ire22=ire21+1
+            ire23=ire22+1
 
             iadj1=1
-            iadj2=iadj1+4
-            iadj3=iadj2+4
+            iadj2=iadj1+1
+            iadj3=iadj2+1
             do i = 1, nshl
                xlhs(iel,iadj1,i,inod) = xlhs(iel,iadj1,i,inod) 
      &                     - BC(in,4) * xlhs(iel,irem1,i,inod) 
@@ -771,28 +773,18 @@ c
 c  now adjust the first row_block-9 for EACH row nshl for EACH element 
 c
 
-            iadj1=9
-            iadj2=iadj1+1
-            iadj3=iadj2+1
-            irem1=1
-            irem2=irem1+1
-            irem3=irem2+1
-            ire21=5
-            ire22=ire21+1
-            ire23=ire22+1
+            iadj1=1
+            iadj2=iadj1+4
+            iadj3=iadj2+4
+            irem1=2
+            irem2=irem1+4
+            irem3=irem2+4
+            ire21=3
+            ire22=ire21+4
+            ire23=ire22+4
             do i = 1, nshl
-!This matches older code and seems to work but possibly because this
-!combo not actually used
-!               xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
-!     &                     - BC(in,4) * xlhs(iel,irem1,inod,i)
-!               xlhs(iel,iadj2,inod,i) = xlhs(iel,iadj2,inod,i) 
-!     &                     - BC(in,4) * xlhs(iel,irem2,inod,i) 
-!               xlhs(iel,iadj3,inod,i) = xlhs(iel,iadj3,inod,i) 
-!     &                     - BC(in,4) * xlhs(iel,irem3,inod,i) 
-!     &                     - BC(in,6) * xlhs(iel,ire23,inod,i) 
-!doubtful above is right but in first pass matching JRT-posix code
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
-     &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
+     &                     - BC(in,4) * xlhs(iel,irem1,inod,i)
      &                     - BC(in,6) * xlhs(iel,ire21,inod,i) 
                xlhs(iel,iadj2,inod,i) = xlhs(iel,iadj2,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem2,inod,i) 
