@@ -220,7 +220,7 @@ c ----- to start the WMLES branch of the IDDES model
                  var = yold(kk,ik) 
                  yold(kk,ik) = var + (0.2*r*var-0.1*var) 
                else
-                 yold(kk,ik) = yold(kk,ik) + (0.2*r-0.1)
+                 yold(kk,ik) = yold(kk,ik) + (1.0*r-0.5)
                endif
              enddo
            endif

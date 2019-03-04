@@ -839,8 +839,13 @@ int input_fform(phSolver::Input& inp)
     sclrs.tdecay=inp.GetValue("Decay Multiplier for Scalars");
 
     // Boundary and Initial Condition Control
-    inpdat.iNoSymm=inp.GetValue("Remove No Penetration Vel BC");
-    inpdat.iRandomIC=inp.GetValue("Add Random Fluctuations to Velocity");
+    if((string)inp.GetValue("Remove No Penetration Vel BC") == "True") inpdat.iNoSymm = 1;
+    else inpdat.iNoSymm = 0;
+    if((string)inp.GetValue("Add Random Fluctuations to Velocity") == "True") {
+       inpdat.iRandomIC = 1;
+    } else {
+       inpdat.iRandomIC = 0;
+    }
 
     // TURBULENCE MODELING PARAMETER
     int tpturb = turbvari.iles-turbvari.irans;
