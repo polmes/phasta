@@ -1,19 +1,22 @@
-      subroutine scatnu (ien, strl, xmudmi, xnut, shp)
+      subroutine scatnu (blk, ien, strl, xmudmi, xnut, shp)
+      
+      use eblock
 
       include "common.h"
+      type (LocalBlkData) blk
 
-      dimension  ien(npro,nshl),       strl(npro,ngauss),
-     &           xmudmi(npro,ngauss),       shp(nshl,ngauss)
+      dimension  ien(blk%e,blk%s),       strl(blk%e,blk%g),
+     &           xmudmi(blk%e,blk%g),       shp(blk%s,blk%g)
       dimension  xnut(numnp)
 
       xmudmi=zero
 
       if(iLES.eq.5) return  ! Debugging with zero-ed model
 
-      do in = 1,nshl
-      do int = 1, ngauss
-        xmudmi(:,int) = xmudmi(:,int) + xnut(ien(:,in)) * strl(:,int)
-     &        *shp(in,int)
+      do ii = 1,blk%s
+      do intp = 1,blk%g
+        xmudmi(:,intp) = xmudmi(:,intp) + xnut(ien(:,ii)) * strl(:,intp)
+     &        *shp(ii,intp)
       enddo  
       enddo
 c

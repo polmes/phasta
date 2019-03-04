@@ -1,25 +1,28 @@
-      subroutine getstrl( y, x, ien, strnrm, shgl, shp )
+      subroutine getstrl(blk, y, x, ien, strnrm, shgl, shp )
+
+      use eblock
 
       include "common.h"
+      type (LocalBlkData) blk
 
-      dimension y(nshg,5)
-      dimension x(numnp,3),            xl(npro,nenl,3)
-      dimension ien(npro,nshl),        yl(npro,nshl,5),
-     &          u1(npro),              u2(npro),
-     &          u3(npro),              dxdxi(npro,nsd,nsd),
-     &          strnrm(npro,maxsh),    dxidx(npro,nsd,nsd),
-     &          shgl(nsd,nshl,maxsh),       shg(npro,nshl,nsd),
-     &          shp(nshl,maxsh)         
-      dimension tmp(npro),             fresli(npro,24)
+      dimension y(nshg,ndofl)
+      dimension x(numnp,nsd),            xl(bsz,blk%n,nsd)
+      dimension ien(blk%e,blk%s),        yl(bsz,blk%s,ndofl),
+     &          u1(blk%e),              u2(blk%e),
+     &          u3(blk%e),              dxdxi(blk%e,nsd,nsd),
+     &          strnrm(blk%e,blk%g),    dxidx(blk%e,nsd,nsd),
+     &          shgl(nsd,blk%s,blk%g),       shg(blk%e,blk%s,nsd),
+     &          shp(blk%s,blk%g)         
+      dimension tmp(blk%e),             fresli(blk%e,24)
 
-      call localy (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+      call localy (blk, y,      yl,     ien,    ndofl,  'gather  ')
+      call localx (blk, x,      xl,     ien,    nsd,  'gather  ')
 c
 
       if(matflg(1,1).eq.0) then ! compressible
-      yl (:,:,1) = yl(:,:,1) / (Rgas * yl(:,:,5)) 
+         yl (:,:,1) = yl(:,:,1) / (Rgas * yl(:,:,5)) 
       else
-      yl (:,:,1) = one
+         yl (:,:,1) = one
       endif
 
       do intp = 1, ngauss
@@ -33,16 +36,16 @@ c.... compute the deformation gradient
 c
         dxdxi = zero
 c
-          do n = 1, nenl
-            dxdxi(:,1,1) = dxdxi(:,1,1) + xl(:,n,1) * shgl(1,n,intp)
-            dxdxi(:,1,2) = dxdxi(:,1,2) + xl(:,n,1) * shgl(2,n,intp)
-            dxdxi(:,1,3) = dxdxi(:,1,3) + xl(:,n,1) * shgl(3,n,intp)
-            dxdxi(:,2,1) = dxdxi(:,2,1) + xl(:,n,2) * shgl(1,n,intp)
-            dxdxi(:,2,2) = dxdxi(:,2,2) + xl(:,n,2) * shgl(2,n,intp)
-            dxdxi(:,2,3) = dxdxi(:,2,3) + xl(:,n,2) * shgl(3,n,intp)
-            dxdxi(:,3,1) = dxdxi(:,3,1) + xl(:,n,3) * shgl(1,n,intp)
-            dxdxi(:,3,2) = dxdxi(:,3,2) + xl(:,n,3) * shgl(2,n,intp)
-            dxdxi(:,3,3) = dxdxi(:,3,3) + xl(:,n,3) * shgl(3,n,intp)
+          do n = 1, blk%n
+            dxdxi(1:blk%e,1,1) = dxdxi(1:blk%e,1,1) + xl(1:blk%e,n,1) * shgl(1,n,intp)
+            dxdxi(1:blk%e,1,2) = dxdxi(1:blk%e,1,2) + xl(1:blk%e,n,1) * shgl(2,n,intp)
+            dxdxi(1:blk%e,1,3) = dxdxi(1:blk%e,1,3) + xl(1:blk%e,n,1) * shgl(3,n,intp)
+            dxdxi(1:blk%e,2,1) = dxdxi(1:blk%e,2,1) + xl(1:blk%e,n,2) * shgl(1,n,intp)
+            dxdxi(1:blk%e,2,2) = dxdxi(1:blk%e,2,2) + xl(1:blk%e,n,2) * shgl(2,n,intp)
+            dxdxi(1:blk%e,2,3) = dxdxi(1:blk%e,2,3) + xl(1:blk%e,n,2) * shgl(3,n,intp)
+            dxdxi(1:blk%e,3,1) = dxdxi(1:blk%e,3,1) + xl(1:blk%e,n,3) * shgl(1,n,intp)
+            dxdxi(1:blk%e,3,2) = dxdxi(1:blk%e,3,2) + xl(1:blk%e,n,3) * shgl(2,n,intp)
+            dxdxi(1:blk%e,3,3) = dxdxi(1:blk%e,3,3) + xl(1:blk%e,n,3) * shgl(3,n,intp)
           enddo
 c
 c.... compute the inverse of deformation gradient
@@ -74,8 +77,8 @@ c
 c
 
       fresli=zero
-      do i=1,nshl
-        fresli(:,22) = fresli(:,22)+shp(i,intp)*yl(:,i,1)  ! density at qpt
+      do i=1,blk%s
+        fresli(1:blk%e,22) = fresli(1:blk%e,22)+shp(i,intp)*yl(1:blk%e,i,1)  ! density at qpt
 c       fresli(:,24) = fresli(:,24)+shp(i,intp)*yl(:,i,5)  !temperature at qpt
       enddo
 c
@@ -84,7 +87,7 @@ c     fresli(:,22)=fresli(:,22)*wght
 c     fresli(:,24)=fresli(:,24)*wght
 
 
-      do n = 1,nshl
+      do n = 1,blk%s
         shg(:,n,1) = (shgl(1,n,intp) * dxidx(:,1,1)
      &              + shgl(2,n,intp) * dxidx(:,2,1)
      &              + shgl(3,n,intp) * dxidx(:,3,1))
@@ -99,21 +102,21 @@ c     fresli(:,24)=fresli(:,24)*wght
       do j=10,12  ! normal strainrate u_{i,i} no sum on i
        ig=j-9
        iv=j-8
-       do i=1,nshl
-        fresli(:,j) = fresli(:,j)+shg(:,i,ig)*yl(:,i,iv)
+       do i=1,blk%s
+        fresli(1:blk%e,j) = fresli(1:blk%e,j)+shg(1:blk%e,i,ig)*yl(1:blk%e,i,iv)
        enddo
       enddo
 
 c shear stresses  NOTE  there may be faster ways to do this
 c                  check agains CM5 code for speed WTP
        
-       do i=1,nshl
-        fresli(:,13) = fresli(:,13)+shg(:,i,2)*yl(:,i,2)
-     &                             +shg(:,i,1)*yl(:,i,3)
-        fresli(:,14) = fresli(:,14)+shg(:,i,3)*yl(:,i,2)
-     &                             +shg(:,i,1)*yl(:,i,4)
-        fresli(:,15) = fresli(:,15)+shg(:,i,3)*yl(:,i,3)
-     &                             +shg(:,i,2)*yl(:,i,4)
+       do i=1,blk%s
+        fresli(1:blk%e,13) = fresli(1:blk%e,13)+shg(1:blk%e,i,2)*yl(1:blk%e,i,2)
+     &                             +shg(1:blk%e,i,1)*yl(1:blk%e,i,3)
+        fresli(1:blk%e,14) = fresli(1:blk%e,14)+shg(1:blk%e,i,3)*yl(1:blk%e,i,2)
+     &                             +shg(1:blk%e,i,1)*yl(1:blk%e,i,4)
+        fresli(1:blk%e,15) = fresli(1:blk%e,15)+shg(1:blk%e,i,3)*yl(1:blk%e,i,3)
+     &                             +shg(1:blk%e,i,2)*yl(1:blk%e,i,4)
        enddo
 
 

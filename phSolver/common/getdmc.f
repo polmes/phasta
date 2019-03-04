@@ -9,13 +9,17 @@ c                    shpf(maxtp,maxsh,ngaussf), and Qwtf(maxtp,ngaussf).
 c                    Shpf and shglf are the shape funciotns and their 
 c                    gradient evaluated using the quadrature rule desired 
 c                    for computing the dmod. Qwt contains the weights of the 
-c                    quad. points.  
+c                    quad. points. 
+
+      use pointer_data
+      use eblock
 
 
 
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
+      type (LocalBlkData) blk
 
 c
       dimension fres(nshg,24),         fwr(nshg),
@@ -76,11 +80,18 @@ c
         nenl = lcblk(5,iblk)
         nshl = lcblk(10,iblk)
         inum  = iel + npro - 1
+        blk%n   = lcblk(5,iblk) ! no. of vertices per element
+        blk%s   = lcblk(10,iblk)
+        blk%e   = lcblk(1,iblk+1) - iel 
+        blk%l = lcblk(3,iblk)
+        blk%g = nint(blk%l)
+        blk%o = lcblk(4,iblk)
+        blk%i = lcblk(1,iblk)
 
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call asithf (y, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (blk, y, x, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -95,12 +106,19 @@ c
         nenl = lcblk(5,iblk)
         nshl = lcblk(10,iblk)
         inum  = iel + npro - 1
+        blk%n   = lcblk(5,iblk) ! no. of vertices per element
+        blk%s   = lcblk(10,iblk)
+        blk%e   = lcblk(1,iblk+1) - iel 
+        blk%l = lcblk(3,iblk)
+        blk%g = nint(blk%l)
+        blk%o = lcblk(4,iblk)
+        blk%i = lcblk(1,iblk)
         
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
 
         if (ngaussf .ne. ngauss) then
-        call getstrl (y, x,      mien(iblk)%p,  
+        call getstrl (blk, y, x,      mien(iblk)%p,  
      &               strl(iel:inum,:), shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:))
         endif
@@ -161,23 +179,23 @@ c... and incompressible forms of the model.
 
       if(matflg(1,1).eq.0) then ! compressible
 
-      xmij(:,1) = -fwr
+         xmij(:,1) = -fwr
      &             * pt33 * (two*fres(:,10) - fres(:,11) - fres(:,12))
      &             + pt33 * (two*fres(:,16) - fres(:,17) - fres(:,18))
-      xmij(:,2) = -fwr
+         xmij(:,2) = -fwr
      &             * pt33 * (two*fres(:,11) - fres(:,10) - fres(:,12))
      &             + pt33 * (two*fres(:,17) - fres(:,16) - fres(:,18))
-      xmij(:,3) = -fwr
+         xmij(:,3) = -fwr
      &             * pt33 * (two*fres(:,12) - fres(:,10) - fres(:,11))
      &             + pt33 * (two*fres(:,18) - fres(:,16) - fres(:,17))
 
       else
 
-      xmij(:,1) = -fwr
+         xmij(:,1) = -fwr
      &             * fres(:,10) + fres(:,16)
-      xmij(:,2) = -fwr
+         xmij(:,2) = -fwr
      &             * fres(:,11) + fres(:,17) 
-      xmij(:,3) = -fwr
+         xmij(:,3) = -fwr
      &             * fres(:,12) + fres(:,18) 
 
       endif      
@@ -206,13 +224,13 @@ c... and incompressible forms of the model.
       xden = two * xden
 
 c  zero on processor periodic nodes so that they will not be added twice
-        do j = 1,numnp
+      do j = 1,numnp
           i = iper(j)
           if (i .ne. j) then
             xnum(j) = zero
             xden(j) = zero
           endif
-        enddo
+      enddo
 
       if (numpe.gt.1 .and. nsons(1).gt.1) then
 
@@ -387,10 +405,17 @@ c $$$$$$$$$$$$$$$$$$$$$$$$$$$
          npro = lcblk(1,iblk+1) - iel
          lelCat = lcblk(2,iblk)
          inum  = iel + npro - 1
+         blk%n   = lcblk(5,iblk) ! no. of vertices per element
+         blk%s   = lcblk(10,iblk)
+         blk%e   = lcblk(1,iblk+1) - iel 
+         blk%l = lcblk(3,iblk)
+         blk%g = nint(blk%l)
+         blk%o = lcblk(4,iblk)
+         blk%i = lcblk(1,iblk)
          
          ngauss = nint(lcsyst)
 
-         call scatnu (mien(iblk)%p, strl(iel:inum,:), 
+         call scatnu (blk, mien(iblk)%p, strl(iel:inum,:), 
      &        mxmudmi(iblk)%p,cdelsq,shp(lcsyst,1:nshl,:))
       enddo
 c     $$$$$$$$$$$$$$$$$$$$$$$$$$$
