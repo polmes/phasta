@@ -15,8 +15,9 @@
 
       do ii = 1,blk%s
       do intp = 1,blk%g
-        xmudmi(:,intp) = xmudmi(:,intp) + xnut(ien(:,ii)) * strl(:,intp)
-     &        *shp(ii,intp)
+        xmudmi(1:blk%e,intp) = xmudmi(1:blk%e,intp) + 
+     &                         xnut(ien(1:blk%e,ii)) * strl(1:blk%e,intp)
+     &                         * shp(ii,intp)
       enddo  
       enddo
 c

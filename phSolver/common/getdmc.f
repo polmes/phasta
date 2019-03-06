@@ -11,7 +11,6 @@ c                    gradient evaluated using the quadrature rule desired
 c                    for computing the dmod. Qwt contains the weights of the 
 c                    quad. points. 
 
-      use pointer_data
       use eblock
 
 
@@ -321,63 +320,17 @@ c
 c     the next line is c \Delta^2, not nu_T but we want to save the
 c     memory
 c     
-
-c$$$            write(400+myrank,555) (numNden(j*500,1),j=1,5)
-c$$$            write(410+myrank,555) (numNden(j*500,2),j=1,5)
-c$$$            write(500+myrank,555) (numNden(j+500,1),j=1,5)
-c$$$            write(510+myrank,555) (numNden(j+500,2),j=1,5)
-c$$$
-c$$$            write(430+myrank,555) (xnude(j*500,1),j=1,5)
-c$$$            write(440+myrank,555) (xnude(j*500,2),j=1,5)
-c$$$            write(530+myrank,555) (xnude(j+500,1),j=1,5)
 c$$$            write(540+myrank,555) (xnude(j+500,2),j=1,5)
-
             numNden(:,1) = whist*numNden(:,1)+wcur*xnude(ifath(:),1)
             numNden(:,2) = whist*numNden(:,2)+wcur*xnude(ifath(:),2)
             cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
-
-c 
-c  to get started we hold cdelsq fixed
-c
 c            cdelsq(:) = 2.27e-4
 c            cdelsq(:) = 0
-
             
-c$$$            
-c$$$            write(450+myrank,555) (cdelsq(j*500),j=1,5)
-c$$$            write(460+myrank,555) (y(j*500,1),j=1,5)
-c$$$            write(470+myrank,555) (y(j*500,2),j=1,5)
-c$$$            write(480+myrank,555) (y(j*500,3),j=1,5)
-c$$$            write(490+myrank,555) (strnrm(j*500),j=1,5)
-c$$$
-c$$$            write(550+myrank,555) (cdelsq(j+500),j=1,5)
-c$$$            write(560+myrank,555) (y(j+500,1),j=1,5)
-c$$$            write(570+myrank,555) (y(j+500,2),j=1,5)
-c$$$            write(580+myrank,555) (y(j+500,3),j=1,5)
-c$$$            write(590+myrank,555) (strnrm(j+500),j=1,5)
-c$$$
-c$$$            call flush(400+myrank)
-c$$$            call flush(410+myrank)
-c$$$            call flush(430+myrank)
-c$$$            call flush(440+myrank)
-c$$$            call flush(450+myrank)
-c$$$            call flush(460+myrank)
-c$$$            call flush(470+myrank)
-c$$$            call flush(480+myrank)
-c$$$            call flush(490+myrank)
-c$$$            call flush(500+myrank)
-c$$$            call flush(510+myrank)
-c$$$            call flush(530+myrank)
-c$$$            call flush(540+myrank)
-c$$$            call flush(550+myrank)
-c$$$            call flush(560+myrank)
-c$$$            call flush(570+myrank)
-c$$$            call flush(580+myrank)
-c$$$            call flush(590+myrank)
       endif
  555  format(5(2x,e14.7))
 
-c $$$$$$$$$$$$$$$$$$$$$$$$$$$
+c     Write some stats
       tmp1 =  MINVAL(cdelsq)
       tmp2 =  MAXVAL(cdelsq)
       if(numpe>1) then
@@ -389,16 +342,18 @@ c $$$$$$$$$$$$$$$$$$$$$$$$$$$
          tmp2=tmp4
       endif
       if (myrank .EQ. master) then !print CDelta^2 range
-         write(34,*)lstep,tmp1,tmp2
+         write(34,*)lstep+1,tmp1,tmp2
          call flush(34)
+         ! fort.34 contains the global min and max of cdelsq for each time step
       endif
-c $$$$$$$$$$$$$$$$$$$$$$$$$$$
-
       if (myrank .eq. master) then
          write(*,*)'xnut=',sum(cdelsq)/nshg
-         write(*,*) 'cdelsq=', cdelsq(1),cdelsq(2)        
+         !write(*,*) 'cdelsq=', cdelsq(1),cdelsq(2)        
       endif
 
+
+c
+c ... Another loop over element block to compute the eddy viscosity 
       do iblk = 1,nelblk
          lcsyst = lcblk(3,iblk)
          iel  = lcblk(1,iblk)
@@ -415,25 +370,28 @@ c $$$$$$$$$$$$$$$$$$$$$$$$$$$
          
          ngauss = nint(lcsyst)
 
+         ! strl is actually the norm of the strain |S|
+         ! xmudmi is the eddy viscosity nu_T=cdelsq*strl
          call scatnu (blk, mien(iblk)%p, strl(iel:inum,:), 
      &        mxmudmi(iblk)%p,cdelsq,shp(lcsyst,1:nshl,:))
       enddo
-c     $$$$$$$$$$$$$$$$$$$$$$$$$$$
-c$$$  tmp1 =  MINVAL(xmudmi)
-c$$$  tmp2 =  MAXVAL(xmudmi)
-c$$$  if(numpe>1) then
-c$$$  call MPI_REDUCE (tmp1, tmp3, 1, MPI_DOUBLE_PRECISION,
-c$$$  &                 MPI_MIN, master, MPI_COMM_WORLD, ierr)
-c$$$  call MPI_REDUCE (tmp2, tmp4, 1, MPI_DOUBLE_PRECISION,
-c$$$  &                 MPI_MAX, master, MPI_COMM_WORLD, ierr)
-c$$$      tmp1=tmp3
-c$$$  tmp2=tmp4
-c$$$  endif
-c$$$  if (myrank .EQ. master) then
-c$$$  write(35,*) lstep,tmp1,tmp2
-c$$$  call flush(35)
-c$$$  endif
-c $$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+c     Write some eddy viscosity stats
+!      tmp1 =  MINVAL(xmudmi)
+!      tmp2 =  MAXVAL(xmudmi)
+!      if(numpe>1) then
+!        call MPI_REDUCE (tmp1, tmp3, 1, MPI_DOUBLE_PRECISION,
+!     &                 MPI_MIN, master, MPI_COMM_WORLD, ierr)
+!        call MPI_REDUCE (tmp2, tmp4, 1, MPI_DOUBLE_PRECISION,
+!     &                 MPI_MAX, master, MPI_COMM_WORLD, ierr)
+!        tmp1=tmp3
+!        tmp2=tmp4
+!      endif
+!      if (myrank .EQ. master) then
+!        write(35,*) lstep+1,tmp1,tmp2
+!        call flush(35)
+!        ! fort.35 contains global max and min of eddy viscosity for each time step
+!      endif
 
 c$$$c
 c$$$c  if flag set, write a restart file with info (reuse xmij's memory)
