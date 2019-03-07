@@ -211,6 +211,9 @@ c
 c ----- Add a random fluctiation to the initial velocity field
 c ----- to start the WMLES branch of the IDDES model
         if (iRandomIC.eq.1) then
+          if (myrank.eq.master) then
+              write (*,*) "Adding random fluctuations to IC"
+          endif
           call random_seed
           do kk=1, nshg
            if (d2wall(kk).lt.STGDelBL) then

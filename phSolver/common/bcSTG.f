@@ -575,17 +575,17 @@ c        call openFiles()
 !        call closeFiles()
 
 
-!        Loop to check if just put NaNs or Infs in the BC array
-!         do n=1,nNSurf
-!             do j=3,5
-!               if(BC(stgsurf(n),j).ne.BC(stgsurf(n),j)) then
-!                 write (*,*) 'Found a NaN in BC array, clm ', j
-!               endif
-!               if(abs(BC(stgsurf(n),j)).gt.1e3) then
-!                 write(*,*) 'Found a big number in BC array, clm ',j
-!               endif
-!             enddo
-!         enddo
+c        Loop to check if just put NaNs or Infs in the BC array
+c         do n=1,nNSurf
+c             do j=3,7
+c               if(BC(stgsurf(n),j).ne.BC(stgsurf(n),j)) then
+c                 write (*,*) 'Found a NaN in BC array, clm ', j
+c               endif
+c               if(abs(BC(stgsurf(n),j)).gt.1e3) then
+c                 write(*,*) 'Found a big number in BC array, clm ',j
+c               endif
+c             enddo
+c         enddo
  
        end
 
