@@ -1,6 +1,6 @@
       subroutine getdmc (y,      shgl,      shp, 
      &                   iper,   ilwork,    
-     &                   nsons,  ifath,     x)
+     &                   nsons,  ifath,     x, cdelsq)
 
       use pointer_data
 
@@ -32,7 +32,7 @@ c
      &          ifath(nshg),          iper(nshg),
      &          ilwork(nlwork),!        xmudmi(numel,ngauss),
      &          x(numnp,3),
-     &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)    
+     &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c

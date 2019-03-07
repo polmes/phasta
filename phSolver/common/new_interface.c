@@ -338,6 +338,12 @@ void countfieldstowriterestart()
     nfields++; /* STG random vars */
     nfields++; /* BCs */
   }
+
+  /* LES cdelsq field */
+  if(turbvari.iles>0) {
+    nfields++;
+  }
+
   outpar.nsynciofieldswriterestart = nfields;
 
   if(workfc.myrank == 0) {
