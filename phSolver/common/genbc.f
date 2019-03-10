@@ -120,7 +120,7 @@ c             enddo
 c             !if (ic.ne.0) write(*,*) 'counter is ',ic     
             BC=BCrestart
             if (myrank.eq.master) then
-               write (*,*) Using BC array from restarts'
+               write (*,*) 'Using BC array from restarts'
             endif
             deallocate(BCrestart)
          endif
