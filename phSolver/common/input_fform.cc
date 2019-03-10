@@ -778,7 +778,9 @@ int input_fform(phSolver::Input& inp)
       genpar.itau = 11;
 
     genpar.dtsfct = inp.GetValue("Tau Time Constant");
+    genpar.difffct = inp.GetValue("Tau Diffusive Constant");
     genpar.dtsfctsclr = inp.GetValue("Tau Time Constant for Scalars");
+    genpar.difffctsclr = inp.GetValue("Tau Diffusive Constant for Scalars");
     genpar.taucfct = inp.GetValue("Tau C Scale Factor");
 
 	genpar.iLHScond = inp.GetValue("LHS BC heat flux enable");

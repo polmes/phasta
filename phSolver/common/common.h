@@ -209,7 +209,8 @@ c
      &                  idiff,  lhs,    itau,   ipord,  ipred,  lstres,
      &                  iepstm, dtsfct, dtsfctsclr, taucfct, bsz, iabc, isurf,
      &                  idflx,  Bo,     EntropyPressure, irampViscOutlet,
-     &                  istretchOutlet, iremoveStabTimeTerm, iLHScond
+     &                  istretchOutlet, iremoveStabTimeTerm, iLHScond, difffct,
+     &                  difffctsclr
 
 c
         integer :: svLSType, svLSFlag, iNoSymm, iRandomIC

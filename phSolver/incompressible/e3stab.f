@@ -85,7 +85,7 @@ c
      9		        + u3 * ( gijd(:,6) * u1
      a			             + gijd(:,5) * u2
      1			             + gijd(:,3) * u3 ) ) )
-     2		    + fff * rnu** 2
+     2		    + fff * difffct * rnu** 2
      3		    * ( gijd(:,1) ** 2
      4		      + gijd(:,2) ** 2
      5		      + gijd(:,3) ** 2
@@ -568,7 +568,7 @@ c        if(iRANS.ne.-2) srcRat=srcR
      9	     + uMod(:,3) * ( gijd(:,6) * uMod(:,1)
      a	                   + gijd(:,5) * uMod(:,2)
      1	                   + gijd(:,3) * uMod(:,3) )
-     2	     + fff * diffus(:)** 2
+     2	     + fff * difffctsclr * diffus(:)** 2
      3	           * ( gijd(:,1) ** 2
      4		     + gijd(:,2) ** 2
      5		     + gijd(:,3) ** 2

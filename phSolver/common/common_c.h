@@ -451,6 +451,8 @@ extern "C" {
     int istretchOutlet;
     int iremoveStabTimeTerm;
 	int iLHScond;
+	double difffct;
+	double difffctsclr;
   } genpar ;
 
   extern struct { 
