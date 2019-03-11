@@ -207,13 +207,13 @@ c
         common /genpar/ E3nsd,  I3nsd,  nsymdf, ndofBC, ndiBCB, ndBCB,
      &                  Jactyp, jump,   ires,   iprec,  iprev,  ibound,
      &                  idiff,  lhs,    itau,   ipord,  ipred,  lstres,
-     &                  iepstm, dtsfct, dtsfctsclr, taucfct, bsz, iabc, isurf,
+     &                  iepstm, dtsfct, dtsfctsclr, taucfct, difffct,
+     &                  difffctsclr, bsz, iabc, isurf,
      &                  idflx,  Bo,     EntropyPressure, irampViscOutlet,
-     &                  istretchOutlet, iremoveStabTimeTerm, iLHScond, difffct,
-     &                  difffctsclr
+     &                  istretchOutlet, iremoveStabTimeTerm, iLHScond
 
 c
-        integer :: svLSType, svLSFlag, iNoSymm, iRandomIC
+        integer :: svLSType, svLSFlag, iNoSymm, iRandomIC, i2DIC
         common /inpdat/ epstol(6),  Delt(MAXTS),    CFLfl(MAXTS),
      &                  CFLsl(MAXTS),   nstep(MAXTS),   niter(MAXTS),
      &                  impl(MAXTS),    rhoinf(MAXTS),
@@ -222,7 +222,7 @@ c
      &                  CFLfl_limit, timestart, CFLls_max, 
      &                  iCFLls_maxelem,
      &                  leslib,     svLSFlag,   svLSType, iNoSymm,
-     &                  iRandomIC
+     &                  iRandomIC, i2DIC
 c
         common /intdat/ intg(2,MAXTS),  intpt(3),       intptb(3)
 c

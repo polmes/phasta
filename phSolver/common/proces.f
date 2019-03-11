@@ -14,6 +14,7 @@ c
         use dtnmod
         use periodicity
         use pvsQbi
+        use mlirans
         include "common.h"
         include "mpif.h"
 c
@@ -246,6 +247,12 @@ c$$$$$$$$$$$$$$$$$$$$
           enddo
         endif
 !End modifications for Duct
+!======================================================================
+c.... Load a 2D field as an initial condition
+        if(i2DIC == 1)then
+           call set_wmles_ic(point2x, y)
+        endif
+
 !======================================================================
 c
 c

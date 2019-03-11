@@ -441,6 +441,8 @@ extern "C" {
     double dtsfct;
     double dtsfctsclr;
     double taucfct;
+    double difffct;
+	double difffctsclr;
     int bsz;
     int iabc;
     int isurf;
@@ -451,8 +453,6 @@ extern "C" {
     int istretchOutlet;
     int iremoveStabTimeTerm;
 	int iLHScond;
-	double difffct;
-	double difffctsclr;
   } genpar ;
 
   extern struct { 
@@ -480,6 +480,7 @@ extern "C" {
     int svLSType;
     int iNoSymm;
     int iRandomIC;
+    int i2DIC;
   } inpdat ;
 
   extern struct { 
