@@ -15,6 +15,10 @@
 #define Write_PhAvg   FortranCInterface_GLOBAL_(write_phavg,WRITE_PHAVG)
 #define Write_PhAvg2  FortranCInterface_GLOBAL_(write_phavg2,WRITE_PHAVG2)
 #define read_d2wall FortranCInterface_GLOBAL_(read_d2wall,READ_D2WALL)
+#define Write_Velbar FortranCInterface_GLOBAL_(write_velbar,WRITE_VELBAR)
+#define Write_VelbarS FortranCInterface_GLOBAL_(write_velbars,WRITE_VELBARS)
+#define Read_VelbarS FortranCInterface_GLOBAL_(read_velbars,READ_VELBARS)
+#define Write_VelbarU FortranCInterface_GLOBAL_(write_velbaru,WRITE_VELBARU)
 
 extern char phasta_iotype[80];
 extern int field_flag;
@@ -86,6 +90,34 @@ read_d2wall(  int* pid,
               int* numnp,
               double* array1,
               int* foundd2wall );
+
+void 
+Write_Velbar(  int* pid, 
+              int* stepno, 
+              int* nshg, 
+              int* numVars,
+              double* array1 );
+
+void 
+Write_VelbarS(  int* pid, 
+              int* stepno, 
+              int* nshg, 
+              int* numVars,
+              double* array1 );
+
+void 
+Read_VelbarS(  int* pid, 
+              int* stepno, 
+              int* ifail,
+              double* array1 );
+
+void 
+Write_VelbarU(  int* pid, 
+              int* stepno, 
+              int* nshg, 
+              int* numVars,
+              double* array1, 
+              double* array2 );
 
 
 #endif

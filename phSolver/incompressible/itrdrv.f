@@ -888,9 +888,11 @@ c...  dump TIME SERIES
               if ( mod(lstep-1,freq).eq.0) call dumpTimeSeries()
             endif
 
-            if((irscale.ge.0).or.(itwmod.gt.0)) 
-     &           call getvel (yold,     ilwork, iBC,
+            if((irscale.ge.0).or.(itwmod.gt.0)
+     &                       .or.(ispanAvg.eq.1)) then 
+                 call getvel (yold,     ilwork, iBC,
      &                        nsons,    ifath, velbar)
+            endif
 
             if((irscale.ge.0).and.(myrank.eq.master)) then
                call genscale(yold,       x,       iper, 
@@ -2304,10 +2306,6 @@ c.... compute the consistent boundary flux
      &                      BC,        iper,       wallssVec)
       endif
 c....  print out results.
-cDEPRICATED       if( (mod(lstep, ntout) .eq. 0) .and.
-cDEPRICATED      &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
-cDEPRICATED      &              ((nsonmax.eq.1).and.(iLES.gt.0))))
-cDEPRICATED      &              call rwvelb  ('out ',  velbar  ,ifail)
       lesId   = numeqns(1)
       if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
@@ -2418,6 +2416,26 @@ cc ......   Write the BC array. Quick fix to problem with inflow BC in geombc fi
             endif
 
           endif ! end of STG fields
+
+cc ....   Write velbar if wanted
+          if (ispanAvg.eq.1) then
+             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
+ 
+             call write_field(myrank,'a','velbar nfath',12,velbar,'d',
+     &                       nfath,nflow,lstep)
+             !call write_velbarS(myrank, lstep, nfath,nflow, velbar)
+
+             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write velbar to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+
+          endif
 
       return
       end subroutine

@@ -16,6 +16,7 @@ c
       real*8, allocatable :: acold(:,:)
       integer, allocatable :: iBCtmp(:)
       real*8, allocatable :: BCinp(:,:)
+      real*8, target, allocatable :: point2velbar(:,:)
 
       integer, allocatable :: point2ilwork(:)
 !      integer, allocatable :: fncorp(:)
@@ -44,12 +45,14 @@ c
       real*8, target, allocatable :: STGread(:,:), BCrestartRead(:,:)
       real*8, target, allocatable :: uread(:,:)
       real*8, target, allocatable :: BCinpread(:,:)
+      real*8, target, allocatable :: velbarread(:,:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
       integer, target, allocatable :: fncorpread(:)
       integer fncorpsize
       integer irandVars, iSTGsiz
+      integer iVelbsiz, nfath2, nflow2
       character*10 cname2, cname2nd
       character*8 mach2
       character*30 fmt1
@@ -422,7 +425,8 @@ c
       nfath=1  ! some architectures choke on a zero or undeclared
                  ! dimension variable.  This sets it to a safe, small value.
       if(((iLES .lt. 20) .and. (iLES.gt.0))
-     &                   .or. (itwmod.gt.0)  ) then ! don't forget same
+     &                   .or. (itwmod.gt.0)
+     &                   .or. (ispanAvg.eq.1) ) then ! don't forget same
                                                     ! conditional in proces.f
                                                     ! needed for alloc
          ione=1
@@ -628,6 +632,41 @@ cc....   in SimModeler and present in the geombc files
          endif
 
       endif  ! end of the STG fields
+
+cc
+cc.... Read the velbar array if want spanwise average
+cc
+      if (ispanAvg.eq.1) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'velbar nfath' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nfath2=intfromfile(1)
+           nflow2=intfromfile(2)
+           if (nfath.ne.nfath2)
+     &          call error ('restar  ', 'nfath   ', nfath)
+           allocate(velbarread(nfath2,nflow2))
+           allocate(point2velbar(nfath2,nflow2))
+           iVelbsiz=nfath2*nflow2
+           call phio_readdatablock(fhandle,
+     &       c_char_'velbar nfath' // char(0),
+     &       c_loc(velbarread),iVelbsiz, dataDbl,iotype)
+           point2velbar=velbarread
+           deallocate(velbarread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'velbar field found in restart file'
+         else
+           if (myrank.eq.master) then
+             warning='velbar was not read from restart and 
+     &                 was set to zero'
+             write(*,*) warning
+           endif
+           allocate(point2velbar(nfath,nflow))
+           point2velbar=zero
+         endif
+      endif ! end of ispanAvg for velbar
 
 cc
 cc.... read the header and check it against the run data

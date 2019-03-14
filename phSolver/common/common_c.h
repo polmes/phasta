@@ -174,6 +174,7 @@ extern "C" {
     int iSTGnModes;
     int iSTGspec;
     int iSTGStart;
+    int ispanAvg;
 
 /*      int itwmod; */
 /*      double rtavei; */

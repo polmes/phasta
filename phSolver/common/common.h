@@ -70,7 +70,7 @@ c from different modules
      &                   i2filt, modlstats, idis, nohomog,
      &                   ierrsmooth, iramp, idwalmode,
      &                   iSTG, iSTGSurfID, iSTGChan, iSTGnModes, 
-     &                   iSTGspec, iSTGStart
+     &                   iSTGspec, iSTGStart, ispanAvg
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,

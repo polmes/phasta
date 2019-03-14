@@ -103,15 +103,13 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
         if((itwmod.gt.0) 
-     &     .or. (nsonmax.eq.1 .and. iLES.gt.0) ) then 
-           call rwvelb('in  ',velbar,ifail)
-c
-c if the read failed calculate velbar
-c
-           if(ifail.eq.1) then
-              call getvel (y,     ilwork, iBC,
-     &                     nsons, ifath, velbar)
-           endif
+     &     .or. (nsonmax.eq.1 .and. iLES.gt.0) 
+     &     .or. (ispanAvg.eq.1) ) then
+
+           !call readvelb(velbar,ifath,ifail)
+           !call rwvelb('in  ',velbar,ifail)
+           call getvel (y,     ilwork, iBC,
+     &                  nsons, ifath, velbar)
  
         endif   ! for the itwmod or irscale
 c

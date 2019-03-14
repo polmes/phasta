@@ -202,7 +202,7 @@ c  save the distance in this node's position of d2wall if it's
 c  shorter than currently stored distance
 c
          d2wall=1.0e32
-         iTenPercent=nwallt/10
+         iTenPercent=nwallt/1
          do j=1, nwallt
             do i=1,numnp
                distance =  ( x(i,1) - xw(j,1) )**2

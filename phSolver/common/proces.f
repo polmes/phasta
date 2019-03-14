@@ -36,10 +36,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-c        dimension ifath(numnp),    velbar(nfath,nflow),
-c     &            nsons(nfath) 
-
-        dimension velbar(nfath,nflow)
+c        dimension velbar(nfath,nflow)
 c
 c stuff to interpolate profiles at inlet
 c
@@ -62,7 +59,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    velbar,         point2nsons )
+     &               point2ifath,    point2velbar,         point2nsons )
         call setper(nshg)
         call perprep(iBC,point2iper,nshg)
         if (iLES/10 .eq. 1) then
@@ -263,7 +260,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    velbar,         point2nsons ) 
+     &               point2ifath,    point2velbar,         point2nsons ) 
 c
 c.... return
 c
@@ -298,6 +295,7 @@ c
         deallocate(point2x)
         deallocate(point2nsons)
         deallocate(point2ifath)
+        if(ispanAvg.eq.1) deallocate(point2velbar)
         deallocate(uold)
         deallocate(wnrm)
         deallocate(otwn)

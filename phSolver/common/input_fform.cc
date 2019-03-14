@@ -857,10 +857,14 @@ int input_fform(phSolver::Input& inp)
     // TURBULENCE MODELING PARAMETER
     int tpturb = turbvari.iles-turbvari.irans;
     int ifrule;
+    turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
+    if((string)inp.GetValue("Compute Spanwise Average") == "True") turbvari.ispanAvg = 1;
+    else turbvari.ispanAvg = 0;
+    
     if( tpturb != 0 ){
 
 
-      turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
+      //turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
 
       if((string)inp.GetValue("Turbulence Wall Model Type") == "Slip Velocity") turbvar.itwmod = 1;
       else if((string)inp.GetValue("Turbulence Wall Model Type") == "Effective Viscosity") turbvar.itwmod = 2; 
