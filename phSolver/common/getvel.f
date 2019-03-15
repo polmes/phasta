@@ -34,12 +34,12 @@ c
 c     zero on processor periodic nodes so that they will not be added twice
 c    
          if(myrank.eq.master) then
-	   do i=1, numnp
-	     if(btest(iBC(i),10)) then 
-	       periodicity = 1
-	       exit
-	     endif
-	   enddo
+            do i=1, numnp
+               if(btest(iBC(i),10)) then 
+                 periodicity = 1
+                 exit
+               endif
+            enddo
          endif
          call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
      &               MPI_COMM_WORLD,ierr)
@@ -110,9 +110,9 @@ c
 c     divide by # of sons to get average father for this step
 c
          if ((periodicity.eq.1).and.(irscale.ge.0)) then
-	     rinvsons = one/(nsons-one)   ! division is expensive
-	 else
-	     rinvsons = one/nsons   ! division is expensive
+           rinvsons = one/(nsons-one)   ! division is expensive
+         else
+           rinvsons = one/nsons   ! division is expensive
          endif
          velft(:,1) = velft(:,1) * rinvsons(:) !  / nsons(:)
          velft(:,2) = velft(:,2) * rinvsons(:) !  / nsons(:)
@@ -120,23 +120,30 @@ c
          velft(:,4) = velft(:,4) * rinvsons(:) !  / nsons(:)
          if(nflow.eq.5) velft(:,5) = velft(:,5) * rinvsons(:)
       endif  ! end of homog direction averaging
-      denom=max(one*(lstep),one)
-      if(wtavei.lt.0) then
-         tavef=one/denom
-      else
-         tavef=wtavei
-      endif
-      
-      velbar(:,1)=velft(:,1)
-      velbar(:,2)=velft(:,2)
-      velbar(:,3)=velft(:,3)
-      velbar(:,4)=velft(:,4)
 
-      if(istep.eq.0) then
-         velbar(:,:)=velft(:,:)
-      else            
-         velbar(:,:)=tavef*velft(:,:)+(one-tavef)*velbar(:,:)        
-      endif
+c      denom=max(one*(lstep),one)
+c      if(wtavei.lt.0) then
+c         tavef=one/denom
+c      else
+c         tavef=wtavei
+c      endif
+      
+c      velbar(:,1)=velft(:,1)
+c      velbar(:,2)=velft(:,2)
+c      velbar(:,3)=velft(:,3)
+c      velbar(:,4)=velft(:,4)
+
+c      if(istep.eq.0) then
+c         velbar(:,:)=velft(:,:)
+c      else            
+c         velbar(:,:)=tavef*velft(:,:)+(one-tavef)*velbar(:,:)        
+c      endif
+
+       den = max(1,lstep-istartSpanAvg)
+       tfact = one/den
+       velbar(:,:)=tfact*velft(:,:)+(one-tfact)*velbar(:,:)
+
+      
       
       return
       end

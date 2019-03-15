@@ -858,8 +858,13 @@ int input_fform(phSolver::Input& inp)
     int tpturb = turbvari.iles-turbvari.irans;
     int ifrule;
     turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
-    if((string)inp.GetValue("Compute Spanwise Average") == "True") turbvari.ispanAvg = 1;
-    else turbvari.ispanAvg = 0;
+    if((string)inp.GetValue("Compute Spanwise Average") == "True") {
+         turbvari.ispanAvg = 1;
+         turbvari.istartSpanAvg = inp.GetValue("Start Spanwise Average");
+    } else {
+         turbvari.ispanAvg = 0;
+         turbvari.istartSpanAvg = 0;
+    }
     
     if( tpturb != 0 ){
 

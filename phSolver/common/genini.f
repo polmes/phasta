@@ -103,8 +103,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 c
         if((itwmod.gt.0) 
-     &     .or. (nsonmax.eq.1 .and. iLES.gt.0) 
-     &     .or. (ispanAvg.eq.1) ) then
+     &     .or. (nsonmax.eq.1 .and. iLES.gt.0)) then
 
            !call readvelb(velbar,ifath,ifail)
            !call rwvelb('in  ',velbar,ifail)
