@@ -291,7 +291,8 @@ c ----- Read an initial condition for dynamic Smagorinsky LES
           close(345)
           close(456)
         else
-           write(*,*) 'Did not read file LES-CSmag-Ordered.dat'
+           if(myrank.eq.master) write(*,*) 
+     &                        'Did not read file LES-CSmag-Ordered.dat'
         endif
 c ----  End of LES initial condition
 !!!!!!!!!!!!!!!!!!!
