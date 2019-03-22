@@ -103,6 +103,7 @@ c
         character*20    fname2,fmt2
         character*60    fnamepold, fvarts
         character*4     fname4c ! 4 characters
+        character*255   fnameCoord
         integer         iarray(50) ! integers for headers
         integer         isgn(ndof), isgng(ndof)
 
@@ -230,6 +231,18 @@ c ----- to start the WMLES branch of the IDDES model
           enddo
         endif
 c ----- End of modification to the initial velocity field
+
+c        if (myrank.lt.) then
+        fnameCoord='coords'
+        fnameCoord= trim(fnameCoord)  // cname2(myrank+1)
+        open (unit=123,file=fnameCoord,
+     &        status="new",action="write")
+        do n=1,numnp
+           write(123,*) x(n,1),x(n,2),x(n,3)
+        enddo
+        close(123)
+c        endif
+
 
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
