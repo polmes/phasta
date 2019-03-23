@@ -458,8 +458,8 @@ c
      
             nsonmax=maxval(point2nsons)
 
-            !write(*,*) 'Number of fathers is: ',nfath
-            !write(*,*) 'Number of sons is: ',nsonmax
+            if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
+            if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
             inquire(file="dynSmagY.dat",exist=exlog)
             if(exlog) then
               if(myrank.eq.master) write(*,*) 
@@ -482,9 +482,9 @@ c
             else
                write(*,*) 'Did not read file dynSmagY.dat'
             endif
-!            do i=1,nshg
-!               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
-!            enddo
+c            do i=1,nshg
+c               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
+c            enddo
          else  ! this is the case where there is no homogeneity
                ! therefore ever node is a father (too itself).  sonfath
                ! (a routine in NSpre) will set this up but this gives
