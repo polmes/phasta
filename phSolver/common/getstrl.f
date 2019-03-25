@@ -50,30 +50,30 @@ c
 c
 c.... compute the inverse of deformation gradient
 c
-        dxidx(:,1,1) =   dxdxi(:,2,2) * dxdxi(:,3,3)
-     &                 - dxdxi(:,3,2) * dxdxi(:,2,3)
-        dxidx(:,1,2) =   dxdxi(:,3,2) * dxdxi(:,1,3)
-     &                 - dxdxi(:,1,2) * dxdxi(:,3,3)
-        dxidx(:,1,3) =   dxdxi(:,1,2) * dxdxi(:,2,3)
-     &                 - dxdxi(:,1,3) * dxdxi(:,2,2)
-        tmp          = one / ( dxidx(:,1,1) * dxdxi(:,1,1)
-     &                       + dxidx(:,1,2) * dxdxi(:,2,1)
-     &                       + dxidx(:,1,3) * dxdxi(:,3,1) )
-        dxidx(:,1,1) = dxidx(:,1,1) * tmp
-        dxidx(:,1,2) = dxidx(:,1,2) * tmp
-        dxidx(:,1,3) = dxidx(:,1,3) * tmp
-        dxidx(:,2,1) = (dxdxi(:,2,3) * dxdxi(:,3,1)
-     &                - dxdxi(:,2,1) * dxdxi(:,3,3)) * tmp
-        dxidx(:,2,2) = (dxdxi(:,1,1) * dxdxi(:,3,3)
-     &                - dxdxi(:,3,1) * dxdxi(:,1,3)) * tmp
-        dxidx(:,2,3) = (dxdxi(:,2,1) * dxdxi(:,1,3)
-     &                - dxdxi(:,1,1) * dxdxi(:,2,3)) * tmp
-        dxidx(:,3,1) = (dxdxi(:,2,1) * dxdxi(:,3,2)
-     &                - dxdxi(:,2,2) * dxdxi(:,3,1)) * tmp
-        dxidx(:,3,2) = (dxdxi(:,3,1) * dxdxi(:,1,2)
-     &                - dxdxi(:,1,1) * dxdxi(:,3,2)) * tmp
-        dxidx(:,3,3) = (dxdxi(:,1,1) * dxdxi(:,2,2)
-     &                - dxdxi(:,1,2) * dxdxi(:,2,1)) * tmp
+        dxidx(1:blk%e,1,1) =   dxdxi(1:blk%e,2,2) * dxdxi(1:blk%e,3,3)
+     &                 - dxdxi(1:blk%e,3,2) * dxdxi(1:blk%e,2,3)
+        dxidx(1:blk%e,1,2) =   dxdxi(1:blk%e,3,2) * dxdxi(1:blk%e,1,3)
+     &                 - dxdxi(1:blk%e,1,2) * dxdxi(1:blk%e,3,3)
+        dxidx(1:blk%e,1,3) =   dxdxi(1:blk%e,1,2) * dxdxi(1:blk%e,2,3)
+     &                 - dxdxi(1:blk%e,1,3) * dxdxi(1:blk%e,2,2)
+        tmp          = one / ( dxidx(1:blk%e,1,1) * dxdxi(1:blk%e,1,1)
+     &                       + dxidx(1:blk%e,1,2) * dxdxi(1:blk%e,2,1)
+     &                       + dxidx(1:blk%e,1,3) * dxdxi(1:blk%e,3,1) )
+        dxidx(1:blk%e,1,1) = dxidx(1:blk%e,1,1) * tmp
+        dxidx(1:blk%e,1,2) = dxidx(1:blk%e,1,2) * tmp
+        dxidx(1:blk%e,1,3) = dxidx(1:blk%e,1,3) * tmp
+        dxidx(1:blk%e,2,1) = (dxdxi(1:blk%e,2,3) * dxdxi(1:blk%e,3,1)
+     &                - dxdxi(1:blk%e,2,1) * dxdxi(1:blk%e,3,3)) * tmp
+        dxidx(1:blk%e,2,2) = (dxdxi(1:blk%e,1,1) * dxdxi(1:blk%e,3,3)
+     &                - dxdxi(1:blk%e,3,1) * dxdxi(1:blk%e,1,3)) * tmp
+        dxidx(1:blk%e,2,3) = (dxdxi(1:blk%e,2,1) * dxdxi(1:blk%e,1,3)
+     &                - dxdxi(1:blk%e,1,1) * dxdxi(1:blk%e,2,3)) * tmp
+        dxidx(1:blk%e,3,1) = (dxdxi(1:blk%e,2,1) * dxdxi(1:blk%e,3,2)
+     &                - dxdxi(1:blk%e,2,2) * dxdxi(1:blk%e,3,1)) * tmp
+        dxidx(1:blk%e,3,2) = (dxdxi(1:blk%e,3,1) * dxdxi(1:blk%e,1,2)
+     &                - dxdxi(1:blk%e,1,1) * dxdxi(1:blk%e,3,2)) * tmp
+        dxidx(1:blk%e,3,3) = (dxdxi(1:blk%e,1,1) * dxdxi(1:blk%e,2,2)
+     &                - dxdxi(1:blk%e,1,2) * dxdxi(1:blk%e,2,1)) * tmp
 c
 
       fresli=zero
@@ -88,15 +88,15 @@ c     fresli(:,24)=fresli(:,24)*wght
 
 
       do n = 1,blk%s
-        shg(:,n,1) = (shgl(1,n,intp) * dxidx(:,1,1)
-     &              + shgl(2,n,intp) * dxidx(:,2,1)
-     &              + shgl(3,n,intp) * dxidx(:,3,1))
-        shg(:,n,2) = (shgl(1,n,intp) * dxidx(:,1,2)
-     &              + shgl(2,n,intp) * dxidx(:,2,2)
-     &              + shgl(3,n,intp) * dxidx(:,3,2))
-        shg(:,n,3) = (shgl(1,n,intp) * dxidx(:,1,3)
-     &              + shgl(2,n,intp) * dxidx(:,2,3)
-     &              + shgl(3,n,intp) * dxidx(:,3,3))
+        shg(1:blk%e,n,1) = (shgl(1,n,intp) * dxidx(1:blk%e,1,1)
+     &              + shgl(2,n,intp) * dxidx(1:blk%e,2,1)
+     &              + shgl(3,n,intp) * dxidx(1:blk%e,3,1))
+        shg(1:blk%e,n,2) = (shgl(1,n,intp) * dxidx(1:blk%e,1,2)
+     &              + shgl(2,n,intp) * dxidx(1:blk%e,2,2)
+     &              + shgl(3,n,intp) * dxidx(1:blk%e,3,2))
+        shg(1:blk%e,n,3) = (shgl(1,n,intp) * dxidx(1:blk%e,1,3)
+     &              + shgl(2,n,intp) * dxidx(1:blk%e,2,3)
+     &              + shgl(3,n,intp) * dxidx(1:blk%e,3,3))
       enddo
 
       do j=10,12  ! normal strainrate u_{i,i} no sum on i
@@ -120,14 +120,14 @@ c                  check agains CM5 code for speed WTP
        enddo
 
 
-      fresli(:,13) = pt5 * fresli(:,13)
-      fresli(:,14) = pt5 * fresli(:,14)
-      fresli(:,15) = pt5 * fresli(:,15)
+      fresli(1:blk%e,13) = pt5 * fresli(1:blk%e,13)
+      fresli(1:blk%e,14) = pt5 * fresli(1:blk%e,14)
+      fresli(1:blk%e,15) = pt5 * fresli(1:blk%e,15)
 
-      strnrm(:,intp) = fresli(:,22) * sqrt(
-     &   two * (fresli(:,10)**2 + fresli(:,11)**2 + fresli(:,12)**2)
-     &  + four * ( fresli(:,13)**2 + fresli(:,14)**2 + 
-     &    fresli(:,15)**2 ) )
+      strnrm(1:blk%e,intp) = fresli(1:blk%e,22) * sqrt(
+     &   two * (fresli(1:blk%e,10)**2 + fresli(1:blk%e,11)**2 + fresli(1:blk%e,12)**2)
+     &  + four * ( fresli(1:blk%e,13)**2 + fresli(1:blk%e,14)**2 + 
+     &    fresli(1:blk%e,15)**2 ) )
 
       
       enddo !end of loop over integration points
