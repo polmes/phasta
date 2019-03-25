@@ -481,6 +481,7 @@ extern "C" {
     int iNoSymm;
     int iRandomIC;
     int i2DIC;
+    int i3DIC;
   } inpdat ;
 
   extern struct { 
