@@ -173,9 +173,7 @@ c
 c.... allocate the element matrices
 c
       
-#ifdef HAVE_OMP
-      BlockPool=8
-#else
+#ifndef HAVE_OMP
       BlockPool=1
 #endif
       nshlc=lcblk(10,1) ! set to first block and maybe all blocks if monotop.
