@@ -489,11 +489,11 @@ c     &                      (abs(dns_flow_l(i,j,9)/dns_flow_l(i,j,8))+abs(ex2_d
      &                      (abs(nut(i,j))+10.00d0*abs(nuu))
 
 c.... check to see if Nans 
-               do k = 1,10
-                  if(isNAN(feat(1,k)))then
-                     feat(1,k) = 0.00d0
-                  endif
-               enddo
+!               do k = 1,10
+!                  if(isNAN(feat(1,k)))then
+!                     feat(1,k) = 0.00d0
+!                  endif
+!               enddo
 
 c.... predict SARS variables with Neural network
                call nn_predict()
@@ -1158,7 +1158,6 @@ c.... do a closest point search
          ! coordinates of mesh node
          xi  = x(l,1)
          yi = x(l,2)
-         if (xi.lt.zero) then
          ! loop through points in imported data to find closest
          r = 100.0
          do ii=1,ic_length
@@ -1167,13 +1166,12 @@ c.... do a closest point search
                r = rtmp
                ind = ii
             endif
-            if (r.lt.1.0d-10) exit
+            if (r.lt.1.0d-7) exit
          enddo
          ! assign the flow vars at the closest point to y
          y(l,1) = ic_data(ind,4) ! u
          y(l,2) = ic_data(ind,5) ! v
          y(l,4) = ic_data(ind,3) ! p
-         endif
 
       enddo
       deallocate(ic_data)

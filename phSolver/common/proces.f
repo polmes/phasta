@@ -41,8 +41,11 @@ c
 c stuff to interpolate profiles at inlet
 c
         real*8, allocatable :: bcinterp(:,:)
+        real*8, allocatable :: IC3d(:,:)
+        real*8 maxdwl
         integer interp_mask(ndof)
         integer Map2ICfromBC(ndof)
+        character*256 fname2
         logical exlog
 
         !Duct
@@ -116,7 +119,8 @@ c
         if(exlog) then
 
            !display to screen if BC's will be adjusted from file
-           if(myrank == 0)write(*,*)"adjusting BCs or ICs from inlet.dat file"
+           if(myrank == 0)
+     &         write(*,*)"adjusting BCs or ICs from inlet.dat file"
 
            !open inlet.dat file for reading
            open (unit=654,file="inlet.dat",status="old")
@@ -248,6 +252,55 @@ c$$$$$$$$$$$$$$$$$$$$
 c.... Load a 2D field as an initial condition
         if(i2DIC == 1)then
            call set_wmles_ic(point2x, y)
+        endif
+c.... Load a 3D field as an initial condition
+        if(i3DIC == 1)then
+         if(myrank.eq.master) write(*,*) 
+     &                       'Setting 3D IC from interpolated solution'
+         maxdwl = maxval(d2wall)
+         if (maxdwl.lt.0.04) then
+!         if (myrank.lt.400) then
+           fname2 = "DNSIC/solDNS."
+           if (myrank.lt.9) then
+             write (fname2, "(A13,I1)") trim(fname2), myrank+1
+           else if (myrank.lt.99) then 
+             write (fname2, "(A13,I2)") trim(fname2), myrank+1
+           else if (myrank.lt.999) then
+             write (fname2, "(A13,I3)") trim(fname2), myrank+1
+           else if (myrank.lt.9999) then
+             write (fname2, "(A13,I4)") trim(fname2), myrank+1
+           else if (myrank.lt.99999) then
+             write (fname2, "(A13,I5)") trim(fname2), myrank+1
+           else if (myrank.lt.999999) then
+             write (fname2, "(A13,I6)") trim(fname2), myrank+1
+           endif           
+           inquire(file=fname2,exist=exlog)
+           if(exlog) then
+              open (unit=456,file=fname2,status="old")
+              allocate(IC3d(numnp,7))
+              do i=1,numnp
+                read(456,*) (IC3d(i,j),j=1,7)
+              enddo
+              close(456)
+           else
+              write(*,*) 'Did not find file ',fname2
+           endif
+           do i=1,numnp
+              dx = abs(point2x(i,1)-IC3d(i,1))
+              dy = abs(point2x(i,2)-IC3d(i,2))
+              dz = abs(point2x(i,3)-IC3d(i,3))
+              if (dx.lt.1.0e-5.and.dy.lt.1.0e-5.and.dz.lt.1.0e-5) then
+                 y(i,1) = IC3d(i,5) ! u
+                 y(i,2) = IC3d(i,6) ! v
+                 y(i,3) = IC3d(i,7) ! w
+                 !y(i,4) = IC3d(i,4) ! p
+              else
+                 write(*,*) 'PROBLEM: nodes do not match'
+              endif
+            enddo
+            deallocate(IC3d)
+!         endif
+         endif
         endif
 
 !======================================================================

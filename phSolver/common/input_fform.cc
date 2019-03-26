@@ -853,6 +853,11 @@ int input_fform(phSolver::Input& inp)
     } else {
        inpdat.i2DIC = 0;
     }
+    if((string)inp.GetValue("Load and set 3D IC") == "True") {
+       inpdat.i3DIC = 1;
+    } else {
+       inpdat.i3DIC = 0;
+    }
 
     // TURBULENCE MODELING PARAMETER
     int tpturb = turbvari.iles-turbvari.irans;

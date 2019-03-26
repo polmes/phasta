@@ -103,6 +103,7 @@ c
         character*20    fname2,fmt2
         character*60    fnamepold, fvarts
         character*4     fname4c ! 4 characters
+        character*255   fnameCoord
         integer         iarray(50) ! integers for headers
         integer         isgn(ndof), isgng(ndof)
 
@@ -230,6 +231,21 @@ c ----- to start the WMLES branch of the IDDES model
           enddo
         endif
 c ----- End of modification to the initial velocity field
+
+cc        if (myrank.lt.) then
+cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+cc       fnameCoord='coords'
+cc        fnameCoord= trim(fnameCoord)  // cname2(myrank+1)
+cc        open (unit=123,file=fnameCoord,
+cc     &        status="new",action="write")
+cc        write(123,*) numnp
+cc        do n=1,numnp
+cc           write(123,*) x(n,1),x(n,2),x(n,3)
+cc        enddo
+cc        close(123)
+cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+cc        endif
+
 
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
