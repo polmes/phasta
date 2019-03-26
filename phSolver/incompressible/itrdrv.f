@@ -2426,9 +2426,16 @@ cc ....   Write velbar if wanted
  
              call write_field(myrank,'a','velbar nfath',12,velbar,'d',
      &                       nfath,nflow,lstep)
-             !call write_velbarS(myrank, lstep, nfath,nflow, velbar)
 
              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if (myrank.eq.master) then
+               if (modulo(lstep,ispanAvgWPer).eq.0) then
+                  ifail = 0
+                  call rwvelb('out ',velbar,ifail) ! write the velbar field to a file
+                  if (ifail.ne.0) write(*,*) 
+     &                            'Problem writing velbar to file'
+               endif 
+             endif
              if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write velbar to the disks = ',

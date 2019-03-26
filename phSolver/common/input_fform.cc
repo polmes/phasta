@@ -861,9 +861,11 @@ int input_fform(phSolver::Input& inp)
     if((string)inp.GetValue("Compute Spanwise Average") == "True") {
          turbvari.ispanAvg = 1;
          turbvari.istartSpanAvg = inp.GetValue("Start Spanwise Average");
+         turbvari.ispanAvgWPer = inp.GetValue("Velbar Write Period");
     } else {
          turbvari.ispanAvg = 0;
          turbvari.istartSpanAvg = 0;
+         turbvari.ispanAvgWPer = 0;
     }
     
     if( tpturb != 0 ){

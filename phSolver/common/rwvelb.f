@@ -13,7 +13,7 @@ c
         character*60 syscmd
 c
         dimension q(nfath,nflow)
-       logical exlog
+        logical exlog
 c
 c.... -------------------------->  'in  '  <---------------------------
 c
@@ -75,23 +75,26 @@ c
 
          itmp = 1
          if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
-         write (fmt1,"('(''bar.'',i',i1,',1x)')") itmp
+         write (fmt1,"('(''velbar.'',i',i1,',1x)')") itmp
          write (fname1,fmt1) lstep
           fname1 = trim(fname1) // cname(myrank+1)
 c     
          open (unit=irstou, file=fname1, status='unknown',
-     &        form='unformatted', err=996)
+     &        err=996)
               
-         write (irstou) machin, nshg, lstep
-         if((itwmod.gt.0) .or. (irscale.ge.0)) then             
-            write (irstou) q
+         write (irstou,*) nfath, lstep
+         if((itwmod.gt.0) .or. (irscale.ge.0)
+     &      .or. (ispanAvg.eq.1)) then
+            do i=1,nfath            
+               write (irstou,*) q(i,1),q(i,2),q(i,3),q(i,4)
+            enddo
          endif
          if((nsonmax.eq.1) .and. (iLES.gt.0)) then
             write (irstou) numNden
          endif
          close (irstou)
 
-         call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+         !call MPI_BARRIER(MPI_COMM_WORLD,ierr)
 c
 c update links of "latest"
 c
