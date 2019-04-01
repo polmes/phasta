@@ -348,7 +348,7 @@ void countfieldstowriterestart()
     nfields++; /*conservative stats*/
   }
  
-  /* STG random variables */
+  /* STG arrays */
   if(turbvari.iSTG==1) {
     nfields++; /* STG random vars */
     nfields++; /* BCs */
@@ -357,6 +357,9 @@ void countfieldstowriterestart()
   /* Velbar field for spanwise average */
   if(turbvari.ispanAvg==1) {
     nfields++; 
+    if(outpar.ioform == 2){
+       nfields++; // conserv statistics
+    }
   }
 
   outpar.nsynciofieldswriterestart = nfields;

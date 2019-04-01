@@ -42,6 +42,7 @@ c
       use iso_c_binding
       use spat_var_eps !use spatial varying eps_ls
       use STG_BC
+      use spanStats
 
 c      use readarrays !reads in uold and acold
       
@@ -908,6 +909,9 @@ c...  dump TIME SERIES
      &                       .or.(ispanAvg.eq.1)) then 
                  call getvel (yold,     ilwork, iBC,
      &                        nsons,    ifath, velbar)
+                 if (ioform .eq. 2) then
+                   call getStsBar(ilwork, nsons, ifath, iBC)
+                 endif
             endif
 
             if((irscale.ge.0).and.(myrank.eq.master)) then
@@ -989,6 +993,7 @@ c .. write out the instantaneous solution
           endif
 
           if(iSTG.eq.1) deallocate(STGrnd)
+          if(ispanAvg.eq.1.and.ioform.eq.2) deallocate(stsBar)
 
          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
@@ -2281,6 +2286,7 @@ c
       use solvedata
       use turbSA 
       use STG_BC
+      use spanStats
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -2455,6 +2461,33 @@ cc ....   Write velbar if wanted
              if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write velbar to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+
+          endif
+
+cc ....   Write span avg stats if wanted
+          if (ispanAvg.eq.1.and.ioform.eq.2) then
+             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
+ 
+             call write_field(myrank,'a','stats nfath',11,stsBar,'d',
+     &                       nfath,10,lstep)
+
+             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             !if (myrank.eq.master) then
+             !  if (modulo(lstep,ispanAvgWPer).eq.0) then
+             !     ifail = 0
+             !     call rwvelb('out ',velbar,ifail) ! write the velbar field to a file
+             !     if (ifail.ne.0) write(*,*) 
+     &       !                     'Problem writing velbar to file'
+             !  endif 
+             !endif
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write stsBar to the disks = ',
      &        tcormr2-tcormr1
              endif
 

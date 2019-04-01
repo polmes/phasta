@@ -29,6 +29,7 @@ c-----------------------------------------------------------------------
       subroutine initStats(x,   iBC,    iper,   ilwork)
       
       use stats
+      use spanStats
       include "common.h"
 
       real*8  x(numnp,3)
@@ -47,6 +48,7 @@ c-----------------------------------------------------------------------
       nLhsDims = 19
       
       allocate ( stsVec(nshg,nResDims) )
+      if (ispanAvg.eq.1) allocate(stsBar(nfath,10))
 
       if (stsType .eq. 1) then
          allocate ( stsReg(nshg)          )
@@ -217,6 +219,8 @@ c-----------------------------------------------------------------------
       real*8 u1, u2, u3, r0, r1, r2, r3, r4, r5, t3, t4, t5
 
       integer i
+ 
+      real*8 tfact
       
       nTimeStep = nTimeStep + 1
       
@@ -238,6 +242,7 @@ c
 c
 c.... compute the statistics
 c
+         tfact = one/nTimeStep
          do i = 1, nshg
             res   = stsVec(i,:)
             reg   = stsReg(i)
@@ -251,61 +256,62 @@ c
             u2    = yAlpha(i,2)
             u3    = yAlpha(i,3)
             
-            stsPres(i)    = stsPres(i)    +  y(i,4) 
-            stsPresSqr(i) = stsPresSqr(i) +  y(i,4)*y(i,4)  
+            stsPres(i)    = (one-tfact)*stsPres(i) + tfact*y(i,4) 
+            stsPresSqr(i) = (one-tfact)*stsPresSqr(i) + 
+     &                           tfact*y(i,4)*y(i,4)  
 
             r0            = res(1) + reg * u1 
             r1            = res(2) + reg * u2 
             r2            = res(3) + reg * u3 
          
-            stsVel(i,1)   = stsVel(i,1) 
-     &                    + MInv(1) * r0 + MInv(4) * r1 + MInv(6) * r2 
-            stsVel(i,2)   = stsVel(i,2)
-     &                    + MInv(4) * r0 + MInv(2) * r1 + MInv(5) * r2 
-            stsVel(i,3)   = stsVel(i,3)
-     &                    + MInv(6) * r0 + MInv(5) * r1 + MInv(3) * r2 
+            stsVel(i,1)   = (one-tfact)*stsVel(i,1) 
+     &                    + tfact*(MInv(1)*r0+MInv(4)*r1+MInv(6)*r2) 
+            stsVel(i,2)   = (one-tfact)*stsVel(i,2)
+     &                    + tfact*(MInv(4)*r0+MInv(2)*r1+MInv(5)*r2) 
+            stsVel(i,3)   = (one-tfact)*stsVel(i,3)
+     &                    + tfact*(MInv(6)*r0+MInv(5)*r1+MInv(3)*r2) 
             
-            stsVelReg(i,1) = stsVelReg(i,1) + u1 
-            stsVelReg(i,2) = stsVelReg(i,2) + u2 
-            stsVelReg(i,3) = stsVelReg(i,3) + u3 
+            stsVelReg(i,1) = (one-tfact)*stsVelReg(i,1) + tfact*u1 
+            stsVelReg(i,2) = (one-tfact)*stsVelReg(i,2) + tfact*u2 
+            stsVelReg(i,3) = (one-tfact)*stsVelReg(i,3) + tfact*u3 
             
-            r0	        = res(1) * u1               + reg * u1 * u1 
-            r1		= res(2) * u2               + reg * u2 * u2 
-            r2		= res(3) * u3               + reg * u3 * u3 
-            r3	        = res(1) * u2 + res(2) * u1 + reg * u2 * u1 
-            r4		= res(2) * u3 + res(3) * u2 + reg * u3 * u2 
-            r5		= res(3) * u1 + res(1) * u3 + reg * u1 * u3 
+            r0      = res(1) * u1               + reg * u1 * u1 
+            r1      = res(2) * u2               + reg * u2 * u2 
+            r2      = res(3) * u3               + reg * u3 * u3 
+            r3      = res(1) * u2 + res(2) * u1 + reg * u2 * u1 
+            r4      = res(2) * u3 + res(3) * u2 + reg * u3 * u2 
+            r5      = res(3) * u1 + res(1) * u3 + reg * u1 * u3 
+            r0      = DInv(1) * r0 
+            r1      = DInv(2) * r1 
+            r2      = DInv(3) * r2 
+            r3      = r3 - B(1) * (r0 + r1) 
+            r4      = r4 - B(2) * (r1 + r2) 
+            r5      = r5 - B(3) * (r2 + r0) 
+            t3      = CInv(1) * r3 + CInv(4) * r4 + CInv(6) * r5 
+            t4      = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
+            t5      = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5 
+            
+            stsVelSqr(i,1) = (one-tfact)*stsVelSqr(i,1)  
+     &                  + tfact*(r0 - DInv(1) * (B(1) * t3 + B(3) * t5))
+            stsVelSqr(i,2) = (one-tfact)*stsVelSqr(i,2)  
+     &                  + tfact*(r1 - DInv(2) * (B(2) * t4 + B(1) * t3))
+            stsVelSqr(i,3) = (one-tfact)*stsVelSqr(i,3)  
+     &                  + tfact*(r2 - DInv(3) * (B(3) * t5 + B(2) * t4))
+
+            stsVelSqr(i,4) = (one-tfact)*stsVelSqr(i,4) + tfact*t3 
+            stsVelSqr(i,5) = (one-tfact)*stsVelSqr(i,5) + tfact*t4 
+            stsVelSqr(i,6) = (one-tfact)*stsVelSqr(i,6) + tfact*t5 
+
+            r0      = res(4) 
+            r1      = res(5) 
+            r2      = res(6) 
+            r3      = res(7) 
+            r4      = res(8) 
+            r5      = res(9)
+            
             r0          = DInv(1) * r0 
             r1          = DInv(2) * r1 
             r2          = DInv(3) * r2 
-            r3          = r3 - B(1) * (r0 + r1) 
-            r4          = r4 - B(2) * (r1 + r2) 
-            r5          = r5 - B(3) * (r2 + r0) 
-            t3          = CInv(1) * r3 + CInv(4) * r4 + CInv(6) * r5 
-            t4          = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
-            t5          = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5 
-            
-            stsVelSqr(i,1) = stsVelSqr(i,1)  
-     &                  + r0 - DInv(1) * (B(1) * t3 + B(3) * t5) 
-            stsVelSqr(i,2) = stsVelSqr(i,2)  
-     &                  + r1 - DInv(2) * (B(2) * t4 + B(1) * t3) 
-            stsVelSqr(i,3) = stsVelSqr(i,3)  
-     &                  + r2 - DInv(3) * (B(3) * t5 + B(2) * t4) 
-
-            stsVelSqr(i,4) = stsVelSqr(i,4) + t3 
-            stsVelSqr(i,5) = stsVelSqr(i,5) + t4 
-            stsVelSqr(i,6) = stsVelSqr(i,6) + t5 
-
-            r0	        = res(4) 
-            r1		= res(5) 
-            r2		= res(6) 
-            r3		= res(7) 
-            r4		= res(8) 
-            r5		= res(9)
-            
-            r0          = DInv(1) * r0 
-            r1          = DInv(2) * r1 
-            r2          = DInv(3) * r2 
 
             r3          = r3 - B(1) * (r0 + r1) 
             r4          = r4 - B(2) * (r1 + r2) 
@@ -315,15 +321,15 @@ c
             t4          = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
             t5          = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5 
 
-            stsStress(i,1) = stsStress(i,1)
-     &                  + r0 - DInv(1) * (B(1) * t3 + B(3) * t5) 
-            stsStress(i,2) = stsStress(i,2)
-     &                  + r1 - DInv(2) * (B(2) * t4 + B(1) * t3) 
-            stsStress(i,3) = stsStress(i,3)
-     &                  + r2 - DInv(3) * (B(3) * t5 + B(2) * t4) 
-            stsStress(i,4) = stsStress(i,4) + t3 
-            stsStress(i,5) = stsStress(i,5) + t4 
-            stsStress(i,6) = stsStress(i,6) + t5 
+            stsStress(i,1) = (one-tfact)*stsStress(i,1)
+     &                  + tfact*(r0 - DInv(1) * (B(1) * t3 + B(3) * t5))
+            stsStress(i,2) = (one-tfact)*stsStress(i,2)
+     &                  + tfact*(r1 - DInv(2) * (B(2) * t4 + B(1) * t3))
+            stsStress(i,3) = (one-tfact)*stsStress(i,3)
+     &                  + tfact*(r2 - DInv(3) * (B(3) * t5 + B(2) * t4))
+            stsStress(i,4) = (one-tfact)*stsStress(i,4) + tfact*t3 
+            stsStress(i,5) = (one-tfact)*stsStress(i,5) + tfact*t4 
+            stsStress(i,6) = (one-tfact)*stsStress(i,6) + tfact*t5 
          enddo
       else if (stsType .eq. 2) then
          
