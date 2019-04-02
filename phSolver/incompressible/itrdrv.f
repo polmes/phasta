@@ -131,11 +131,6 @@ c ----  Variables for random initial condition field
         real*8 r,randtime,var
         integer seed, randtmp, seed_size
         integer, allocatable :: seed1(:)
-c ---   Variables for LES channel flow IC
-        logical exlog
-        integer nx, ny, nz, nICpoints, ijkNum
-        real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
-        real*8, allocatable :: lesIC(:,:)
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -237,67 +232,6 @@ c ----- to start the WMLES branch of the IDDES model
           enddo
         endif
 c ----- End of modification to the initial velocity field
-c
-c ----- Read an initial condition for dynamic Smagorinsky LES
-        inquire(file="LES-CSmag-Ordered.dat",exist=exlog)
-        if(exlog) then
-          open (unit=123,file="LES-CSmag-Ordered.dat",status="old")
-          read(123,*) nICpoints
-          allocate(lesIC(nICpoints,7))
-          do i=1,nICpoints
-            read(123,*) (lesIC(i,j),j=1,7)
-          enddo
-          open (unit=234,file="dynSmagY.dat",status="old")
-          read(234,*) ny
-          allocate(ypoints(ny))
-          do i=1,ny
-            read(234,*) ypoints(i)
-          enddo
-          open (unit=345,file="dynSmagX.dat",status="old")
-          read(345,*) nx
-          allocate(xpoints(nx))
-          do i=1,nx
-            read(345,*) xpoints(i)
-          enddo
-          open (unit=456,file="dynSmagZ.dat",status="old")
-          read(456,*) nz
-          allocate(zpoints(nz))
-          do i=1,nz
-            read(456,*) zpoints(i)
-          enddo
-          do i=1,nshg
-            do j=1,nx
-              if (abs(x(i,1)-xpoints(j)).lt.1.0e-4) then
-                ix = j            
-              endif
-            enddo
-            do j=1,ny
-              if (abs(x(i,2)-ypoints(j)).lt.1.0e-4) then
-                iy = j            
-              endif
-            enddo
-            do j=1,nz
-              if (abs(x(i,3)-zpoints(j)).lt.1.0e-4) then
-                iz = j            
-              endif
-            enddo
-            ijkNum = nx*ny*(iz-1)+nx*(iy-1)+ix
-            yold(i,1:3) = lesIC(ijkNum,5:7)
-            yold(i,4) = lesIC(ijkNum,4)
-          enddo
-          deallocate(ypoints)
-          deallocate(xpoints)
-          deallocate(zpoints)
-          deallocate(lesIC)
-          close(123)
-          close(234)
-          close(345)
-          close(456)
-        else
-           if(myrank.eq.master) write(*,*) 
-     &                        'Did not read file LES-CSmag-Ordered.dat'
-        endif
-c ----  End of LES initial condition
 cc        if (myrank.lt.) then
 cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 cc       fnameCoord='coords'

@@ -1,9 +1,3 @@
-      module spanStats
-      real*8, allocatable, dimension (:,:) :: stsBar
-
-      end module spanStats
-
-
       subroutine getStsBar(ilwork, nsons, ifath, iBC)
 
       use stats
