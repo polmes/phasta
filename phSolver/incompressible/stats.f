@@ -19,7 +19,7 @@ c-----------------------------------------------------------------------
       
       real*8, allocatable :: stsPres(:), stsPresSqr(:), stsVel(:,:),
      &                       stsVelSqr(:,:), stsVelReg(:,:),
-     &                       stsStress(:,:)
+     &                       stsStress(:,:), stsPresVel(:,:)
 
       end module
       
@@ -48,7 +48,6 @@ c-----------------------------------------------------------------------
       nLhsDims = 19
       
       allocate ( stsVec(nshg,nResDims) )
-      if (ispanAvg.eq.1) allocate(stsBar(nfath,10))
 
       if (stsType .eq. 1) then
          allocate ( stsReg(nshg)          )
@@ -64,6 +63,7 @@ c-----------------------------------------------------------------------
       allocate ( stsVelSqr(nshg,6)     )
       allocate ( stsVelReg(nshg,3)     )
       allocate ( stsStress(nshg,6)     )
+      allocate ( stsPresVel(nshg,3)    )
       
       stsPres    = 0.0
       stsPresSqr = 0.0
@@ -217,6 +217,7 @@ c-----------------------------------------------------------------------
      &        CInv(6)
       
       real*8 u1, u2, u3, r0, r1, r2, r3, r4, r5, t3, t4, t5
+      real*8 u1sts, u2sts, u3sts
 
       integer i
  
@@ -263,13 +264,24 @@ c
             r0            = res(1) + reg * u1 
             r1            = res(2) + reg * u2 
             r2            = res(3) + reg * u3 
+
+            u1sts         = MInv(1)*r0+MInv(4)*r1+MInv(6)*r2
+            u2sts         = MInv(4)*r0+MInv(2)*r1+MInv(5)*r2
+            u3sts         = MInv(6)*r0+MInv(5)*r1+MInv(3)*r2
          
             stsVel(i,1)   = (one-tfact)*stsVel(i,1) 
-     &                    + tfact*(MInv(1)*r0+MInv(4)*r1+MInv(6)*r2) 
+     &                    + tfact*u1sts 
             stsVel(i,2)   = (one-tfact)*stsVel(i,2)
-     &                    + tfact*(MInv(4)*r0+MInv(2)*r1+MInv(5)*r2) 
+     &                    + tfact*u2sts 
             stsVel(i,3)   = (one-tfact)*stsVel(i,3)
-     &                    + tfact*(MInv(6)*r0+MInv(5)*r1+MInv(3)*r2) 
+     &                    + tfact*u3sts
+         
+            stsPresVel(i,1) =  (one-tfact)*stsPresVel(i,1) + 
+     &                         tfact*(y(i,4)*u1sts)
+            stsPresVel(i,2) =  (one-tfact)*stsPresVel(i,2) + 
+     &                         tfact*(y(i,4)*u2sts)
+            stsPresVel(i,3) =  (one-tfact)*stsPresVel(i,3) + 
+     &                         tfact*(y(i,4)*u3sts)
             
             stsVelReg(i,1) = (one-tfact)*stsVelReg(i,1) + tfact*u1 
             stsVelReg(i,2) = (one-tfact)*stsVelReg(i,2) + tfact*u2 
@@ -413,7 +425,7 @@ c      outvec(:,2:4)   = stsVelReg(:,:)
       
 c     Divide by the current time step number because the statistics are
 c     just added to each other, not time averaged
-      outvec = outvec / istp
+      !outvec = outvec / istp
       
       call write_field(myrank,'a','conservativestats',17,outvec,
      &                       'd',nshg,19,lstep)

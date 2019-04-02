@@ -39,6 +39,7 @@ c
       use posixio
       use streamio
       use STG_BC
+      use spanStats
       include "common.h"
 
       real*8, target, allocatable :: xread(:,:), qread(:,:), acread(:,:)
@@ -46,13 +47,14 @@ c
       real*8, target, allocatable :: uread(:,:)
       real*8, target, allocatable :: BCinpread(:,:)
       real*8, target, allocatable :: velbarread(:,:)
+      real*8, target, allocatable :: stsbarread(:,:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
       integer, target, allocatable :: fncorpread(:)
       integer fncorpsize
       integer irandVars, iSTGsiz
-      integer iVelbsiz, nfath2, nflow2
+      integer iVelbsiz, nfath2, nflow2, istssiz
       character*10 cname2, cname2nd
       character*8 mach2
       character*30 fmt1
@@ -693,13 +695,48 @@ cc
          else
            if (myrank.eq.master) then
              warning='velbar was not read from restart and 
-     &                 was set to zero'
+     &was set to zero'
              write(*,*) warning
            endif
            allocate(point2velbar(nfath,nflow))
            point2velbar=zero
          endif
       endif ! end of ispanAvg for velbar
+
+cc
+cc.... Read the stsbar array if want spanwise average and stats
+cc
+      if (ispanAvg.eq.1.and.ioform.eq.2) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'stats nfath' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nfath2=intfromfile(1)
+           if (nfath.ne.nfath2)
+     &          call error ('restar  ', 'nfath   ', nfath)
+           allocate(stsbarread(nfath2,10))
+           allocate(stsBar(nfath2,10))
+           istssiz=nfath2*10
+           call phio_readdatablock(fhandle,
+     &       c_char_'stats nfath' // char(0),
+     &       c_loc(stsbarread),istssiz, dataDbl,iotype)
+           stsBar=stsbarread
+           deallocate(stsbarread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'stsbar field found in restart file'
+         else
+           if (myrank.eq.master) then
+             warning='stsbar was not read from restart and 
+     &was set to zero'
+             write(*,*) warning
+           endif
+           allocate(stsBar(nfath,10))
+           stsBar=zero
+         endif
+      endif ! end of ispanAvg and ioform for stsbar
+
 
 cc
 cc.... read the header and check it against the run data

@@ -93,7 +93,7 @@ c
       endif
 c     divide by # of sons to get average father for this step
 c
-      if (periodicity.eq.1) then
+      if (periodicity.eq.1.and.nohomog.eq.1) then
          rinvsons = one/(nsons-one)   ! division is expensive
       else
          rinvsons = one/nsons   ! division is expensive
