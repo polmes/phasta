@@ -70,6 +70,11 @@ c
       character*64 temp1
       type(c_ptr) :: handle
       character(len=1024) :: dataInt, dataDbl
+
+      integer ny
+      real*8, allocatable :: ypoints(:)
+      logical exlog
+
       dataInt = c_char_'integer'//c_null_char
       dataDbl = c_char_'double'//c_null_char
 c
@@ -456,6 +461,34 @@ c
      &       c_loc(point2ifath), nshg, dataInt, iotype)
      
             nsonmax=maxval(point2nsons)
+
+            if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
+            if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
+            inquire(file="dynSmagY.dat",exist=exlog)
+            if(exlog) then
+              if(myrank.eq.master) write(*,*) 
+     &                        "Setting ifath from dynSmagY.dat"
+              open (unit=123,file="dynSmagY.dat",status="old")
+              read(123,*) ny
+              allocate(ypoints(ny))
+              do i=1,ny
+                read(123,*) ypoints(i)
+              enddo
+              do i=1,nshg
+                do j=1,ny
+                  if (abs(point2x(i,2)-ypoints(j)).lt.1.0e-4) then
+                    point2ifath(i) = j            
+                  endif
+                enddo
+              enddo
+              deallocate(ypoints)
+              close(123)
+            else
+               write(*,*) 'Did not read file dynSmagY.dat'
+            endif
+c            do i=1,nshg
+c               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
+c            enddo
          else  ! this is the case where there is no homogeneity
                ! therefore ever node is a father (too itself).  sonfath
                ! (a routine in NSpre) will set this up but this gives

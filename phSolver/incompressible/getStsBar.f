@@ -149,8 +149,8 @@ c
       endif
       close (irstou)
 
-996   call error ('stsBar  ','opening ', irstou)
-
       return
+
+996   call error ('stsBar  ','opening ', irstou)
 
       end subroutine wstsBar
