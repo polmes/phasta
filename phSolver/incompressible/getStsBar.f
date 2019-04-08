@@ -7,15 +7,15 @@
       include "mpif.h"
       include "auxmpi.h"
 
-      dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,10),
+      dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,6),
      &          ifath(numnp), ilwork(nlwork), iBC(numnp),
-     &          tmpStatsf(nfath,10), tmpStatsft(nfath,10)
+     &          tmpStatsf(nfath,6), tmpStatsft(nfath,6)
       integer periodicity
       
 c     Assign the conservative statistics to a temporary array
-      tmpStats(:,1) = stsPres(:)
-      tmpStats(:,2:4) = stsVel(:,:)
-      tmpStats(:,5:10) = stsVelSqr(:,:) ! 11,22,33,12,23,31
+      !tmpStats(:,1) = stsPres(:)
+      !tmpStats(:,2:4) = stsVel(:,:)
+      tmpStats(:,:) = stsVelSqr(:,:) ! 11,22,33,12,23,31
 
 c     Zero on processor periodic nodes so will not be added twice
       if(myrank.eq.master) then
@@ -36,10 +36,10 @@ c     Zero on processor periodic nodes so will not be added twice
           tmpStats(:,4)=zero
           tmpStats(:,5)=zero
           tmpStats(:,6)=zero
-          tmpStats(:,7)=zero
-          tmpStats(:,8)=zero
-          tmpStats(:,9)=zero
-          tmpStats(:,10)=zero
+          !tmpStats(:,7)=zero
+          !tmpStats(:,8)=zero
+          !tmpStats(:,9)=zero
+          !tmpStats(:,10)=zero
       endwhere
 
       if (numpe.gt.1) then
@@ -73,15 +73,15 @@ c     zero the nodes that are "solved" on the other processors
 c     accumulate sum of sons to the fathers
       do i = 1,numnp
          ifathi=ifath(i)
-         tmpStatsf(ifathi,1:10) = tmpStatsf(ifathi,1:10) 
-     &                             + tmpStats(i,1:10)            
+         tmpStatsf(ifathi,1:6) = tmpStatsf(ifathi,1:6) 
+     &                             + tmpStats(i,1:6)            
       enddo
 
 c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
       if(numpe .gt. 1) then
-         call drvAllreduce(tmpStatsf, tmpStatsft,nfath*10)
+         call drvAllreduce(tmpStatsf, tmpStatsft,nfath*6)
       else
          tmpStatsft=tmpStatsf
       endif
@@ -97,11 +97,11 @@ c
       tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
       tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
       tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
-      tmpStatsft(:,6) = tmpStatsft(:,5) * rinvsons(:)
-      tmpStatsft(:,7) = tmpStatsft(:,5) * rinvsons(:)
-      tmpStatsft(:,8) = tmpStatsft(:,5) * rinvsons(:)
-      tmpStatsft(:,9) = tmpStatsft(:,5) * rinvsons(:)
-      tmpStatsft(:,10) = tmpStatsft(:,5) * rinvsons(:)
+      tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+      !tmpStatsft(:,7) = tmpStatsft(:,5) * rinvsons(:)
+      !tmpStatsft(:,8) = tmpStatsft(:,5) * rinvsons(:)
+      !tmpStatsft(:,9) = tmpStatsft(:,5) * rinvsons(:)
+      !tmpStatsft(:,10) = tmpStatsft(:,5) * rinvsons(:)
 
 
 c     Add to running time average
@@ -136,9 +136,9 @@ c
      &   .or. (ispanAvg.eq.1)) then
            do i=1,nfath            
                write (irstou,*) stsBar(i,1),stsBar(i,2),stsBar(i,3),
-     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6),
-     &                          stsBar(i,7),stsBar(i,8),stsBar(i,9),
-     &                          stsBar(i,10)
+     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6)!,
+!     &                          stsBar(i,7),stsBar(i,8),stsBar(i,9),
+!     &                          stsBar(i,10)
            enddo
       endif
       close (irstou)

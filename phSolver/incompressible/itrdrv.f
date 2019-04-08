@@ -232,7 +232,7 @@ c ----- to start the WMLES branch of the IDDES model
           enddo
         endif
 c ----- End of modification to the initial velocity field
-cc        if (myrank.lt.) then
+c ----- Write Coordinates of this part to file
 cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 cc       fnameCoord='coords'
 cc        fnameCoord= trim(fnameCoord)  // cname2(myrank+1)
@@ -244,8 +244,7 @@ cc           write(123,*) x(n,1),x(n,2),x(n,3)
 cc        enddo
 cc        close(123)
 cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-cc        endif
-
+c ----- End of write coordinates to file
 
 !!!!!!!!!!!!!!!!!!!
 !Init output fields

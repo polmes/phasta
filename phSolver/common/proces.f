@@ -42,7 +42,9 @@ c stuff to interpolate profiles at inlet
 c
         real*8, allocatable :: bcinterp(:,:)
         real*8, allocatable :: IC3d(:,:)
-        real*8 maxdwl
+        real*8, allocatable :: ICSTG(:,:)
+        real*8 maxdwl,maxx,minx,dwl,z
+        integer numSTG
         integer interp_mask(ndof)
         integer Map2ICfromBC(ndof)
         character*256 fname2
@@ -259,8 +261,7 @@ c.... Load a 3D field as an initial condition
      &                       'Setting 3D IC from interpolated solution'
          maxdwl = maxval(d2wall)
          if (maxdwl.lt.0.04) then
-!         if (myrank.lt.400) then
-           fname2 = "DNSIC/solDNS."
+           fname2 = "DNSIC/solLES."
            if (myrank.lt.9) then
              write (fname2, "(A13,I1)") trim(fname2), myrank+1
            else if (myrank.lt.99) then 
@@ -299,10 +300,48 @@ c.... Load a 3D field as an initial condition
               endif
             enddo
             deallocate(IC3d)
-!         endif
          endif
         endif
-
+c.... Load a 3D field as an initial condition
+        if(iSTGIC == 1)then
+         if(myrank.eq.master) write(*,*)
+     &                       'Setting 3D IC from saved STG plane'
+         maxdwl = maxval(d2wall)
+         minx = minval(point2x(:,1))
+         maxx = maxval(point2x(:,1))
+         if ((minx.gt.-0.12)
+     &       .and.(maxx.lt.0.1)) then
+           inquire(file='STGplane.dat',exist=exlog)
+           if(exlog) then
+            open (unit=456,file='STGplane.dat',status="old")
+            read(456,*) numSTG
+            allocate(ICSTG(numSTG,5))
+            do i=1,numSTG
+              read(456,*) (ICSTG(i,j),j=1,5)
+            enddo
+            close(456)
+            ! Note the ICSTG array form the file needs to be ordered by
+            ! increasing dwal and increasing z
+            do i=1,nshg
+              dwl = d2wall(i)
+              if (dwl.le.1.0e-3) then
+              z = point2x(i,3)
+              do j=1,numSTG
+                if (ICSTG(j,1).ge.dwl) then ! found dwal
+                  if (ICSTG(j,2).ge.z) then
+                     y(i,1:3) = ICSTG(j,3:5)
+                     exit
+                  endif
+                endif
+              enddo
+              endif
+            enddo
+           deallocate(ICSTG)
+           else
+             write(*,*) 'Did not read STGplane.dat'
+           endif
+         endif
+        endif
 !======================================================================
 c
 c

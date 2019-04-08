@@ -673,7 +673,8 @@ cc
      &was set to zero'
              write(*,*) warning
            endif
-           allocate(point2velbar(nfath,nflow))
+           allocate(point2velbar(nfath,nflow),STAT=IERR1)
+           if(IERR1.gt.0)write(*,*)'Not enough space to allocate velbar'
            point2velbar=zero
          endif
       endif ! end of ispanAvg for velbar
@@ -691,9 +692,9 @@ cc
            nfath2=intfromfile(1)
            if (nfath.ne.nfath2)
      &          call error ('restar  ', 'nfath   ', nfath)
-           allocate(stsbarread(nfath2,10))
-           allocate(stsBar(nfath2,10))
-           istssiz=nfath2*10
+           allocate(stsbarread(nfath2,6))
+           allocate(stsBar(nfath2,6))
+           istssiz=nfath2*6 !10
            call phio_readdatablock(fhandle,
      &       c_char_'stats nfath' // char(0),
      &       c_loc(stsbarread),istssiz, dataDbl,iotype)
@@ -707,7 +708,8 @@ cc
      &was set to zero'
              write(*,*) warning
            endif
-           allocate(stsBar(nfath,10))
+           allocate(stsBar(nfath,6),STAT=IERR2)
+           if(IERR2.gt.0)write(*,*)'Not enough space to allocate stsBar'
            stsBar=zero
          endif
       endif ! end of ispanAvg and ioform for stsbar

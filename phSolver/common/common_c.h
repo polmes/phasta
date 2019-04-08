@@ -485,6 +485,7 @@ extern "C" {
     int iRandomIC;
     int i2DIC;
     int i3DIC;
+    int iSTGIC;
   } inpdat ;
 
   extern struct { 
