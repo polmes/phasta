@@ -136,7 +136,7 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
         if(nKWave.lt.0)then
             print *, "This Mesh is too course on the STG inflow plane 
      &       and PHASTA will now exit"
-            call exit       
+            call exit
         endif
         !find other variables
         uNaught=STGUo

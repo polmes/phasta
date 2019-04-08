@@ -346,6 +346,10 @@ void countfieldstowriterestart()
        nfields++; // conserv statistics
     }
   }
+  /* LES cdelsq field */
+  if(turbvari.iles>0) {
+    nfields++;
+  }
 
   outpar.nsynciofieldswriterestart = nfields;
 

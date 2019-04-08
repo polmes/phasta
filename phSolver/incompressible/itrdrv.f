@@ -131,6 +131,14 @@ c ----  Variables for random initial condition field
         real*8 r,randtime,var
         integer seed, randtmp, seed_size
         integer, allocatable :: seed1(:)
+c ---   Variables for LES channel flow IC
+        logical exlog
+        integer nx, ny, nz, nICpoints, ijkNum
+        real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
+        real*8, allocatable :: lesIC(:,:)
+c ---   Dynamic LES C*\Delta^2
+        real*8, allocatable :: cdelsq(:)
+        real*8 cdelsqFitted(80,2)
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -245,7 +253,7 @@ cc        enddo
 cc        close(123)
 cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 c ----- End of write coordinates to file
-
+c
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
 !!!!!!!!!!!!!!!!!!
@@ -277,6 +285,8 @@ c ----- End of write coordinates to file
             wallssVecbar = zero ! Initialization important if mean wss computed
           endif
         endif
+
+        if (iLES.gt.0) allocate(cdelsq(nshg))
 
 ! both nstepsincycle and nphasesincycle needs to be set
         if(nstepsincycle.eq.0) nphasesincycle = 0 
@@ -360,7 +370,8 @@ c
                  call  checkpoint (y,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp)
+     &                       vorticity,irank2ybar,irank2yphbar,istp,
+     &                       cdelsq)
 ! shift the number to keep them distinct
         lstep=lstepSave
         output_mode=-1 ! reset to stream 
@@ -484,14 +495,11 @@ c
      &              numRCRSrfs)
             endif
 
-            if(iLES.gt.0) then  !complicated stuff has moved to
-                                        !routine below
+            if(iLES.gt.0) then  !complicated stuff has moved to routine below
                call lesmodels(yold,  acold,     shgl,      shp, 
      &                        iper,  ilwork,    rowp,      colm,
      &                        nsons, ifath,     x,   
-     &                        iBC,   BC)
-
-            
+     &                        iBC,   BC, cdelsq,cdelsqFitted)
             endif
 
 c.... set traction BCs for modeled walls
@@ -937,21 +945,24 @@ c .. write out the instantaneous solution
                call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp)
+     &                       vorticity,irank2ybar,irank2yphbar,istp,
+     &                       cdelsq)
              endif
              if(ntout.le.lstep) then ! user also wants file output
                   output_mode=0   ! only writing posix for now
                  call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp)
+     &                       vorticity,irank2ybar,irank2yphbar,istp,
+     &                       cdelsq)
                   output_mode=-1 ! reset to stream 
              endif
            else
              call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp)
+     &                       vorticity,irank2ybar,irank2yphbar,istp,
+     &                       cdelsq)
            endif
         endif
         !next 2 lines are two ways to end early
@@ -992,6 +1003,7 @@ c .. write out the instantaneous solution
 
           if(iSTG.eq.1) deallocate(STGrnd)
           if(ispanAvg.eq.1.and.ioform.eq.2) deallocate(stsBar)
+          if(iLES.gt.0) deallocate(cdelsq)
 
          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
@@ -1075,7 +1087,7 @@ c
       subroutine lesmodels(y,     ac,        shgl,      shp, 
      &                     iper,  ilwork,    rowp,      colm,    
      &                     nsons, ifath,     x,   
-     &                     iBC,   BC)
+     &                     iBC,   BC, cdelsq,cdelsqFitted)
       
       include "common.h"
 
@@ -1090,6 +1102,7 @@ c
      &            iBC(nshg),
      &            ilwork(nlwork),
      &            iper(nshg)
+      real*8    cdelsq(nshg),cdelsqFitted(80,2)
       dimension ifath(numnp),    nsons(nfath)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
@@ -1133,7 +1146,7 @@ c
                if(modlstats .eq. 0) then ! If no model stats wanted
                   call getdmc (y,       shgl,      shp, 
      &                         iper,       ilwork,    nsons,
-     &                         ifath,      x)
+     &                         ifath,      x, cdelsq,cdelsqFitted)
                else             ! else get model stats 
                   call stdfdmc (y,       shgl,      shp, 
      &                          iper,       ilwork,    nsons,
@@ -2280,7 +2293,8 @@ c
       subroutine checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp)
+     &                       vorticity,irank2ybar,irank2yphbar,istp,
+     &                       cdelsq)
       use solvedata
       use turbSA 
       use STG_BC
@@ -2303,6 +2317,7 @@ c
       real*8 ybar(nshg,irank2ybar),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
+      real*8 cdelsq(nshg)
       integer istp
 
 !              Call to restar() will open restart file in write mode (and not append mode)
@@ -2490,6 +2505,22 @@ cc ....   Write span avg stats if wanted
              endif
 
           endif
+cc ..... Write the eddy viscosity when doing a dynamic Smag LES (iLES=1)
+          if (iLES.gt.0) then
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+            call write_field(myrank,'a','cdelsq',6,cdelsq,'d',
+     &                       nshg,1,lstep)
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write cdelsq to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+          endif
+cc ....  End of iLES conditional
 
       return
       end subroutine
