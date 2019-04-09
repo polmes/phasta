@@ -329,7 +329,7 @@ c.... Load a 3D field as an initial condition
               do j=1,numSTG
                 if (ICSTG(j,1).ge.dwl) then ! found dwal
                   if (ICSTG(j,2).ge.z) then
-                     y(i,1:3) = ICSTG(j,3:5)
+                     y(i,1:3) = y(i,1:3)+ICSTG(j,3:5)
                      exit
                   endif
                 endif
