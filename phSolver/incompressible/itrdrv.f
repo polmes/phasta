@@ -254,6 +254,74 @@ cc        close(123)
 cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 c ----- End of write coordinates to file
 c
+c ----- Read an initial condition for dynamic Smagorinsky LES
+        inquire(file="LES-CSmag-Ordered.dat",exist=exlog)
+        if(exlog) then
+          open (unit=123,file="LES-CSmag-Ordered.dat",status="old")
+          read(123,*) nICpoints
+          allocate(lesIC(nICpoints,7))
+          do i=1,nICpoints
+            read(123,*) (lesIC(i,j),j=1,7)
+          enddo
+          open (unit=234,file="dynSmagY.dat",status="old")
+          read(234,*) ny
+          allocate(ypoints(ny))
+          do i=1,ny
+            read(234,*) ypoints(i)
+          enddo
+          open (unit=345,file="dynSmagX.dat",status="old")
+          read(345,*) nx
+          allocate(xpoints(nx))
+          do i=1,nx
+            read(345,*) xpoints(i)
+          enddo
+          open (unit=456,file="dynSmagZ.dat",status="old")
+          read(456,*) nz
+          allocate(zpoints(nz))
+          do i=1,nz
+            read(456,*) zpoints(i)
+          enddo
+          do i=1,nshg
+            do j=1,nx
+              if (abs(x(i,1)-xpoints(j)).lt.1.0e-4) then
+                ix = j            
+              endif
+            enddo
+            do j=1,ny
+              if (abs(x(i,2)-ypoints(j)).lt.1.0e-4) then
+                iy = j            
+              endif
+            enddo
+            do j=1,nz
+              if (abs(x(i,3)-zpoints(j)).lt.1.0e-4) then
+                iz = j            
+              endif
+            enddo
+            ijkNum = nx*ny*(iz-1)+nx*(iy-1)+ix
+            yold(i,1:3) = lesIC(ijkNum,5:7)
+            yold(i,4) = lesIC(ijkNum,4)
+          enddo
+          deallocate(ypoints)
+          deallocate(xpoints)
+          deallocate(zpoints)
+          deallocate(lesIC)
+          close(123)
+          close(234)
+          close(345)
+          close(456)
+        else
+           if(myrank.eq.master) write(*,*) 
+     &                        'Did not read file LES-CSmag-Ordered.dat'
+        endif
+c ----  End of LES initial condition
+c ----  Read in fitted cdeslq
+        inquire(file="cdelsqFitted.dat",exist=exlog)
+        if(exlog) then
+          open (unit=123,file="cdelsqFitted.dat",status="old")
+          do i=1,80
+            read(123,*) (cdelsqFitted(i,j),j=1,2)
+          enddo
+        endif
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
 !!!!!!!!!!!!!!!!!!
@@ -915,9 +983,7 @@ c...  dump TIME SERIES
      &                       .or.(ispanAvg.eq.1)) then 
                  call getvel (yold,     ilwork, iBC,
      &                        nsons,    ifath, velbar)
-                 if (ioform .eq. 2) then
-                   call getStsBar(ilwork, nsons, ifath, iBC)
-                 endif
+                 call getStsBar(yold, GradV, ilwork, nsons, ifath, iBC)
             endif
 
             if((irscale.ge.0).and.(myrank.eq.master)) then
@@ -1002,7 +1068,8 @@ c .. write out the instantaneous solution
           endif
 
           if(iSTG.eq.1) deallocate(STGrnd)
-          if(ispanAvg.eq.1.and.ioform.eq.2) deallocate(stsBar)
+          if(ispanAvg.eq.1) deallocate(stsBar)
+          if(ispanAvg.eq.1.and.iKeq.eq.1) deallocate(stsBarKeq)
           if(iLES.gt.0) deallocate(cdelsq)
 
          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -2480,14 +2547,14 @@ cc ....   Write velbar if wanted
           endif
 
 cc ....   Write span avg stats if wanted
-          if (ispanAvg.eq.1.and.ioform.eq.2) then
+          if (ispanAvg.eq.1) then
              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then
               tcormr1 = TMRC()
              endif
  
              call write_field(myrank,'a','stats nfath',11,stsBar,'d',
-     &                       nfath,10,lstep)
+     &                       nfath,6,lstep)
 
              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if (myrank.eq.master) then
@@ -2501,6 +2568,32 @@ cc ....   Write span avg stats if wanted
              if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write stsBar to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+
+          endif
+cc ....   Write span avg stats for K eq if wanted
+          if (ispanAvg.eq.1.and.iKeq.eq.1) then
+             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
+ 
+             call write_field(myrank,'a','stats Keq nfath',15,
+     &                        stsBarKeq,'d',nfath,10,lstep)
+
+             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if (myrank.eq.master) then
+               if (modulo(lstep,ispanAvgWPer).eq.0) then
+                  ifail = 0
+                  call wstsBarKeq(ifail) ! write the stsBar field to a file
+                  if (ifail.ne.0) write(*,*) 
+     &                            'Problem writing stsBarKeq to file'
+               endif 
+             endif
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write stsBarKeq to the disks = ',
      &        tcormr2-tcormr1
              endif
 

@@ -341,9 +341,10 @@ void countfieldstowriterestart()
 
   /* Velbar field for spanwise average */
   if(turbvari.ispanAvg==1) {
-    nfields++; 
-    if(outpar.ioform == 2){
-       nfields++; // conserv statistics
+    nfields++; // velbar 
+    nfields++; // stsBar
+    if(turbvari.iKeq == 1){
+       nfields++; // K eq terms
     }
   }
   /* LES cdelsq field */

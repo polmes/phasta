@@ -1,4 +1,4 @@
-      subroutine getStsBar(ilwork, nsons, ifath, iBC)
+      subroutine getStsBar(y, GradV, ilwork, nsons, ifath, iBC)
 
       use stats
       use spanStats
@@ -9,13 +9,46 @@
 
       dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,6),
      &          ifath(numnp), ilwork(nlwork), iBC(numnp),
-     &          tmpStatsf(nfath,6), tmpStatsft(nfath,6)
+     &          tmpStatsf(nfath,6), tmpStatsft(nfath,6),
+     &          y(nshg,ndof), tmpKeq(nshg,10), tmpKeqf(nfath,10),
+     &          tmpKeqft(nfath,10), GradV(nshg,nsdsq)
+      real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
+     &       S12(nshg),S13(nshg),S23(nshg)
       integer periodicity
       
 c     Assign the conservative statistics to a temporary array
-      !tmpStats(:,1) = stsPres(:)
-      !tmpStats(:,2:4) = stsVel(:,:)
-      tmpStats(:,:) = stsVelSqr(:,:) ! 11,22,33,12,23,31
+      if (iConsStress.eq.1) then 
+         tmpStats(:,:) = stsVelSqInst(:,:) ! 11,22,33,12,23,31
+      else
+         tmpStats(:,1) = y(:,1)*y(:,1)
+         tmpStats(:,2) = y(:,2)*y(:,2)
+         tmpStats(:,3) = y(:,3)*y(:,3)
+         tmpStats(:,4) = y(:,1)*y(:,2)
+         tmpStats(:,5) = y(:,1)*y(:,3)
+         tmpStats(:,6) = y(:,2)*y(:,3)
+      endif
+      if (iKeq.eq.1) then
+         tmpKeq(:,1) = y(:,4)*y(:,1) ! p*u1
+         tmpKeq(:,2) = y(:,4)*y(:,2) ! p*u2
+         tmpKeq(:,3) = y(:,4)*y(:,3) ! p*u3
+         tmp = y(:,1)**2 + y(:,2)**2 + y(:,3)**2
+         tmpKeq(:,4) = y(:,1)*tmp ! u_i*u_j*u_j, i=1
+         tmpKeq(:,5) = y(:,2)*tmp ! u_i*u_j*u_j, i=2
+         tmpKeq(:,6) = y(:,3)*tmp ! u_i*u_j*u_j, i=3
+         if (ipord.eq.1) then
+           S11 = GradV(:,1)
+           S22 = GradV(:,5)
+           S33 = GradV(:,9)
+           S12 = 0.50d0*(GradV(:,2)+GradV(:,4))
+           S13 = 0.50d0*(GradV(:,3)+GradV(:,7))
+           S23 = 0.50d0*(GradV(:,6)+GradV(:,8))
+         endif
+         tmpKeq(:,7) = y(:,1)*S11+y(:,2)*S12+y(:,3)*S13 ! u_j*S_ij, i=1
+         tmpKeq(:,8) = y(:,1)*S12+y(:,2)*S22+y(:,3)*S23 ! u_j*S_ij, i=2
+         tmpKeq(:,9) = y(:,1)*S13+y(:,2)*S23+y(:,3)*S33 ! u_j*S_ij, i=3
+         tmpKeq(:,10) = S11**2 + S22**2 + S33**2 + 
+     &                  two*(S12**2 + S13**2 + S23**2) ! S_ij*S_ij
+      endif
 
 c     Zero on processor periodic nodes so will not be added twice
       if(myrank.eq.master) then
@@ -36,11 +69,22 @@ c     Zero on processor periodic nodes so will not be added twice
           tmpStats(:,4)=zero
           tmpStats(:,5)=zero
           tmpStats(:,6)=zero
-          !tmpStats(:,7)=zero
-          !tmpStats(:,8)=zero
-          !tmpStats(:,9)=zero
-          !tmpStats(:,10)=zero
       endwhere
+
+      if (iKeq.eq.1) then
+        where(btest(iBC,10).or.btest(iBC,12))
+          tmpKeq(:,1)=zero
+          tmpKeq(:,2)=zero
+          tmpKeq(:,3)=zero
+          tmpKeq(:,4)=zero
+          tmpKeq(:,5)=zero
+          tmpKeq(:,6)=zero
+          tmpKeq(:,7)=zero
+          tmpKeq(:,8)=zero
+          tmpKeq(:,9)=zero
+          tmpKeq(:,10)=zero
+        endwhere
+      endif
 
       if (numpe.gt.1) then
             
@@ -59,6 +103,9 @@ c     zero the nodes that are "solved" on the other processors
                      lenseg = ilwork (itkbeg + 4 + 2*is)
                      isgend = isgbeg + lenseg - 1
                      tmpStats(isgbeg:isgend,:) = zero
+                     if (iKeq.eq.1) then
+                       tmpKeq(isgbeg:isgend,:) = zero
+                     endif
                   enddo
                endif
                
@@ -69,12 +116,17 @@ c     zero the nodes that are "solved" on the other processors
       endif  ! numpe.gt.1
 
       tmpStatsf = zero
+      if (iKeq.eq.1) tmpKeqf = zero
 
 c     accumulate sum of sons to the fathers
       do i = 1,numnp
          ifathi=ifath(i)
          tmpStatsf(ifathi,1:6) = tmpStatsf(ifathi,1:6) 
-     &                             + tmpStats(i,1:6)            
+     &                             + tmpStats(i,1:6)
+         if (iKeq.eq.1) then
+           tmpKeqf(ifathi,1:10) = tmpKeqf(ifathi,1:10) 
+     &                             + tmpKeq(i,1:10)
+         endif          
       enddo
 
 c     Now  the true fathers and serrogates combine results and update
@@ -82,8 +134,14 @@ c     each other.
 c     
       if(numpe .gt. 1) then
          call drvAllreduce(tmpStatsf, tmpStatsft,nfath*6)
+         if (iKeq.eq.1) then
+            call drvAllreduce(tmpKeqf, tmpKeqft,nfath*10)
+         endif
       else
          tmpStatsft=tmpStatsf
+         if (iKeq.eq.1) then
+            tmpKeqft=tmpKeqf  
+         endif
       endif
 c     divide by # of sons to get average father for this step
 c
@@ -98,16 +156,26 @@ c
       tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
       tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
       tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
-      !tmpStatsft(:,7) = tmpStatsft(:,5) * rinvsons(:)
-      !tmpStatsft(:,8) = tmpStatsft(:,5) * rinvsons(:)
-      !tmpStatsft(:,9) = tmpStatsft(:,5) * rinvsons(:)
-      !tmpStatsft(:,10) = tmpStatsft(:,5) * rinvsons(:)
-
+      if (iKeq.eq.1) then
+         tmpKeqft(:,1) = tmpKeqft(:,1) * rinvsons(:) 
+         tmpKeqft(:,2) = tmpKeqft(:,2) * rinvsons(:)
+         tmpKeqft(:,3) = tmpKeqft(:,3) * rinvsons(:)
+         tmpKeqft(:,4) = tmpKeqft(:,4) * rinvsons(:)
+         tmpKeqft(:,5) = tmpKeqft(:,5) * rinvsons(:)
+         tmpKeqft(:,6) = tmpKeqft(:,6) * rinvsons(:)
+         tmpKeqft(:,7) = tmpKeqft(:,7) * rinvsons(:)
+         tmpKeqft(:,8) = tmpKeqft(:,8) * rinvsons(:)
+         tmpKeqft(:,9) = tmpKeqft(:,9) * rinvsons(:)
+         tmpKeqft(:,10) = tmpKeqft(:,10) * rinvsons(:)
+      endif
 
 c     Add to running time average
       den = max(1,lstep-istartSpanAvg)
       tfact = one/den
-      stsBar(:,:)=tfact*tmpStatsft(:,:)+(one-tfact)*stsBar(:,:) 
+      stsBar(:,:)=tfact*tmpStatsft(:,:)+(one-tfact)*stsBar(:,:)
+      if (iKeq.eq.1) then
+          stsBarKeq(:,:)=tfact*tmpKeqft(:,:)+(one-tfact)*stsBarKeq(:,:)
+      endif
 
 
       end subroutine getStsBar
@@ -148,3 +216,38 @@ c
 996   call error ('stsBar  ','opening ', irstou)
 
       end subroutine wstsBar
+
+      subroutine wstsBarKeq(ifail)
+
+      use spanStats
+      include "common.h"
+  
+      character*25 fname1,fmt1
+      character*5 cname
+      integer itmp, irstou
+
+      itmp = 1
+      if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+      write (fmt1,"('(''stsbarKeq.'',i',i1,',1x)')") itmp
+      write (fname1,fmt1) lstep
+      fname1 = trim(fname1) // cname(myrank+1)
+c     
+      open (unit=irstou, file=fname1, status='unknown',
+     &     err=996)
+              
+      write (irstou,*) nfath, lstep
+      if((ispanAvg.eq.1).and.(iKeq.eq.1)) then
+        do i=1,nfath            
+          write (irstou,*) stsBarKeq(i,1),stsBarKeq(i,2),stsBarKeq(i,3),
+     &                     stsBarKeq(i,4),stsBarKeq(i,5),stsBarKeq(i,6),
+     &                     stsBarKeq(i,7),stsBarKeq(i,8),stsBarKeq(i,9),
+     &                     stsBarKeq(i,10)
+        enddo
+      endif
+      close (irstou)
+
+      return
+
+996   call error ('stsBarKeq  ','opening ', irstou)
+
+      end subroutine wstsBarKeq
