@@ -112,15 +112,15 @@ c
         if (iNoSymm.eq.1) then
         do i=1,nshg
            ! if node is on side walls
-           if (x(i,3).lt.1.0e-6.or.x(i,3).gt.0.1359999) then 
+           if (x(i,3).lt.1.0e-6.or.x(i,3).gt.0.039999) then 
                 eq=0.077724*exp(-(x(i,1)/0.178308)**2)
                 top=eq+0.0574
-                bot=eq+1e-6
+                bot=eq+1e-7
                 ! if node is within 1.4*delta_max of wall (0.041)
                 ! but NOT on the wall
                 if (x(i,2).lt.top.and.x(i,2).gt.bot) then
                   ! if node is not on the inflow plane
-                  if (x(i,1).gt.-0.642595) then
+                  if (x(i,1).gt.-0.5486) then
                      ! take away x3 BC (see genibc.f)
                      iBC(i) = iBC(i)-32
                   endif
