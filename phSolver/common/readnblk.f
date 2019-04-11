@@ -17,7 +17,6 @@ c
       integer, allocatable :: iBCtmp(:)
       real*8, allocatable :: BCinp(:,:)
       real*8, target, allocatable :: point2velbar(:,:)
-
       integer, allocatable :: point2ilwork(:)
 !      integer, allocatable :: fncorp(:)
       integer, allocatable :: twodncorp(:,:)
@@ -48,6 +47,7 @@ c
       real*8, target, allocatable :: BCinpread(:,:)
       real*8, target, allocatable :: velbarread(:,:)
       real*8, target, allocatable :: stsbarread(:,:)
+      real*8, target, allocatable :: stsKread(:,:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
@@ -466,6 +466,31 @@ c
 
             if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
             if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
+            inquire(file="dynSmagY.dat",exist=exlog)
+            if(exlog) then
+              if(myrank.eq.master) write(*,*) 
+     &                        "Setting ifath from dynSmagY.dat"
+              open (unit=123,file="dynSmagY.dat",status="old")
+              read(123,*) ny
+              allocate(ypoints(ny))
+              do i=1,ny
+                read(123,*) ypoints(i)
+              enddo
+              do i=1,nshg
+                do j=1,ny
+                  if (abs(point2x(i,2)-ypoints(j)).lt.1.0e-4) then
+                    point2ifath(i) = j            
+                  endif
+                enddo
+              enddo
+              deallocate(ypoints)
+              close(123)
+            else
+               write(*,*) 'Did not read file dynSmagY.dat'
+            endif
+c            do i=1,nshg
+c               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
+c            enddo
          else  ! this is the case where there is no homogeneity
                ! therefore ever node is a father (too itself).  sonfath
                ! (a routine in NSpre) will set this up but this gives
@@ -682,7 +707,7 @@ cc
 cc
 cc.... Read the stsbar array if want spanwise average and stats
 cc
-      if (ispanAvg.eq.1.and.ioform.eq.2) then
+      if (ispanAvg.eq.1) then
          intfromfile=0
          call phio_readheader(fhandle,
      &   c_char_'stats nfath' // char(0), 
@@ -712,8 +737,43 @@ cc
            if(IERR2.gt.0)write(*,*)'Not enough space to allocate stsBar'
            stsBar=zero
          endif
-      endif ! end of ispanAvg and ioform for stsbar
+      endif ! end of ispanAvg for stsbar
 
+cc
+cc.... Read the stsbarKeq array if want spanwise average and K eq stats
+cc
+      if (ispanAvg.eq.1.and.iKeq.eq.1) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'stats Keq nfath' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nfath2=intfromfile(1)
+           if (nfath.ne.nfath2)
+     &          call error ('restar  ', 'nfath   ', nfath)
+           allocate(stsKread(nfath2,10))
+           allocate(stsBarKeq(nfath2,10))
+           istssiz=nfath2*10
+           call phio_readdatablock(fhandle,
+     &       c_char_'stats Keq nfath' // char(0),
+     &       c_loc(stsKread),istssiz, dataDbl,iotype)
+           stsBarKeq=stsKread
+           deallocate(stsKread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'stsBarKeq field found in restart file'
+         else
+           if (myrank.eq.master) then
+            warning='stsBarKeq was not read from restart and was set to
+     & zero'
+             write(*,*) warning
+           endif
+           allocate(stsBarKeq(nfath,10),STAT=IERR2)
+           if(IERR2.gt.0)
+     &         write(*,*)'Not enough space to allocate stsBarKeq'
+           stsBarKeq=zero
+         endif
+      endif ! end of if for ispanAvg and iKeq for K eq terms
 
 cc
 cc.... read the header and check it against the run data

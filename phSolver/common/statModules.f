@@ -19,7 +19,7 @@ c-----------------------------------------------------------------------
       
       real*8, allocatable :: stsPres(:), stsPresSqr(:), stsVel(:,:),
      &                       stsVelSqr(:,:), stsVelReg(:,:),
-     &                       stsStress(:,:), stsPresVel(:,:)
+     &                       stsStress(:,:), stsVelSqInst(:,:)
 
       end module stats
 
@@ -31,6 +31,8 @@ c-----------------------------------------------------------------------
       module spanStats
       
       real*8, allocatable, dimension (:,:) :: stsBar
+      real*8, allocatable, dimension (:,:) :: stsBarKeq
+
 
       end module spanStats
 

@@ -177,6 +177,8 @@ extern "C" {
     int ispanAvg;
     int istartSpanAvg;
     int ispanAvgWPer;
+    int iKeq;
+    int iConsStress;
 
 /*      int itwmod; */
 /*      double rtavei; */

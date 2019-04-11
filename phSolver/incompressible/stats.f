@@ -36,9 +36,9 @@ c-----------------------------------------------------------------------
       allocate ( stsPresSqr(nshg)      )
       allocate ( stsVel(nshg,3)        )
       allocate ( stsVelSqr(nshg,6)     )
+      allocate ( stsVelSqInst(nshg,6)  )
       allocate ( stsVelReg(nshg,3)     )
       allocate ( stsStress(nshg,6)     )
-      allocate ( stsPresVel(nshg,3)    )
       
       stsPres    = 0.0
       stsPresSqr = 0.0
@@ -251,13 +251,6 @@ c
             stsVel(i,3)   = (one-tfact)*stsVel(i,3)
      &                    + tfact*u3sts
          
-            stsPresVel(i,1) =  (one-tfact)*stsPresVel(i,1) + 
-     &                         tfact*(y(i,4)*u1sts)
-            stsPresVel(i,2) =  (one-tfact)*stsPresVel(i,2) + 
-     &                         tfact*(y(i,4)*u2sts)
-            stsPresVel(i,3) =  (one-tfact)*stsPresVel(i,3) + 
-     &                         tfact*(y(i,4)*u3sts)
-            
             stsVelReg(i,1) = (one-tfact)*stsVelReg(i,1) + tfact*u1 
             stsVelReg(i,2) = (one-tfact)*stsVelReg(i,2) + tfact*u2 
             stsVelReg(i,3) = (one-tfact)*stsVelReg(i,3) + tfact*u3 
@@ -276,14 +269,21 @@ c
             r5      = r5 - B(3) * (r2 + r0) 
             t3      = CInv(1) * r3 + CInv(4) * r4 + CInv(6) * r5 
             t4      = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
-            t5      = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5 
+            t5      = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5
+
+            stsVelSqInst(i,1) = r0 - DInv(1) * (B(1) * t3 + B(3) * t5)
+            stsVelSqInst(i,2) = r1 - DInv(2) * (B(2) * t4 + B(1) * t3)
+            stsVelSqInst(i,3) = r2 - DInv(3) * (B(3) * t5 + B(2) * t4)
+            stsVelSqInst(i,4) = t3
+            stsVelSqInst(i,5) = t4
+            stsVelSqInst(i,6) = t5
             
             stsVelSqr(i,1) = (one-tfact)*stsVelSqr(i,1)  
-     &                  + tfact*(r0 - DInv(1) * (B(1) * t3 + B(3) * t5))
+     &                  + tfact*stsVelSqInst(i,1) !(r0 - DInv(1) * (B(1) * t3 + B(3) * t5))
             stsVelSqr(i,2) = (one-tfact)*stsVelSqr(i,2)  
-     &                  + tfact*(r1 - DInv(2) * (B(2) * t4 + B(1) * t3))
+     &                  + tfact*stsVelSqInst(i,2) !(r1 - DInv(2) * (B(2) * t4 + B(1) * t3))
             stsVelSqr(i,3) = (one-tfact)*stsVelSqr(i,3)  
-     &                  + tfact*(r2 - DInv(3) * (B(3) * t5 + B(2) * t4))
+     &                  + tfact*stsVelSqInst(i,3) !(r2 - DInv(3) * (B(3) * t5 + B(2) * t4))
 
             stsVelSqr(i,4) = (one-tfact)*stsVelSqr(i,4) + tfact*t3 
             stsVelSqr(i,5) = (one-tfact)*stsVelSqr(i,5) + tfact*t4 
