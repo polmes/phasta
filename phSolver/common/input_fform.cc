@@ -874,7 +874,11 @@ int input_fform(phSolver::Input& inp)
          turbvari.ispanAvgWPer = inp.GetValue("Velbar Write Period");
          if((string)inp.GetValue("Spanwise Conservative Stresses") == "True") {
            turbvari.iConsStress = 1;
-         } else { turbvari.iConsStress = 0; }
+           turbvari.iConsStressSz = 9;
+         } else { 
+           turbvari.iConsStress = 0; 
+           turbvari.iConsStressSz = 6;
+         }
          if((string)inp.GetValue("TKE Transport Equation Terms") == "True") {
            turbvari.iKeq = 1;
          } else { turbvari.iKeq = 0; }

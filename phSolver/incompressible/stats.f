@@ -35,6 +35,7 @@ c-----------------------------------------------------------------------
       allocate ( stsPres(nshg)         )
       allocate ( stsPresSqr(nshg)      )
       allocate ( stsVel(nshg,3)        )
+      allocate ( stsVelInst(nshg,3)    )
       allocate ( stsVelSqr(nshg,6)     )
       allocate ( stsVelSqInst(nshg,6)  )
       allocate ( stsVelReg(nshg,3)     )
@@ -43,7 +44,9 @@ c-----------------------------------------------------------------------
       stsPres    = 0.0
       stsPresSqr = 0.0
       stsVel     = 0.0
+      stsVelInst = 0.0
       stsVelSqr  = 0.0
+      stsVelSqrInst = 0.0
       stsVelReg  = 0.0
       stsStress  = 0.0
 
@@ -240,16 +243,16 @@ c
             r1            = res(2) + reg * u2 
             r2            = res(3) + reg * u3 
 
-            u1sts         = MInv(1)*r0+MInv(4)*r1+MInv(6)*r2
-            u2sts         = MInv(4)*r0+MInv(2)*r1+MInv(5)*r2
-            u3sts         = MInv(6)*r0+MInv(5)*r1+MInv(3)*r2
+            stsVelInst(i,1)    = MInv(1)*r0+MInv(4)*r1+MInv(6)*r2
+            stsVelInst(i,2)    = MInv(4)*r0+MInv(2)*r1+MInv(5)*r2
+            stsVelInst(i,3)    = MInv(6)*r0+MInv(5)*r1+MInv(3)*r2
          
             stsVel(i,1)   = (one-tfact)*stsVel(i,1) 
-     &                    + tfact*u1sts 
+     &                    + tfact*stsVelInst(i,1) 
             stsVel(i,2)   = (one-tfact)*stsVel(i,2)
-     &                    + tfact*u2sts 
+     &                    + tfact*stsVelInst(i,2) 
             stsVel(i,3)   = (one-tfact)*stsVel(i,3)
-     &                    + tfact*u3sts
+     &                    + tfact*stsVelInst(i,3)
          
             stsVelReg(i,1) = (one-tfact)*stsVelReg(i,1) + tfact*u1 
             stsVelReg(i,2) = (one-tfact)*stsVelReg(i,2) + tfact*u2 

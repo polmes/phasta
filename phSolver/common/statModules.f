@@ -19,7 +19,8 @@ c-----------------------------------------------------------------------
       
       real*8, allocatable :: stsPres(:), stsPresSqr(:), stsVel(:,:),
      &                       stsVelSqr(:,:), stsVelReg(:,:),
-     &                       stsStress(:,:), stsVelSqInst(:,:)
+     &                       stsStress(:,:), stsVelSqInst(:,:),
+     &                       stsVelInst(:,:)
 
       end module stats
 

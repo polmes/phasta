@@ -2554,7 +2554,7 @@ cc ....   Write span avg stats if wanted
              endif
  
              call write_field(myrank,'a','stats nfath',11,stsBar,'d',
-     &                       nfath,6,lstep)
+     &                       nfath,iConsStressSz,lstep)
 
              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if (myrank.eq.master) then
