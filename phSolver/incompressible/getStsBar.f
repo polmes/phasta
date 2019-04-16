@@ -7,9 +7,9 @@
       include "mpif.h"
       include "auxmpi.h"
 
-      dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,6),
+      dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,iConsStressSz),
      &          ifath(numnp), ilwork(nlwork), iBC(numnp),
-     &          tmpStatsf(nfath,6), tmpStatsft(nfath,6),
+     &          tmpStatsf(nfath,iConsStressSz), tmpStatsft(nfath,iConsStressSz),
      &          y(nshg,ndof), tmpKeq(nshg,10), tmpKeqf(nfath,10),
      &          tmpKeqft(nfath,10), GradV(nshg,nsdsq)
       real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
@@ -18,7 +18,8 @@
       
 c     Assign the conservative statistics to a temporary array
       if (iConsStress.eq.1) then 
-         tmpStats(:,:) = stsVelSqInst(:,:) ! 11,22,33,12,23,31
+         tmpStats(:,1:3) = stsVelInst(:,:)
+         tmpStats(:,4:9) = stsVelSqInst(:,:) ! 11,22,33,12,23,31
       else
          tmpStats(:,1) = y(:,1)*y(:,1)
          tmpStats(:,2) = y(:,2)*y(:,2)
@@ -62,14 +63,28 @@ c     Zero on processor periodic nodes so will not be added twice
       call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
      &               MPI_COMM_WORLD,ierr)
 
-      where(btest(iBC,10).or.btest(iBC,12))
+      if (iConsStress.eq.1) then
+        where(btest(iBC,10).or.btest(iBC,12))
           tmpStats(:,1)=zero
           tmpStats(:,2)=zero
           tmpStats(:,3)=zero
           tmpStats(:,4)=zero
           tmpStats(:,5)=zero
           tmpStats(:,6)=zero
-      endwhere
+          tmpStats(:,7)=zero
+          tmpStats(:,8)=zero
+          tmpStats(:,9)=zero
+        endwhere
+      else
+        where(btest(iBC,10).or.btest(iBC,12))
+          tmpStats(:,1)=zero
+          tmpStats(:,2)=zero
+          tmpStats(:,3)=zero
+          tmpStats(:,4)=zero
+          tmpStats(:,5)=zero
+          tmpStats(:,6)=zero
+        endwhere
+      endif
 
       if (iKeq.eq.1) then
         where(btest(iBC,10).or.btest(iBC,12))
@@ -121,8 +136,8 @@ c     zero the nodes that are "solved" on the other processors
 c     accumulate sum of sons to the fathers
       do i = 1,numnp
          ifathi=ifath(i)
-         tmpStatsf(ifathi,1:6) = tmpStatsf(ifathi,1:6) 
-     &                             + tmpStats(i,1:6)
+         tmpStatsf(ifathi,1:iConsStressSz) = tmpStatsf(ifathi,1:iConsStressSz) 
+     &                                       + tmpStats(i,1:iConsStressSz)
          if (iKeq.eq.1) then
            tmpKeqf(ifathi,1:10) = tmpKeqf(ifathi,1:10) 
      &                             + tmpKeq(i,1:10)
@@ -133,7 +148,7 @@ c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
       if(numpe .gt. 1) then
-         call drvAllreduce(tmpStatsf, tmpStatsft,nfath*6)
+         call drvAllreduce(tmpStatsf, tmpStatsft,nfath*iConsStressSz)
          if (iKeq.eq.1) then
             call drvAllreduce(tmpKeqf, tmpKeqft,nfath*10)
          endif
@@ -150,12 +165,25 @@ c
       else
          rinvsons = one/nsons   ! division is expensive
       endif
-      tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
-      tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
-      tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
-      tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
-      tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
-      tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+      if (iConsStress.eq.1) then
+        tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
+        tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
+        tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
+        tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
+        tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
+        tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+        tmpStatsft(:,7) = tmpStatsft(:,7) * rinvsons(:)
+        tmpStatsft(:,8) = tmpStatsft(:,8) * rinvsons(:)
+        tmpStatsft(:,9) = tmpStatsft(:,9) * rinvsons(:)
+      else
+        tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
+        tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
+        tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
+        tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
+        tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
+        tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+      endif
+        
       if (iKeq.eq.1) then
          tmpKeqft(:,1) = tmpKeqft(:,1) * rinvsons(:) 
          tmpKeqft(:,2) = tmpKeqft(:,2) * rinvsons(:)
@@ -202,11 +230,16 @@ c
       write (irstou,*) nfath, lstep
       if((itwmod.gt.0) .or. (irscale.ge.0)
      &   .or. (ispanAvg.eq.1)) then
-           do i=1,nfath            
+           do i=1,nfath      
+             if (iConsStress.eq.1) then 
                write (irstou,*) stsBar(i,1),stsBar(i,2),stsBar(i,3),
-     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6)!,
-!     &                          stsBar(i,7),stsBar(i,8),stsBar(i,9),
-!     &                          stsBar(i,10)
+     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6)
+             else
+               write (irstou,*) stsBar(i,1),stsBar(i,2),stsBar(i,3),
+     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6),
+     &                          stsBar(i,7),stsBar(i,8),stsBar(i,9)
+
+             endif
            enddo
       endif
       close (irstou)
