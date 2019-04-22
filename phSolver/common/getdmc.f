@@ -1,6 +1,6 @@
       subroutine getdmc (y,      shgl,      shp, 
      &                   iper,   ilwork,    
-     &                   nsons,  ifath,     x, cdelsq,cdelsqFitted)
+     &                   nsons,  ifath,     x, cdelsq)
 
       use pointer_data
 
@@ -32,8 +32,7 @@ c
      &          ifath(nshg),          iper(nshg),
      &          ilwork(nlwork),!        xmudmi(numel,ngauss),
      &          x(numnp,3),
-     &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT),
-     &          cdelsqFitted(80,2)
+     &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c
@@ -313,15 +312,6 @@ c
             numNden(:,1) = whist*numNden(:,1)+wcur*xnuder(ifath(:),1)
             numNden(:,2) = whist*numNden(:,2)+wcur*xnuder(ifath(:),2)
             cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
-            do i=1,nshg
-              do j=1,80
-                dy=abs(x(i,2)-cdelsqFitted(j,1))
-                if (dy.lt.1.0e-4) then
-                  cdelsq(i) = cdelsqFitted(j,2)
-                  exit
-                endif
-              enddo
-            enddo
 c  note that we have whist and wcur in here to allow for both time
 c  averaging to be used in conjunction with spatial homogenous averaging
 
@@ -334,15 +324,6 @@ c$$$            write(540+myrank,555) (xnude(j+500,2),j=1,5)
             numNden(:,1) = whist*numNden(:,1)+wcur*xnude(ifath(:),1)
             numNden(:,2) = whist*numNden(:,2)+wcur*xnude(ifath(:),2)
             cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
-            do i=1,nshg
-              do j=1,80
-                dy=abs(x(i,2)-cdelsqFitted(j,1))
-                if (dy.lt.1.0e-4) then
-                  cdelsq(i) = cdelsqFitted(j,2)
-                  exit
-                endif
-              enddo
-            enddo
 c            cdelsq(:) = 2.27e-4
 c            cdelsq(:) = 0
             

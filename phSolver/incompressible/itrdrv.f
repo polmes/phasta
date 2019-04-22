@@ -138,7 +138,6 @@ c ---   Variables for LES channel flow IC
         real*8, allocatable :: lesIC(:,:)
 c ---   Dynamic LES C*\Delta^2
         real*8, allocatable :: cdelsq(:)
-        real*8 cdelsqFitted(80,2)
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -314,14 +313,6 @@ c ----- Read an initial condition for dynamic Smagorinsky LES
      &                        'Did not read file LES-CSmag-Ordered.dat'
         endif
 c ----  End of LES initial condition
-c ----  Read in fitted cdeslq
-        inquire(file="cdelsqFitted.dat",exist=exlog)
-        if(exlog) then
-          open (unit=123,file="cdelsqFitted.dat",status="old")
-          do i=1,80
-            read(123,*) (cdelsqFitted(i,j),j=1,2)
-          enddo
-        endif
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
 !!!!!!!!!!!!!!!!!!
@@ -567,7 +558,7 @@ c
                call lesmodels(yold,  acold,     shgl,      shp, 
      &                        iper,  ilwork,    rowp,      colm,
      &                        nsons, ifath,     x,   
-     &                        iBC,   BC, cdelsq,cdelsqFitted)
+     &                        iBC,   BC, cdelsq)
             endif
 
 c.... set traction BCs for modeled walls
@@ -1154,7 +1145,7 @@ c
       subroutine lesmodels(y,     ac,        shgl,      shp, 
      &                     iper,  ilwork,    rowp,      colm,    
      &                     nsons, ifath,     x,   
-     &                     iBC,   BC, cdelsq,cdelsqFitted)
+     &                     iBC,   BC, cdelsq)
       
       include "common.h"
 
@@ -1169,7 +1160,7 @@ c
      &            iBC(nshg),
      &            ilwork(nlwork),
      &            iper(nshg)
-      real*8    cdelsq(nshg),cdelsqFitted(80,2)
+      real*8    cdelsq(nshg)
       dimension ifath(numnp),    nsons(nfath)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
@@ -1213,7 +1204,7 @@ c
                if(modlstats .eq. 0) then ! If no model stats wanted
                   call getdmc (y,       shgl,      shp, 
      &                         iper,       ilwork,    nsons,
-     &                         ifath,      x, cdelsq,cdelsqFitted)
+     &                         ifath,      x, cdelsq)
                else             ! else get model stats 
                   call stdfdmc (y,       shgl,      shp, 
      &                          iper,       ilwork,    nsons,
