@@ -486,7 +486,8 @@ c
               deallocate(ypoints)
               close(123)
             else
-               write(*,*) 'Did not read file dynSmagY.dat'
+               if(myrank.eq.master) 
+     &               write(*,*) 'Did not read file dynSmagY.dat'
             endif
 c            do i=1,nshg
 c               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
