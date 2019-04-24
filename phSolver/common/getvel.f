@@ -8,12 +8,12 @@
 
 c
       dimension nsons(nfath),        rinvsons(nfath),
-     &          velo(numnp,nflow),    velf(nfath,nflow),
+     &          velo(nshg,nflow),    velf(nfath,nflow),
      &          velft(nfath,nflow),   
      &          velbar(nfath,nflow),
-     &          y(numnp,ndof), 
-     &          ifath(numnp),
-     &          ilwork(nlwork),        iBC(numnp)
+     &          y(nshg,ndof), 
+     &          ifath(nshg),
+     &          ilwork(nlwork),        iBC(nshg)
      
       integer periodicity      
       peroidicity = 0
@@ -34,7 +34,7 @@ c
 c     zero on processor periodic nodes so that they will not be added twice
 c    
          if(myrank.eq.master) then
-            do i=1, numnp
+            do i=1, nshg
                if(btest(iBC(i),10)) then 
                  periodicity = 1
                  exit
@@ -86,7 +86,7 @@ c     zero the nodes that are "solved" on the other processors
 c     
 c     accumulate sum of sons to the fathers
 c     
-         do i = 1,numnp
+         do i = 1,nshg
             ifathi=ifath(i)
             velf(ifathi,1:nflow) = velf(ifathi,1:nflow) 
      &                             + velo(i,1:nflow)            

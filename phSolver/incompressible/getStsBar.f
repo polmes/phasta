@@ -8,7 +8,7 @@
       include "auxmpi.h"
 
       dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,iConsStressSz),
-     &          ifath(numnp), ilwork(nlwork), iBC(numnp),
+     &          ifath(nshg), ilwork(nlwork), iBC(nshg),
      &          tmpStatsf(nfath,iConsStressSz), tmpStatsft(nfath,iConsStressSz),
      &          y(nshg,ndof), tmpKeq(nshg,10), tmpKeqf(nfath,10),
      &          tmpKeqft(nfath,10), GradV(nshg,nsdsq)
@@ -53,7 +53,7 @@ c     Assign the conservative statistics to a temporary array
 
 c     Zero on processor periodic nodes so will not be added twice
       if(myrank.eq.master) then
-         do i=1, numnp
+         do i=1, nshg
             if(btest(iBC(i),10)) then 
               periodicity = 1
               exit
@@ -134,7 +134,7 @@ c     zero the nodes that are "solved" on the other processors
       if (iKeq.eq.1) tmpKeqf = zero
 
 c     accumulate sum of sons to the fathers
-      do i = 1,numnp
+      do i = 1,nshg
          ifathi=ifath(i)
          tmpStatsf(ifathi,1:iConsStressSz) = tmpStatsf(ifathi,1:iConsStressSz) 
      &                                       + tmpStats(i,1:iConsStressSz)

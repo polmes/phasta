@@ -33,6 +33,7 @@ c
      &          ilwork(nlwork),!        xmudmi(numel,ngauss),
      &          x(numnp,3),
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)
+      real*8    split1(nshg,4)
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c
@@ -129,7 +130,14 @@ C must fix for abc and dynamic model
 c      if(iabc==1)   !are there any axisym bc's
 c     &      call rotabc(res, iBC,  'in ')
 c
-      if(numpe>1) call commu (fres, ilwork, 24, 'in ')
+      if(numpe>1) then
+         call commu (fres(:,1:4), ilwork, 4, 'in ')
+         call commu (fres(:,5:8), ilwork, 4, 'in ')
+         call commu (fres(:,9:12), ilwork, 4, 'in ')
+         call commu (fres(:,13:16), ilwork, 4, 'in ')
+         call commu (fres(:,17:20), ilwork, 4, 'in ')
+         call commu (fres(:,21:24), ilwork, 4, 'in ')
+      endif
 !proc-masters = proc-masters + proc-slaves
 c 
 c account for periodicity in filtered variables
@@ -346,10 +354,10 @@ c     Write some stats
          call flush(34)
          ! fort.34 contains the global min and max of cdelsq for each time step
       endif
-      if (myrank .eq. master) then
-         write(*,*)'xnut=',sum(cdelsq)/nshg
-         !write(*,*) 'cdelsq=', cdelsq(1),cdelsq(2)        
-      endif
+c      if (myrank .eq. master) then
+c         write(*,*)'xnut=',sum(cdelsq)/nshg
+c         !write(*,*) 'cdelsq=', cdelsq(1),cdelsq(2)        
+c      endif
 
 
 c
