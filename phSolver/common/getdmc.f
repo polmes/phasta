@@ -13,8 +13,6 @@ c                    quad. points.
 
       use eblock
 
-
-
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -22,7 +20,7 @@ c                    quad. points.
 
 c
       dimension fres(nshg,24),         fwr(nshg),
-     &          strnrm(nshg),         cdelsq(nshg),
+     &          strnrm(nshg),         cdelsq(nshg,3),
      &          xnum(nshg),           xden(nshg),
      &          xmij(nshg,6),         xlij(nshg,6),
      &          xnude(nfath,2),        xnuder(nfath,2),
@@ -33,19 +31,24 @@ c
      &          ilwork(nlwork),!        xmudmi(numel,ngauss),
      &          x(numnp,3),
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)
-      real*8    split1(nshg,4)
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c
 c   setup the weights for time averaging of cdelsq (now in quadfilt module)
 c
-      denom=max(1.0d0*(lstep),one)
-      if(dtavei.lt.0) then
-         wcur=one/denom
-      else
-         wcur=dtavei
-      endif  
-      whist=1.0-wcur
+      if (irunTave.eq.0) then
+        denom=max(1.0d0*(lstep),one)
+        if(dtavei.lt.0) then
+          wcur=one/denom
+        else
+          wcur=dtavei
+        endif  
+        whist=1.0-wcur
+      else ! if irunTave=1 then doing running time average
+        denom = max(1,lstep-irunTaveSt)
+        wcur = one/denom
+        whist = one-wcur  
+      endif
 c
 c  hack in an interesting velocity field (uncomment to test dmod)
 c
@@ -317,9 +320,15 @@ c         xnuder(:,2) = xnuder(:,2) ! / nsons(:)
 c
 c  the next line is c \Delta^2
 c
-            numNden(:,1) = whist*numNden(:,1)+wcur*xnuder(ifath(:),1)
-            numNden(:,2) = whist*numNden(:,2)+wcur*xnuder(ifath(:),2)
-            cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            if (irunTave.eq.0) then 
+              numNden(:,1) = whist*numNden(:,1)+wcur*xnuder(ifath(:),1)
+              numNden(:,2) = whist*numNden(:,2)+wcur*xnuder(ifath(:),2)
+              cdelsq(:,1) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            else
+              cdelsq(:,2) = whist*cdelsq(:,2)+wcur*xnuder(ifath(:),1)
+              cdelsq(:,3) = whist*cdelsq(:,3)+wcur*xnuder(ifath(:),2)
+              cdelsq(:,1) = cdelsq(:,2) / (cdelsq(:,3) + 1.d-09)
+            endif
 c  note that we have whist and wcur in here to allow for both time
 c  averaging to be used in conjunction with spatial homogenous averaging
 
@@ -329,9 +338,15 @@ c     the next line is c \Delta^2, not nu_T but we want to save the
 c     memory
 c     
 c$$$            write(540+myrank,555) (xnude(j+500,2),j=1,5)
-            numNden(:,1) = whist*numNden(:,1)+wcur*xnude(ifath(:),1)
-            numNden(:,2) = whist*numNden(:,2)+wcur*xnude(ifath(:),2)
-            cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            if (irunTave.eq.0) then 
+              numNden(:,1) = whist*numNden(:,1)+wcur*xnude(ifath(:),1)
+              numNden(:,2) = whist*numNden(:,2)+wcur*xnude(ifath(:),2)
+              cdelsq(:,1) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            else
+              cdelsq(:,2) = whist*cdelsq(:,2)+wcur*xnude(ifath(:),1)
+              cdelsq(:,3) = whist*cdelsq(:,3)+wcur*xnude(ifath(:),2)
+              cdelsq(:,1) = cdelsq(:,2) / (cdelsq(:,3) + 1.d-09)
+            endif
 c            cdelsq(:) = 2.27e-4
 c            cdelsq(:) = 0
             
@@ -339,8 +354,8 @@ c            cdelsq(:) = 0
  555  format(5(2x,e14.7))
 
 c     Write some stats
-      tmp1 =  MINVAL(cdelsq)
-      tmp2 =  MAXVAL(cdelsq)
+      tmp1 =  MINVAL(cdelsq(:,1))
+      tmp2 =  MAXVAL(cdelsq(:,1))
       if(numpe>1) then
          call MPI_REDUCE (tmp1, tmp3, 1,MPI_DOUBLE_PRECISION,
      &        MPI_MIN, master, MPI_COMM_WORLD, ierr)
@@ -381,7 +396,7 @@ c ... Another loop over element block to compute the eddy viscosity
          ! strl is actually the norm of the strain |S|
          ! xmudmi is the eddy viscosity nu_T=cdelsq*strl
          call scatnu (blk, mien(iblk)%p, strl(iel:inum,:), 
-     &        mxmudmi(iblk)%p,cdelsq,shp(lcsyst,1:nshl,:))
+     &        mxmudmi(iblk)%p,cdelsq(:,1),shp(lcsyst,1:nshl,:))
       enddo
 
 c     Write some eddy viscosity stats

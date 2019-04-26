@@ -17,6 +17,7 @@ c
       integer, allocatable :: iBCtmp(:)
       real*8, allocatable :: BCinp(:,:)
       real*8, target, allocatable :: point2velbar(:,:)
+      real*8, allocatable :: point2cdelsq(:,:)
       integer, allocatable :: point2ilwork(:)
 !      integer, allocatable :: fncorp(:)
       integer, allocatable :: twodncorp(:,:)
@@ -46,6 +47,7 @@ c
       real*8, target, allocatable :: uread(:,:)
       real*8, target, allocatable :: BCinpread(:,:)
       real*8, target, allocatable :: velbarread(:,:)
+      real*8, target, allocatable :: cdelsqread(:,:)
       real*8, target, allocatable :: stsbarread(:,:)
       real*8, target, allocatable :: stsKread(:,:)
       real*8 :: iotime
@@ -695,8 +697,7 @@ cc
      &            write(*,*) 'velbar field found in restart file'
          else
            if (myrank.eq.master) then
-             warning='velbar was not read from restart and 
-     &was set to zero'
+             warning='velbar not read from restart and set to zero'
              write(*,*) warning
            endif
            allocate(point2velbar(nfath,nflow),STAT=IERR1)
@@ -730,8 +731,7 @@ cc
      &            write(*,*) 'stsbar field found in restart file'
          else
            if (myrank.eq.master) then
-             warning='stsbar was not read from restart and 
-     &was set to zero'
+             warning='stsbar not read from restart and set to zero'
              write(*,*) warning
            endif
            allocate(stsBar(nfath,iConsStressSz),STAT=IERR2)
@@ -765,8 +765,7 @@ cc
      &            write(*,*) 'stsBarKeq field found in restart file'
          else
            if (myrank.eq.master) then
-            warning='stsBarKeq was not read from restart and was set to
-     & zero'
+            warning='stsBarKeq not read from restart and set to zero'
              write(*,*) warning
            endif
            allocate(stsBarKeq(nfath,10),STAT=IERR2)
@@ -775,6 +774,45 @@ cc
            stsBarKeq=zero
          endif
       endif ! end of if for ispanAvg and iKeq for K eq terms
+
+cc
+cc.... Read the cdelsq array if want running spanwise average and doing LES
+cc
+      if (iLES.gt.0.and.irunTave.eq.1) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'cdelsq' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nshg2=intfromfile(1)
+           if (nshg.ne.nshg2)
+     &          call error ('restar  ', 'cdelsq   ', cdelsq)
+           allocate(cdelsqread(nshg2,3))
+           allocate(point2cdelsq(nshg2,3))
+           isiz=nshg2
+           call phio_readdatablock(fhandle,
+     &       c_char_'cdelsq' // char(0),
+     &       c_loc(cdelsqread),isiz, dataDbl,iotype)
+           point2cdelsq=cdelsqread
+           deallocate(cdelsqread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'cdelsq field found in restart file'
+         else
+           if (myrank.eq.master) then
+             warning='cdelsq not read from restart and set to zero'
+             write(*,*) warning
+           endif
+           allocate(point2cdelsq(nshg,3),STAT=IERR2)
+           if(IERR2.gt.0)write(*,*)'Not enough space to allocate cdelsq'
+           point2cdelsq=zero
+         endif
+      else if (iLES.gt.0) then
+         allocate(point2cdelsq(nshg,3))
+         point2cdelsq=zero
+      else if (iLES.eq.0) then
+         allocate(point2cdelsq(1,1))
+      endif ! end of iLES and irunTave for cdelsq
 
 cc
 cc.... read the header and check it against the run data

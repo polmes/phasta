@@ -352,7 +352,8 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    point2velbar,         point2nsons ) 
+     &               point2ifath,    point2velbar,   point2nsons,
+     &               point2cdelsq ) 
 c
 c.... return
 c
@@ -388,6 +389,7 @@ c
         deallocate(point2nsons)
         deallocate(point2ifath)
         if(ispanAvg.eq.1) deallocate(point2velbar)
+        deallocate(point2cdelsq)
         deallocate(uold)
         deallocate(wnrm)
         deallocate(otwn)

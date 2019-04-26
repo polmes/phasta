@@ -3,7 +3,8 @@
      &                   iBC,       BC,         
      &                   iper,      ilwork,     shp,       
      &                   shgl,      shpb,       shglb,
-     &                   ifath,     velbar,     nsons ) 
+     &                   ifath,     velbar,     nsons,
+     &                   cdelsq ) 
 c
 c----------------------------------------------------------------------
 c
@@ -137,7 +138,7 @@ c ---   Variables for LES channel flow IC
         real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
         real*8, allocatable :: lesIC(:,:)
 c ---   Dynamic LES C*\Delta^2
-        real*8, allocatable :: cdelsq(:)
+        dimension cdelsq(nshg,3)
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -344,8 +345,6 @@ c ----  End of LES initial condition
             wallssVecbar = zero ! Initialization important if mean wss computed
           endif
         endif
-
-        if (iLES.gt.0) allocate(cdelsq(nshg))
 
 ! both nstepsincycle and nphasesincycle needs to be set
         if(nstepsincycle.eq.0) nphasesincycle = 0 
@@ -1061,7 +1060,6 @@ c .. write out the instantaneous solution
           if(iSTG.eq.1) deallocate(STGrnd)
           if(ispanAvg.eq.1) deallocate(stsBar)
           if(ispanAvg.eq.1.and.iKeq.eq.1) deallocate(stsBarKeq)
-          if(iLES.gt.0) deallocate(cdelsq)
 
          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
@@ -1160,7 +1158,7 @@ c
      &            iBC(nshg),
      &            ilwork(nlwork),
      &            iper(nshg)
-      real*8    cdelsq(nshg)
+      real*8    cdelsq(nshg,3)
       dimension ifath(numnp),    nsons(nfath)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
@@ -2375,7 +2373,7 @@ c
       real*8 ybar(nshg,irank2ybar),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
-      real*8 cdelsq(nshg)
+      dimension cdelsq(nshg,3)
       integer istp
 
 !              Call to restar() will open restart file in write mode (and not append mode)
@@ -2596,7 +2594,7 @@ cc ..... Write the eddy viscosity when doing a dynamic Smag LES (iLES=1)
               tcormr1 = TMRC()
             endif
             call write_field(myrank,'a','cdelsq',6,cdelsq,'d',
-     &                       nshg,1,lstep)
+     &                       nshg,3,lstep)
             if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr2 = TMRC()

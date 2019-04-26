@@ -180,6 +180,8 @@ extern "C" {
     int iKeq;
     int iConsStress;
     int iConsStressSz;
+    int irunTave;
+    int irunTaveSt;
 /*      int itwmod; */
 /*      double rtavei; */
 /*      int ierrcalc; */

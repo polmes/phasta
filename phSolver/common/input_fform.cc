@@ -913,7 +913,13 @@ int input_fform(phSolver::Input& inp)
         turbvar.dtavei = (ifrule >0)? 1.0/ifrule : -1.0/ifrule;
         turbvar.fwr1 = inp.GetValue("Filter Width Ratio");
         turbvar.flump = inp.GetValue("Lumping Factor for Filter");
-
+        if ((string)inp.GetValue("Dynamic Model Running Time Average") == "True" ) {
+           turbvari.irunTave = 1;
+           turbvari.irunTaveSt = inp.GetValue("Dynamic Model Running Time Average Start");
+        } else {
+           turbvari.irunTave = 0; 
+           turbvari.irunTaveSt = 0;
+        }
 
         if ((string)inp.GetValue("Model Statistics") == "True" ) {
           turbvari.modlstats = 1; } 

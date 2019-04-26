@@ -71,7 +71,8 @@ c from different modules
      &                   ierrsmooth, iramp, idwalmode,
      &                   iSTG, iSTGSurfID, iSTGChan, iSTGnModes, 
      &                   iSTGspec, iSTGStart, ispanAvg, istartSpanAvg,
-     &                   ispanAvgWPer, iKeq, iConsStress, iConsStressSz
+     &                   ispanAvgWPer, iKeq, iConsStress, iConsStressSz,
+     &                   irunTave, irunTaveSt
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,
