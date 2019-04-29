@@ -182,6 +182,7 @@ extern "C" {
     int iConsStressSz;
     int irunTave;
     int irunTaveSt;
+    int iclipCdelsq;
 /*      int itwmod; */
 /*      double rtavei; */
 /*      int ierrcalc; */

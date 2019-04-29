@@ -920,6 +920,10 @@ int input_fform(phSolver::Input& inp)
            turbvari.irunTave = 0; 
            turbvari.irunTaveSt = 0;
         }
+        if ((string)inp.GetValue("Clip cdelsq") == "True" ) {
+           turbvari.iclipCdelsq = 1; }
+        else {
+           turbvari.iclipCdelsq = 0; }
 
         if ((string)inp.GetValue("Model Statistics") == "True" ) {
           turbvari.modlstats = 1; } 

@@ -31,6 +31,7 @@ c
      &          ilwork(nlwork),!        xmudmi(numel,ngauss),
      &          x(numnp,3),
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)
+      real*8    xi, surf, BLedge, MeshBLedge
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c
@@ -329,6 +330,21 @@ c
               cdelsq(:,3) = whist*cdelsq(:,3)+wcur*xnuder(ifath(:),2)
               cdelsq(:,1) = cdelsq(:,2) / (cdelsq(:,3) + 1.d-09)
             endif
+c           Perform clipping of cdelsq if desired
+            if (iclipCdelsq.eq.1) then
+             do ii=1,nshg
+               xi = x(ii,1)
+               surf = 0.0777240d0*exp(-(xi/0.178308)**2)
+               BLedge = a0 + a1*cos(xi*w) + b1*sin(xi*w) + 
+     &                  a2*cos(2.0*xi*w) + b2*sin(2.0*xi*w) + a3*cos(3.0*xi*w) + 
+     &                  b3*sin(3.0*xi*w) + a4*cos(4.0*xi*w) + b4*sin(4.0*xi*w) + 
+     &                  a5*cos(5.0*xi*w) + b5*sin(5.0*xi*w) + a6*cos(6.0*xi*w) +
+     &                  b6*sin(6.0*xi*w) + a7*cos(7.0*xi*w) + b7*sin(7.0*xi*w) + 
+     &                  a8*cos(8.0*xi*w) + b8*sin(8.0*xi*w)
+               MeshBLedge = surf+1.40d0*(BLedge-surf)
+               if (x(ii,2).gt.MeshBLedge) cdelsq(ii,1) = zero 
+             enddo
+            endif
 c  note that we have whist and wcur in here to allow for both time
 c  averaging to be used in conjunction with spatial homogenous averaging
 
@@ -347,8 +363,21 @@ c$$$            write(540+myrank,555) (xnude(j+500,2),j=1,5)
               cdelsq(:,3) = whist*cdelsq(:,3)+wcur*xnude(ifath(:),2)
               cdelsq(:,1) = cdelsq(:,2) / (cdelsq(:,3) + 1.d-09)
             endif
-c            cdelsq(:) = 2.27e-4
-c            cdelsq(:) = 0
+c           Perform clipping of cdelsq if desired
+            if (iclipCdelsq.eq.1) then
+             do ii=1,nshg
+               xi = x(ii,1)
+               surf = 0.0777240d0*exp(-(xi/0.178308)**2)
+               BLedge = a0 + a1*cos(xi*w) + b1*sin(xi*w) + 
+     &                  a2*cos(2.0*xi*w) + b2*sin(2.0*xi*w) + a3*cos(3.0*xi*w) + 
+     &                  b3*sin(3.0*xi*w) + a4*cos(4.0*xi*w) + b4*sin(4.0*xi*w) + 
+     &                  a5*cos(5.0*xi*w) + b5*sin(5.0*xi*w) + a6*cos(6.0*xi*w) +
+     &                  b6*sin(6.0*xi*w) + a7*cos(7.0*xi*w) + b7*sin(7.0*xi*w) + 
+     &                  a8*cos(8.0*xi*w) + b8*sin(8.0*xi*w)
+               MeshBLedge = surf+1.40d0*(BLedge-surf)
+               if (x(ii,2).gt.MeshBLedge) cdelsq(ii,1) = zero 
+             enddo
+            endif
             
       endif
  555  format(5(2x,e14.7))

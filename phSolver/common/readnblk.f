@@ -790,7 +790,7 @@ cc
      &          call error ('restar  ', 'cdelsq   ', cdelsq)
            allocate(cdelsqread(nshg2,3))
            allocate(point2cdelsq(nshg2,3))
-           isiz=nshg2
+           isiz=nshg2*3
            call phio_readdatablock(fhandle,
      &       c_char_'cdelsq' // char(0),
      &       c_loc(cdelsqread),isiz, dataDbl,iotype)
