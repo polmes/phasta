@@ -42,7 +42,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(numnp),    velbar(nfath,nflow),
+        dimension ifath(nshg),    velbar(nfath,nflow),
      &           nsons(nfath) 
 
         character*20 fname1

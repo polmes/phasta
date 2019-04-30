@@ -38,7 +38,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(numnp),    velbar(nfath,nflow), nsons(nfath) 
+        dimension ifath(nshg),    velbar(nfath,nflow), nsons(nfath) 
 
 ! Hack to get suction right on part boundaries
 !       dimension BC3(numnp,5)
