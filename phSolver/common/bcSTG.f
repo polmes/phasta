@@ -155,38 +155,36 @@ c       Compute the random variables only on the first step
           call random_seed()
           call random_number(rTemp)
           do id=1,nKWave
-              dVect(id,1)=rTemp((id-1)*5+1)*2-1
-              dVect(id,2)=rTemp((id-1)*5+2)*2-1
-              dVect(id,3)=rTemp((id-1)*5+3)*2-1
-              norm=sqrt(dVect(id,1)**2+dVect(id,2)**2+dVect(id,3)**2)
-              dVect(id,1:3)=dVect(id,1:3)/norm
-              
-              phiVect(id)=rTemp((id-1)*5+4)*(2*atan2(0.0,-1.0))
-              theta=rTemp((id-1)*5+5)*(2*atan2(0.0,-1.0))            
-              if (maxVal(dVect(id,1:3)).eq.dVect(id,1))then
-                  tHat(1)=-(dVect(id,2)+dVect(id,3))/dVect(id,1)
-                  tHat(2)=1
-                  tHat(3)=1
-              elseif (maxVal(dVect(id,1:3)).eq.dVect(id,2))then
-                  tHat(1)=1
-                  tHat(2)=-(dVect(id,1)+dVect(id,3))/dVect(id,2)
-                  tHat(3)=1
-              else 
-                  tHat(1)=1
-                  tHat(2)=1
-                  tHat(3)=-(dVect(id,2)+dVect(id,1))/dVect(id,3)
-              endif
-              norm=sqrt(tHat(1)**2+tHat(2)**2+tHat(3)**2)
-              tHat(1:3)=tHat(1:3)/norm
+              theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
+              phiVect(id)=rTemp((id-1)*5+4)*(2.0*atan2(0.0,-1.0))
+
+              dVect(id,1)=cos(theta)
+              dVect(id,2)=sin(theta)*sin(phiVect(id))
+              dVect(id,3)=sin(theta)*cos(phiVect(id))
+
+              theta=acos(-2.0*rTemp((id-1)*5+2)+1.0)
+              phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
+              tHat(1)=cos(theta)
+              tHat(2)=sin(theta)*sin(phiVect(id))
+              tHat(3)=sin(theta)*cos(phiVect(id))
+
+c              if(abs(dVect(id,1)*tHat(1)+
+c     &                dVect(id,2)*tHat(2)+dVect(id,3)*tHat(3))-1.0.le.1E-4)then
+c                theta=acos(-2.0*rTemp((id-1)*5+5)+1.0)
+c                phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
+c                tHat(1)=cos(theta)
+c                tHat(2)=sin(theta)*sin(phiVect(id))
+c                tHat(3)=sin(theta)*cos(phiVect(id))
+c              endif
 
               bHat(1)=dVect(id,2)*tHat(3)-dVect(id,3)*tHat(2)
               bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
               bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
               norm=sqrt(bHat(1)**2+bHat(2)**2+bHat(3)**2)
-              bHat(1:3)=bHat(1:3)/norm
-            
-              sigVect(id,1:3)=tHat*cos(theta)+bHat*sin(theta)
-  
+              sigVect(id,1:3)=bHat(1:3)/norm
+
+
+
           enddo
 c          Put all needed random numbers in a single array to be written to restart
            allocate(STGrnd(nKWave,7))
