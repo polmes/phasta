@@ -95,7 +95,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(numnp),    velbar(nfath,ndof),  nsons(nfath)
+        dimension ifath(nshg),    velbar(nfath,ndof),  nsons(nfath)
 
         dimension wallubar(2),walltot(2)
 c
@@ -1159,7 +1159,7 @@ c
      &            ilwork(nlwork),
      &            iper(nshg)
       real*8    cdelsq(nshg,3)
-      dimension ifath(numnp),    nsons(nfath)
+      dimension ifath(nshg),    nsons(nfath)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
       real*8, allocatable, dimension(:) :: stabdis,cdelsq1

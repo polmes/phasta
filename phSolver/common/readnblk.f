@@ -704,6 +704,9 @@ cc
            if(IERR1.gt.0)write(*,*)'Not enough space to allocate velbar'
            point2velbar=zero
          endif
+      else
+         allocate(point2velbar(1,nflow))
+         point2velbar=zero
       endif ! end of ispanAvg for velbar
 
 cc
