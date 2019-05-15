@@ -304,7 +304,7 @@ c
       if((itwmod.gt.0) .or. (irscale.ge.0)
      &   .or. (ispanAvg.eq.1)) then
            do i=1,nfath      
-             if (iConsStress.eq.1) then 
+             if (iConsStress.eq.0) then 
                write (irstou,*) stsBar(i,1),stsBar(i,2),stsBar(i,3),
      &                          stsBar(i,4),stsBar(i,5),stsBar(i,6)
              else
