@@ -656,6 +656,7 @@ extern "C" {
     double statsflow[6];
     double statssclr[6];
     int iverbose;
+    int iRelTol;
   } incomp ;
 
   extern struct { 

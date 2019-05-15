@@ -668,6 +668,9 @@ int input_fform(phSolver::Input& inp)
     inpdat.LHSupd[0] = inp.GetValue("Number of Solves per Left-hand-side Formation");
     inpdat.epstol[0] = inp.GetValue("Tolerance on Momentum Equations");
     incomp.prestol = inp.GetValue("Tolerance on ACUSIM Pressure Projection"); 
+    if( (string)inp.GetValue("Release Tolerance for Later Iterations") =="True" ){
+        incomp.iRelTol = 1;
+    } else { incomp.iRelTol = 0; } 
     incomp.minIters = inp.GetValue("Minimum Number of Iterations per Nonlinear Iteration");
     incomp.maxIters = inp.GetValue("Maximum Number of Iterations per Nonlinear Iteration");
     inpdat.deltol[0][0]=inp.GetValue("Velocity Delta Ratio"); 

@@ -638,6 +638,14 @@ c
 #endif
                   else
                   
+                    if(iRelTol.eq.1.and.iter.eq.3) then
+                        if(myrank.eq.master) write(*,*) 
+     &                      'Changing tolerance'
+                        epstolsafe=epstol(1)
+                        prestolsafe=prestol
+                        epstol(1)=epstol(1)*4
+                        prestol=prestol*4
+                    endif
                     call SolFlow(yAlpha,     acAlpha,   uAlpha,
      &                         x,             iBC,
      &                         BC,            res,
@@ -652,6 +660,12 @@ c
 #else
      &                         )
 #endif      
+                    if(iRelTol.eq.1.and.iter.eq.3) then
+                        if(myrank.eq.master) write(*,*) 
+     &                      'Changing tolerance back'
+                        epstol(1)=epstolsafe
+                        prestol=prestolsafe
+                    endif
                   endif
                   
                 else          ! scalar type solve
