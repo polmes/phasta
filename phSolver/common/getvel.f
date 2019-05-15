@@ -1,21 +1,23 @@
       subroutine getvel (y,ilwork, iBC,
-     &                   nsons, ifath, velbar)
+     &                   nsons, ifath)
 
+      use spanStats
 
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
 
 c
-      dimension nsons(nfath),        rinvsons(nfath),
-     &          velo(nshg,nflow),    velf(nfath,nflow),
-     &          velft(nfath,nflow),   
-     &          velbar(nfath,nflow),
+      dimension nsons(ndistsons),        rinvsons(ndistsons),
+     &          velo(nshg,nflow),    !velf(nfath,nflow),
+     &          velft(nfath,nflow), 
      &          y(nshg,ndof), 
      &          ifath(nshg),
      &          ilwork(nlwork),        iBC(nshg)
-     
-      integer periodicity      
+      real*8 tmp, den, tfact 
+      integer periodicity, minifath, maxifath, ifathrng,
+     &        ifathi, ind, c
+      logical, allocatable, dimension (:) :: isonpart 
       peroidicity = 0
 
 c
@@ -81,15 +83,72 @@ c     zero the nodes that are "solved" on the other processors
             
          endif  ! numpe.gt.1
 
-         
+         if (.not.allocated(velf)) then
+            minifath = minval(ifath)
+            maxifath = maxval(ifath)
+            ifathrng = maxifath-minifath+1
+            allocate(isonpart(ifathrng))
+            isonpart = .false.
+            locnfath = 0
+            do ii=1,nshg
+               ifathi=ifath(ii)
+               do jj=minifath,maxifath
+                  if (ifathi.eq.jj) then
+                     ind = jj-minifath+1
+                     if (.not.isonpart(ind)) then
+                        isonpart(ind) = .true.
+                        locnfath = locnfath+1
+                     endif
+                  endif
+               enddo
+            enddo
+            allocate(velf(locnfath,nflow))
+            allocate(locifath(locnfath))
+            if (numpe.gt.1) then
+                call drvAllreduceSumInt(locnfath,stacksz)
+                if (.not.allocated(rcounts)) allocate(rcounts(numpe))
+                if (.not.allocated(displs)) allocate(displs(numpe))
+                call MPI_GATHER(locnfath,1,MPI_INT,rcounts,1,
+     &                      MPI_INT,master,
+     &                      MPI_COMM_WORLD,ierr)
+                displs(1) = 0
+                do n=2,numpe
+                   displs(n) = displs(n-1)+rcounts(n-1)
+                enddo
+            endif
+            c = 1
+            isonpart = .false.
+            do ii=1,nshg
+               ifathi=ifath(ii)
+               do jj=minifath,maxifath
+                  if (ifathi.eq.jj) then
+                     ind = jj-minifath+1
+                     if (.not.isonpart(ind)) then
+                        isonpart(ind) = .true.
+                        locifath(c) = ifathi
+                        c = c +1
+                     endif
+                  endif
+               enddo
+            enddo
+            deallocate(isonpart)
+         endif
          velf = zero
+         velft = zero
 c     
 c     accumulate sum of sons to the fathers
 c     
          do i = 1,nshg
             ifathi=ifath(i)
-            velf(ifathi,1:nflow) = velf(ifathi,1:nflow) 
-     &                             + velo(i,1:nflow)            
+            do jj=1,locnfath
+               if (ifathi.eq.locifath(jj)) then
+                  velf(jj,1:nflow) = velf(jj,1:nflow)
+     &                               + velo(i,1:nflow)
+                  exit
+               endif
+            enddo
+!            velf(ifathi,1:nflow) = velf(ifathi,1:nflow) 
+!     &                             + velo(i,1:nflow)            
          enddo
          
 c     
@@ -97,7 +156,34 @@ c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
          if(numpe .gt. 1) then
-            call drvAllreduce(velf, velft,nfath*nflow)
+            if (.not.allocated(ifathG)) then
+               if (myrank.eq.master) allocate(ifathG(stacksz))
+            endif
+            if (.not.allocated(velftG)) then
+               if (myrank.eq.master) allocate(velftG(stacksz,nflow))
+            endif
+            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            call MPI_GATHERV(locifath,locnfath,MPI_INT,ifathG,rcounts,
+     &                      displs,MPI_INT,master,
+     &                      MPI_COMM_WORLD,ierr)
+            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            do i=1,nflow
+               call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+               call MPI_GATHERV(velf(:,i),locnfath,MPI_DOUBLE_PRECISION,
+     &                          velftG(:,i),rcounts,displs,
+     &                          MPI_DOUBLE_PRECISION,master,
+     &                          MPI_COMM_WORLD,ierr)
+               call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            enddo
+            if (myrank.eq.master) then
+               do i=1,stacksz
+                  ifathi = ifathG(i)
+                  velft(ifathi,1:nflow) = velft(ifathi,1:nflow) 
+     &                                    + velftG(i,1:nflow)
+               enddo
+            endif
+
+            !call drvAllreduce(velf, velft,nfath*nflow)
          else
             velft=velf
          endif
@@ -114,34 +200,25 @@ c
          else
            rinvsons = one/nsons   ! division is expensive
          endif
-         velft(:,1) = velft(:,1) * rinvsons(:) !  / nsons(:)
-         velft(:,2) = velft(:,2) * rinvsons(:) !  / nsons(:)
-         velft(:,3) = velft(:,3) * rinvsons(:) !  / nsons(:)
-         velft(:,4) = velft(:,4) * rinvsons(:) !  / nsons(:)
-         if(nflow.eq.5) velft(:,5) = velft(:,5) * rinvsons(:)
+         if (myrank.eq.master) then
+           if (ndistsons.eq.nfath) then 
+             velft(:,1) = velft(:,1) * rinvsons(:) !  / nsons(:)
+             velft(:,2) = velft(:,2) * rinvsons(:) !  / nsons(:)
+             velft(:,3) = velft(:,3) * rinvsons(:) !  / nsons(:)
+             velft(:,4) = velft(:,4) * rinvsons(:) !  / nsons(:)
+             if(nflow.eq.5) velft(:,5) = velft(:,5) * rinvsons
+           else if (ndistsons.eq.1) then
+             tmp =  rinvsons(1)
+             velft = velft * tmp
+           endif
+         endif
       endif  ! end of homog direction averaging
 
-c      denom=max(one*(lstep),one)
-c      if(wtavei.lt.0) then
-c         tavef=one/denom
-c      else
-c         tavef=wtavei
-c      endif
-      
-c      velbar(:,1)=velft(:,1)
-c      velbar(:,2)=velft(:,2)
-c      velbar(:,3)=velft(:,3)
-c      velbar(:,4)=velft(:,4)
-
-c      if(istep.eq.0) then
-c         velbar(:,:)=velft(:,:)
-c      else            
-c         velbar(:,:)=tavef*velft(:,:)+(one-tavef)*velbar(:,:)        
-c      endif
-
-       den = max(1,lstep-istartSpanAvg)
-       tfact = one/den
-       velbar(:,:)=tfact*velft(:,:)+(one-tfact)*velbar(:,:)
+      if (myrank.eq.master) then 
+         den = max(1,lstep-istartSpanAvg)
+         tfact = one/den
+         velbar(:,:)=tfact*velft(:,:)+(one-tfact)*velbar(:,:)
+      endif
 
       
       

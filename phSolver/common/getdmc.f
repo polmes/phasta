@@ -24,7 +24,7 @@ c
      &          xnum(nshg),           xden(nshg),
      &          xmij(nshg,6),         xlij(nshg,6),
      &          xnude(nfath,2),        xnuder(nfath,2),
-     &          nsons(nfath),
+     &          nsons(ndistsons),
      &          strl(numel,maxnint),           
      &          y(nshg,5), 
      &          ifath(nshg),          iper(nshg),

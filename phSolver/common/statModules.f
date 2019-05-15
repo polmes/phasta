@@ -31,9 +31,17 @@ c
 c-----------------------------------------------------------------------
       module spanStats
       
+      real*8, allocatable, dimension (:,:) :: velbar
       real*8, allocatable, dimension (:,:) :: stsBar
       real*8, allocatable, dimension (:,:) :: stsBarKeq
+      real*8, allocatable, dimension (:,:) :: velf
+      real*8, allocatable, dimension (:,:) :: velftG
+      integer, allocatable, dimension (:) :: locifath
+      integer, allocatable, dimension (:) :: ifathG
+      integer, allocatable, dimension (:) :: rcounts
+      integer, allocatable, dimension (:) :: displs
 
+      integer locnfath, stacksz
 
       end module spanStats
 
