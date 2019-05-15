@@ -9,8 +9,8 @@
 
       dimension nsons(ndistsons), rinvsons(ndistsons), tmpStats(nshg,iConsStressSz),
      &          ifath(nshg), ilwork(nlwork), iBC(nshg),
-     &          tmpStatsf(nfath,iConsStressSz), tmpStatsft(nfath,iConsStressSz),
-     &          y(nshg,ndof), tmpKeq(nshg,10), tmpKeqf(nfath,10),
+     &          tmpStatsft(nfath,iConsStressSz),
+     &          y(nshg,ndof), tmpKeq(nshg,10),
      &          tmpKeqft(nfath,10), GradV(nshg,nsdsq)
       real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
      &       S12(nshg),S13(nshg),S23(nshg), invtmp
@@ -130,28 +130,87 @@ c     zero the nodes that are "solved" on the other processors
             
       endif  ! numpe.gt.1
 
+      
+      if (.not.allocated(tmpStatsf)) then
+         allocate(tmpStatsf(locnfath,iConsStressSz))
+      endif
       tmpStatsf = zero
-      if (iKeq.eq.1) tmpKeqf = zero
+      tmpStatsft = zero
+      if (iKeq.eq.1) then
+         if (.not.allocated(tmpKeqf)) allocate(tmpKeqf(locnfath,10))
+         tmpKeqf = zero
+         tmpKeqft = zero
+      endif
 
 c     accumulate sum of sons to the fathers
       do i = 1,nshg
          ifathi=ifath(i)
-         tmpStatsf(ifathi,1:iConsStressSz) = tmpStatsf(ifathi,1:iConsStressSz) 
-     &                                       + tmpStats(i,1:iConsStressSz)
-         if (iKeq.eq.1) then
-           tmpKeqf(ifathi,1:10) = tmpKeqf(ifathi,1:10) 
-     &                             + tmpKeq(i,1:10)
-         endif          
+         do jj=1,locnfath
+            if (ifathi.eq.locifath(jj)) then
+               tmpStatsf(jj,1:iConsStressSz) = tmpStatsf(jj,1:iConsStressSz)
+     &                            + tmpStats(i,1:iConsStressSz)
+               if (iKeq.eq.1) then
+                 tmpKeqf(jj,1:10) = tmpKeqf(jj,1:10)
+     &                            + tmpKeq(i,1:10)
+               endif
+               exit
+            endif
+         enddo
+!         tmpStatsf(ifathi,1:iConsStressSz) = tmpStatsf(ifathi,1:iConsStressSz) 
+!     &                                       + tmpStats(i,1:iConsStressSz)
+!         if (iKeq.eq.1) then
+!           tmpKeqf(ifathi,1:10) = tmpKeqf(ifathi,1:10) 
+!     &                             + tmpKeq(i,1:10)
+!         endif          
       enddo
 
 c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
       if(numpe .gt. 1) then
-         call drvAllreduce(tmpStatsf, tmpStatsft,nfath*iConsStressSz)
-         if (iKeq.eq.1) then
-            call drvAllreduce(tmpKeqf, tmpKeqft,nfath*10)
-         endif
+          if (.not.allocated(tmpStatsftG)) then
+             if (myrank.eq.master) allocate(tmpStatsftG(stacksz,iConsStressSz))
+          endif
+          do i=1,iConsStressSz
+             call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+             call MPI_GATHERV(tmpStatsf(:,i),locnfath,MPI_DOUBLE_PRECISION,
+     &                        tmpStatsftG(:,i),rcounts,displs,
+     &                        MPI_DOUBLE_PRECISION,master,
+     &                        MPI_COMM_WORLD,ierr)
+             call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          enddo
+         
+          if (iKeq.eq.1) then
+            if (.not.allocated(tmpKeqftG)) then
+              if (myrank.eq.master) allocate(tmpKeqftG(stacksz,10))
+            endif
+            do i=1,10
+              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+              call MPI_GATHERV(tmpKeqf(:,i),locnfath,MPI_DOUBLE_PRECISION,
+     &                         tmpKeqftG(:,i),rcounts,displs,
+     &                         MPI_DOUBLE_PRECISION,master,
+     &                         MPI_COMM_WORLD,ierr)
+              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+            enddo
+          endif
+
+          if (myrank.eq.master) then
+             do i=1,stacksz
+                ifathi = ifathG(i)
+                tmpStatsft(ifathi,1:iConsStressSz) = 
+     &                               tmpStatsft(ifathi,1:iConsStressSz) 
+     &                               + tmpStatsftG(i,1:iConsStressSz)
+                if (iKeq.eq.1) then
+                tmpKeqft(ifathi,1:10) = tmpKeqft(ifathi,1:10) 
+     &                               + tmpKeqftG(i,1:10)
+                endif
+             enddo
+          endif
+
+!         call drvAllreduce(tmpStatsf, tmpStatsft,nfath*iConsStressSz)
+!         if (iKeq.eq.1) then
+!            call drvAllreduce(tmpKeqf, tmpKeqft,nfath*10)
+!         endif
       else
          tmpStatsft=tmpStatsf
          if (iKeq.eq.1) then
@@ -165,7 +224,8 @@ c
       else
          rinvsons = one/nsons   ! division is expensive
       endif
-      if (ndistsons.eq.nfath) then 
+      if (myrank.eq.master) then
+       if (ndistsons.eq.nfath) then 
          if (iConsStress.eq.1) then
            tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
            tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
@@ -184,12 +244,12 @@ c
            tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
            tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
          endif
-      else if (ndistsons.eq.1) then
+       else if (ndistsons.eq.1) then
          invtmp = rinvsons(1)
          tmpStatsft = tmpStatsft * invtmp
-      endif
+       endif
         
-      if (iKeq.eq.1) then
+       if (iKeq.eq.1) then
          if (ndistsons.eq.nfath) then
             tmpKeqft(:,1) = tmpKeqft(:,1) * rinvsons(:) 
             tmpKeqft(:,2) = tmpKeqft(:,2) * rinvsons(:)
@@ -205,14 +265,17 @@ c
             invtmp =  rinvsons(1)
             tmpKeqft = tmpKeqft * invtmp
          endif
+       endif
       endif
 
-c     Add to running time average
-      den = max(1,lstep-istartSpanAvg)
-      tfact = one/den
-      stsBar(:,:)=tfact*tmpStatsft(:,:)+(one-tfact)*stsBar(:,:)
-      if (iKeq.eq.1) then
-          stsBarKeq(:,:)=tfact*tmpKeqft(:,:)+(one-tfact)*stsBarKeq(:,:)
+c     Add to running time averagie
+      if (myrank.eq.master) then
+         den = max(1,lstep-istartSpanAvg)
+         tfact = one/den
+         stsBar(:,:)=tfact*tmpStatsft(:,:)+(one-tfact)*stsBar(:,:)
+         if (iKeq.eq.1) then
+           stsBarKeq(:,:)=tfact*tmpKeqft(:,:)+(one-tfact)*stsBarKeq(:,:)
+         endif
       endif
 
 

@@ -164,8 +164,8 @@ c
             endif
             call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             call MPI_GATHERV(locifath,locnfath,MPI_INT,ifathG,rcounts,
-     &                      displs,MPI_INT,master,
-     &                      MPI_COMM_WORLD,ierr)
+     &                       displs,MPI_INT,master,
+     &                       MPI_COMM_WORLD,ierr)
             call MPI_BARRIER(MPI_COMM_WORLD,ierr)
             do i=1,nflow
                call MPI_BARRIER(MPI_COMM_WORLD,ierr)

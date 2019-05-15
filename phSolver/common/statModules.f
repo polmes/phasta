@@ -36,6 +36,10 @@ c-----------------------------------------------------------------------
       real*8, allocatable, dimension (:,:) :: stsBarKeq
       real*8, allocatable, dimension (:,:) :: velf
       real*8, allocatable, dimension (:,:) :: velftG
+      real*8, allocatable, dimension (:,:) :: tmpStatsf
+      real*8, allocatable, dimension (:,:) :: tmpStatsftG
+      real*8, allocatable, dimension (:,:) :: tmpKeqf
+      real*8, allocatable, dimension (:,:) :: tmpKeqftG
       integer, allocatable, dimension (:) :: locifath
       integer, allocatable, dimension (:) :: ifathG
       integer, allocatable, dimension (:) :: rcounts
