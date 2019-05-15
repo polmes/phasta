@@ -132,7 +132,8 @@ c
      &                  numflx, ndof,   nelblk, nelblb,ntopsh, nlwork,
      &                  nedof,
      &                  nshg,   nnz,    nflow,
-     &                  nfath, ncorpsize, iownnodes, usingpetsc, numerr
+     &                  nfath, ncorpsize, iownnodes, usingpetsc, numerr,
+     &                  ndistsons
 
         common /conpar/ numnp,  numel,  numelb, numpbc, nen,    nfaces,
      &                  numflx, ndof,   iALE,   icoord, navier,
@@ -195,7 +196,7 @@ c
 
 c 
         common /shpdat/ nshape, nshapeb, maxshb,
-     &                  nshl, nshlb,nfath,  ntopsh,  nsonmax
+     &                  nshl, nshlb,nfath,  ntopsh,  nsonmax, ndistsons
 c
         common /melmcat/ mcsyst, melCat, nenCat(8,3),    nfaCat(8,3)
 c
@@ -692,7 +693,7 @@ c ititle        : problem title (with form feed)
 c
 c----------------------------------------------------------------------
 c
-c.... common /avging / : nfath
+c.... common /avging / : nfath, ndistsons
 c 
 c nfath         : total number of global fathers over which certain
 c                 quantities will be averaged

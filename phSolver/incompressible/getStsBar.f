@@ -7,13 +7,13 @@
       include "mpif.h"
       include "auxmpi.h"
 
-      dimension nsons(nfath), rinvsons(nfath), tmpStats(nshg,iConsStressSz),
+      dimension nsons(ndistsons), rinvsons(ndistsons), tmpStats(nshg,iConsStressSz),
      &          ifath(nshg), ilwork(nlwork), iBC(nshg),
      &          tmpStatsf(nfath,iConsStressSz), tmpStatsft(nfath,iConsStressSz),
      &          y(nshg,ndof), tmpKeq(nshg,10), tmpKeqf(nfath,10),
      &          tmpKeqft(nfath,10), GradV(nshg,nsdsq)
       real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
-     &       S12(nshg),S13(nshg),S23(nshg)
+     &       S12(nshg),S13(nshg),S23(nshg), invtmp
       integer periodicity
       
 c     Assign the conservative statistics to a temporary array
@@ -165,36 +165,46 @@ c
       else
          rinvsons = one/nsons   ! division is expensive
       endif
-      if (iConsStress.eq.1) then
-        tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
-        tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
-        tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
-        tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
-        tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
-        tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
-        tmpStatsft(:,7) = tmpStatsft(:,7) * rinvsons(:)
-        tmpStatsft(:,8) = tmpStatsft(:,8) * rinvsons(:)
-        tmpStatsft(:,9) = tmpStatsft(:,9) * rinvsons(:)
-      else
-        tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
-        tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
-        tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
-        tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
-        tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
-        tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+      if (ndistsons.eq.nfath) then 
+         if (iConsStress.eq.1) then
+           tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
+           tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
+           tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
+           tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
+           tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
+           tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+           tmpStatsft(:,7) = tmpStatsft(:,7) * rinvsons(:)
+           tmpStatsft(:,8) = tmpStatsft(:,8) * rinvsons(:)
+           tmpStatsft(:,9) = tmpStatsft(:,9) * rinvsons(:)
+         else
+           tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
+           tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
+           tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
+           tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
+           tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
+           tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+         endif
+      else if (ndistsons.eq.1) then
+         invtmp = rinvsons(1)
+         tmpStatsft = tmpStatsft * invtmp
       endif
         
       if (iKeq.eq.1) then
-         tmpKeqft(:,1) = tmpKeqft(:,1) * rinvsons(:) 
-         tmpKeqft(:,2) = tmpKeqft(:,2) * rinvsons(:)
-         tmpKeqft(:,3) = tmpKeqft(:,3) * rinvsons(:)
-         tmpKeqft(:,4) = tmpKeqft(:,4) * rinvsons(:)
-         tmpKeqft(:,5) = tmpKeqft(:,5) * rinvsons(:)
-         tmpKeqft(:,6) = tmpKeqft(:,6) * rinvsons(:)
-         tmpKeqft(:,7) = tmpKeqft(:,7) * rinvsons(:)
-         tmpKeqft(:,8) = tmpKeqft(:,8) * rinvsons(:)
-         tmpKeqft(:,9) = tmpKeqft(:,9) * rinvsons(:)
-         tmpKeqft(:,10) = tmpKeqft(:,10) * rinvsons(:)
+         if (ndistsons.eq.nfath) then
+            tmpKeqft(:,1) = tmpKeqft(:,1) * rinvsons(:) 
+            tmpKeqft(:,2) = tmpKeqft(:,2) * rinvsons(:)
+            tmpKeqft(:,3) = tmpKeqft(:,3) * rinvsons(:)
+            tmpKeqft(:,4) = tmpKeqft(:,4) * rinvsons(:)
+            tmpKeqft(:,5) = tmpKeqft(:,5) * rinvsons(:)
+            tmpKeqft(:,6) = tmpKeqft(:,6) * rinvsons(:)
+            tmpKeqft(:,7) = tmpKeqft(:,7) * rinvsons(:)
+            tmpKeqft(:,8) = tmpKeqft(:,8) * rinvsons(:)
+            tmpKeqft(:,9) = tmpKeqft(:,9) * rinvsons(:)
+            tmpKeqft(:,10) = tmpKeqft(:,10) * rinvsons(:)
+         else if (ndistsons.eq.1) then
+            invtmp =  rinvsons(1)
+            tmpKeqft = tmpKeqft * invtmp
+         endif
       endif
 
 c     Add to running time average

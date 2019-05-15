@@ -96,6 +96,40 @@ c
       return
       end
 
+c
+c------------------
+c     drvAllreduceSumInt
+c------------------
+c
+      subroutine drvAllreduceSumInt ( eachproc, result )
+c
+      include "common.h"
+      include "mpif.h"
+c
+      integer :: eachproc, result
+
+      if (numpe > 1) then
+         if(impistat.eq.1) then
+           iAllR = iAllR+1
+         elseif(impistat.eq.2) then
+           iAllRScal = iAllRScal+1
+         endif
+         if(impistat2.eq.1) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+         if(impistat.gt.0) rmpitmr = TMRC()
+         call MPI_ALLREDUCE ( eachproc, result, 1,
+     &        MPI_INTEGER, MPI_SUM, MPI_COMM_WORLD, ierr )
+         if(impistat.eq.1) then
+           rAllR = rAllR+TMRC()-rmpitmr
+         elseif(impistat.eq.2) then
+           rAllRScal = rAllRScal+TMRC()-rmpitmr
+         endif
+      else
+         result = eachproc
+      endif
+c
+      return
+      end
+
 c------------------------------------------------------------------------
 c
 c   sum real*8 array over all processors

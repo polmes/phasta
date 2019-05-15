@@ -1,5 +1,5 @@
         subroutine genini (iBC, BC, y, ac, iper, ilwork,
-     &               ifath, velbar,  nsons,x,
+     &               ifath, nsons,x,
      &               shp,     shgl,    shpb,    shglb ) 
 c
 c----------------------------------------------------------------------
@@ -42,8 +42,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(nshg),    velbar(nfath,nflow),
-     &           nsons(nfath) 
+        dimension ifath(nshg), nsons(ndistsons) 
 
         character*20 fname1
         character*10 cname2
@@ -108,7 +107,7 @@ c
            !call readvelb(velbar,ifath,ifail)
            !call rwvelb('in  ',velbar,ifail)
            call getvel (y,     ilwork, iBC,
-     &                  nsons, ifath, velbar)
+     &                  nsons, ifath)
  
         endif   ! for the itwmod or irscale
 c

@@ -15,6 +15,7 @@ c
         use periodicity
         use pvsQbi
         use mlirans
+        use spanStats
         include "common.h"
         include "mpif.h"
 c
@@ -64,7 +65,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    point2velbar,         point2nsons )
+     &               point2ifath,    point2nsons )
         call setper(nshg)
         call perprep(iBC,point2iper,nshg)
         if (iLES/10 .eq. 1) then
@@ -352,7 +353,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    point2velbar,   point2nsons,
+     &               point2ifath,    point2nsons,
      &               point2cdelsq ) 
 c
 c.... return
@@ -388,7 +389,15 @@ c
         deallocate(point2x)
         deallocate(point2nsons)
         deallocate(point2ifath)
-        if(ispanAvg.eq.1) deallocate(point2velbar)
+        if (allocated(velbar)) deallocate(velbar)
+        if (allocated(stsBar)) deallocate(stsBar)
+        if (allocated(stsBarKeq)) deallocate(stsBarKeq)
+        if (allocated(velf)) deallocate(velf)
+        if (allocated(velftG)) deallocate(velftG)
+        if (allocated(locifath)) deallocate(locifath)
+        if (allocated(ifathG)) deallocate(ifathG)
+        if (allocated(rcounts)) deallocate(rcounts)
+        if (allocated(displs)) deallocate(displs)
         deallocate(point2cdelsq)
         deallocate(uold)
         deallocate(wnrm)

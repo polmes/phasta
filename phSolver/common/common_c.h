@@ -408,6 +408,7 @@ extern "C" {
     int nfath;
     int ntopsh;
     int nsonmax;
+    int ndistsons;
   } shpdat ;
 
   extern struct { 

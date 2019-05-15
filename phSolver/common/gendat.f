@@ -1,7 +1,7 @@
         subroutine gendat (y,       ac,       x,      iBC,     BC,
      &                     iper,    ilwork,
      &                     shp,     shgl,    shpb,    shglb,
-     &                     ifath,   velbar,   nsons ) 
+     &                     ifath,   nsons ) 
 c
 c----------------------------------------------------------------------
 c
@@ -38,7 +38,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(nshg),    velbar(nfath,nflow), nsons(nfath) 
+        dimension ifath(nshg),    nsons(ndistsons) 
 
 ! Hack to get suction right on part boundaries
 !       dimension BC3(numnp,5)
@@ -248,7 +248,7 @@ c.... generate the initial conditions and initialize time varying BC
 c
         call genini (iBC,      BC,         y, 
      &               ac,       iper, 
-     &               ilwork,   ifath,      velbar,  
+     &               ilwork,   ifath,  
      &               nsons,    x,
      &               shp,     shgl,    shpb,    shglb) 
 c

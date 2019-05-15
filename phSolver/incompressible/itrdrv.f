@@ -3,7 +3,7 @@
      &                   iBC,       BC,         
      &                   iper,      ilwork,     shp,       
      &                   shgl,      shpb,       shglb,
-     &                   ifath,     velbar,     nsons,
+     &                   ifath,     nsons,
      &                   cdelsq ) 
 c
 c----------------------------------------------------------------------
@@ -95,7 +95,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(nshg),    velbar(nfath,ndof),  nsons(nfath)
+        dimension ifath(nshg),    nsons(ndistsons)
 
         dimension wallubar(2),walltot(2)
 c
@@ -427,7 +427,7 @@ c
         lstep=lstep+10000  ! in SAM lstep was already written on the previous mesh.  Here we want solution on the new mesh
                  call  checkpoint (y,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       rerr,ybar,wallssVecBar,yphbar,
      &                       vorticity,irank2ybar,irank2yphbar,istp,
      &                       cdelsq)
 ! shift the number to keep them distinct
@@ -564,7 +564,7 @@ c.... set traction BCs for modeled walls
 c
             if (itwmod.ne.0) then
                call asbwmod(yold,   acold,   x,      BC,     iBC,
-     &                      iper,   ilwork,  ifath,  velbar)
+     &                      iper,   ilwork,  ifath)
             endif
 
 c
@@ -986,14 +986,13 @@ c...  dump TIME SERIES
             if((irscale.ge.0).or.(itwmod.gt.0)
      &                       .or.(ispanAvg.eq.1)) then 
                  call getvel (yold,     ilwork, iBC,
-     &                        nsons,    ifath, velbar)
+     &                        nsons,    ifath)
                  call getStsBar(yold, GradV, ilwork, nsons, ifath, iBC)
             endif
 
             if((irscale.ge.0).and.(myrank.eq.master)) then
                call genscale(yold,       x,       iper, 
-     &                       iBC,     ifath,   velbar,
-     &                       nsons)
+     &                       iBC,     ifath, nsons)
         endif
 c.... -------------------> error calculation  <-----------------
 c 
@@ -1014,7 +1013,7 @@ c .. write out the instantaneous solution
              if(istep == nstp) then ! go ahead and take care of it
                call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       rerr,ybar,wallssVecBar,yphbar,
      &                       vorticity,irank2ybar,irank2yphbar,istp,
      &                       cdelsq)
              endif
@@ -1022,7 +1021,7 @@ c .. write out the instantaneous solution
                   output_mode=0   ! only writing posix for now
                  call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       rerr,ybar,wallssVecBar,yphbar,
      &                       vorticity,irank2ybar,irank2yphbar,istp,
      &                       cdelsq)
                   output_mode=-1 ! reset to stream 
@@ -1030,7 +1029,7 @@ c .. write out the instantaneous solution
            else
              call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       rerr,ybar,wallssVecBar,yphbar,
      &                       vorticity,irank2ybar,irank2yphbar,istp,
      &                       cdelsq)
            endif
@@ -1173,7 +1172,7 @@ c
      &            ilwork(nlwork),
      &            iper(nshg)
       real*8    cdelsq(nshg,3)
-      dimension ifath(nshg),    nsons(nfath)
+      dimension ifath(nshg),    nsons(ndistsons)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
       real*8, allocatable, dimension(:) :: stabdis,cdelsq1
@@ -2362,7 +2361,7 @@ c
 
       subroutine checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
+     &                       rerr,ybar,wallssVecBar,yphbar,
      &                       vorticity,irank2ybar,irank2yphbar,istp,
      &                       cdelsq)
       use solvedata
@@ -2380,7 +2379,7 @@ c
 
       real*8    ac(nshg,ndof),          uold(nshg,nsd),           
      &            yold(nshg,ndof),      acold(nshg,ndof),
-     &            BC(nshg,ndofBC),      velbar(nfath,ndof),
+     &            BC(nshg,ndofBC), 
      &            shpb(MAXTOP,maxsh,MAXQPT),
      &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
 
@@ -2528,9 +2527,11 @@ cc ....   Write velbar if wanted
              if(myrank.eq.0)  then
               tcormr1 = TMRC()
              endif
- 
-             call write_field(myrank,'a','velbar nfath',12,velbar,'d',
+
+             if (myrank.eq.master) then  
+               call write_field(myrank,'a','velbar nfath',12,velbar,'d',
      &                       nfath,nflow,lstep)
+             endif
 
              if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if (myrank.eq.master) then

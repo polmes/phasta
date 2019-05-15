@@ -16,7 +16,6 @@ c
       real*8, allocatable :: acold(:,:)
       integer, allocatable :: iBCtmp(:)
       real*8, allocatable :: BCinp(:,:)
-      real*8, target, allocatable :: point2velbar(:,:)
       real*8, allocatable :: point2cdelsq(:,:)
       integer, allocatable :: point2ilwork(:)
 !      integer, allocatable :: fncorp(:)
@@ -54,6 +53,7 @@ c
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
       integer, target, allocatable :: fncorpread(:)
+      integer, target, allocatable :: nsonsread(:)
       integer fncorpsize
       integer irandVars, iSTGsiz
       integer iVelbsiz, nfath2, nflow2, istssiz
@@ -448,11 +448,24 @@ c
      &       c_char_'number of son-nodes for each father' // char(0),
      &       c_loc(nfath), ione, dataInt, iotype)
 
-            allocate (point2nsons(nfath))
+            allocate(nsonsread(nfath))
 
             call phio_readdatablock(fhandle,
      &       c_char_'number of son-nodes for each father' // char(0),
-     &       c_loc(point2nsons),nfath, dataInt, iotype)
+     &       c_loc(nsonsread),nfath, dataInt, iotype)
+      
+            nsonmax=maxval(nsonsread)
+            nsonmin=minval(nsonsread)
+            if (nsonmax.eq.nsonmin) then
+                ndistsons = 1
+                allocate(point2nsons(ndistsons))
+                point2nsons = nsonmax
+            else
+                ndistsons = nfath
+                allocate(point2nsons(ndistsons))
+                point2nsons = nsonsread
+            endif
+            deallocate(nsonsread)
 
             call phio_readheader(fhandle,
      &       c_char_'keyword ifath' // char(0),
@@ -499,7 +512,8 @@ c            enddo
                ! (a routine in NSpre) will set this up but this gives
                ! you an option to avoid that.
             nfath=nshg
-            allocate (point2nsons(nfath))
+            ndistsons = nshg
+            allocate (point2nsons(ndistsons))
             point2nsons=1
             allocate (point2ifath(nshg))
             do i=1,nshg
@@ -508,7 +522,8 @@ c            enddo
             nsonmax=1
          endif
       else
-         allocate (point2nsons(1))
+         ndistsons = 1
+         allocate (point2nsons(ndistsons))
          allocate (point2ifath(1))
       endif
 
@@ -674,6 +689,7 @@ cc....   in SimModeler and present in the geombc files
 cc
 cc.... Read the velbar array if want spanwise average
 cc
+      if (myrank.eq.master) then
       if (ispanAvg.eq.1) then
          intfromfile=0
          call phio_readheader(fhandle,
@@ -686,12 +702,12 @@ cc
            if (nfath.ne.nfath2)
      &          call error ('restar  ', 'nfath   ', nfath)
            allocate(velbarread(nfath2,nflow2))
-           allocate(point2velbar(nfath2,nflow2))
+           allocate(velbar(nfath2,nflow2))
            iVelbsiz=nfath2*nflow2
            call phio_readdatablock(fhandle,
      &       c_char_'velbar nfath' // char(0),
      &       c_loc(velbarread),iVelbsiz, dataDbl,iotype)
-           point2velbar=velbarread
+           velbar=velbarread
            deallocate(velbarread)
            if (myrank.eq.master) 
      &            write(*,*) 'velbar field found in restart file'
@@ -700,14 +716,15 @@ cc
              warning='velbar not read from restart and set to zero'
              write(*,*) warning
            endif
-           allocate(point2velbar(nfath,nflow),STAT=IERR1)
+           allocate(velbar(nfath,nflow),STAT=IERR1)
            if(IERR1.gt.0)write(*,*)'Not enough space to allocate velbar'
-           point2velbar=zero
+           velbar=zero
          endif
       else
-         allocate(point2velbar(1,nflow))
-         point2velbar=zero
+         allocate(velbar(1,nflow))
+         velbar=zero
       endif ! end of ispanAvg for velbar
+      endif
 
 cc
 cc.... Read the stsbar array if want spanwise average and stats
@@ -742,7 +759,6 @@ cc
            stsBar=zero
          endif
       endif ! end of ispanAvg for stsbar
-
 cc
 cc.... Read the stsbarKeq array if want spanwise average and K eq stats
 cc
