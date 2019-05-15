@@ -729,6 +729,7 @@ cc
 cc
 cc.... Read the stsbar array if want spanwise average and stats
 cc
+      if (myrank.eq.master) then
       if (ispanAvg.eq.1) then
          intfromfile=0
          call phio_readheader(fhandle,
@@ -759,9 +760,11 @@ cc
            stsBar=zero
          endif
       endif ! end of ispanAvg for stsbar
+      endif
 cc
 cc.... Read the stsbarKeq array if want spanwise average and K eq stats
 cc
+      if (myrank.eq.master) then
       if (ispanAvg.eq.1.and.iKeq.eq.1) then
          intfromfile=0
          call phio_readheader(fhandle,
@@ -793,7 +796,7 @@ cc
            stsBarKeq=zero
          endif
       endif ! end of if for ispanAvg and iKeq for K eq terms
-
+      endif
 cc
 cc.... Read the cdelsq array if want running spanwise average and doing LES
 cc
