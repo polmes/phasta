@@ -300,7 +300,7 @@ c
       open (unit=irstou, file=fname1, status='unknown',
      &     err=996)
               
-      write (irstou,*) nfath, lstep
+!      write (irstou,*) nfath, lstep
       if((itwmod.gt.0) .or. (irscale.ge.0)
      &   .or. (ispanAvg.eq.1)) then
            do i=1,nfath      
@@ -341,7 +341,7 @@ c
       open (unit=irstou, file=fname1, status='unknown',
      &     err=996)
               
-      write (irstou,*) nfath, lstep
+!      write (irstou,*) nfath, lstep
       if((ispanAvg.eq.1).and.(iKeq.eq.1)) then
         do i=1,nfath            
           write (irstou,*) stsBarKeq(i,1),stsBarKeq(i,2),stsBarKeq(i,3),

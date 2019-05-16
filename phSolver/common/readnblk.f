@@ -40,6 +40,7 @@ c
       use STG_BC
       use spanStats
       include "common.h"
+      include "mpif.h"
 
       real*8, target, allocatable :: xread(:,:), qread(:,:), acread(:,:)
       real*8, target, allocatable :: STGread(:,:), BCrestartRead(:,:)
@@ -57,10 +58,13 @@ c
       integer fncorpsize
       integer irandVars, iSTGsiz
       integer iVelbsiz, nfath2, nflow2, istssiz
+      character*5 cname
       character*10 cname2, cname2nd
       character*8 mach2
       character*30 fmt1
+      character*25 fmtv,fmts,fmtk
       character*255 fname1,fnamer,fnamelr
+      character*25 fnamev,fnames,fnamek
       character*255 warning
       integer igeomBAK, ibndc, irstin, ierr
       integer, target :: intfromfile(50) ! integers read from headers
@@ -689,114 +693,183 @@ cc....   in SimModeler and present in the geombc files
 cc
 cc.... Read the velbar array if want spanwise average
 cc
-      if (myrank.eq.master) then
       if (ispanAvg.eq.1) then
-         intfromfile=0
-         call phio_readheader(fhandle,
-     &   c_char_'velbar nfath' // char(0), 
-     &   c_loc(intfromfile), ithree, dataInt, iotype)
-
-         if(intfromfile(1).ne.0) then
-           nfath2=intfromfile(1)
-           nflow2=intfromfile(2)
-           if (nfath.ne.nfath2)
-     &          call error ('restar  ', 'nfath   ', nfath)
-           allocate(velbarread(nfath2,nflow2))
-           allocate(velbar(nfath2,nflow2))
-           iVelbsiz=nfath2*nflow2
-           call phio_readdatablock(fhandle,
-     &       c_char_'velbar nfath' // char(0),
-     &       c_loc(velbarread),iVelbsiz, dataDbl,iotype)
-           velbar=velbarread
-           deallocate(velbarread)
-           if (myrank.eq.master) 
-     &            write(*,*) 'velbar field found in restart file'
-         else
-           if (myrank.eq.master) then
-             warning='velbar not read from restart and set to zero'
-             write(*,*) warning
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmtv,"('(''velbar.'',i',i1,',1x)')") itmp
+           write (fnamev,fmtv) lstep
+           fnamev = trim(fnamev) // cname(myrank+1)
+           inquire(file=fnamev,exist=exlog)
+           if (exlog) then
+             allocate(velbar(nfath,nflow))
+             open(unit=123,file=fnamev,status="old")
+             do i=1,nfath
+                read(123,*) (velbar(i,j),j=1,nflow)
+             enddo
+             close(123)
+             write(*,*) 'Read velbar from file ',fnamev
+           else ! did not find velbar for current time step
+             write(*,*) 'Velbar not read from file, setting to zero'
+             allocate(velbar(nfath,nflow),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate velbar'
+             velbar = zero
            endif
-           allocate(velbar(nfath,nflow),STAT=IERR1)
-           if(IERR1.gt.0)write(*,*)'Not enough space to allocate velbar'
-           velbar=zero
          endif
-      else
-         allocate(velbar(1,nflow))
-         velbar=zero
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+!         intfromfile=0
+!         call phio_readheader(fhandle,
+!     &   c_char_'velbar nfath' // char(0), 
+!     &   c_loc(intfromfile), ithree, dataInt, iotype)
+!
+!         if(intfromfile(1).ne.0) then
+!           nfath2=intfromfile(1)
+!           nflow2=intfromfile(2)
+!           if (nfath.ne.nfath2)
+!     &          call error ('restar  ', 'nfath   ', nfath)
+!           allocate(velbarread(nfath2,nflow2))
+!           allocate(velbar(nfath2,nflow2))
+!           iVelbsiz=nfath2*nflow2
+!           call phio_readdatablock(fhandle,
+!     &       c_char_'velbar nfath' // char(0),
+!     &       c_loc(velbarread),iVelbsiz, dataDbl,iotype)
+!           velbar=velbarread
+!           deallocate(velbarread)
+!           if (myrank.eq.master) 
+!     &            write(*,*) 'velbar field found in restart file'
+!         else
+!           if (myrank.eq.master) then
+!             warning='velbar not read from restart and set to zero'
+!             write(*,*) warning
+!           endif
+!           allocate(velbar(nfath,nflow),STAT=IERR1)
+!           if(IERR1.gt.0)write(*,*)'Not enough space to allocate velbar'
+!           velbar=zero
+!         endif
+!      else
+!         allocate(velbar(1,nflow))
+!         velbar=zero
       endif ! end of ispanAvg for velbar
-      endif
 
 cc
 cc.... Read the stsbar array if want spanwise average and stats
 cc
-      if (myrank.eq.master) then
       if (ispanAvg.eq.1) then
-         intfromfile=0
-         call phio_readheader(fhandle,
-     &   c_char_'stats nfath' // char(0), 
-     &   c_loc(intfromfile), ithree, dataInt, iotype)
-
-         if(intfromfile(1).ne.0) then
-           nfath2=intfromfile(1)
-           if (nfath.ne.nfath2)
-     &          call error ('restar  ', 'nfath   ', nfath)
-           allocate(stsbarread(nfath2,iConsStressSz))
-           allocate(stsBar(nfath2,iConsStressSz))
-           istssiz=nfath2*iConsStressSz
-           call phio_readdatablock(fhandle,
-     &       c_char_'stats nfath' // char(0),
-     &       c_loc(stsbarread),istssiz, dataDbl,iotype)
-           stsBar=stsbarread
-           deallocate(stsbarread)
-           if (myrank.eq.master) 
-     &            write(*,*) 'stsbar field found in restart file'
-         else
-           if (myrank.eq.master) then
-             warning='stsbar not read from restart and set to zero'
-             write(*,*) warning
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmts,"('(''stsbar.'',i',i1,',1x)')") itmp
+           write (fnames,fmts) lstep
+           fnames = trim(fnames) // cname(myrank+1)
+           inquire(file=fnames,exist=exlog)
+           if (exlog) then
+             allocate(stsBar(nfath,iConsStressSz))
+             open(unit=123,file=fnames,status="old")
+             do i=1,nfath
+                read(123,*) (velbar(i,j),j=1,iConsStressSz)
+             enddo
+             close(123)
+             write(*,*) 'Read stsbar from file ',fnames
+           else ! did not find velbar for current time step
+             write(*,*) 'stsbar not read from file, setting to zero'
+             allocate(stsBar(nfath,iConsStressSz),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*)
+     &                    'Not enough space to allocate stsBar'
+             stsBar = zero
            endif
-           allocate(stsBar(nfath,iConsStressSz),STAT=IERR2)
-           if(IERR2.gt.0)write(*,*)'Not enough space to allocate stsBar'
-           stsBar=zero
          endif
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+!         intfromfile=0
+!         call phio_readheader(fhandle,
+!     &   c_char_'stats nfath' // char(0), 
+!     &   c_loc(intfromfile), ithree, dataInt, iotype)
+!
+!         if(intfromfile(1).ne.0) then
+!           nfath2=intfromfile(1)
+!           if (nfath.ne.nfath2)
+!     &          call error ('restar  ', 'nfath   ', nfath)
+!           allocate(stsbarread(nfath2,iConsStressSz))
+!           allocate(stsBar(nfath2,iConsStressSz))
+!           istssiz=nfath2*iConsStressSz
+!           call phio_readdatablock(fhandle,
+!     &       c_char_'stats nfath' // char(0),
+!     &       c_loc(stsbarread),istssiz, dataDbl,iotype)
+!           stsBar=stsbarread
+!           deallocate(stsbarread)
+!           if (myrank.eq.master) 
+!     &            write(*,*) 'stsbar field found in restart file'
+!         else
+!           if (myrank.eq.master) then
+!             warning='stsbar not read from restart and set to zero'
+!             write(*,*) warning
+!           endif
+!           allocate(stsBar(nfath,iConsStressSz),STAT=IERR2)
+!           if(IERR2.gt.0)write(*,*)'Not enough space to allocate stsBar'
+!           stsBar=zero
+!         endif
       endif ! end of ispanAvg for stsbar
-      endif
 cc
 cc.... Read the stsbarKeq array if want spanwise average and K eq stats
 cc
-      if (myrank.eq.master) then
       if (ispanAvg.eq.1.and.iKeq.eq.1) then
-         intfromfile=0
-         call phio_readheader(fhandle,
-     &   c_char_'stats Keq nfath' // char(0), 
-     &   c_loc(intfromfile), ithree, dataInt, iotype)
-
-         if(intfromfile(1).ne.0) then
-           nfath2=intfromfile(1)
-           if (nfath.ne.nfath2)
-     &          call error ('restar  ', 'nfath   ', nfath)
-           allocate(stsKread(nfath2,10))
-           allocate(stsBarKeq(nfath2,10))
-           istssiz=nfath2*10
-           call phio_readdatablock(fhandle,
-     &       c_char_'stats Keq nfath' // char(0),
-     &       c_loc(stsKread),istssiz, dataDbl,iotype)
-           stsBarKeq=stsKread
-           deallocate(stsKread)
-           if (myrank.eq.master) 
-     &            write(*,*) 'stsBarKeq field found in restart file'
-         else
-           if (myrank.eq.master) then
-            warning='stsBarKeq not read from restart and set to zero'
-             write(*,*) warning
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmtk,"('(''stsbarKeq.'',i',i1,',1x)')") itmp
+           write (fnamek,fmtk) lstep
+           fnamek = trim(fnamek) // cname(myrank+1)
+           inquire(file=fnamek,exist=exlog)
+           if (exlog) then
+             allocate(stsBarKeq(nfath,10))
+             open(unit=123,file=fnamek,status="old")
+             do i=1,nfath
+                read(123,*) (stsBarKeq(i,j),j=1,10)
+             enddo
+             close(123)
+             write(*,*) 'Read stsbarKeq from file ',fnamek
+           else ! did not find stsbarKeq for current time step
+             write(*,*) 'stsBarKeq not read from file, setting to zero'
+             allocate(stsBarKeq(nfath,10),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate stsBarKeq'
+             stsBarKeq = zero
            endif
-           allocate(stsBarKeq(nfath,10),STAT=IERR2)
-           if(IERR2.gt.0)
-     &         write(*,*)'Not enough space to allocate stsBarKeq'
-           stsBarKeq=zero
          endif
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+!         intfromfile=0
+!         call phio_readheader(fhandle,
+!     &   c_char_'stats Keq nfath' // char(0), 
+!     &   c_loc(intfromfile), ithree, dataInt, iotype)
+!
+!         if(intfromfile(1).ne.0) then
+!           nfath2=intfromfile(1)
+!           if (nfath.ne.nfath2)
+!     &          call error ('restar  ', 'nfath   ', nfath)
+!           allocate(stsKread(nfath2,10))
+!           allocate(stsBarKeq(nfath2,10))
+!           istssiz=nfath2*10
+!           call phio_readdatablock(fhandle,
+!     &       c_char_'stats Keq nfath' // char(0),
+!     &       c_loc(stsKread),istssiz, dataDbl,iotype)
+!           stsBarKeq=stsKread
+!           deallocate(stsKread)
+!           if (myrank.eq.master) 
+!     &            write(*,*) 'stsBarKeq field found in restart file'
+!         else
+!           if (myrank.eq.master) then
+!            warning='stsBarKeq not read from restart and set to zero'
+!             write(*,*) warning
+!           endif
+!           allocate(stsBarKeq(nfath,10),STAT=IERR2)
+!           if(IERR2.gt.0)
+!     &         write(*,*)'Not enough space to allocate stsBarKeq'
+!           stsBarKeq=zero
+!         endif
       endif ! end of if for ispanAvg and iKeq for K eq terms
-      endif
 cc
 cc.... Read the cdelsq array if want running spanwise average and doing LES
 cc

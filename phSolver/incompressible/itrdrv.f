@@ -2509,24 +2509,20 @@ cc ......   Write the BC array. Quick fix to problem with inflow BC in geombc fi
 
 cc ....   Write velbar if wanted
           if (ispanAvg.eq.1) then
-             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then
               tcormr1 = TMRC()
              endif
 
-             if (myrank.eq.master) then  
-               call write_field(myrank,'a','velbar nfath',12,velbar,'d',
-     &                       nfath,nflow,lstep)
-             endif
+!             if (myrank.eq.master) then  
+!               call write_field(myrank,'a','velbar nfath',12,velbar,'d',
+!     &                       nfath,nflow,lstep)
+!             endif
 
-             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if (myrank.eq.master) then
-               if (modulo(lstep,ispanAvgWPer).eq.0) then
-                  ifail = 0
-                  call rwvelb('out ',velbar,ifail) ! write the velbar field to a file
-                  if (ifail.ne.0) write(*,*) 
+                ifail = 0
+                call rwvelb('out ',velbar,ifail) ! write the velbar field to a file
+                if (ifail.ne.0) write(*,*) 
      &                            'Problem writing velbar to file'
-               endif 
              endif
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then
@@ -2545,19 +2541,16 @@ cc ....   Write span avg stats if wanted
               tcormr1 = TMRC()
              endif
 
-             if (myrank.eq.master) then 
-                call write_field(myrank,'a','stats nfath',11,stsBar,'d',
-     &                       nfath,iConsStressSz,lstep)
-             endif
+!             if (myrank.eq.master) then 
+!                call write_field(myrank,'a','stats nfath',11,stsBar,'d',
+!     &                       nfath,iConsStressSz,lstep)
+!             endif
 
-             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if (myrank.eq.master) then
-               if (modulo(lstep,ispanAvgWPer).eq.0) then
-                  ifail = 0
-                  call wstsBar(ifail) ! write the stsBar field to a file
-                  if (ifail.ne.0) write(*,*) 
+                ifail = 0
+                call wstsBar(ifail) ! write the stsBar field to a file
+                if (ifail.ne.0) write(*,*) 
      &                            'Problem writing stsBar to file'
-               endif 
              endif
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then
@@ -2576,19 +2569,16 @@ cc ....   Write span avg stats for K eq if wanted
               tcormr1 = TMRC()
              endif
  
-             if (myrank.eq.master) then
-                call write_field(myrank,'a','stats Keq nfath',15,
-     &                        stsBarKeq,'d',nfath,10,lstep)
-             endif
+!             if (myrank.eq.master) then
+!                call write_field(myrank,'a','stats Keq nfath',15,
+!     &                        stsBarKeq,'d',nfath,10,lstep)
+!             endif
 
-             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if (myrank.eq.master) then
-               if (modulo(lstep,ispanAvgWPer).eq.0) then
-                  ifail = 0
-                  call wstsBarKeq(ifail) ! write the stsBar field to a file
-                  if (ifail.ne.0) write(*,*) 
+                ifail = 0
+                call wstsBarKeq(ifail) ! write the stsBar field to a file
+                if (ifail.ne.0) write(*,*) 
      &                            'Problem writing stsBarKeq to file'
-               endif 
              endif
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then

@@ -339,14 +339,6 @@ void countfieldstowriterestart()
     nfields++; /* BCs */
   }
 
-  /* Velbar field for spanwise average */
-  if(turbvari.ispanAvg==1) {
-    nfields++; // velbar 
-    nfields++; // stsBar
-    if(turbvari.iKeq == 1){
-       nfields++; // K eq terms
-    }
-  }
   /* LES cdelsq field */
   if(turbvari.iles>0) {
     nfields++;
