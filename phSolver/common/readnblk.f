@@ -768,7 +768,7 @@ cc
              allocate(stsBar(nfath,iConsStressSz))
              open(unit=123,file=fnames,status="old")
              do i=1,nfath
-                read(123,*) (velbar(i,j),j=1,iConsStressSz)
+                read(123,*) (stsBar(i,j),j=1,iConsStressSz)
              enddo
              close(123)
              write(*,*) 'Read stsbar from file ',fnames
