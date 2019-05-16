@@ -157,10 +157,18 @@ c     each other.
 c     
          if(numpe .gt. 1) then
             if (.not.allocated(ifathG)) then
-               if (myrank.eq.master) allocate(ifathG(stacksz))
+               if (myrank.eq.master) then
+                  allocate(ifathG(stacksz),STAT=IERR2)
+                  if(IERR2.gt.0) write(*,*)
+     &             'Not enough space to allocate ifathG of size',stacksz
+               endif
             endif
             if (.not.allocated(velftG)) then
-               if (myrank.eq.master) allocate(velftG(stacksz,nflow))
+               if (myrank.eq.master) then
+                  allocate(velftG(stacksz,nflow),STAT=IERR2)
+                  if(IERR2.gt.0) write(*,*)
+     &                       'Not enough space to allocate velftG'
+               endif
             endif
             call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             call MPI_GATHERV(locifath,locnfath,MPI_INT,ifathG,rcounts,

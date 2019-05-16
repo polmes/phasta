@@ -169,7 +169,11 @@ c     each other.
 c     
       if(numpe .gt. 1) then
           if (.not.allocated(tmpStatsftG)) then
-             if (myrank.eq.master) allocate(tmpStatsftG(stacksz,iConsStressSz))
+             if (myrank.eq.master) then
+               allocate(tmpStatsftG(stacksz,iConsStressSz),STAT=IERR2)
+               if(IERR2.gt.0) write(*,*) 
+     &                       'Not enough space to allocate tmpStatsftG'
+             endif
           endif
           do i=1,iConsStressSz
              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
@@ -182,7 +186,11 @@ c
          
           if (iKeq.eq.1) then
             if (.not.allocated(tmpKeqftG)) then
-              if (myrank.eq.master) allocate(tmpKeqftG(stacksz,10))
+              if (myrank.eq.master) then 
+                  allocate(tmpKeqftG(stacksz,10),STAT=IERR2)
+                  if(IERR2.gt.0) write(*,*)
+     &                       'Not enough space to allocate tmpKeqftG'
+              endif
             endif
             do i=1,10
               call MPI_BARRIER(MPI_COMM_WORLD,ierr)
