@@ -53,6 +53,7 @@ typedef struct _Usr* UsrHd ;
  *===========================================================================
  */
 
+#define	resetTol        FortranCInterface_GLOBAL_(resettol,RESETTOL)
 #define	usrNew		FortranCInterface_GLOBAL_(usrnew,USRNEW)
 #define getSol          FortranCInterface_GLOBAL_(getsol,GETSOL)         /* extract Dy from usrHd        */
 

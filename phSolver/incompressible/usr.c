@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "les.h"
+#include "lesHdStruct.h"
 #include "usr.h"
 #include "common_c.h"
 #include "phastaIO.h"
@@ -315,6 +316,35 @@ getvectstart( Integer* lesId,
     *PresPrjSrcIdP=PresPrjSrcId;
 
 }
+
+void
+resetTol( Integer* lesId,
+          Real* tol,
+          Real* presTol ) {
+          Real debtol=*tol;
+         Real  debptol=*presTol;
+
+    lesSetTolPar( lesArray[ *lesId ], *tol, *presTol );
+
+}
+/*===========================================================================
+ *
+ * "lesSetPar":  
+ *
+ *===========================================================================
+ */
+Void
+lesSetTolPar(   LesHd   lesHd,
+                Real    tol,
+                Real    prestol )
+{
+      Real debtol=tol;
+     Real  debptol=prestol;
+      lesHd->tol     = tol ;
+      lesHd->prjTol  = prestol ;
+
+} 
+ /* end of lesSetTolPar() */
 
 
 void

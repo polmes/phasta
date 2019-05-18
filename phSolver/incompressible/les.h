@@ -135,7 +135,9 @@ Real		lesGetPar(		LesHd		lesHd,
 Void		lesSetPar(		LesHd		lesHd,
 					        Integer		parName,
 					        Real		parVal		) ;
-
+Void		lesSetTolPar(		LesHd		lesHd,
+					        Real		tol,
+					        Real		prestol		) ;
 /*===========================================================================
  *
  * Fortran calling convention
