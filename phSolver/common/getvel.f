@@ -189,7 +189,7 @@ c
                if (myrank.eq.master) then
                  do ii=1,stacksz
                     ifathi = ifathG(ii)
-                    velft(ifathi,ii) = velft(ifathi,ii) 
+                    velft(ifathi,i) = velft(ifathi,i) 
      &                                    + velftG(ii,1)
                  enddo
                endif

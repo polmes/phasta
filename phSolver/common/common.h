@@ -291,7 +291,7 @@ c
         common /incomp/ numeqns(100), minIters, maxIters, 
      &                  iprjFlag,     nPrjs,    ipresPrjFlag, nPresPrjs,
      &                  prestol,      statsflow(6), statssclr(6),
-     &                  iverbose, iRelTol
+     &                  iverbose, iRelTol, tolFact
 c
         character(8) :: ccode(13)
         common /mtimer1/ ccode

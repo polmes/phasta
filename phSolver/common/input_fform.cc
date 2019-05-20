@@ -670,7 +670,11 @@ int input_fform(phSolver::Input& inp)
     incomp.prestol = inp.GetValue("Tolerance on ACUSIM Pressure Projection"); 
     if( (string)inp.GetValue("Release Tolerance for Later Iterations") =="True" ){
         incomp.iRelTol = 1;
-    } else { incomp.iRelTol = 0; } 
+        incomp.tolFact = (double)inp.GetValue("Tolerance Release Factor");
+    } else { 
+        incomp.iRelTol = 0; 
+        incomp.tolFact = 1.0;
+    } 
     incomp.minIters = inp.GetValue("Minimum Number of Iterations per Nonlinear Iteration");
     incomp.maxIters = inp.GetValue("Maximum Number of Iterations per Nonlinear Iteration");
     inpdat.deltol[0][0]=inp.GetValue("Velocity Delta Ratio"); 

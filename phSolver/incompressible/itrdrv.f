@@ -645,7 +645,7 @@ c
      &                            'Changing solver tolerance'
                            endif
                            lesId=1
-                           call resetTol( lesId, 4.0*epstol(1), 4.0*prestol) 
+                           call resetTol(lesId, tolFact*epstol(1), tolFact*prestol) 
                         else
                           lesId=1
                          call resetTol( lesId, epstol(1), prestol)

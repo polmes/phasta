@@ -9,12 +9,17 @@
 
       dimension nsons(ndistsons), rinvsons(ndistsons), tmpStats(nshg,iConsStressSz),
      &          ifath(nshg), ilwork(nlwork), iBC(nshg),
-     &          tmpStatsft(nfath,iConsStressSz),
+!     &          tmpStatsft(nfath,iConsStressSz),
      &          y(nshg,ndof), tmpKeq(nshg,10),
      &          tmpKeqft(nfath,10), GradV(nshg,nsdsq)
+      real*8, allocatable, dimension (:,:) :: tmpStatsft
       real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
      &       S12(nshg),S13(nshg),S23(nshg), invtmp
       integer periodicity
+
+
+      den = max(1,lstep-istartSpanAvg)
+      tfact = one/den
       
 c     Assign the conservative statistics to a temporary array
       if (iConsStress.eq.1) then 
@@ -130,12 +135,26 @@ c     zero the nodes that are "solved" on the other processors
             
       endif  ! numpe.gt.1
 
+      if (periodicity.eq.1.and.nohomog.eq.1) then
+         rinvsons = one/(nsons-one)   ! division is expensive
+      else
+         rinvsons = one/nsons   ! division is expensive
+      endif
+      if (ndistsons.eq.1) then 
+        invtmp = rinvsons(1)
+      endif
+
       
       if (.not.allocated(tmpStatsf)) then
          allocate(tmpStatsf(locnfath,iConsStressSz))
       endif
       tmpStatsf = zero
-      tmpStatsft = zero
+      if (myrank.eq.master) then
+         allocate(tmpStatsft(nfath,1),STAT=IERR2)
+         if(IERR2.gt.0) write(*,*)
+     &      'No memory to allocate tmpStatsft of size',nfath
+         tmpStatsft = zero
+      endif
       if (iKeq.eq.1) then
          if (.not.allocated(tmpKeqf)) allocate(tmpKeqf(locnfath,10))
          tmpKeqf = zero
@@ -168,20 +187,30 @@ c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
       if(numpe .gt. 1) then
-          if (.not.allocated(tmpStatsftG)) then
-             if (myrank.eq.master) then
-               allocate(tmpStatsftG(stacksz,iConsStressSz),STAT=IERR2)
-               if(IERR2.gt.0) write(*,*) 
-     &         'No memory to allocate tmpStatsftG of size',stacksz,'x',iConsStressSz
-             endif
-          endif
+!          if (.not.allocated(tmpStatsftG)) then
+!             if (myrank.eq.master) then
+!               allocate(tmpStatsftG(stacksz,1),STAT=IERR2)
+!               if(IERR2.gt.0) write(*,*) 
+!     &         'No memory to allocate tmpStatsftG of size',stacksz
+!             endif
+!          endif
           do i=1,iConsStressSz
              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
              call MPI_GATHERV(tmpStatsf(:,i),locnfath,MPI_DOUBLE_PRECISION,
-     &                        tmpStatsftG(:,i),rcounts,displs,
+     &                        velftG(:,1),rcounts,displs,
      &                        MPI_DOUBLE_PRECISION,master,
      &                        MPI_COMM_WORLD,ierr)
              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+             if (myrank.eq.master) then
+               do ii=1,stacksz
+                  ifathi = ifathG(ii)
+                  tmpStatsft(ifathi,1) = tmpStatsft(ifathi,1)
+     &                                   + velftG(ii,1)
+!     &                                   + tmpStatsftG(ii,1)
+               enddo
+               tmpStatsft = tmpStatsft*invtmp
+               stsBar(:,i)=tfact*tmpStatsft(:,1)+(one-tfact)*stsBar(:,i)
+             endif
           enddo
          
           if (iKeq.eq.1) then
@@ -205,9 +234,9 @@ c
           if (myrank.eq.master) then
              do i=1,stacksz
                 ifathi = ifathG(i)
-                tmpStatsft(ifathi,1:iConsStressSz) = 
-     &                               tmpStatsft(ifathi,1:iConsStressSz) 
-     &                               + tmpStatsftG(i,1:iConsStressSz)
+!                tmpStatsft(ifathi,1:iConsStressSz) = 
+!     &                               tmpStatsft(ifathi,1:iConsStressSz) 
+!     &                               + tmpStatsftG(i,1:iConsStressSz)
                 if (iKeq.eq.1) then
                 tmpKeqft(ifathi,1:10) = tmpKeqft(ifathi,1:10) 
      &                               + tmpKeqftG(i,1:10)
@@ -227,35 +256,35 @@ c
       endif
 c     divide by # of sons to get average father for this step
 c
-      if (periodicity.eq.1.and.nohomog.eq.1) then
-         rinvsons = one/(nsons-one)   ! division is expensive
-      else
-         rinvsons = one/nsons   ! division is expensive
-      endif
-      if (myrank.eq.master) then
-       if (ndistsons.eq.nfath) then 
-         if (iConsStress.eq.1) then
-           tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
-           tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
-           tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
-           tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
-           tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
-           tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
-           tmpStatsft(:,7) = tmpStatsft(:,7) * rinvsons(:)
-           tmpStatsft(:,8) = tmpStatsft(:,8) * rinvsons(:)
-           tmpStatsft(:,9) = tmpStatsft(:,9) * rinvsons(:)
-         else
-           tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
-           tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
-           tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
-           tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
-           tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
-           tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
-         endif
-       else if (ndistsons.eq.1) then
-         invtmp = rinvsons(1)
-         tmpStatsft = tmpStatsft * invtmp
-       endif
+!      if (periodicity.eq.1.and.nohomog.eq.1) then
+!         rinvsons = one/(nsons-one)   ! division is expensive
+!      else
+!         rinvsons = one/nsons   ! division is expensive
+!      endif
+!      if (myrank.eq.master) then
+!       if (ndistsons.eq.nfath) then 
+!         if (iConsStress.eq.1) then
+!           tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
+!           tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
+!           tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
+!           tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
+!           tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
+!           tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+!           tmpStatsft(:,7) = tmpStatsft(:,7) * rinvsons(:)
+!           tmpStatsft(:,8) = tmpStatsft(:,8) * rinvsons(:)
+!           tmpStatsft(:,9) = tmpStatsft(:,9) * rinvsons(:)
+!         else
+!           tmpStatsft(:,1) = tmpStatsft(:,1) * rinvsons(:) 
+!           tmpStatsft(:,2) = tmpStatsft(:,2) * rinvsons(:)
+!           tmpStatsft(:,3) = tmpStatsft(:,3) * rinvsons(:)
+!           tmpStatsft(:,4) = tmpStatsft(:,4) * rinvsons(:)
+!           tmpStatsft(:,5) = tmpStatsft(:,5) * rinvsons(:)
+!           tmpStatsft(:,6) = tmpStatsft(:,6) * rinvsons(:)
+!         endif
+!       else if (ndistsons.eq.1) then
+!         invtmp = rinvsons(1)
+!         tmpStatsft = tmpStatsft * invtmp
+!       endif
         
        if (iKeq.eq.1) then
          if (ndistsons.eq.nfath) then
@@ -274,17 +303,19 @@ c
             tmpKeqft = tmpKeqft * invtmp
          endif
        endif
-      endif
+!      endif
 
 c     Add to running time averagie
-      if (myrank.eq.master) then
-         den = max(1,lstep-istartSpanAvg)
-         tfact = one/den
-         stsBar(:,:)=tfact*tmpStatsft(:,:)+(one-tfact)*stsBar(:,:)
-         if (iKeq.eq.1) then
-           stsBarKeq(:,:)=tfact*tmpKeqft(:,:)+(one-tfact)*stsBarKeq(:,:)
-         endif
-      endif
+!      if (myrank.eq.master) then
+!         den = max(1,lstep-istartSpanAvg)
+!         tfact = one/den
+!         stsBar(:,:)=tfact*tmpStatsft(:,:)+(one-tfact)*stsBar(:,:)
+!         if (iKeq.eq.1) then
+!           stsBarKeq(:,:)=tfact*tmpKeqft(:,:)+(one-tfact)*stsBarKeq(:,:)
+!         endif
+!      endif
+
+      if (myrank.eq.master) deallocate(tmpStatsft)
 
 
       end subroutine getStsBar
