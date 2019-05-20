@@ -172,7 +172,7 @@ c
              if (myrank.eq.master) then
                allocate(tmpStatsftG(stacksz,iConsStressSz),STAT=IERR2)
                if(IERR2.gt.0) write(*,*) 
-     &                       'Not enough space to allocate tmpStatsftG'
+     &         'No memory to allocate tmpStatsftG of size',stacksz,'x',iConsStressSz
              endif
           endif
           do i=1,iConsStressSz
@@ -189,7 +189,7 @@ c
               if (myrank.eq.master) then 
                   allocate(tmpKeqftG(stacksz,10),STAT=IERR2)
                   if(IERR2.gt.0) write(*,*)
-     &                       'Not enough space to allocate tmpKeqftG'
+     &         'No memory to allocate tmpKeqftG of size',stacksz,'x 10'
               endif
             endif
             do i=1,10

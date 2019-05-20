@@ -10,10 +10,11 @@
 c
       dimension nsons(ndistsons),        rinvsons(ndistsons),
      &          velo(nshg,nflow),    !velf(nfath,nflow),
-     &          velft(nfath,nflow), 
+!     &          velft(nfath,nflow), 
      &          y(nshg,ndof), 
      &          ifath(nshg),
      &          ilwork(nlwork),        iBC(nshg)
+      real*8, allocatable, dimension (:,:) :: velft
       real*8 tmp, den, tfact 
       integer periodicity, minifath, maxifath, ifathrng,
      &        ifathi, ind, c
@@ -134,7 +135,10 @@ c     zero the nodes that are "solved" on the other processors
             deallocate(isonpart)
          endif
          velf = zero
-         velft = zero
+         if (myrank.eq.master) then
+           allocate(velft(nfath,nflow))
+           velft = zero
+         endif
 c     
 c     accumulate sum of sons to the fathers
 c     
@@ -160,14 +164,14 @@ c
                if (myrank.eq.master) then
                   allocate(ifathG(stacksz),STAT=IERR2)
                   if(IERR2.gt.0) write(*,*)
-     &             'Not enough space to allocate ifathG of size',stacksz
+     &             'No memory to allocate ifathG of size',stacksz
                endif
             endif
             if (.not.allocated(velftG)) then
                if (myrank.eq.master) then
-                  allocate(velftG(stacksz,nflow),STAT=IERR2)
+                  allocate(velftG(stacksz,1),STAT=IERR2)
                   if(IERR2.gt.0) write(*,*)
-     &                       'Not enough space to allocate velftG'
+     &             'No memory allocate velftG of size',stacksz
                endif
             endif
             call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -178,18 +182,25 @@ c
             do i=1,nflow
                call MPI_BARRIER(MPI_COMM_WORLD,ierr)
                call MPI_GATHERV(velf(:,i),locnfath,MPI_DOUBLE_PRECISION,
-     &                          velftG(:,i),rcounts,displs,
+     &                          velftG(:,1),rcounts,displs,
      &                          MPI_DOUBLE_PRECISION,master,
      &                          MPI_COMM_WORLD,ierr)
                call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+               if (myrank.eq.master) then
+                 do ii=1,stacksz
+                    ifathi = ifathG(ii)
+                    velft(ifathi,ii) = velft(ifathi,ii) 
+     &                                    + velftG(ii,1)
+                 enddo
+               endif
             enddo
-            if (myrank.eq.master) then
-               do i=1,stacksz
-                  ifathi = ifathG(i)
-                  velft(ifathi,1:nflow) = velft(ifathi,1:nflow) 
-     &                                    + velftG(i,1:nflow)
-               enddo
-            endif
+!            if (myrank.eq.master) then
+!               do i=1,stacksz
+!                  ifathi = ifathG(i)
+!                  velft(ifathi,1:nflow) = velft(ifathi,1:nflow) 
+!     &                                    + velftG(i,1:nflow)
+!               enddo
+!            endif
 
             !call drvAllreduce(velf, velft,nfath*nflow)
          else
@@ -228,6 +239,8 @@ c
          velbar(:,:)=tfact*velft(:,:)+(one-tfact)*velbar(:,:)
       endif
 
+
+      if (myrank.eq.master) deallocate(velft)
       
       
       return

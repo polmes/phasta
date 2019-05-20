@@ -640,8 +640,10 @@ c
                   
                     if(iRelTol.eq.1) then
                         if((nitr.gt.1).and.(iter.eq.nitr)) then
-                           if(myrank.eq.master) write(*,*) 
+                           if(myrank.eq.master.and.istep.eq.1) then
+                              write(*,*) 
      &                            'Changing solver tolerance'
+                           endif
                            lesId=1
                            call resetTol( lesId, 4.0*epstol(1), 4.0*prestol) 
                         else
