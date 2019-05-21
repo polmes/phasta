@@ -339,8 +339,9 @@ void countfieldstowriterestart()
     nfields++; /* BCs */
   }
 
-  /* LES cdelsq field */
+  /* LES cdelsq and nut field */
   if(turbvari.iles>0) {
+    nfields++;
     nfields++;
   }
 

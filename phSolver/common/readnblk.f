@@ -16,7 +16,6 @@ c
       real*8, allocatable :: acold(:,:)
       integer, allocatable :: iBCtmp(:)
       real*8, allocatable :: BCinp(:,:)
-      real*8, allocatable :: point2cdelsq(:,:)
       integer, allocatable :: point2ilwork(:)
 !      integer, allocatable :: fncorp(:)
       integer, allocatable :: twodncorp(:,:)
@@ -39,6 +38,7 @@ c
       use streamio
       use STG_BC
       use spanStats
+      use lesArrs
       include "common.h"
       include "mpif.h"
 
@@ -46,10 +46,8 @@ c
       real*8, target, allocatable :: STGread(:,:), BCrestartRead(:,:)
       real*8, target, allocatable :: uread(:,:)
       real*8, target, allocatable :: BCinpread(:,:)
-      real*8, target, allocatable :: velbarread(:,:)
       real*8, target, allocatable :: cdelsqread(:,:)
-      real*8, target, allocatable :: stsbarread(:,:)
-      real*8, target, allocatable :: stsKread(:,:)
+      real*8, target, allocatable :: lesnutread(:,:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
@@ -718,39 +716,6 @@ cc
            endif
          endif
          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-!         intfromfile=0
-!         call phio_readheader(fhandle,
-!     &   c_char_'velbar nfath' // char(0), 
-!     &   c_loc(intfromfile), ithree, dataInt, iotype)
-!
-!         if(intfromfile(1).ne.0) then
-!           nfath2=intfromfile(1)
-!           nflow2=intfromfile(2)
-!           if (nfath.ne.nfath2)
-!     &          call error ('restar  ', 'nfath   ', nfath)
-!           allocate(velbarread(nfath2,nflow2))
-!           allocate(velbar(nfath2,nflow2))
-!           iVelbsiz=nfath2*nflow2
-!           call phio_readdatablock(fhandle,
-!     &       c_char_'velbar nfath' // char(0),
-!     &       c_loc(velbarread),iVelbsiz, dataDbl,iotype)
-!           velbar=velbarread
-!           deallocate(velbarread)
-!           if (myrank.eq.master) 
-!     &            write(*,*) 'velbar field found in restart file'
-!         else
-!           if (myrank.eq.master) then
-!             warning='velbar not read from restart and set to zero'
-!             write(*,*) warning
-!           endif
-!           allocate(velbar(nfath,nflow),STAT=IERR1)
-!           if(IERR1.gt.0)write(*,*)'Not enough space to allocate velbar'
-!           velbar=zero
-!         endif
-!      else
-!         allocate(velbar(1,nflow))
-!         velbar=zero
       endif ! end of ispanAvg for velbar
 
 cc
@@ -781,35 +746,6 @@ cc
            endif
          endif
          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-!         intfromfile=0
-!         call phio_readheader(fhandle,
-!     &   c_char_'stats nfath' // char(0), 
-!     &   c_loc(intfromfile), ithree, dataInt, iotype)
-!
-!         if(intfromfile(1).ne.0) then
-!           nfath2=intfromfile(1)
-!           if (nfath.ne.nfath2)
-!     &          call error ('restar  ', 'nfath   ', nfath)
-!           allocate(stsbarread(nfath2,iConsStressSz))
-!           allocate(stsBar(nfath2,iConsStressSz))
-!           istssiz=nfath2*iConsStressSz
-!           call phio_readdatablock(fhandle,
-!     &       c_char_'stats nfath' // char(0),
-!     &       c_loc(stsbarread),istssiz, dataDbl,iotype)
-!           stsBar=stsbarread
-!           deallocate(stsbarread)
-!           if (myrank.eq.master) 
-!     &            write(*,*) 'stsbar field found in restart file'
-!         else
-!           if (myrank.eq.master) then
-!             warning='stsbar not read from restart and set to zero'
-!             write(*,*) warning
-!           endif
-!           allocate(stsBar(nfath,iConsStressSz),STAT=IERR2)
-!           if(IERR2.gt.0)write(*,*)'Not enough space to allocate stsBar'
-!           stsBar=zero
-!         endif
       endif ! end of ispanAvg for stsbar
 cc
 cc.... Read the stsbarKeq array if want spanwise average and K eq stats
@@ -839,36 +775,6 @@ cc
            endif
          endif
          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-!         intfromfile=0
-!         call phio_readheader(fhandle,
-!     &   c_char_'stats Keq nfath' // char(0), 
-!     &   c_loc(intfromfile), ithree, dataInt, iotype)
-!
-!         if(intfromfile(1).ne.0) then
-!           nfath2=intfromfile(1)
-!           if (nfath.ne.nfath2)
-!     &          call error ('restar  ', 'nfath   ', nfath)
-!           allocate(stsKread(nfath2,10))
-!           allocate(stsBarKeq(nfath2,10))
-!           istssiz=nfath2*10
-!           call phio_readdatablock(fhandle,
-!     &       c_char_'stats Keq nfath' // char(0),
-!     &       c_loc(stsKread),istssiz, dataDbl,iotype)
-!           stsBarKeq=stsKread
-!           deallocate(stsKread)
-!           if (myrank.eq.master) 
-!     &            write(*,*) 'stsBarKeq field found in restart file'
-!         else
-!           if (myrank.eq.master) then
-!            warning='stsBarKeq not read from restart and set to zero'
-!             write(*,*) warning
-!           endif
-!           allocate(stsBarKeq(nfath,10),STAT=IERR2)
-!           if(IERR2.gt.0)
-!     &         write(*,*)'Not enough space to allocate stsBarKeq'
-!           stsBarKeq=zero
-!         endif
       endif ! end of if for ispanAvg and iKeq for K eq terms
 cc
 cc.... Read the cdelsq array if want running spanwise average and doing LES
@@ -884,12 +790,12 @@ cc
            if (nshg.ne.nshg2)
      &          call error ('restar  ', 'cdelsq   ', cdelsq)
            allocate(cdelsqread(nshg2,3))
-           allocate(point2cdelsq(nshg2,3))
+           allocate(cdelsq(nshg2,3))
            isiz=nshg2*3
            call phio_readdatablock(fhandle,
      &       c_char_'cdelsq' // char(0),
      &       c_loc(cdelsqread),isiz, dataDbl,iotype)
-           point2cdelsq=cdelsqread
+           cdelsq=cdelsqread
            deallocate(cdelsqread)
            if (myrank.eq.master) 
      &            write(*,*) 'cdelsq field found in restart file'
@@ -898,16 +804,54 @@ cc
              warning='cdelsq not read from restart and set to zero'
              write(*,*) warning
            endif
-           allocate(point2cdelsq(nshg,3),STAT=IERR2)
+           allocate(cdelsq(nshg,3),STAT=IERR2)
            if(IERR2.gt.0)write(*,*)'Not enough space to allocate cdelsq'
-           point2cdelsq=zero
+           cdelsq=zero
          endif
       else if (iLES.gt.0) then
-         allocate(point2cdelsq(nshg,3))
-         point2cdelsq=zero
+         allocate(cdelsq(nshg,3))
+         cdelsq=zero
       else if (iLES.eq.0) then
-         allocate(point2cdelsq(1,1))
+         allocate(cdelsq(1,1))
       endif ! end of iLES and irunTave for cdelsq
+cc
+cc.... Read the lesnut array if want running spanwise average and doing LES
+cc
+      if (iLES.gt.0.and.irunTave.eq.1) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'lesnut' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           numel2=intfromfile(1)
+           if (numel.ne.numel2)
+     &          call error ('restar  ', 'lesnut   ', lesnut)
+           allocate(lesnutread(numel2,2))
+           allocate(lesnut(numel2,2))
+           isiz=numel2*2
+           call phio_readdatablock(fhandle,
+     &       c_char_'lesnut' // char(0),
+     &       c_loc(lesnutread),isiz, dataDbl,iotype)
+           lesnut=lesnutread
+           deallocate(lesnutread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'lesnut field found in restart file'
+         else
+           if (myrank.eq.master) then
+             warning='lesnut not read from restart and set to zero'
+             write(*,*) warning
+           endif
+           allocate(lesnut(numel,2),STAT=IERR2)
+           if(IERR2.gt.0)write(*,*)'Not enough space to allocate lesnut'
+           lesnut=zero
+         endif
+      else if (iLES.gt.0) then
+         allocate(lesnut(numel,2))
+         lesnut=zero
+      else if (iLES.eq.0) then
+         allocate(lesnut(1,1))
+      endif ! end of iLES and irunTave for lesnut
 
 cc
 cc.... read the header and check it against the run data

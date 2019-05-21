@@ -1,6 +1,6 @@
       subroutine getdmc (y,      shgl,      shp, 
      &                   iper,   ilwork,    
-     &                   nsons,  ifath,     x, cdelsq)
+     &                   nsons,  ifath,     x )
 
       use pointer_data
 
@@ -12,6 +12,7 @@ c                    for computing the dmod. Qwt contains the weights of the
 c                    quad. points. 
 
       use eblock
+      use lesArrs
 
       include "common.h"
       include "mpif.h"
@@ -20,7 +21,7 @@ c                    quad. points.
 
 c
       dimension fres(nshg,24),         fwr(nshg),
-     &          strnrm(nshg),         cdelsq(nshg,3),
+     &          strnrm(nshg),
      &          xnum(nshg),           xden(nshg),
      &          xmij(nshg,6),         xlij(nshg,6),
      &          xnude(nfath,2),        xnuder(nfath,2),
@@ -35,7 +36,7 @@ c
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c
-c   setup the weights for time averaging of cdelsq (now in quadfilt module)
+c   setup the weights for time averaging of cdelsq
 c
       if (irunTave.eq.0) then
         denom=max(1.0d0*(lstep),one)
@@ -425,7 +426,7 @@ c ... Another loop over element block to compute the eddy viscosity
          ! strl is actually the norm of the strain |S|
          ! xmudmi is the eddy viscosity nu_T=cdelsq*strl
          call scatnu (blk, mien(iblk)%p, strl(iel:inum,:), 
-     &        mxmudmi(iblk)%p,cdelsq(:,1),shp(lcsyst,1:nshl,:))
+     &        mxmudmi(iblk)%p,shp(lcsyst,1:nshl,:))
       enddo
 
 c     Write some eddy viscosity stats

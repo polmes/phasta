@@ -26,7 +26,7 @@ c-----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
 c
-c     module for spanwise averaged statistics (conservative projection).
+c     module for spanwise averaged statistics
 c
 c-----------------------------------------------------------------------
       module spanStats
@@ -49,4 +49,15 @@ c-----------------------------------------------------------------------
 
       end module spanStats
 
+c-----------------------------------------------------------------------
+c
+c     module for LES model arrays
+c
+c-----------------------------------------------------------------------
+      module lesArrs
+
+      real*8, allocatable :: cdelsq(:,:)
+      real*8, allocatable :: lesnut(:,:)
+
+      end module lesArrs
 

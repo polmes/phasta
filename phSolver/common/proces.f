@@ -16,6 +16,7 @@ c
         use pvsQbi
         use mlirans
         use spanStats
+        use lesArrs
         include "common.h"
         include "mpif.h"
 c
@@ -353,8 +354,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    point2nsons,
-     &               point2cdelsq ) 
+     &               point2ifath,    point2nsons ) 
 c
 c.... return
 c
@@ -402,7 +402,7 @@ c
 !        if (allocated(tmpStatsftG)) deallocate(tmpStatsftG)
 !        if (allocated(tmpKeqf)) deallocate(tmpKeqf)
 !        if (allocated(tmpKeqftG)) deallocate(tmpKeqftG)
-        deallocate(point2cdelsq)
+        deallocate(cdelsq)
         deallocate(uold)
         deallocate(wnrm)
         deallocate(otwn)

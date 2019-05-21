@@ -3,8 +3,7 @@
      &                   iBC,       BC,         
      &                   iper,      ilwork,     shp,       
      &                   shgl,      shpb,       shglb,
-     &                   ifath,     nsons,
-     &                   cdelsq ) 
+     &                   ifath,     nsons ) 
 c
 c----------------------------------------------------------------------
 c
@@ -137,8 +136,6 @@ c ---   Variables for LES channel flow IC
         integer nx, ny, nz, nICpoints, ijkNum
         real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
         real*8, allocatable :: lesIC(:,:)
-c ---   Dynamic LES C*\Delta^2
-        dimension cdelsq(nshg,3)
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -428,8 +425,7 @@ c
                  call  checkpoint (y,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp,
-     &                       cdelsq)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
 ! shift the number to keep them distinct
         lstep=lstepSave
         output_mode=-1 ! reset to stream 
@@ -557,7 +553,7 @@ c
                call lesmodels(yold,  acold,     shgl,      shp, 
      &                        iper,  ilwork,    rowp,      colm,
      &                        nsons, ifath,     x,   
-     &                        iBC,   BC, cdelsq)
+     &                        iBC,   BC )
             endif
 
 c.... set traction BCs for modeled walls
@@ -1013,16 +1009,14 @@ c .. write out the instantaneous solution
                call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp,
-     &                       cdelsq)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
              endif
              if(ntout.le.lstep) then ! user also wants file output
                   output_mode=0   ! only writing posix for now
                  call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp,
-     &                       cdelsq)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
                   output_mode=-1 ! reset to stream 
              endif
            else
@@ -1030,8 +1024,7 @@ c .. write out the instantaneous solution
              call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp,
-     &                       cdelsq)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
              if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
            endif
         endif
@@ -1155,7 +1148,7 @@ c
       subroutine lesmodels(y,     ac,        shgl,      shp, 
      &                     iper,  ilwork,    rowp,      colm,    
      &                     nsons, ifath,     x,   
-     &                     iBC,   BC, cdelsq)
+     &                     iBC,   BC )
       
       include "common.h"
 
@@ -1170,7 +1163,6 @@ c
      &            iBC(nshg),
      &            ilwork(nlwork),
      &            iper(nshg)
-      real*8    cdelsq(nshg,3)
       dimension ifath(nshg),    nsons(ndistsons)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
@@ -1214,7 +1206,7 @@ c
                if(modlstats .eq. 0) then ! If no model stats wanted
                   call getdmc (y,       shgl,      shp, 
      &                         iper,       ilwork,    nsons,
-     &                         ifath,      x, cdelsq)
+     &                         ifath,      x )
                else             ! else get model stats 
                   call stdfdmc (y,       shgl,      shp, 
      &                          iper,       ilwork,    nsons,
@@ -2361,12 +2353,12 @@ c
       subroutine checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar,istp,
-     &                       cdelsq)
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
       use solvedata
       use turbSA 
       use STG_BC
       use spanStats
+      use lesArrs
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -2385,7 +2377,6 @@ c
       real*8 ybar(nshg,irank2ybar),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
-      dimension cdelsq(nshg,3)
       integer istp
 
 !              Call to restar() will open restart file in write mode (and not append mode)
@@ -2615,6 +2606,18 @@ cc ..... Write the eddy viscosity when doing a dynamic Smag LES (iLES=1)
             if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write cdelsq to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+            call write_field(myrank,'a','lesnut',6,lesnut,'d',
+     &                       numel,2,lstep)
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write lesnut to the disks = ',
      &        tcormr2-tcormr1
             endif
           endif
