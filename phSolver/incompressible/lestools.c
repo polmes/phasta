@@ -623,12 +623,7 @@ void lesBlkDot2 ( UsrHd   usrHd,
                  src2pnt,
                  valuesp,
                  &mDims,
-                 &dim,
-                 &mpistats.rblasphasta,
-                 &mpistats.rblasmkl, 
-                 &mpistats.iblasphasta,
-                 &mpistats.iblasmkl,
-                 &workfc.ieqswork ) ;
+                 &dim ) ;
 
     drvAllreduce ( valuesp,
                    values,

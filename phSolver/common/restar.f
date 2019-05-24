@@ -96,6 +96,11 @@ c$$$      enddo
 c$$$ 78   format(5(2x,e12.5))
 c$$$      close(79)
 
+           ! adding this to be sure that numstrt.dat cannot be written
+           ! until all processes have completed their write to restart
+           if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+
            if (myrank.eq.master) then 
               open(unit=72,file='numstart.dat',status='old')
               write(72,*) lstep

@@ -27,7 +27,7 @@ c
 c the common block nomodule holds all the things which have been removed
 c from different modules
      
-        integer seqsize, stepseq,bsz,BlockPool
+        integer seqsize, stepseq,bsz,BlockPool, stopjob,allocated_seconds
         integer consrv_sclr_conv_vel
         integer spongecontinuity, spongemomentum1, spongemomentum2
         integer spongeenergy, spongemomentum3
@@ -53,7 +53,7 @@ c from different modules
 	common /workfc/ master, numpe, myrank,BlockPool,ieqswork
 	common /fronts/ maxfront, nlwork
 	common /newdim/ nshgt, minowned,maxowned, numper, nshg0
-	common /timer4/ birth, death, comtim
+	common /timer4/ birth, death, comtim,stopjob,allocated_seconds
         common /extrat/ ttim(100)
         common /spongevar/ zoutSponge, radSponge, zinSponge,
      &            grthOSponge,grthISponge,betamax,
@@ -63,10 +63,16 @@ c from different modules
      &                   rmutarget, pzero,  wtavei, 
      &                   dtavei, dke,  fwr1, flump, DES_SA_hmin,
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
-     &                   nlist, nintf(MAXTOP)
+     &                   nlist, nintf(MAXTOP), ddesConsts(2),
+     &                   STGDelBL, STGUo, STGModeGrow, STGMeshGrow, 
+     &                   STGeps, STGdesol, STGdes(3)
         common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
-     &                   ierrsmooth, iramp
+     &                   ierrsmooth, iramp, idwalmode,
+     &                   iSTG, iSTGSurfID, iSTGChan, iSTGnModes, 
+     &                   iSTGspec, iSTGStart, ispanAvg, istartSpanAvg,
+     &                   ispanAvgWPer, iKeq, iConsStress, iConsStressSz,
+     &                   irunTave, irunTaveSt, iclipCdelsq
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,
@@ -126,7 +132,8 @@ c
      &                  numflx, ndof,   nelblk, nelblb,ntopsh, nlwork,
      &                  nedof,
      &                  nshg,   nnz,    nflow,
-     &                  nfath, ncorpsize, iownnodes, usingpetsc, numerr
+     &                  nfath, ncorpsize, iownnodes, usingpetsc, numerr,
+     &                  ndistsons
 
         common /conpar/ numnp,  numel,  numelb, numpbc, nen,    nfaces,
      &                  numflx, ndof,   iALE,   icoord, navier,
@@ -189,7 +196,7 @@ c
 
 c 
         common /shpdat/ nshape, nshapeb, maxshb,
-     &                  nshl, nshlb,nfath,  ntopsh,  nsonmax
+     &                  nshl, nshlb,nfath,  ntopsh,  nsonmax, ndistsons
 c
         common /melmcat/ mcsyst, melCat, nenCat(8,3),    nfaCat(8,3)
 c
@@ -203,12 +210,14 @@ c
         common /genpar/ E3nsd,  I3nsd,  nsymdf, ndofBC, ndiBCB, ndBCB,
      &                  Jactyp, jump,   ires,   iprec,  iprev,  ibound,
      &                  idiff,  lhs,    itau,   ipord,  ipred,  lstres,
-     &                  iepstm, dtsfct, dtsfctsclr, taucfct, bsz, iabc, isurf,
+     &                  iepstm, dtsfct, dtsfctsclr, taucfct, difffct,
+     &                  difffctsclr, bsz, iabc, isurf,
      &                  idflx,  Bo,     EntropyPressure, irampViscOutlet,
      &                  istretchOutlet, iremoveStabTimeTerm, iLHScond
 
 c
-        integer :: svLSType, svLSFlag
+        integer :: svLSType, svLSFlag, iNoSymm, iRandomIC, i2DIC, i3DIC,
+     &             iSTGIC
         common /inpdat/ epstol(6),  Delt(MAXTS),    CFLfl(MAXTS),
      &                  CFLsl(MAXTS),   nstep(MAXTS),   niter(MAXTS),
      &                  impl(MAXTS),    rhoinf(MAXTS),
@@ -216,7 +225,8 @@ c
      &                  CFLfl_max, iCFLfl_maxelem, iflag_cfl_dt,
      &                  CFLfl_limit, timestart, CFLls_max, 
      &                  iCFLls_maxelem,
-     &                  leslib,     svLSFlag,   svLSType
+     &                  leslib,     svLSFlag,   svLSType, iNoSymm,
+     &                  iRandomIC, i2DIC, i3DIC, iSTGIC
 c
         common /intdat/ intg(2,MAXTS),  intpt(3),       intptb(3)
 c
@@ -281,7 +291,7 @@ c
         common /incomp/ numeqns(100), minIters, maxIters, 
      &                  iprjFlag,     nPrjs,    ipresPrjFlag, nPresPrjs,
      &                  prestol,      statsflow(6), statssclr(6),
-     &                  iverbose
+     &                  iverbose, iRelTol, tolFact
 c
         character(8) :: ccode(13)
         common /mtimer1/ ccode
@@ -683,7 +693,7 @@ c ititle        : problem title (with form feed)
 c
 c----------------------------------------------------------------------
 c
-c.... common /avging / : nfath
+c.... common /avging / : nfath, ndistsons
 c 
 c nfath         : total number of global fathers over which certain
 c                 quantities will be averaged

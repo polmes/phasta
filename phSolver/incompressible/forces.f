@@ -118,7 +118,7 @@ c
             write(880,*) datmat(1,5,1),fnew
             call flush(880)
          endif
-         datmat(1,5,1)=fnew     !* (one - tmp2) + datmat(1,5,1) * tmp2
+         !datmat(1,5,1)=fnew     !* (one - tmp2) + datmat(1,5,1) * tmp2
       endif
 
       if (pzero .eq. 1) then

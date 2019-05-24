@@ -1,19 +1,28 @@
       subroutine getvel (y,ilwork, iBC,
-     &                   nsons, ifath, velbar)
+     &                   nsons, ifath)
 
+      use spanStats
 
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
 
 c
-      dimension nsons(nfath),        rinvsons(nfath),
-     &          velo(numnp,nflow),    velf(nfath,nflow),
-     &          velft(nfath,nflow),   
-     &          velbar(nfath,nflow),
-     &          y(numnp,ndof), 
-     &          ifath(numnp),
-     &          ilwork(nlwork),        iBC(numnp)
+      dimension nsons(ndistsons),        rinvsons(ndistsons),
+     &          velo(nshg,nflow),    velf(nfath),
+     &          velft(nfath), 
+     &          y(nshg,ndof), 
+     &          ifath(nshg),
+     &          ilwork(nlwork),        iBC(nshg)
+      real*8 tmp, den, tfact 
+      integer periodicity, minifath, maxifath, ifathrng,
+     &        ifathi, ind, c
+      logical, allocatable, dimension (:) :: isonpart 
+      peroidicity = 0
+
+     
+      den = max(1,lstep-istartSpanAvg)
+      tfact = one/den
 
 c
 c  for now keep the compressible numbering in velbar
@@ -25,11 +34,28 @@ c
       if(nflow.eq.5) velo(:,5)=y(:,5)
       nsonmax=maxval(nsons)
       if ((nsonmax.eq.1)) then  ! we are doing local clipping -no homog dir
-         velft=velo
+         !velft=velo
       else
 c     
 c     zero on processor periodic nodes so that they will not be added twice
-c     
+c    
+         if(myrank.eq.master) then
+            do i=1, nshg
+               if(btest(iBC(i),10)) then 
+                 periodicity = 1
+                 exit
+               endif
+            enddo
+         endif
+         call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
+     &               MPI_COMM_WORLD,ierr)
+
+         if (periodicity.eq.1.and.nohomog.eq.1) then
+             rinvsons = one/(nsons-one)   ! division is expensive
+         else
+             rinvsons = one/nsons   ! division is expensive
+         endif
+
          where(btest(iBC,10).or.btest(iBC,12))
             velo(:,1)=zero
             velo(:,2)=zero
@@ -39,8 +65,9 @@ c
          if(nflow.eq.5) then
             where(btest(iBC,10).or.btest(iBC,12))
                 velo(:,5)=zero
-	    endwhere
-	 endif         
+            endwhere
+         endif         
+
          if (numpe.gt.1) then
             
             numtask = ilwork(1)
@@ -58,7 +85,6 @@ c     zero the nodes that are "solved" on the other processors
                      lenseg = ilwork (itkbeg + 4 + 2*is)
                      isgend = isgbeg + lenseg - 1
                      velo(isgbeg:isgend,:) = zero
-                     velo(isgbeg:isgend,:) = zero
                   enddo
                endif
                
@@ -68,26 +94,26 @@ c     zero the nodes that are "solved" on the other processors
             
          endif  ! numpe.gt.1
 
-         
-         velf = zero
 c     
 c     accumulate sum of sons to the fathers
-c     
-         do i = 1,numnp
-            ifathi=ifath(i)
-	    velf(ifathi,1:nflow) = velf(ifathi,1:nflow) 
-     &                           + velo(i,1:nflow)            
-         enddo
+c    
+         do n=1,nflow 
+            velf = zero
+            do i = 1,nshg
+               ifathi=ifath(i)
+               velf(ifathi) = velf(ifathi) 
+     &                             + velo(i,n)            
+            enddo
          
 c     
 c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
-         if(numpe .gt. 1) then
-            call drvAllreduce(velf, velft,nfath*nflow)
-         else
-            velft=velf
-         endif
+            if(numpe .gt. 1) then
+               call drvAllreduce(velf, velft,nfath)
+            else
+               velft=velf
+            endif
 c     
 c     xvelf is the sum of the sons for each father on this processor
 c
@@ -95,36 +121,26 @@ c     xvelft is the sum of the sons for each father on all processor combined
 c     (the same as if we had not partitioned the mesh for each processor)
 c     
 c     divide by # of sons to get average father for this step
-c     
-         rinvsons = one/nsons   ! division is expensive
-         velft(:,1) = velft(:,1) * rinvsons(:) !  / nsons(:)
-         velft(:,2) = velft(:,2) * rinvsons(:) !  / nsons(:)
-         velft(:,3) = velft(:,3) * rinvsons(:) !  / nsons(:)
-         velft(:,4) = velft(:,4) * rinvsons(:) !  / nsons(:)
-	 if(nflow.eq.5) velft(:,5) = velft(:,5) * rinvsons(:)
-      endif  ! end of homog direction averaging
-      denom=max(one*(lstep),one)
-      if(wtavei.lt.0) then
-         tavef=one/denom
-      else
-         tavef=wtavei
-      endif
-               velbar(:,1)=velft(:,1)
-         velbar(:,2)=velft(:,2)
-         velbar(:,3)=velft(:,3)
-         velbar(:,4)=velft(:,4)
+c
+            if (ndistsons.eq.nfath) then 
+              velft(:) = velft(:) * rinvsons(:) !  / nsons(:)
+            else if (ndistsons.eq.1) then
+              tmp =  rinvsons(1)
+              velft = velft * tmp
+            endif
+          
+            if (myrank.eq.master) then 
+               velbar(:,n)=tfact*velft+(one-tfact)*velbar(:,n)
+            endif
 
-      if(istep.eq.0) then
-         velbar(:,:)=velft(:,:)
-      else            
-         velbar(:,:)=tavef*velft(:,:)+(one-tavef)*velbar(:,:)        
-      endif
+         enddo
+            
+
+      endif  ! end of homog direction averaging
+
+      
       
       return
       end
-
-
-
-      
 
 

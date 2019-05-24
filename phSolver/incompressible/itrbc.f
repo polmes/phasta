@@ -18,6 +18,7 @@ c Farzin Shakib, Winter 1987.
 c Zdenek Johan,  Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use turbsa
         include "common.h"
 c
         dimension y(nshg,nflow),             iBC(nshg),
@@ -28,8 +29,15 @@ c
 c  limiting...ugly but sometimes the only way
 c
         do i=1,nflow
-           if(ylimit(1,i).gt.0) 
-     &          y(:,i)=min(ylimit(3,i),max(ylimit(2,i),y(:,i))) 
+           if(ylimit(1,i).gt.0) then
+             if (allocated(d2wall)) then
+             do j=1,nshg
+               if (d2wall(j).lt.5.00e-4) then
+                 y(j,i)=min(ylimit(3,i),max(ylimit(2,i),y(j,i))) 
+               endif
+             enddo
+             endif
+           endif
         enddo
 c
 c.... ------------------------->  Velocity  <--------------------------

@@ -1,34 +1,10 @@
 c-----------------------------------------------------------------------
-c
-c     module for time averaged statistics (conservative projection).
-c
-c-----------------------------------------------------------------------
-      module stats
-      
-      integer nResDims, nSolDims, nLhsDims, nTimeStep, stsResFlg
-      integer stsCompFreq, stsWriteFreq, stsResetFreq, step1,
-     &        stsType
-      
-      real*8, allocatable :: stsVec(:,:)
-      
-      real*8, allocatable :: stsReg(:)
-      real*8, allocatable :: stsMInv(:,:)
-      real*8, allocatable :: stsB(:,:)
-      real*8, allocatable :: stsDInv(:,:)
-      real*8, allocatable :: stsCInv(:,:)
-      
-      real*8, allocatable :: stsPres(:), stsPresSqr(:), stsVel(:,:),
-     &                       stsVelSqr(:,:), stsVelReg(:,:),
-     &                       stsStress(:,:)
-
-      end module
-      
-c-----------------------------------------------------------------------
 c     create the new statistics arrays
 c-----------------------------------------------------------------------
       subroutine initStats(x,   iBC,    iper,   ilwork)
       
       use stats
+      use spanStats
       include "common.h"
 
       real*8  x(numnp,3)
@@ -59,14 +35,18 @@ c-----------------------------------------------------------------------
       allocate ( stsPres(nshg)         )
       allocate ( stsPresSqr(nshg)      )
       allocate ( stsVel(nshg,3)        )
+      allocate ( stsVelInst(nshg,3)    )
       allocate ( stsVelSqr(nshg,6)     )
+      allocate ( stsVelSqInst(nshg,6)  )
       allocate ( stsVelReg(nshg,3)     )
       allocate ( stsStress(nshg,6)     )
       
       stsPres    = 0.0
       stsPresSqr = 0.0
       stsVel     = 0.0
+      stsVelInst = 0.0
       stsVelSqr  = 0.0
+      stsVelSqrInst = 0.0
       stsVelReg  = 0.0
       stsStress  = 0.0
 
@@ -191,8 +171,9 @@ c-----------------------------------------------------------------------
      &                        rowp,   colm   )
       
       use     stats
-
       include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
       
       real*8  y(nshg,ndof),             yold(nshg,ndof),
      &        ac(nshg,ndof),            acold(nshg,ndof),
@@ -208,34 +189,39 @@ c-----------------------------------------------------------------------
       
       
       real*8  yAlpha(nshg,ndof),      acAlpha(nshg,ndof),
-     &        uAlpha(nshg,nsd),
+     &        uAlpha(nshg,nsd),       reg,
      &        res(nResDims),          MInv(6),
      &        DInv(3),                B(3),
      &        CInv(6)
       
       real*8 u1, u2, u3, r0, r1, r2, r3, r4, r5, t3, t4, t5
+      real*8 u1sts, u2sts, u3sts
 
       integer i
+ 
+      real*8 tfact
       
       nTimeStep = nTimeStep + 1
+      
 c
 c.... compute solution at n+alpha
 c
       call itrYAlpha( uold,     yold,     acold,
      &                u,        y,        ac,  
      &                uAlpha,   yAlpha,   acAlpha)
-      
 c
 c.... assemble the residual
 c
       if (stsType .eq. 1) then
-         call elmStatsRes( yAlpha,   acAlpha,     x,       shp,   shgl, 
+         call elmStatsRes( yAlpha,   acAlpha,     uAlpha, x,       shp,   shgl, 
      &                     shpb,     shglb,       iBC,     BC, 
-     &                     iper,     ilwork,      rowp,    colm )
-
+     &                     iper,     ilwork, rowp, colm )
+!         call MPI_BARRIER(MPI_COMM_WORLD,ierr) 
+!         if(myrank.eq.master) write(*,*) 'after elmStatsRes'
 c
 c.... compute the statistics
 c
+         tfact = one/nTimeStep
          do i = 1, nshg
             res   = stsVec(i,:)
             reg   = stsReg(i)
@@ -249,61 +235,73 @@ c
             u2    = yAlpha(i,2)
             u3    = yAlpha(i,3)
             
-            stsPres(i)    = stsPres(i)    +  y(i,4) 
-            stsPresSqr(i) = stsPresSqr(i) +  y(i,4)*y(i,4)  
+            stsPres(i)    = (one-tfact)*stsPres(i) + tfact*y(i,4) 
+            stsPresSqr(i) = (one-tfact)*stsPresSqr(i) + 
+     &                           tfact*y(i,4)*y(i,4)  
 
             r0            = res(1) + reg * u1 
             r1            = res(2) + reg * u2 
             r2            = res(3) + reg * u3 
+
+            stsVelInst(i,1)    = MInv(1)*r0+MInv(4)*r1+MInv(6)*r2
+            stsVelInst(i,2)    = MInv(4)*r0+MInv(2)*r1+MInv(5)*r2
+            stsVelInst(i,3)    = MInv(6)*r0+MInv(5)*r1+MInv(3)*r2
          
-            stsVel(i,1)   = stsVel(i,1) 
-     &                    + MInv(1) * r0 + MInv(4) * r1 + MInv(6) * r2 
-            stsVel(i,2)   = stsVel(i,2)
-     &                    + MInv(4) * r0 + MInv(2) * r1 + MInv(5) * r2 
-            stsVel(i,3)   = stsVel(i,3)
-     &                    + MInv(6) * r0 + MInv(5) * r1 + MInv(3) * r2 
+            stsVel(i,1)   = (one-tfact)*stsVel(i,1) 
+     &                    + tfact*stsVelInst(i,1) 
+            stsVel(i,2)   = (one-tfact)*stsVel(i,2)
+     &                    + tfact*stsVelInst(i,2) 
+            stsVel(i,3)   = (one-tfact)*stsVel(i,3)
+     &                    + tfact*stsVelInst(i,3)
+         
+            stsVelReg(i,1) = (one-tfact)*stsVelReg(i,1) + tfact*u1 
+            stsVelReg(i,2) = (one-tfact)*stsVelReg(i,2) + tfact*u2 
+            stsVelReg(i,3) = (one-tfact)*stsVelReg(i,3) + tfact*u3 
             
-            stsVelReg(i,1) = stsVelReg(i,1) + u1 
-            stsVelReg(i,2) = stsVelReg(i,2) + u2 
-            stsVelReg(i,3) = stsVelReg(i,3) + u3 
+            r0      = res(1) * u1               + reg * u1 * u1 
+            r1      = res(2) * u2               + reg * u2 * u2 
+            r2      = res(3) * u3               + reg * u3 * u3 
+            r3      = res(1) * u2 + res(2) * u1 + reg * u2 * u1 
+            r4      = res(2) * u3 + res(3) * u2 + reg * u3 * u2 
+            r5      = res(3) * u1 + res(1) * u3 + reg * u1 * u3 
+            r0      = DInv(1) * r0 
+            r1      = DInv(2) * r1 
+            r2      = DInv(3) * r2 
+            r3      = r3 - B(1) * (r0 + r1) 
+            r4      = r4 - B(2) * (r1 + r2) 
+            r5      = r5 - B(3) * (r2 + r0) 
+            t3      = CInv(1) * r3 + CInv(4) * r4 + CInv(6) * r5 
+            t4      = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
+            t5      = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5
+
+            stsVelSqInst(i,1) = r0 - DInv(1) * (B(1) * t3 + B(3) * t5)
+            stsVelSqInst(i,2) = r1 - DInv(2) * (B(2) * t4 + B(1) * t3)
+            stsVelSqInst(i,3) = r2 - DInv(3) * (B(3) * t5 + B(2) * t4)
+            stsVelSqInst(i,4) = t3
+            stsVelSqInst(i,5) = t4
+            stsVelSqInst(i,6) = t5
             
-            r0	        = res(1) * u1               + reg * u1 * u1 
-            r1		= res(2) * u2               + reg * u2 * u2 
-            r2		= res(3) * u3               + reg * u3 * u3 
-            r3	        = res(1) * u2 + res(2) * u1 + reg * u2 * u1 
-            r4		= res(2) * u3 + res(3) * u2 + reg * u3 * u2 
-            r5		= res(3) * u1 + res(1) * u3 + reg * u1 * u3 
+            stsVelSqr(i,1) = (one-tfact)*stsVelSqr(i,1)  
+     &                  + tfact*stsVelSqInst(i,1) !(r0 - DInv(1) * (B(1) * t3 + B(3) * t5))
+            stsVelSqr(i,2) = (one-tfact)*stsVelSqr(i,2)  
+     &                  + tfact*stsVelSqInst(i,2) !(r1 - DInv(2) * (B(2) * t4 + B(1) * t3))
+            stsVelSqr(i,3) = (one-tfact)*stsVelSqr(i,3)  
+     &                  + tfact*stsVelSqInst(i,3) !(r2 - DInv(3) * (B(3) * t5 + B(2) * t4))
+
+            stsVelSqr(i,4) = (one-tfact)*stsVelSqr(i,4) + tfact*t3 
+            stsVelSqr(i,5) = (one-tfact)*stsVelSqr(i,5) + tfact*t4 
+            stsVelSqr(i,6) = (one-tfact)*stsVelSqr(i,6) + tfact*t5 
+
+            r0      = res(4) 
+            r1      = res(5) 
+            r2      = res(6) 
+            r3      = res(7) 
+            r4      = res(8) 
+            r5      = res(9)
+            
             r0          = DInv(1) * r0 
             r1          = DInv(2) * r1 
             r2          = DInv(3) * r2 
-            r3          = r3 - B(1) * (r0 + r1) 
-            r4          = r4 - B(2) * (r1 + r2) 
-            r5          = r5 - B(3) * (r2 + r0) 
-            t3          = CInv(1) * r3 + CInv(4) * r4 + CInv(6) * r5 
-            t4          = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
-            t5          = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5 
-            
-            stsVelSqr(i,1) = stsVelSqr(i,1)  
-     &                  + r0 - DInv(1) * (B(1) * t3 + B(3) * t5) 
-            stsVelSqr(i,2) = stsVelSqr(i,2)  
-     &                  + r1 - DInv(2) * (B(2) * t4 + B(1) * t3) 
-            stsVelSqr(i,3) = stsVelSqr(i,3)  
-     &                  + r2 - DInv(3) * (B(3) * t5 + B(2) * t4) 
-
-            stsVelSqr(i,4) = stsVelSqr(i,4) + t3 
-            stsVelSqr(i,5) = stsVelSqr(i,5) + t4 
-            stsVelSqr(i,6) = stsVelSqr(i,6) + t5 
-
-            r0	        = res(4) 
-            r1		= res(5) 
-            r2		= res(6) 
-            r3		= res(7) 
-            r4		= res(8) 
-            r5		= res(9) 
-            
-            r0          = DInv(1) * r0 
-            r1          = DInv(2) * r1 
-            r2          = DInv(3) * r2 
 
             r3          = r3 - B(1) * (r0 + r1) 
             r4          = r4 - B(2) * (r1 + r2) 
@@ -313,15 +311,15 @@ c
             t4          = CInv(4) * r3 + CInv(2) * r4 + CInv(5) * r5 
             t5          = CInv(6) * r3 + CInv(5) * r4 + CInv(3) * r5 
 
-            stsStress(i,1) = stsStress(i,1)
-     &                  + r0 - DInv(1) * (B(1) * t3 + B(3) * t5) 
-            stsStress(i,2) = stsStress(i,2)
-     &                  + r1 - DInv(2) * (B(2) * t4 + B(1) * t3) 
-            stsStress(i,3) = stsStress(i,3)
-     &                  + r2 - DInv(3) * (B(3) * t5 + B(2) * t4) 
-            stsStress(i,4) = stsStress(i,4) + t3 
-            stsStress(i,5) = stsStress(i,5) + t4 
-            stsStress(i,6) = stsStress(i,6) + t5 
+            stsStress(i,1) = (one-tfact)*stsStress(i,1)
+     &                  + tfact*(r0 - DInv(1) * (B(1) * t3 + B(3) * t5))
+            stsStress(i,2) = (one-tfact)*stsStress(i,2)
+     &                  + tfact*(r1 - DInv(2) * (B(2) * t4 + B(1) * t3))
+            stsStress(i,3) = (one-tfact)*stsStress(i,3)
+     &                  + tfact*(r2 - DInv(3) * (B(3) * t5 + B(2) * t4))
+            stsStress(i,4) = (one-tfact)*stsStress(i,4) + tfact*t3 
+            stsStress(i,5) = (one-tfact)*stsStress(i,5) + tfact*t4 
+            stsStress(i,6) = (one-tfact)*stsStress(i,6) + tfact*t5 
          enddo
       else if (stsType .eq. 2) then
          
@@ -357,11 +355,11 @@ c
 
          enddo
       endif
-      
-      if ( mod(nTimeStep,stsWriteFreq) .eq. 0 .or. 
-     &     nTimeStep .eq. nstep(itseq) ) then
-         call stsWriteStats()
-      endif
+
+c      if ( mod(nTimeStep,stsWriteFreq) .eq. 0 .or. 
+c     &     nTimeStep .eq. nstep(itseq) ) then
+c         call stsWriteStats()
+c      endif
 
 c$$$      if ( mod( nTimeStep, stsResetFreq) .eq. 0 ) then
 c$$$         stsPres    = 0.0
@@ -380,7 +378,7 @@ c$$$      endif
 c-----------------------------------------------------------------------
 c     collect the desired statistics 
 c-----------------------------------------------------------------------
-      subroutine stsWriteStats()
+      subroutine stsWriteStats(istp)
       
       use     stats
       include "common.h"
@@ -390,23 +388,7 @@ c-----------------------------------------------------------------------
       character*5  cname
       character*1  dash
       real*8       outvec(nshg,19)
-c
-c.... open the output file
-c
-      iofile = 39
-      step2 = lstep+1  ! current time step
-      itmp  = 1
-      itmp1 = 1
-      if (step1 .gt. 0) itmp  = int(log10(float(step1)))+1
-      if (step2 .gt. 0) itmp1 = int(log10(float(step2)))+1
-      dash = '-'
-      write (fmt1,
-     &     "('(''stats.'',i',i1,',a1,i',i1,',1x)')")
-     &     itmp,itmp1
-      write (fname,fmt1) step1,dash,step2
-      fname = trim(fname) // cname(myrank+1)
-      open ( unit = iofile, file = fname, status = 'unknown',
-     &       form = 'unformatted')
+      integer      istp
 c
 c.... write the statistics
 c
@@ -419,13 +401,14 @@ c      outvec(:,2:4)   = stsVelReg(:,:)
       outvec(:,13)    = zero   ! later wil be tempSqr
       outvec(:,14:19) = stsStress(:,:)
       
-      write (iofile) numnp, nshg, nTimeStep
-      write (iofile) outvec(1:nshg,:)
-      close (iofile)
+c     Divide by the current time step number because the statistics are
+c     just added to each other, not time averaged
+      !outvec = outvec / istp
+      
+      call write_field(myrank,'a','conservativestats',17,outvec,
+     &                       'd',nshg,19,lstep)
 
-c$$$      write (iofile) numnp, numnp, nTimeStep
-c$$$      write (iofile) outvec(1:numnp,:)
-c$$$      close (iofile)
+
       
       iofile2 = 40
 c$$$      open (unit=iofile2,file='stats.asc',status='unknown')

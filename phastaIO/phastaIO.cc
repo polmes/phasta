@@ -925,21 +925,36 @@ void openfile(const char filename[], const char mode[], int*  fileDescriptor )
     *fileDescriptor = 0;
     char* fname = StringStripper( filename );
     char* imode = StringStripper( mode );
+    char dirname[1024];
 
     std::string posixname = getSubDirPrefix();
     if (!phio_self())
       my_mkdir(posixname);
     phio_barrier();
     posixname += string(fname);
-    if ( cscompare( "read", imode ) )
-      PHASTAIO_OPENTIME(file = fopen(posixname.c_str(), "rb" );)
-    else if( cscompare( "write", imode ) )
-      PHASTAIO_OPENTIME(file = fopen(posixname.c_str(), "wb" );)
-    else if( cscompare( "append", imode ) )
+    for ( int j = 0; j < 500; j++ ) {
+      if ( cscompare( "read", imode ) )
+        PHASTAIO_OPENTIME(file = fopen(posixname.c_str(), "rb" );)
+      else if( cscompare( "write", imode ) )
+        PHASTAIO_OPENTIME(file = fopen(posixname.c_str(), "wb" );)
+      else if( cscompare( "append", imode ) )
       PHASTAIO_OPENTIME(file = fopen(posixname.c_str(), "ab" );)
 
+      if(!file) {
+        perror("fopen: ");
+        bzero((void*)dirname,sizeof(dirname));
+        getcwd(dirname,sizeof(dirname));
+        fprintf(stderr,"Error openfile: %d try unable to open file %s in dir %s\n",j,posixname.c_str(),dirname);
+      }
+      else  break;  
+      usleep(10);
+    }
+
     if ( !file ){
-      fprintf(stderr,"Error openfile: unable to open file %s\n",fname);
+      bzero((void*)dirname,sizeof(dirname));
+      getcwd(dirname,sizeof(dirname));
+      fprintf(stderr,"Error openfile: 500 tries unable to open file %s in dir %s\n",posixname.c_str(),dirname);
+      fprintf(stderr,"consider raising usleep value in phastaIO.cc.\n");
     } else {
       fileArray.push_back( file );
       byte_order.push_back( false );

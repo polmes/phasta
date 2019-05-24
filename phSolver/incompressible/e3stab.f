@@ -85,7 +85,7 @@ c
      9		        + u3 * ( gijd(:,6) * u1
      a			             + gijd(:,5) * u2
      1			             + gijd(:,3) * u3 ) ) )
-     2		    + fff * rnu** 2
+     2		    + fff * difffct * rnu** 2
      3		    * ( gijd(:,1) ** 2
      4		      + gijd(:,2) ** 2
      5		      + gijd(:,3) ** 2
@@ -98,7 +98,11 @@ c
          fact = sqrt(tauM)
          dtsi=one/dts
          ff=taucfct/dtsfct
-         if(icode.eq.0) tauC =rho* pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3))*ff
+         if(icode.eq.0) then
+             tauC =rho* pt125*fact/(gijd(:,1)+gijd(:,2)+gijd(:,3))*ff
+         else
+             tauC=zero
+         endif
          tauM = one/fact
       else if(itau.eq.1)  then  ! new tau
 
@@ -132,6 +136,8 @@ c
            tauC=tauM*(one+tauM*rmu*rmu)
            tauC=one/tauC
            tauC=taucfct*sqrt(tauC)
+         else
+           tauC=zero
          endif
 c
 c
@@ -194,7 +200,9 @@ c
            tauC=tauM*(one+tauM*rmu*rmu)
            tauC=one/tauC
            tauC=sqrt(tauC)*taucfct
-        endif
+         else
+           tauC=zero
+         endif
 c
 c
 c...  momentum tau
@@ -269,7 +277,11 @@ c
 c  we can calculate tauC more efficiently now
 c
          tauM=sqrt(tauM/fact)*two
-         if(icode.eq.0) tauC=pt5*tauM*min(one,pt5*tauM/rmu)*taucfct
+         if(icode.eq.0) then
+           tauC=pt5*tauM*min(one,pt5*tauM/rmu)*taucfct
+         else
+           tauC=zero
+         endif
 c
 c
 c...  momentum tau
@@ -311,6 +323,8 @@ c
         where ( tauBar .ne. 0.0 ) 
            tauBar = tauM / sqrt(tauBar)
         endwhere
+      else
+        tauBar=zero
       endif
 
 c
@@ -554,7 +568,7 @@ c        if(iRANS.ne.-2) srcRat=srcR
      9	     + uMod(:,3) * ( gijd(:,6) * uMod(:,1)
      a	                   + gijd(:,5) * uMod(:,2)
      1	                   + gijd(:,3) * uMod(:,3) )
-     2	     + fff * diffus(:)** 2
+     2	     + fff * difffctsclr * diffus(:)** 2
      3	           * ( gijd(:,1) ** 2
      4		     + gijd(:,2) ** 2
      5		     + gijd(:,3) ** 2

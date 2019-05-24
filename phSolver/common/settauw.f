@@ -1,5 +1,5 @@
         subroutine settauw (y,  x,  BC, 
-     &                      ifath,   velbar)
+     &                      ifath)
 c
 c----------------------------------------------------------------------
 c
@@ -11,11 +11,12 @@ c----------------------------------------------------------------------
 c
       use pointer_data
       use turbSA
+      use spanStats
       include "common.h"
 c
       dimension y(nshg,ndofl),            x(numnp,nsd), 
      &          BC(nshg,ndofBC),
-     &          ifath(numnp),             velbar(nfath,nflow),
+     &          ifath(numnp),
      &          ull(nsd),                 trx(numnp,nsd),
      &          ullb(nsd),                dull(nsd),
      &          evisc(numnp)

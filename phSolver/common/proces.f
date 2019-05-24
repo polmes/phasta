@@ -14,6 +14,9 @@ c
         use dtnmod
         use periodicity
         use pvsQbi
+        use mlirans
+        use spanStats
+        use lesArrs
         include "common.h"
         include "mpif.h"
 c
@@ -35,14 +38,18 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-c        dimension ifath(numnp),    velbar(nfath,nflow),
-c     &            nsons(nfath) 
-
-        dimension velbar(nfath,nflow)
+c        dimension velbar(nfath,nflow)
 c
 c stuff to interpolate profiles at inlet
 c
-        real*8 bcinterp(100,ndof+1),interp_mask(ndof)
+        real*8, allocatable :: bcinterp(:,:)
+        real*8, allocatable :: IC3d(:,:)
+        real*8, allocatable :: ICSTG(:,:)
+        real*8 maxdwl,maxx,minx,dwl,z
+        integer numSTG
+        integer interp_mask(ndof)
+        integer Map2ICfromBC(ndof)
+        character*256 fname2
         logical exlog
 
         !Duct
@@ -59,7 +66,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    velbar,         point2nsons )
+     &               point2ifath,    point2nsons )
         call setper(nshg)
         call perprep(iBC,point2iper,nshg)
         if (iLES/10 .eq. 1) then
@@ -79,7 +86,7 @@ c
 c
 c.... RANS turbulence model
 c
-        if (iRANS .lt. 0) then
+        if (iRANS .lt. 0.or.iSTG.eq.1) then
            call initTurb( point2x )
         endif
 c
@@ -101,23 +108,59 @@ c
            call initSponge( y,point2x) 
         endif
 c
+c....  initialize the STG inflow arrays
+c
+        if(iSTG.eq.1) then 
+           call initSTG(point2x)
+        endif
+
+c
 c
 c.... adjust BC's to interpolate from file
 c
         
         inquire(file="inlet.dat",exist=exlog)
         if(exlog) then
-           open (unit=654,file="inlet.dat",status="old")
-           read(654,*) ninterp,ibcmatch,(interp_mask(j),j=1,ndof)
-           do i=1,ninterp
-              read(654,*) (bcinterp(i,j),j=1,ndof+1) ! distance to wall+
-                        ! ndof but note order of BC's
-                        ! p,t,u,v,w,scalars. Also note that must be in
-                        ! increasing distance from the wall order.
 
+           !display to screen if BC's will be adjusted from file
+           if(myrank == 0)
+     &         write(*,*)"adjusting BCs or ICs from inlet.dat file"
+
+           !open inlet.dat file for reading
+           open (unit=654,file="inlet.dat",status="old")
+
+           !read inlet.dat meta data
+           read(654,*) ninterp,ICset,iBCset,isrfidmatch,(interp_mask(j),j=1,ndof)
+           !ninterp = number of data points to interpolate between
+           !ICset = 0,1 depending on whether IC need to be set
+           !iBCset = 0,1 depending on whether BCs need to be set
+           !isrfidmatch = surf ID where BCs need to be set
+           !interp_mask(j) = 0,1 whether p,T,u,v,w,scalar needs to be set
+
+
+           if(ICset.eq.1) then  ! we need a map that takes IC# and returns IC #
+             Map2ICfromBC(1)=4
+             Map2ICfromBC(2)=5
+             Map2ICfromBC(3)=1
+             Map2ICfromBC(4)=2
+             Map2ICfromBC(5)=3
+             do j=6,ndof  ! scalars have an identity map
+               Map2ICfromBC(j)=j
+             enddo
+           endif
+            
+ 
+           allocate(bcinterp(ninterp,ndof+1))
+
+           !loop through all lines in file to read in dwall,p,T,u,v,w,scalar
+           !note: values must be in increasing distance from wall order
+           do i=1,ninterp
+              read(654,*) (bcinterp(i,j),j=1,ndof+1)
            enddo
            do i=1,nshg  ! only correct for linears at this time
-              if(mod(iBC(i),1024).eq.ibcmatch) then
+              iBcon = 0
+              if((ndsurf(i).eq.isrfidmatch).and.(iBCset.eq.1)) iBCon=1
+              if((IBCon.eq.1).or.(ICset.eq.1)) then ! need to compute the bounding points and interpolator, xi
                  iupper=0
                  do j=2,ninterp
                     if(bcinterp(j,1).gt.d2wall(i)) then !bound found
@@ -127,41 +170,41 @@ c
                        exit
                     endif
                  enddo
-                 if(iupper.eq.0) then
-                    write(*,*) 'failure in finterp, ynint=',d2wall(i)
-                    stop
+                 if(iupper.eq.0) then ! node is higher than interpolating stack
+! so use the top of interpolating stack
+                    iupper=ninterp
+                    xi=1.0
                  endif
-                 if(interp_mask(1).ne.zero) then 
-                    BC(i,1)=(xi*bcinterp(iupper,2)
-     &                +(one-xi)*bcinterp(iupper-1,2))*interp_mask(1)
-                 endif
-                 if(interp_mask(2).ne.zero) then 
-                    BC(i,2)=(xi*bcinterp(iupper,3)
-     &                +(one-xi)*bcinterp(iupper-1,3))*interp_mask(2)
-                 endif
-                 if(interp_mask(3).ne.zero) then 
-                    BC(i,3)=(xi*bcinterp(iupper,4)
-     &                +(one-xi)*bcinterp(iupper-1,4))*interp_mask(3)
-                 endif
-                 if(interp_masK(4).ne.zero) then 
-                    BC(i,4)=(xi*bcinterp(iupper,5)
-     &                +(one-xi)*bcinterp(iupper-1,5))*interp_mask(4)
-                 endif
-                 if(interp_mask(5).ne.zero) then 
-                    BC(i,5)=(xi*bcinterp(iupper,6)
-     &                +(one-xi)*bcinterp(iupper-1,6))*interp_mask(5)
-                 endif
-                 if(interp_mask(6).ne.zero) then 
-                    BC(i,7)=(xi*bcinterp(iupper,7)
-     &                +(one-xi)*bcinterp(iupper-1,7))*interp_mask(6)
-                 endif
-                 if(interp_mask(7).ne.zero) then 
-                    BC(i,8)=(xi*bcinterp(iupper,8)
-     &                +(one-xi)*bcinterp(iupper-1,8))*interp_mask(7)
-                 endif
-              endif
+                 if(iBCon.eq.1) then
+                   do j=1,nflow
+                     if(interp_mask(j).eq.1) then 
+                        BC(i,j)=(xi*bcinterp(iupper,j+1)
+     &                    +(one-xi)*bcinterp(iupper-1,j+1))
+                     endif
+                   enddo
+                   if(solheat.eq.1) 
+     &                  BC(i,2)=(i*bcinterp(iupper,3)
+     &                    +(one-xi)*bcinterp(iupper-1,3))
+                   do j=1,nsclr
+                     if(interp_mask(j+5).eq.1) then 
+                        BC(i,j+6)=(xi*bcinterp(iupper,j+6)
+     &                    +(one-xi)*bcinterp(iupper-1,j+6))
+                     endif
+                   enddo
+                 endif ! IBCon
+                 if(ICset.eq.1) then  ! note at this time no mask so all IC's are getting set
+! we could add a separate mask for IC or potentially use the same one (permuted through the map)
+! but it is really not that hard to get profiles for all needed variables. 
+                   do j=1,ndof   ! BC index
+                        ic=Map2ICfromBC(j) !map to IC index
+                        y(i,ic)=(xi*bcinterp(iupper,j+1)
+     &                    +(one-xi)*bcinterp(iupper-1,j+1))
+                   enddo
+                 endif ! ICset
+
+              endif ! either IBC active or icset active
            enddo
-        endif
+        endif  ! inlet.dat existed
 c$$$$$$$$$$$$$$$$$$$$
 
 !======================================================================
@@ -210,6 +253,98 @@ c$$$$$$$$$$$$$$$$$$$$
         endif
 !End modifications for Duct
 !======================================================================
+c.... Load a 2D field as an initial condition
+        if(i2DIC == 1)then
+           call set_wmles_ic(point2x, y)
+        endif
+c.... Load a 3D field as an initial condition
+        if(i3DIC == 1)then
+         if(myrank.eq.master) write(*,*) 
+     &                       'Setting 3D IC from interpolated solution'
+         maxdwl = maxval(d2wall)
+         if (maxdwl.lt.0.04) then
+           fname2 = "DNSIC/solLES."
+           if (myrank.lt.9) then
+             write (fname2, "(A13,I1)") trim(fname2), myrank+1
+           else if (myrank.lt.99) then 
+             write (fname2, "(A13,I2)") trim(fname2), myrank+1
+           else if (myrank.lt.999) then
+             write (fname2, "(A13,I3)") trim(fname2), myrank+1
+           else if (myrank.lt.9999) then
+             write (fname2, "(A13,I4)") trim(fname2), myrank+1
+           else if (myrank.lt.99999) then
+             write (fname2, "(A13,I5)") trim(fname2), myrank+1
+           else if (myrank.lt.999999) then
+             write (fname2, "(A13,I6)") trim(fname2), myrank+1
+           endif           
+           inquire(file=fname2,exist=exlog)
+           if(exlog) then
+              open (unit=456,file=fname2,status="old")
+              allocate(IC3d(numnp,7))
+              do i=1,numnp
+                read(456,*) (IC3d(i,j),j=1,7)
+              enddo
+              close(456)
+           else
+              write(*,*) 'Did not find file ',fname2
+           endif
+           do i=1,numnp
+              dx = abs(point2x(i,1)-IC3d(i,1))
+              dy = abs(point2x(i,2)-IC3d(i,2))
+              dz = abs(point2x(i,3)-IC3d(i,3))
+              if (dx.lt.1.0e-5.and.dy.lt.1.0e-5.and.dz.lt.1.0e-5) then
+                 y(i,1) = IC3d(i,5) ! u
+                 y(i,2) = IC3d(i,6) ! v
+                 y(i,3) = IC3d(i,7) ! w
+                 !y(i,4) = IC3d(i,4) ! p
+              else
+                 write(*,*) 'PROBLEM: nodes do not match'
+              endif
+            enddo
+            deallocate(IC3d)
+         endif
+        endif
+c.... Load a 3D field as an initial condition
+        if(iSTGIC == 1)then
+         if(myrank.eq.master) write(*,*)
+     &                       'Setting 3D IC from saved STG plane'
+         maxdwl = maxval(d2wall)
+         minx = minval(point2x(:,1))
+         maxx = maxval(point2x(:,1))
+         if ((minx.gt.-0.12)
+     &       .and.(maxx.lt.0.1)) then
+           inquire(file='STGplane.dat',exist=exlog)
+           if(exlog) then
+            open (unit=456,file='STGplane.dat',status="old")
+            read(456,*) numSTG
+            allocate(ICSTG(numSTG,5))
+            do i=1,numSTG
+              read(456,*) (ICSTG(i,j),j=1,5)
+            enddo
+            close(456)
+            ! Note the ICSTG array form the file needs to be ordered by
+            ! increasing dwal and increasing z
+            do i=1,nshg
+              dwl = d2wall(i)
+              if (dwl.le.1.0e-3) then
+              z = point2x(i,3)
+              do j=1,numSTG
+                if (ICSTG(j,1).ge.dwl) then ! found dwal
+                  if (ICSTG(j,2).ge.z) then
+                     y(i,1:3) = y(i,1:3)+ICSTG(j,3:5)
+                     exit
+                  endif
+                endif
+              enddo
+              endif
+            enddo
+           deallocate(ICSTG)
+           else
+             write(*,*) 'Did not read STGplane.dat'
+           endif
+         endif
+        endif
+!======================================================================
 c
 c
 c.... call the semi-discrete predictor multi-corrector iterative driver
@@ -219,7 +354,7 @@ c
      &               iBC,            BC,
      &               point2iper,     point2ilwork,   shp,
      &               shgl,           shpb,           shglb,
-     &               point2ifath,    velbar,         point2nsons ) 
+     &               point2ifath,    point2nsons ) 
 c
 c.... return
 c
@@ -254,6 +389,20 @@ c
         deallocate(point2x)
         deallocate(point2nsons)
         deallocate(point2ifath)
+        if (allocated(velbar)) deallocate(velbar)
+        if (allocated(stsBar)) deallocate(stsBar)
+        if (allocated(stsBarKeq)) deallocate(stsBarKeq)
+!        if (allocated(velf)) deallocate(velf)
+!        if (allocated(velftG)) deallocate(velftG)
+!        if (allocated(locifath)) deallocate(locifath)
+!        if (allocated(ifathG)) deallocate(ifathG)
+!        if (allocated(rcounts)) deallocate(rcounts)
+!        if (allocated(displs)) deallocate(displs)
+!        if (allocated(tmpStatsf)) deallocate(tmpStatsf)
+!        if (allocated(tmpStatsftG)) deallocate(tmpStatsftG)
+!        if (allocated(tmpKeqf)) deallocate(tmpKeqf)
+!        if (allocated(tmpKeqftG)) deallocate(tmpKeqftG)
+        deallocate(cdelsq)
         deallocate(uold)
         deallocate(wnrm)
         deallocate(otwn)

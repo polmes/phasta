@@ -235,6 +235,9 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "DDES" ) {
       turbvari.iles  = -2;
       turbvari.irans = -1;
+    } else if ((string)inp.GetValue("Turbulence Model") == "IDDES" ) {
+      turbvari.iles  = -3;
+      turbvari.irans = -1;
     } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
       turbvari.irans = 0;
       turbvari.iles  = 0;
@@ -244,11 +247,43 @@ int input_fform(phSolver::Input& inp)
       cout << endl;
       exit(1);
     }
-    vector<double> vec;
+      // STG inflow BCs
+      if((string)inp.GetValue("Use STGinflow BCs") == "True" ) {
+        turbvari.iSTG=1;
+        turbvari.iSTGStart=(int)inp.GetValue("STG Start Step");
+        turbvari.iSTGSurfID=(int)inp.GetValue("STG SurfID");
+        turbvar.STGDelBL=(double)inp.GetValue("STG BL Height");
+        turbvar.STGUo=(double)inp.GetValue("STG U_0");
+        turbvar.STGModeGrow=(double)inp.GetValue("STG Mode Growth");
+        turbvar.STGMeshGrow=(double)inp.GetValue("STG Mesh Growth");
+        turbvar.STGeps=(double)inp.GetValue("STG Dissip. Rate");
+        if((string)inp.GetValue("STG Channel") == "True" ) {
+           turbvari.iSTGChan=1;
+           } 
+        if((string)inp.GetValue("Collect STG Energy Spectrum Data")=="True"){
+            turbvari.iSTGspec= 1;
+            } 
+        turbvar.STGdesol=(double)inp.GetValue("STG Energy Distance Tolerance");   
+        vector<double> readDist;
+        readDist = inp.GetValue("Energy Spectrum at Distances");
+        for (i=0;i<=2;i++){
+            turbvar.STGdes[i]=readDist[i];
+            }
+      }
 
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=
  //                                          inp.GetValue("DES Edge Length");
+    vector<double> vec; 
 
+    if (turbvari.irans!=0)
+      turbvari.idwalmode=(int)inp.GetValue("Mode to Compute dwal");
+
+    if (turbvari.irans==-1 && turbvari.iles==-3) {
+       vec = inp.GetValue("IDDES Constants");
+       for(i=0; i<2 ; i++){
+          turbvar.ddesConsts[i]=vec[i];
+       }
+    }
     if (turbvari.irans<0 && turbvari.iles<0)
       turbvar.DES_SA_hmin=(double)inp.GetValue("DES SA Minimum Edge Length");
 
@@ -633,6 +668,13 @@ int input_fform(phSolver::Input& inp)
     inpdat.LHSupd[0] = inp.GetValue("Number of Solves per Left-hand-side Formation");
     inpdat.epstol[0] = inp.GetValue("Tolerance on Momentum Equations");
     incomp.prestol = inp.GetValue("Tolerance on ACUSIM Pressure Projection"); 
+    if( (string)inp.GetValue("Release Tolerance for Later Iterations") =="True" ){
+        incomp.iRelTol = 1;
+        incomp.tolFact = (double)inp.GetValue("Tolerance Release Factor");
+    } else { 
+        incomp.iRelTol = 0; 
+        incomp.tolFact = 1.0;
+    } 
     incomp.minIters = inp.GetValue("Minimum Number of Iterations per Nonlinear Iteration");
     incomp.maxIters = inp.GetValue("Maximum Number of Iterations per Nonlinear Iteration");
     inpdat.deltol[0][0]=inp.GetValue("Velocity Delta Ratio"); 
@@ -743,7 +785,9 @@ int input_fform(phSolver::Input& inp)
       genpar.itau = 11;
 
     genpar.dtsfct = inp.GetValue("Tau Time Constant");
+    genpar.difffct = inp.GetValue("Tau Diffusive Constant");
     genpar.dtsfctsclr = inp.GetValue("Tau Time Constant for Scalars");
+    genpar.difffctsclr = inp.GetValue("Tau Diffusive Constant for Scalars");
     genpar.taucfct = inp.GetValue("Tau C Scale Factor");
 
 	genpar.iLHScond = inp.GetValue("LHS BC heat flux enable");
@@ -803,13 +847,60 @@ int input_fform(phSolver::Input& inp)
          == "True") ? sclrs.nosource = 1 : sclrs.nosource = 0;
     sclrs.tdecay=inp.GetValue("Decay Multiplier for Scalars");
 
+    // Boundary and Initial Condition Control
+    if((string)inp.GetValue("Remove No Penetration Vel BC") == "True") inpdat.iNoSymm = 1;
+    else inpdat.iNoSymm = 0;
+    if((string)inp.GetValue("Add Random Fluctuations to Velocity") == "True") {
+       inpdat.iRandomIC = 1;
+    } else {
+       inpdat.iRandomIC = 0;
+    }
+    if((string)inp.GetValue("Load and set 2D IC") == "True") {
+       inpdat.i2DIC = 1;
+    } else {
+       inpdat.i2DIC = 0;
+    }
+    if((string)inp.GetValue("Load and set 3D IC") == "True") {
+       inpdat.i3DIC = 1;
+    } else {
+       inpdat.i3DIC = 0;
+    }
+    if((string)inp.GetValue("Load and set STG IC") == "True") {
+       inpdat.iSTGIC = 1;
+    } else {
+       inpdat.iSTGIC = 0;
+    }
+
     // TURBULENCE MODELING PARAMETER
     int tpturb = turbvari.iles-turbvari.irans;
     int ifrule;
+    turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
+    if((string)inp.GetValue("Compute Spanwise Average") == "True") {
+         turbvari.ispanAvg = 1;
+         turbvari.istartSpanAvg = inp.GetValue("Start Spanwise Average");
+         turbvari.ispanAvgWPer = inp.GetValue("Velbar Write Period");
+         if((string)inp.GetValue("Spanwise Conservative Stresses") == "True") {
+           turbvari.iConsStress = 1;
+           turbvari.iConsStressSz = 9;
+         } else { 
+           turbvari.iConsStress = 0; 
+           turbvari.iConsStressSz = 6;
+         }
+         if((string)inp.GetValue("TKE Transport Equation Terms") == "True") {
+           turbvari.iKeq = 1;
+         } else { turbvari.iKeq = 0; }
+    } else {
+         turbvari.ispanAvg = 0;
+         turbvari.istartSpanAvg = 0;
+         turbvari.ispanAvgWPer = 0;
+         turbvari.iConsStress = 0;
+         turbvari.iKeq = 0;
+    }
+    
     if( tpturb != 0 ){
 
 
-      turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
+      //turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
 
       if((string)inp.GetValue("Turbulence Wall Model Type") == "Slip Velocity") turbvar.itwmod = 1;
       else if((string)inp.GetValue("Turbulence Wall Model Type") == "Effective Viscosity") turbvar.itwmod = 2; 
@@ -829,7 +920,17 @@ int input_fform(phSolver::Input& inp)
         turbvar.dtavei = (ifrule >0)? 1.0/ifrule : -1.0/ifrule;
         turbvar.fwr1 = inp.GetValue("Filter Width Ratio");
         turbvar.flump = inp.GetValue("Lumping Factor for Filter");
-
+        if ((string)inp.GetValue("Dynamic Model Running Time Average") == "True" ) {
+           turbvari.irunTave = 1;
+           turbvari.irunTaveSt = inp.GetValue("Dynamic Model Running Time Average Start");
+        } else {
+           turbvari.irunTave = 0; 
+           turbvari.irunTaveSt = 0;
+        }
+        if ((string)inp.GetValue("Clip cdelsq") == "True" ) {
+           turbvari.iclipCdelsq = 1; }
+        else {
+           turbvari.iclipCdelsq = 0; }
 
         if ((string)inp.GetValue("Model Statistics") == "True" ) {
           turbvari.modlstats = 1; } 

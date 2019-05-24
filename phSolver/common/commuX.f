@@ -1,4 +1,4 @@
-      subroutine commuMax (global, ilwork,  n,  code)
+      subroutine commuX (global, ilwork,  n,  code, x)
 c---------------------------------------------------------------------
 c 
 c This subroutine is responsible for interprocessor communication of
@@ -27,29 +27,28 @@ c ilwork array appear below.
 c
 c---------------------------------------------------------------------
 c
-      include "commonM2NFixBnd.h"
+      use turbsa
+      include "common.h"
       include "mpif.h"
-      include "auxmpiM2NFixBnd.h"
+      include "auxmpi.h"
       integer status(MPI_STATUS_SIZE), ierr
       integer stat(MPI_STATUS_SIZE, 2*maxtask), req(2*maxtask)
       real*8  rDelISend, rDelIRecv, rDelWaitAll
 
       dimension global(nshg,n),
      &          rtemp(maxfront*n,maxtask),
-     &          ilwork(nlwork)
+     &          ilwork(nlwork), x(numnp,nsd)
  
       character*3 code
-
+ 
       if(impistat2.eq.1) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
-      if(impistat.eq.1) rDelIRecv = zero
-      if(impistat.eq.1) rDelISend = zero
-      if(impistat.eq.1) rDelWaitAll = zero
-  
+      if(impistat.gt.0) rDelIRecv = zero
+      if(impistat.gt.0) rDelISend = zero
+      if(impistat.gt.0) rDelWaitAll = zero
 
       if (code .ne. 'in ' .and. code .ne. 'out') 
      &  call error ('commu   ','code    ',0)
 
-      
       if     (n .eq. 1)      then        ! like a scalar
         kdof = 1
       elseif (n .eq. nsd)    then        ! like the normal vectors
@@ -70,20 +69,18 @@ c
         kdof = 9
       elseif (n .eq. 7 ) then
         kdof = 10
-!      elseif (n .eq. 33 ) then ! hack
-      elseif (n .eq. 13 ) then ! for error
+      elseif (n .eq. 33 ) then
          kdof = 11 
-!      elseif (n .eq. 22 ) then
-      elseif (n .eq. 18 ) then
+      elseif (n .eq. 22 ) then
          kdof = 12
       elseif (n .eq. 16 ) then
          kdof = 13
       elseif (n .eq. 10 ) then
          kdof = 14
       elseif (n .eq. nflow*nsd ) then   !surface tension + qres
-         kdof = 15 
+         kdof = 15
       else
-        call error ('commuMax','n       ',n)
+        call error ('commu   ','n       ',n)
       endif
 
 c... Note that when adding another kdof to the above set, we must
@@ -148,23 +145,71 @@ c
 c.... residual communication
 c
           if (code .eq. 'in ') then
-            if(impistat.eq.1) iISend = iISend+1
-            if(impistat.eq.1) rmpitmr = TMRC()
+            if(impistat.eq.1) then
+              iISend = iISend+1
+            elseif(impistat.eq.2) then
+               iISendScal = iISendScal+1
+            endif
+            if(impistat.gt.0) rmpitmr = TMRC()
             call MPI_ISEND(global(isgbeg, 1), 1, sevsegtype(itask,kdof), 
      &                     iother, itag, MPI_COMM_WORLD, req(m), ierr)
-            if(impistat.eq.1) rDelISend = TMRC()-rmpitmr
-            if(impistat.eq.1) rISend = rISend+rDelISend
+            if(impistat.gt.0) rDelISend = TMRC()-rmpitmr
+            if(impistat.eq.1) then 
+              rISend = rISend+rDelISend
+            elseif(impistat.eq.2) then 
+              rISendScal = rISendScal+rDelISend
+            endif
           endif
 c
 c.... solution communication
 c
           if (code .eq. 'out') then
-            if(impistat.eq.1) iIRecv = iIRecv+1
-            if(impistat.eq.1) rmpitmr = TMRC()
+            if(impistat.eq.1) then
+              iIRecv = iIRecv+1
+            elseif(impistat.eq.2) then
+               iIRecvScal = iIRecvScal+1
+            endif
+            if(impistat.gt.0) rmpitmr = TMRC()
+!            write(*,*) 'This is what rank ',
+!     &                  myrank,' is receiving from ',iother
+!            write(*,*) 'first array element is: ',global(isgbeg,1)
+!            write(*,*) 'number of successive elements is: ',sevsegtype(itask,kdof)
+!            write(*,*) 'first node is: ',x(isgbeg,1),x(isgbeg,2),x(isgbeg,3)
+!            ilast=(sevsegtype(itask,kdof)+1)/4
+!            write(*,*) 'last node is: ',x(ilast,1),x(ilast,2),x(ilast,3)
+!            write(*,*) 'all node coordinates are:'
+!            do is=1,numseg
+!                 istart=ilwork(itkbeg+3+2*is)
+!                 length=ilwork(itkbeg+4+2*is)
+!                 iend=istart+length-1
+!                 do i=istart,iend
+!                   write(*,*) x(i,1),x(i,2),x(i,3)
+!                 enddo
+!            enddo
+!            write(*,*) 'all x velocities are:'
+!            do i=isgbeg,isgbeg+sevsegtype(itask,kdof)
+!                 write(*,*) global(i,1),global(i,2),global(i,3)
+!            enddo
             call MPI_IRECV(global(isgbeg, 1), 1, sevsegtype(itask,kdof), 
      &                     iother, itag, MPI_COMM_WORLD, req(m), ierr)
-            if(impistat.eq.1) rDelIRecv = TMRC()-rmpitmr
-            if(impistat.eq.1) rIRecv = rIRecv+rDelIRecv
+!            do is=1,numseg
+!                 istart=ilwork(itkbeg+3+2*is)
+!                 length=ilwork(itkbeg+4+2*is)
+!                 iend=istart+length-1
+!                 do i=istart,iend
+!                    if (x(i,3).lt.1e-4.or.x(i,3).gt.1.4999) then
+!                       if(global(i,1).ne.(x(i,1)+x(i,2))) then
+!                         write(*,*) 'WARNING!!'
+!                       endif
+!                    endif
+!                 enddo
+!            enddo
+            if(impistat.gt.0) rDelIRecv = TMRC()-rmpitmr
+            if(impistat.eq.1) then 
+              rIRecv = rIRecv+rDelIRecv
+            elseif(impistat.eq.2) then 
+              rIRecvScal = rIRecvScal+rDelIRecv
+            endif
           endif
 c
 c.... if iacc == 1, then this task is a recieve.
@@ -185,20 +230,61 @@ c
 c.... recieve all segments for this task in a single step
 c
             idl=idl+1 ! stands for i Do Later, the number to fix later
-            if(impistat.eq.1) iIRecv = iIRecv+1
-            if(impistat.eq.1) rmpitmr = TMRC()
+            if(impistat.eq.1) then 
+              iIRecv = iIRecv+1
+            elseif(impistat.eq.2) then 
+              iIRecvScal = iIRecvScal+1
+            endif
+            if(impistat.gt.0) rmpitmr = TMRC()
             call MPI_IRECV(rtemp(1,idl), lfront*n, MPI_DOUBLE_PRECISION, 
      &                     iother, itag, MPI_COMM_WORLD, req(m), ierr)
-            if(impistat.eq.1) rDelIRecv = TMRC()-rmpitmr
-            if(impistat.eq.1) rIRecv = rIRecv+rDelIRecv
+            if(impistat.gt.0) rDelIRecv = TMRC()-rmpitmr
+            if(impistat.eq.1) then
+               rIRecv = rIRecv+rDelIRecv
+            elseif(impistat.eq.2) then 
+               rIRecvScal = rIRecvScal+rDelIRecv
+            endif
           endif
           if (code .eq. 'out') then
-            if(impistat.eq.1) iISend = iISend+1
-            if(impistat.eq.1) rmpitmr = TMRC()
+            if(impistat.eq.1) then 
+              iISend = iISend+1
+            elseif(impistat.eq.2) then 
+              iISendScal = iISendScal+1
+            endif
+            if(impistat.gt.0) rmpitmr = TMRC()
+!            write(*,*) 'This is what rank ',myrank,
+!     &                 'is sending to rank ',iother
+!            write(*,*) 'first array element is: ',global(isgbeg,1)
+!            write(*,*) 'number of successive elements is: ',sevsegtype(itask,kdof)
+!            write(*,*) 'first node is: ',x(isgbeg,1),x(isgbeg,2),x(isgbeg,3)
+!            ilast=(sevsegtype(itask,kdof)+1)/4
+!            write(*,*) 'last node is: ',x(ilast,1),x(ilast,2),x(ilast,3) 
+!            write(*,*) 'all node coordinates are:'
+!            do is=1,numseg
+!                 istart=ilwork(itkbeg+3+2*is)
+!                 length=ilwork(itkbeg+4+2*is)
+!                 iend=istart+length-1
+!                 do i=istart,iend
+!                    write(*,*) x(i,1),x(i,2),x(i,3)
+!                    if (x(i,3).lt.1e-4.or.x(i,3).gt.0.13599) then
+!                       if (d2wall(i).ge.0.0574) then
+!                          global(i,3)=zero !x(i,1)+x(i,2)
+!                       endif
+!                    endif
+!                 enddo
+!            enddo
+!            write(*,*) 'all x velocities are:'
+!            do i=isgbeg,isgbeg+sevsegtype(itask,kdof)
+!                 write(*,*) global(i,1),global(i,2),global(i,3)
+!            enddo
             call MPI_ISEND(global(isgbeg, 1), 1, sevsegtype(itask,kdof), 
      &                     iother, itag, MPI_COMM_WORLD, req(m), ierr)
-            if(impistat.eq.1) rDelISend = TMRC()-rmpitmr
-            if(impistat.eq.1) rISend = rISend+rDelISend
+            if(impistat.gt.0) rDelISend = TMRC()-rmpitmr
+            if(impistat.eq.1) then
+               rISend = rISend+rDelISend
+            elseif(impistat.eq.2) then 
+               rISendScal = rISendScal+rDelISend
+            endif
           endif
         endif
 
@@ -206,12 +292,21 @@ c
 
       enddo   !! end tasks loop
 
-      if(impistat.eq.1) iWaitAll = iWaitAll+1
-      if(impistat.eq.1) rmpitmr = TMRC()
+      if(impistat.eq.1) then
+        iWaitAll = iWaitAll+1
+      elseif(impistat.eq.2) then
+         iWaitAllScal = iWaitAllScal+1
+      endif
+      if(impistat.gt.0) rmpitmr = TMRC()
       call MPI_WAITALL(m, req, stat, ierr)
-      if(impistat.eq.1) rDelWaitAll = TMRC()-rmpitmr
-      if(impistat.eq.1) rWaitAll = rWaitAll+rDelWaitAll
-      if(impistat.eq.1) rCommu = rCommu+rDelIRecv+rDelISend+rDelWaitAll
+      if(impistat.gt.0) rDelWaitAll = TMRC()-rmpitmr
+      if(impistat.eq.1) then
+        rWaitAll = rWaitAll+rDelWaitAll
+        rCommu = rCommu+rDelIRecv+rDelISend+rDelWaitAll
+      elseif(impistat.eq.2) then
+        rWaitAllScal = rWaitAllScal+rDelWaitAll
+        rCommuScal = rCommuScal+rDelIRecv+rDelISend+rDelWaitAll
+      endif
 
 c
 c     Stuff added below is a delayed assembly of that which was communicated
@@ -241,13 +336,9 @@ c
                  isgbeg = ilwork (itkbeg + 3 + 2*is)
                  lenseg = ilwork (itkbeg + 4 + 2*is)
                  isgend = isgbeg + lenseg - 1
-c                 global(isgbeg:isgend,idof) = global(isgbeg:isgend,idof)
-c     &                                + rtemp (itemp:itemp+lenseg-1,jdl)
-                 do k=isgbeg,isgend  ! break this into an explicit loop an max instead of accumulate
-                 global(k,idof) = max(global(k,idof),rtemp (itemp,jdl))
-                 itemp=itemp+1   ! advance this index one at a time instead of in lenseg jumps
-                 enddo
-c                 itemp = itemp + lenseg
+                 global(isgbeg:isgend,idof) = global(isgbeg:isgend,idof)
+     &                                + rtemp (itemp:itemp+lenseg-1,jdl)
+                 itemp = itemp + lenseg
                   enddo
                enddo
             endif ! end of receive (iacc=1)

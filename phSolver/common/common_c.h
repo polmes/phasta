@@ -113,6 +113,8 @@ extern "C" {
     double birth;
     double death;
     double comtim;
+    int stopjob;
+    int allocated_seconds;
   } timer4 ;
 
   extern struct { 
@@ -145,6 +147,15 @@ extern "C" {
     int idim;
     int nlist;
     int nintf[MAXTOP];
+    double ddesConsts[2];
+    double STGDelBL;
+    double STGUo;
+    double STGModeGrow;
+    double STGMeshGrow;
+    double STGeps;
+    double STGdesol;
+    double STGdes[3];
+
   } turbvar ;
 
   extern struct {
@@ -156,7 +167,22 @@ extern "C" {
     int nohomog;
     int ierrsmooth;
     int iramp;
-
+    int idwalmode;
+    int iSTG;
+    int iSTGSurfID;
+    int iSTGChan;
+    int iSTGnModes;
+    int iSTGspec;
+    int iSTGStart;
+    int ispanAvg;
+    int istartSpanAvg;
+    int ispanAvgWPer;
+    int iKeq;
+    int iConsStress;
+    int iConsStressSz;
+    int irunTave;
+    int irunTaveSt;
+    int iclipCdelsq;
 /*      int itwmod; */
 /*      double rtavei; */
 /*      int ierrcalc; */
@@ -382,6 +408,7 @@ extern "C" {
     int nfath;
     int ntopsh;
     int nsonmax;
+    int ndistsons;
   } shpdat ;
 
   extern struct { 
@@ -423,6 +450,8 @@ extern "C" {
     double dtsfct;
     double dtsfctsclr;
     double taucfct;
+    double difffct;
+	double difffctsclr;
     int bsz;
     int iabc;
     int isurf;
@@ -458,6 +487,11 @@ extern "C" {
     int leslib;
     int svLSFlag;
     int svLSType;
+    int iNoSymm;
+    int iRandomIC;
+    int i2DIC;
+    int i3DIC;
+    int iSTGIC;
   } inpdat ;
 
   extern struct { 
@@ -623,6 +657,8 @@ extern "C" {
     double statsflow[6];
     double statssclr[6];
     int iverbose;
+    int iRelTol;
+    double tolFact;
   } incomp ;
 
   extern struct { 

@@ -1,7 +1,7 @@
         subroutine gendat (y,       ac,       x,      iBC,     BC,
      &                     iper,    ilwork,
      &                     shp,     shgl,    shpb,    shglb,
-     &                     ifath,   velbar,   nsons ) 
+     &                     ifath,   nsons ) 
 c
 c----------------------------------------------------------------------
 c
@@ -38,7 +38,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(numnp),    velbar(nfath,nflow), nsons(nfath) 
+        dimension ifath(nshg),    nsons(ndistsons) 
 
 ! Hack to get suction right on part boundaries
 !       dimension BC3(numnp,5)
@@ -104,6 +104,30 @@ c
 c.... read and generate the boundary condition codes (iBC array)
 c
         call geniBC (iBC)
+c
+c.... modify the iBC array to take out the comp1 on the side walls of the Boeing Bump
+c.... careful not to change the iBC at the side wall nodes that are on the no slip wall
+c.... and those at the inflow
+c
+        if (iNoSymm.eq.1) then
+        do i=1,nshg
+           ! if node is on side walls
+           if (x(i,3).lt.1.0e-6.or.x(i,3).gt.0.039999) then 
+                eq=0.077724*exp(-(x(i,1)/0.178308)**2)
+                top=eq+0.0574
+                bot=eq+1e-7
+                ! if node is within 1.4*delta_max of wall (0.041)
+                ! but NOT on the wall
+                if (x(i,2).lt.top.and.x(i,2).gt.bot) then
+                  ! if node is not on the inflow plane
+                  if (x(i,1).gt.-0.5486) then
+                     ! take away x3 BC (see genibc.f)
+                     iBC(i) = iBC(i)-32
+                  endif
+                endif
+           endif
+        enddo
+        endif
 c
 c.... read and generate the essential boundary conditions (BC array)
 c
@@ -224,7 +248,7 @@ c.... generate the initial conditions and initialize time varying BC
 c
         call genini (iBC,      BC,         y, 
      &               ac,       iper, 
-     &               ilwork,   ifath,      velbar,  
+     &               ilwork,   ifath,  
      &               nsons,    x,
      &               shp,     shgl,    shpb,    shglb) 
 c

@@ -72,7 +72,6 @@ c-----------------------------------------------------------------------
          lStsVec(1:blk%e,i,11) = 0
       enddo
       
-
       return
       end
 
@@ -494,6 +493,81 @@ c
 	    lDir(e,8,3) = fct * (-x75 * y54 + x63 * y75 - x31 * y54 
      1				+ y75 * x54 - y63 * x75 + y31 * x54 )
 c
+         enddo
+c
+c.... linear wedges
+c
+      else if (blk%n.eq.6) then ! number of vertices per element = 6
+c        The normalization factor I thought was the number of edges in the element
+c        9 for a wedge, but this gave values too big
+c        4 ended up being the right value that matches the flow velocity to the conservative velocity
+c        but why??
+         fct  = 1.d0 / 4.d0
+         do e=1,blk%e
+c           Compute the components of the edges
+c           Notation: x12 is x component of vector from node 1 to node 2
+            x12=xl(e,2,1)-xl(e,1,1)
+            x13=xl(e,3,1)-xl(e,1,1)
+            x14=xl(e,4,1)-xl(e,1,1)
+            x25=xl(e,5,1)-xl(e,2,1)
+            x23=xl(e,3,1)-xl(e,2,1)
+            x45=xl(e,5,1)-xl(e,4,1)
+            x46=xl(e,6,1)-xl(e,4,1)
+
+            y12=xl(e,2,2)-xl(e,1,2)
+            y13=xl(e,3,2)-xl(e,1,2)
+            y14=xl(e,4,2)-xl(e,1,2)
+            y25=xl(e,5,2)-xl(e,2,2)
+            y23=xl(e,3,2)-xl(e,2,2)
+            y45=xl(e,5,2)-xl(e,4,2)
+            y46=xl(e,6,2)-xl(e,4,2)
+
+            z12=xl(e,2,3)-xl(e,1,3)
+            z13=xl(e,3,3)-xl(e,1,3)
+            z14=xl(e,4,3)-xl(e,1,3)
+            z25=xl(e,5,3)-xl(e,2,3)
+            z23=xl(e,3,3)-xl(e,2,3)
+            z45=xl(e,5,3)-xl(e,4,3)
+            z46=xl(e,6,3)-xl(e,4,3)
+
+c           Now compute the outward normal of a node as the sum of the outward normals
+c           of the faces connected to that node, divided by the number of edges fct
+            lDir(e,1,1)=fct*(y13*z12 - y12*z13 + y12*z14 - 
+     &                       y14*z12 - y13*z14 + y14*z13 )
+            lDir(e,1,2)=fct*(x12*z13 - x13*z12 - x12*z14 + 
+     &                       x14*z12 + x13*z14 - x14*z13 )
+            lDir(e,1,3)=fct*(x13*y12 - x12*y13 + x12*y14 - 
+     &                       x14*y12 - x13*y14 + x14*y13 )
+            lDir(e,2,1)=fct*(y13*z12 - y12*z13 + y12*z14 - 
+     &                       y14*z12 + y23*z25 - y25*z23 )
+            lDir(e,2,2)=fct*(x12*z13 - x13*z12 - x12*z14 + 
+     &                       x14*z12 - x23*z25 + x25*z23 )
+            lDir(e,2,3)=fct*(x13*y12 - x12*y13 + x12*y14 - 
+     &                       x14*y12 + x23*y25 - x25*y23 )
+            lDir(e,3,1)=fct*(y13*z12 - y12*z13 - y13*z14 + 
+     &                       y14*z13 + y23*z25 - y25*z23 )
+            lDir(e,3,2)=fct*(x12*z13 - x13*z12 + x13*z14 - 
+     &                       x14*z13 - x23*z25 + x25*z23 )
+            lDir(e,3,3)=fct*(x13*y12 - x12*y13 - x13*y14 + 
+     &                       x14*y13 + x23*y25 - x25*y23 )
+            lDir(e,4,1)=fct*(y12*z14 - y14*z12 - y13*z14 + 
+     &                       y14*z13 + y45*z46 - y46*z45 )
+            lDir(e,4,2)=fct*(x14*z12 - x12*z14 + x13*z14 - 
+     &                       x14*z13 - x45*z46 + x46*z45 )
+            lDir(e,4,3)=fct*(x12*y14 - x14*y12 - x13*y14 + 
+     &                       x14*y13 + x45*y46 - x46*y45 )
+            lDir(e,5,1)=fct*(y12*z14 - y14*z12 + y23*z25 - 
+     &                       y25*z23 + y45*z46 - y46*z45 )
+            lDir(e,5,2)=fct*(x14*z12 - x12*z14 - x23*z25 + 
+     &                       x25*z23 - x45*z46 + x46*z45 )
+            lDir(e,5,3)=fct*(x12*y14 - x14*y12 + x23*y25 - 
+     &                       x25*y23 + x45*y46 - x46*y45 )
+            lDir(e,6,1)=fct*(y14*z13 - y13*z14 + y23*z25 - 
+     &                       y25*z23 + y45*z46 - y46*z45 )
+            lDir(e,6,2)=fct*(x13*z14 - x14*z13 - x23*z25 + 
+     &                       x25*z23 - x45*z46 + x46*z45 )
+            lDir(e,6,3)=fct*(x14*y13 - x13*y14 + x23*y25 - 
+     &                       x25*y23 + x45*y46 - x46*y45 )
          enddo
       else
          write(*,*) 'Error in e3sts: elt type not impl.'

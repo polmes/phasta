@@ -24,6 +24,7 @@ c
       use slpw
       use readarrays            ! used to access BCinp, nBC
       use specialBC ! filling acs here
+      use STG_BC
       use turbSA
       include "common.h"
 c
@@ -96,6 +97,33 @@ c
       if(myrank.eq.0) write(*,*) 'Navier is set to ', navier
       if(navier.eq.1)then ! zero navier means Euler simulation
          call genBC1 (BCtmp,  iBC,  BC)
+cc ....  Quick fix to deal with problem with inflow BC in geombc files
+cc ...   seen at a restart with STG
+         if (lstep.ne.iSTGStart.and.iSTG.eq.1) then
+c            ic = 0
+c            do i=1,nshg
+c               do j=1,5
+c                  if (BC(i,j).ne.BCrestart(i,j)) then
+c                    BCrestart(i,j) = BC(i,j)
+c                    !write (*,*) 'Found difference relative to geombc BC'
+c                    !write(*,*) 'BC is ',BC(i,j)
+c                    !write(*,*) 'But BCrestart is ',BCrestart(i,j)
+c                    if (x(i,1).gt.-0.5486) then
+c                     !write(*,*) 'Node is not on inflow! PROBLEM'
+c                     !write(*,*) 'And BC flow var is',j
+c                     !write(*,*) 'And BC is ', BC(i,j)
+c                    endif
+c                    ic = ic+1
+c                  endif 
+c                enddo
+c             enddo
+c             !if (ic.ne.0) write(*,*) 'counter is ',ic     
+            BC=BCrestart
+            if (myrank.eq.master) then
+               write (*,*) 'Using BC array from restarts'
+            endif
+            deallocate(BCrestart)
+         endif
       else   !enabling for IC code now
 c      elseif(matflg(1,1).eq.0)then !  compressible code 
          allocate(BCtmpg(nshg,ndof+7))

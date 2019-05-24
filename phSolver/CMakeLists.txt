@@ -10,6 +10,10 @@ set(CASES "/path/to/test/cases/"
   "path to the test cases")
 option(PHASTA_TESTING "enable tests" OFF)
 
+if(CMAKE_Fortran_COMPILER_ID MATCHES XL)
+  add_definitions(-DHAVE_XLCOMPILER)
+endif(CMAKE_Fortran_COMPILER_ID MATCHES XL)
+
 option(PHASTA_USE_MKL "Use MKL Library" OFF)
 if(PHASTA_USE_MKL)
 add_definitions(-DHAVE_MKL)

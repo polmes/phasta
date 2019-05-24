@@ -1,6 +1,6 @@
       subroutine getdmc (y,      shgl,      shp, 
      &                   iper,   ilwork,    
-     &                   nsons,  ifath,     x)
+     &                   nsons,  ifath,     x )
 
       use pointer_data
 
@@ -9,39 +9,48 @@ c                    shpf(maxtp,maxsh,ngaussf), and Qwtf(maxtp,ngaussf).
 c                    Shpf and shglf are the shape funciotns and their 
 c                    gradient evaluated using the quadrature rule desired 
 c                    for computing the dmod. Qwt contains the weights of the 
-c                    quad. points.  
+c                    quad. points. 
 
-
+      use eblock
+      use lesArrs
 
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
+      type (LocalBlkData) blk
 
 c
       dimension fres(nshg,24),         fwr(nshg),
-     &          strnrm(nshg),         cdelsq(nshg),
+     &          strnrm(nshg),
      &          xnum(nshg),           xden(nshg),
      &          xmij(nshg,6),         xlij(nshg,6),
      &          xnude(nfath,2),        xnuder(nfath,2),
-     &          nsons(nfath),
+     &          nsons(ndistsons),
      &          strl(numel,maxnint),           
      &          y(nshg,5), 
      &          ifath(nshg),          iper(nshg),
      &          ilwork(nlwork),!        xmudmi(numel,ngauss),
      &          x(numnp,3),
-     &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)    
+     &          shgl(MAXTOP,nsd,maxsh,MAXQPT), shp(MAXTOP,maxsh,MAXQPT)
+      real*8    xi, surf, BLedge, MeshBLedge
 c$$$     &          ,xnutf(nfath)  must be uncommmented for diags at bottom
 c
 c
-c   setup the weights for time averaging of cdelsq (now in quadfilt module)
+c   setup the weights for time averaging of cdelsq
 c
-      denom=max(1.0d0*(lstep),one)
-      if(dtavei.lt.0) then
-         wcur=one/denom
-      else
-         wcur=dtavei
-      endif  
-      whist=1.0-wcur
+      if (irunTave.eq.0) then
+        denom=max(1.0d0*(lstep),one)
+        if(dtavei.lt.0) then
+          wcur=one/denom
+        else
+          wcur=dtavei
+        endif  
+        whist=1.0-wcur
+      else ! if irunTave=1 then doing running time average
+        denom = max(1,lstep-irunTaveSt)
+        wcur = one/denom
+        whist = one-wcur  
+      endif
 c
 c  hack in an interesting velocity field (uncomment to test dmod)
 c
@@ -76,11 +85,18 @@ c
         nenl = lcblk(5,iblk)
         nshl = lcblk(10,iblk)
         inum  = iel + npro - 1
+        blk%n   = lcblk(5,iblk) ! no. of vertices per element
+        blk%s   = lcblk(10,iblk)
+        blk%e   = lcblk(1,iblk+1) - iel 
+        blk%l = lcblk(3,iblk)
+        blk%g = nint(blk%l)
+        blk%o = lcblk(4,iblk)
+        blk%i = lcblk(1,iblk)
 
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call asithf (y, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (blk, y, x, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -95,12 +111,19 @@ c
         nenl = lcblk(5,iblk)
         nshl = lcblk(10,iblk)
         inum  = iel + npro - 1
+        blk%n   = lcblk(5,iblk) ! no. of vertices per element
+        blk%s   = lcblk(10,iblk)
+        blk%e   = lcblk(1,iblk+1) - iel 
+        blk%l = lcblk(3,iblk)
+        blk%g = nint(blk%l)
+        blk%o = lcblk(4,iblk)
+        blk%i = lcblk(1,iblk)
         
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
 
         if (ngaussf .ne. ngauss) then
-        call getstrl (y, x,      mien(iblk)%p,  
+        call getstrl (blk, y, x,      mien(iblk)%p,  
      &               strl(iel:inum,:), shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:))
         endif
@@ -112,7 +135,14 @@ C must fix for abc and dynamic model
 c      if(iabc==1)   !are there any axisym bc's
 c     &      call rotabc(res, iBC,  'in ')
 c
-      if(numpe>1) call commu (fres, ilwork, 24, 'in ')
+      if(numpe>1) then
+         call commu (fres(:,1:4), ilwork, 4, 'in ')
+         call commu (fres(:,5:8), ilwork, 4, 'in ')
+         call commu (fres(:,9:12), ilwork, 4, 'in ')
+         call commu (fres(:,13:16), ilwork, 4, 'in ')
+         call commu (fres(:,17:20), ilwork, 4, 'in ')
+         call commu (fres(:,21:24), ilwork, 4, 'in ')
+      endif
 !proc-masters = proc-masters + proc-slaves
 c 
 c account for periodicity in filtered variables
@@ -161,23 +191,23 @@ c... and incompressible forms of the model.
 
       if(matflg(1,1).eq.0) then ! compressible
 
-      xmij(:,1) = -fwr
+         xmij(:,1) = -fwr
      &             * pt33 * (two*fres(:,10) - fres(:,11) - fres(:,12))
      &             + pt33 * (two*fres(:,16) - fres(:,17) - fres(:,18))
-      xmij(:,2) = -fwr
+         xmij(:,2) = -fwr
      &             * pt33 * (two*fres(:,11) - fres(:,10) - fres(:,12))
      &             + pt33 * (two*fres(:,17) - fres(:,16) - fres(:,18))
-      xmij(:,3) = -fwr
+         xmij(:,3) = -fwr
      &             * pt33 * (two*fres(:,12) - fres(:,10) - fres(:,11))
      &             + pt33 * (two*fres(:,18) - fres(:,16) - fres(:,17))
 
       else
 
-      xmij(:,1) = -fwr
+         xmij(:,1) = -fwr
      &             * fres(:,10) + fres(:,16)
-      xmij(:,2) = -fwr
+         xmij(:,2) = -fwr
      &             * fres(:,11) + fres(:,17) 
-      xmij(:,3) = -fwr
+         xmij(:,3) = -fwr
      &             * fres(:,12) + fres(:,18) 
 
       endif      
@@ -206,13 +236,13 @@ c... and incompressible forms of the model.
       xden = two * xden
 
 c  zero on processor periodic nodes so that they will not be added twice
-        do j = 1,numnp
+      do j = 1,numnp
           i = iper(j)
           if (i .ne. j) then
             xnum(j) = zero
             xden(j) = zero
           endif
-        enddo
+      enddo
 
       if (numpe.gt.1 .and. nsons(1).gt.1) then
 
@@ -292,9 +322,30 @@ c         xnuder(:,2) = xnuder(:,2) ! / nsons(:)
 c
 c  the next line is c \Delta^2
 c
-            numNden(:,1) = whist*numNden(:,1)+wcur*xnuder(ifath(:),1)
-            numNden(:,2) = whist*numNden(:,2)+wcur*xnuder(ifath(:),2)
-            cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            if (irunTave.eq.0) then 
+              numNden(:,1) = whist*numNden(:,1)+wcur*xnuder(ifath(:),1)
+              numNden(:,2) = whist*numNden(:,2)+wcur*xnuder(ifath(:),2)
+              cdelsq(:,1) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            else
+              cdelsq(:,2) = whist*cdelsq(:,2)+wcur*xnuder(ifath(:),1)
+              cdelsq(:,3) = whist*cdelsq(:,3)+wcur*xnuder(ifath(:),2)
+              cdelsq(:,1) = cdelsq(:,2) / (cdelsq(:,3) + 1.d-09)
+            endif
+c           Perform clipping of cdelsq if desired
+            if (iclipCdelsq.eq.1) then
+             do ii=1,nshg
+               xi = x(ii,1)
+               surf = 0.0777240d0*exp(-(xi/0.178308)**2)
+               BLedge = a0 + a1*cos(xi*w) + b1*sin(xi*w) + 
+     &                  a2*cos(2.0*xi*w) + b2*sin(2.0*xi*w) + a3*cos(3.0*xi*w) + 
+     &                  b3*sin(3.0*xi*w) + a4*cos(4.0*xi*w) + b4*sin(4.0*xi*w) + 
+     &                  a5*cos(5.0*xi*w) + b5*sin(5.0*xi*w) + a6*cos(6.0*xi*w) +
+     &                  b6*sin(6.0*xi*w) + a7*cos(7.0*xi*w) + b7*sin(7.0*xi*w) + 
+     &                  a8*cos(8.0*xi*w) + b8*sin(8.0*xi*w)
+               MeshBLedge = surf+1.40d0*(BLedge-surf)
+               if (x(ii,2).gt.MeshBLedge) cdelsq(ii,1) = zero 
+             enddo
+            endif
 c  note that we have whist and wcur in here to allow for both time
 c  averaging to be used in conjunction with spatial homogenous averaging
 
@@ -303,65 +354,38 @@ c
 c     the next line is c \Delta^2, not nu_T but we want to save the
 c     memory
 c     
-
-c$$$            write(400+myrank,555) (numNden(j*500,1),j=1,5)
-c$$$            write(410+myrank,555) (numNden(j*500,2),j=1,5)
-c$$$            write(500+myrank,555) (numNden(j+500,1),j=1,5)
-c$$$            write(510+myrank,555) (numNden(j+500,2),j=1,5)
-c$$$
-c$$$            write(430+myrank,555) (xnude(j*500,1),j=1,5)
-c$$$            write(440+myrank,555) (xnude(j*500,2),j=1,5)
-c$$$            write(530+myrank,555) (xnude(j+500,1),j=1,5)
 c$$$            write(540+myrank,555) (xnude(j+500,2),j=1,5)
-
-            numNden(:,1) = whist*numNden(:,1)+wcur*xnude(ifath(:),1)
-            numNden(:,2) = whist*numNden(:,2)+wcur*xnude(ifath(:),2)
-            cdelsq(:) = numNden(:,1) / (numNden(:,2) + 1.d-09)
-
-c 
-c  to get started we hold cdelsq fixed
-c
-c            cdelsq(:) = 2.27e-4
-c            cdelsq(:) = 0
-
+            if (irunTave.eq.0) then 
+              numNden(:,1) = whist*numNden(:,1)+wcur*xnude(ifath(:),1)
+              numNden(:,2) = whist*numNden(:,2)+wcur*xnude(ifath(:),2)
+              cdelsq(:,1) = numNden(:,1) / (numNden(:,2) + 1.d-09)
+            else
+              cdelsq(:,2) = whist*cdelsq(:,2)+wcur*xnude(ifath(:),1)
+              cdelsq(:,3) = whist*cdelsq(:,3)+wcur*xnude(ifath(:),2)
+              cdelsq(:,1) = cdelsq(:,2) / (cdelsq(:,3) + 1.d-09)
+            endif
+c           Perform clipping of cdelsq if desired
+            if (iclipCdelsq.eq.1) then
+             do ii=1,nshg
+               xi = x(ii,1)
+               surf = 0.0777240d0*exp(-(xi/0.178308)**2)
+               BLedge = a0 + a1*cos(xi*w) + b1*sin(xi*w) + 
+     &                  a2*cos(2.0*xi*w) + b2*sin(2.0*xi*w) + a3*cos(3.0*xi*w) + 
+     &                  b3*sin(3.0*xi*w) + a4*cos(4.0*xi*w) + b4*sin(4.0*xi*w) + 
+     &                  a5*cos(5.0*xi*w) + b5*sin(5.0*xi*w) + a6*cos(6.0*xi*w) +
+     &                  b6*sin(6.0*xi*w) + a7*cos(7.0*xi*w) + b7*sin(7.0*xi*w) + 
+     &                  a8*cos(8.0*xi*w) + b8*sin(8.0*xi*w)
+               MeshBLedge = surf+1.40d0*(BLedge-surf)
+               if (x(ii,2).gt.MeshBLedge) cdelsq(ii,1) = zero 
+             enddo
+            endif
             
-c$$$            
-c$$$            write(450+myrank,555) (cdelsq(j*500),j=1,5)
-c$$$            write(460+myrank,555) (y(j*500,1),j=1,5)
-c$$$            write(470+myrank,555) (y(j*500,2),j=1,5)
-c$$$            write(480+myrank,555) (y(j*500,3),j=1,5)
-c$$$            write(490+myrank,555) (strnrm(j*500),j=1,5)
-c$$$
-c$$$            write(550+myrank,555) (cdelsq(j+500),j=1,5)
-c$$$            write(560+myrank,555) (y(j+500,1),j=1,5)
-c$$$            write(570+myrank,555) (y(j+500,2),j=1,5)
-c$$$            write(580+myrank,555) (y(j+500,3),j=1,5)
-c$$$            write(590+myrank,555) (strnrm(j+500),j=1,5)
-c$$$
-c$$$            call flush(400+myrank)
-c$$$            call flush(410+myrank)
-c$$$            call flush(430+myrank)
-c$$$            call flush(440+myrank)
-c$$$            call flush(450+myrank)
-c$$$            call flush(460+myrank)
-c$$$            call flush(470+myrank)
-c$$$            call flush(480+myrank)
-c$$$            call flush(490+myrank)
-c$$$            call flush(500+myrank)
-c$$$            call flush(510+myrank)
-c$$$            call flush(530+myrank)
-c$$$            call flush(540+myrank)
-c$$$            call flush(550+myrank)
-c$$$            call flush(560+myrank)
-c$$$            call flush(570+myrank)
-c$$$            call flush(580+myrank)
-c$$$            call flush(590+myrank)
       endif
  555  format(5(2x,e14.7))
 
-c $$$$$$$$$$$$$$$$$$$$$$$$$$$
-      tmp1 =  MINVAL(cdelsq)
-      tmp2 =  MAXVAL(cdelsq)
+c     Write some stats
+      tmp1 =  MINVAL(cdelsq(:,1))
+      tmp2 =  MAXVAL(cdelsq(:,1))
       if(numpe>1) then
          call MPI_REDUCE (tmp1, tmp3, 1,MPI_DOUBLE_PRECISION,
      &        MPI_MIN, master, MPI_COMM_WORLD, ierr)
@@ -371,44 +395,56 @@ c $$$$$$$$$$$$$$$$$$$$$$$$$$$
          tmp2=tmp4
       endif
       if (myrank .EQ. master) then !print CDelta^2 range
-         write(34,*)lstep,tmp1,tmp2
+         write(34,*)lstep+1,tmp1,tmp2
          call flush(34)
+         ! fort.34 contains the global min and max of cdelsq for each time step
       endif
-c $$$$$$$$$$$$$$$$$$$$$$$$$$$
+c      if (myrank .eq. master) then
+c         write(*,*)'xnut=',sum(cdelsq)/nshg
+c         !write(*,*) 'cdelsq=', cdelsq(1),cdelsq(2)        
+c      endif
 
-      if (myrank .eq. master) then
-         write(*,*)'xnut=',sum(cdelsq)/nshg
-         write(*,*) 'cdelsq=', cdelsq(1),cdelsq(2)        
-      endif
 
+c
+c ... Another loop over element block to compute the eddy viscosity 
       do iblk = 1,nelblk
          lcsyst = lcblk(3,iblk)
          iel  = lcblk(1,iblk)
          npro = lcblk(1,iblk+1) - iel
          lelCat = lcblk(2,iblk)
          inum  = iel + npro - 1
+         blk%n   = lcblk(5,iblk) ! no. of vertices per element
+         blk%s   = lcblk(10,iblk)
+         blk%e   = lcblk(1,iblk+1) - iel 
+         blk%l = lcblk(3,iblk)
+         blk%g = nint(blk%l)
+         blk%o = lcblk(4,iblk)
+         blk%i = lcblk(1,iblk)
          
          ngauss = nint(lcsyst)
 
-         call scatnu (mien(iblk)%p, strl(iel:inum,:), 
-     &        mxmudmi(iblk)%p,cdelsq,shp(lcsyst,1:nshl,:))
+         ! strl is actually the norm of the strain |S|
+         ! xmudmi is the eddy viscosity nu_T=cdelsq*strl
+         call scatnu (blk, mien(iblk)%p, strl(iel:inum,:), 
+     &        mxmudmi(iblk)%p,shp(lcsyst,1:nshl,:))
       enddo
-c     $$$$$$$$$$$$$$$$$$$$$$$$$$$
-c$$$  tmp1 =  MINVAL(xmudmi)
-c$$$  tmp2 =  MAXVAL(xmudmi)
-c$$$  if(numpe>1) then
-c$$$  call MPI_REDUCE (tmp1, tmp3, 1, MPI_DOUBLE_PRECISION,
-c$$$  &                 MPI_MIN, master, MPI_COMM_WORLD, ierr)
-c$$$  call MPI_REDUCE (tmp2, tmp4, 1, MPI_DOUBLE_PRECISION,
-c$$$  &                 MPI_MAX, master, MPI_COMM_WORLD, ierr)
-c$$$      tmp1=tmp3
-c$$$  tmp2=tmp4
-c$$$  endif
-c$$$  if (myrank .EQ. master) then
-c$$$  write(35,*) lstep,tmp1,tmp2
-c$$$  call flush(35)
-c$$$  endif
-c $$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+c     Write some eddy viscosity stats
+!      tmp1 =  MINVAL(xmudmi)
+!      tmp2 =  MAXVAL(xmudmi)
+!      if(numpe>1) then
+!        call MPI_REDUCE (tmp1, tmp3, 1, MPI_DOUBLE_PRECISION,
+!     &                 MPI_MIN, master, MPI_COMM_WORLD, ierr)
+!        call MPI_REDUCE (tmp2, tmp4, 1, MPI_DOUBLE_PRECISION,
+!     &                 MPI_MAX, master, MPI_COMM_WORLD, ierr)
+!        tmp1=tmp3
+!        tmp2=tmp4
+!      endif
+!      if (myrank .EQ. master) then
+!        write(35,*) lstep+1,tmp1,tmp2
+!        call flush(35)
+!        ! fort.35 contains global max and min of eddy viscosity for each time step
+!      endif
 
 c$$$c
 c$$$c  if flag set, write a restart file with info (reuse xmij's memory)

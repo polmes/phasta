@@ -16,7 +16,6 @@ c
       real*8, allocatable :: acold(:,:)
       integer, allocatable :: iBCtmp(:)
       real*8, allocatable :: BCinp(:,:)
-
       integer, allocatable :: point2ilwork(:)
 !      integer, allocatable :: fncorp(:)
       integer, allocatable :: twodncorp(:,:)
@@ -37,20 +36,33 @@ c
       use syncio
       use posixio
       use streamio
+      use STG_BC
+      use spanStats
+      use lesArrs
       include "common.h"
+      include "mpif.h"
 
       real*8, target, allocatable :: xread(:,:), qread(:,:), acread(:,:)
+      real*8, target, allocatable :: STGread(:,:), BCrestartRead(:,:)
       real*8, target, allocatable :: uread(:,:)
       real*8, target, allocatable :: BCinpread(:,:)
+      real*8, target, allocatable :: cdelsqread(:,:)
+      real*8, target, allocatable :: lesnutread(:,:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
       integer, target, allocatable :: fncorpread(:)
+      integer, target, allocatable :: nsonsread(:)
       integer fncorpsize
+      integer irandVars, iSTGsiz
+      integer iVelbsiz, nfath2, nflow2, istssiz
+      character*5 cname
       character*10 cname2, cname2nd
       character*8 mach2
       character*30 fmt1
+      character*25 fmtv,fmts,fmtk
       character*255 fname1,fnamer,fnamelr
+      character*25 fnamev,fnames,fnamek
       character*255 warning
       integer igeomBAK, ibndc, irstin, ierr
       integer, target :: intfromfile(50) ! integers read from headers
@@ -64,6 +76,11 @@ c
       character*64 temp1
       type(c_ptr) :: handle
       character(len=1024) :: dataInt, dataDbl
+
+      integer ny
+      real*8, allocatable :: ypoints(:)
+      logical exlog
+
       dataInt = c_char_'integer'//c_null_char
       dataDbl = c_char_'double'//c_null_char
 c
@@ -419,7 +436,8 @@ c
       nfath=1  ! some architectures choke on a zero or undeclared
                  ! dimension variable.  This sets it to a safe, small value.
       if(((iLES .lt. 20) .and. (iLES.gt.0))
-     &                   .or. (itwmod.gt.0)  ) then ! don't forget same
+     &                   .or. (itwmod.gt.0)
+     &                   .or. (ispanAvg.eq.1) ) then ! don't forget same
                                                     ! conditional in proces.f
                                                     ! needed for alloc
          ione=1
@@ -432,11 +450,24 @@ c
      &       c_char_'number of son-nodes for each father' // char(0),
      &       c_loc(nfath), ione, dataInt, iotype)
 
-            allocate (point2nsons(nfath))
+            allocate(nsonsread(nfath))
 
             call phio_readdatablock(fhandle,
      &       c_char_'number of son-nodes for each father' // char(0),
-     &       c_loc(point2nsons),nfath, dataInt, iotype)
+     &       c_loc(nsonsread),nfath, dataInt, iotype)
+      
+            nsonmax=maxval(nsonsread)
+            nsonmin=minval(nsonsread)
+            if (nsonmax.eq.nsonmin) then
+                ndistsons = 1
+                allocate(point2nsons(ndistsons))
+                point2nsons = nsonmax
+            else
+                ndistsons = nfath
+                allocate(point2nsons(ndistsons))
+                point2nsons = nsonsread
+            endif
+            deallocate(nsonsread)
 
             call phio_readheader(fhandle,
      &       c_char_'keyword ifath' // char(0),
@@ -449,12 +480,42 @@ c
      &       c_loc(point2ifath), nshg, dataInt, iotype)
      
             nsonmax=maxval(point2nsons)
+
+            if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
+            if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
+            inquire(file="dynSmagY.dat",exist=exlog)
+            if(exlog) then
+              if(myrank.eq.master) write(*,*) 
+     &                        "Setting ifath from dynSmagY.dat"
+              open (unit=123,file="dynSmagY.dat",status="old")
+              read(123,*) ny
+              allocate(ypoints(ny))
+              do i=1,ny
+                read(123,*) ypoints(i)
+              enddo
+              do i=1,nshg
+                do j=1,ny
+                  if (abs(point2x(i,2)-ypoints(j)).lt.1.0e-4) then
+                    point2ifath(i) = j            
+                  endif
+                enddo
+              enddo
+              deallocate(ypoints)
+              close(123)
+            else
+               if(myrank.eq.master) 
+     &               write(*,*) 'Did not read file dynSmagY.dat'
+            endif
+c            do i=1,nshg
+c               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
+c            enddo
          else  ! this is the case where there is no homogeneity
                ! therefore ever node is a father (too itself).  sonfath
                ! (a routine in NSpre) will set this up but this gives
                ! you an option to avoid that.
             nfath=nshg
-            allocate (point2nsons(nfath))
+            ndistsons = nshg
+            allocate (point2nsons(ndistsons))
             point2nsons=1
             allocate (point2ifath(nshg))
             do i=1,nshg
@@ -463,7 +524,8 @@ c
             nsonmax=1
          endif
       else
-         allocate (point2nsons(1))
+         ndistsons = 1
+         allocate (point2nsons(ndistsons))
          allocate (point2ifath(1))
       endif
 
@@ -560,6 +622,237 @@ c
          endif
          acold=zero
       endif
+
+
+cc
+cc.... Read the STG  fields if lstep not equal to iSTGStart
+cc
+      if (lstep.ne.iSTGStart.and.iSTG.eq.1) then
+cc....   First read the STG random variables
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'STG_rnd' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nKWave=intfromfile(1)
+           irandVars=intfromfile(2)
+           if (myrank.eq.master) then
+             write(*,*) 'nKWave for STG inflow is set to : ',nKWave
+             write(*,*) 'Number of random variables is : ', irandVars
+           endif
+           allocate(STGread(nKWave,irandVars))
+           allocate(STGrnd(nKWave,irandVars))
+           iSTGsiz=nKWave*irandVars
+           call phio_readdatablock(fhandle,
+     &       c_char_'STG_rnd' // char(0),
+     &       c_loc(STGread),iSTGsiz, dataDbl,iotype)
+      
+           STGrnd=STGread
+           deallocate(STGread)
+
+         else
+           if (myrank.eq.master) then
+             warning='The random variables for the STG 
+     &                   inflow were not read and set to zero'
+             write(*,*) warning
+           endif
+           STGrnd=zero
+         endif
+
+cc....   Now read the BC array. This was a quick fix to problem with inflow BC value set
+cc....   in SimModeler and present in the geombc files
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'BCs' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           allocate(BCrestartRead(nshg,ndofBC))
+           allocate(BCrestart(nshg,ndofBC))
+           iSTGsiz=nshg*ndofBC
+           call phio_readdatablock(fhandle,
+     &       c_char_'BCs' // char(0),
+     &       c_loc(BCrestartRead),iSTGsiz, dataDbl,iotype)
+      
+           BCrestart=BCrestartRead
+           deallocate(BCrestartRead)
+
+         else
+           if (myrank.eq.master) then
+             warning='BCs from restart were not read'
+             write(*,*) warning
+           endif
+           !BCrestart=zero
+         endif
+
+      endif  ! end of the STG fields
+
+cc
+cc.... Read the velbar array if want spanwise average
+cc
+      if (ispanAvg.eq.1) then
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmtv,"('(''velbar.'',i',i1,',1x)')") itmp
+           write (fnamev,fmtv) lstep
+           fnamev = trim(fnamev) // cname(myrank+1)
+           inquire(file=fnamev,exist=exlog)
+           if (exlog) then
+             allocate(velbar(nfath,nflow))
+             open(unit=123,file=fnamev,status="old")
+             do i=1,nfath
+                read(123,*) (velbar(i,j),j=1,nflow)
+             enddo
+             close(123)
+             write(*,*) 'Read velbar from file ',fnamev
+           else ! did not find velbar for current time step
+             write(*,*) 'Velbar not read from file, setting to zero'
+             allocate(velbar(nfath,nflow),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate velbar'
+             velbar = zero
+           endif
+         endif
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      endif ! end of ispanAvg for velbar
+
+cc
+cc.... Read the stsbar array if want spanwise average and stats
+cc
+      if (ispanAvg.eq.1) then
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmts,"('(''stsbar.'',i',i1,',1x)')") itmp
+           write (fnames,fmts) lstep
+           fnames = trim(fnames) // cname(myrank+1)
+           inquire(file=fnames,exist=exlog)
+           if (exlog) then
+             allocate(stsBar(nfath,iConsStressSz))
+             open(unit=123,file=fnames,status="old")
+             do i=1,nfath
+                read(123,*) (stsBar(i,j),j=1,iConsStressSz)
+             enddo
+             close(123)
+             write(*,*) 'Read stsbar from file ',fnames
+           else ! did not find velbar for current time step
+             write(*,*) 'stsbar not read from file, setting to zero'
+             allocate(stsBar(nfath,iConsStressSz),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*)
+     &                    'Not enough space to allocate stsBar'
+             stsBar = zero
+           endif
+         endif
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      endif ! end of ispanAvg for stsbar
+cc
+cc.... Read the stsbarKeq array if want spanwise average and K eq stats
+cc
+      if (ispanAvg.eq.1.and.iKeq.eq.1) then
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmtk,"('(''stsbarKeq.'',i',i1,',1x)')") itmp
+           write (fnamek,fmtk) lstep
+           fnamek = trim(fnamek) // cname(myrank+1)
+           inquire(file=fnamek,exist=exlog)
+           if (exlog) then
+             allocate(stsBarKeq(nfath,10))
+             open(unit=123,file=fnamek,status="old")
+             do i=1,nfath
+                read(123,*) (stsBarKeq(i,j),j=1,10)
+             enddo
+             close(123)
+             write(*,*) 'Read stsbarKeq from file ',fnamek
+           else ! did not find stsbarKeq for current time step
+             write(*,*) 'stsBarKeq not read from file, setting to zero'
+             allocate(stsBarKeq(nfath,10),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate stsBarKeq'
+             stsBarKeq = zero
+           endif
+         endif
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      endif ! end of if for ispanAvg and iKeq for K eq terms
+cc
+cc.... Read the cdelsq array if want running spanwise average and doing LES
+cc
+      if (iLES.gt.0.and.irunTave.eq.1) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'cdelsq' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           nshg2=intfromfile(1)
+           if (nshg.ne.nshg2)
+     &          call error ('restar  ', 'cdelsq   ', cdelsq)
+           allocate(cdelsqread(nshg2,3))
+           allocate(cdelsq(nshg2,3))
+           isiz=nshg2*3
+           call phio_readdatablock(fhandle,
+     &       c_char_'cdelsq' // char(0),
+     &       c_loc(cdelsqread),isiz, dataDbl,iotype)
+           cdelsq=cdelsqread
+           deallocate(cdelsqread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'cdelsq field found in restart file'
+         else
+           if (myrank.eq.master) then
+             warning='cdelsq not read from restart and set to zero'
+             write(*,*) warning
+           endif
+           allocate(cdelsq(nshg,3),STAT=IERR2)
+           if(IERR2.gt.0)write(*,*)'Not enough space to allocate cdelsq'
+           cdelsq=zero
+         endif
+      else if (iLES.gt.0) then
+         allocate(cdelsq(nshg,3))
+         cdelsq=zero
+      else if (iLES.eq.0) then
+         allocate(cdelsq(1,1))
+      endif ! end of iLES and irunTave for cdelsq
+cc
+cc.... Read the lesnut array if want running spanwise average and doing LES
+cc
+      if (iLES.gt.0.and.irunTave.eq.1) then
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &   c_char_'lesnut' // char(0), 
+     &   c_loc(intfromfile), ithree, dataInt, iotype)
+
+         if(intfromfile(1).ne.0) then
+           numel2=intfromfile(1)
+           if (numel.ne.numel2)
+     &          call error ('restar  ', 'lesnut   ', lesnut)
+           allocate(lesnutread(numel2,2))
+           allocate(lesnut(numel2,2))
+           isiz=numel2*2
+           call phio_readdatablock(fhandle,
+     &       c_char_'lesnut' // char(0),
+     &       c_loc(lesnutread),isiz, dataDbl,iotype)
+           lesnut=lesnutread
+           deallocate(lesnutread)
+           if (myrank.eq.master) 
+     &            write(*,*) 'lesnut field found in restart file'
+         else
+           if (myrank.eq.master) then
+             warning='lesnut not read from restart and set to zero'
+             write(*,*) warning
+           endif
+           allocate(lesnut(numel,2),STAT=IERR2)
+           if(IERR2.gt.0)write(*,*)'Not enough space to allocate lesnut'
+           lesnut=zero
+         endif
+      else if (iLES.gt.0) then
+         allocate(lesnut(numel,2))
+         lesnut=zero
+      else if (iLES.eq.0) then
+         allocate(lesnut(1,1))
+      endif ! end of iLES and irunTave for lesnut
+
 cc
 cc.... read the header and check it against the run data
 cc

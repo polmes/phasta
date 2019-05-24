@@ -924,9 +924,9 @@ c
           gradSl = zero
           isc=5+isclr
           do n = 1, nshl
-            gradSl(:,1) = gradSl(:,1) + shdrv(:,1,n) * yl(:,n,isc)
-            gradSl(:,2) = gradSl(:,2) + shdrv(:,2,n) * yl(:,n,isc)
-            gradSl(:,3) = gradSl(:,3) + shdrv(:,3,n) * yl(:,n,isc)
+            gradSl(:,1) = gradSl(:,1) + shdrv(:,1,n) * yl(1:npro,n,isc)
+            gradSl(:,2) = gradSl(:,2) + shdrv(:,2,n) * yl(1:npro,n,isc)
+            gradSl(:,3) = gradSl(:,3) + shdrv(:,3,n) * yl(1:npro,n,isc)
           enddo
 c
 c.... convert local-grads to global-grads

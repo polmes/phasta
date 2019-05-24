@@ -42,6 +42,7 @@ using namespace std;
 
 #include <FCMangle.h>
 #define input FortranCInterface_GLOBAL_(input,INPUT)
+#define doubleruncheck FortranCInterface_GLOBAL_(doubleruncheck,DOUBLERUNCHECK)
 #define proces FortranCInterface_GLOBAL_(proces,PROCES)
 #define timer FortranCInterface_GLOBAL_(timer,TIMER)
 
@@ -51,6 +52,7 @@ char phasta_iotype[80];
 extern int SONFATH;
 extern "C" void proces();
 extern "C" void input();
+extern "C" void doubleruncheck();
 extern int input_fform(phSolver::Input&);
 extern void setIOparam(); // For SyncIO
 extern "C" void initPhastaCommonVars();
@@ -270,6 +272,7 @@ int phasta( int argc, char *argv[] ) {
     } else {
         strcpy(inpfilename,"solver.inp");
     }
+    if(argc > 2 ) timer4.allocated_seconds=atoi(argv[2]);
     string defaultConf = ".";
     const char* path_to_config = getenv("PHASTA_CONFIG");
     if(path_to_config) 
@@ -291,10 +294,13 @@ int phasta( int argc, char *argv[] ) {
       outpar.input_mode = outpar.nsynciofiles; //FIXME this is awful
       outpar.output_mode = outpar.nsynciofiles; //FIXME this is awful
       phastaio_initStats();
-      input();
-      /* now we can start the solver */
-      proces();
-      phastaio_printStats();
+      doubleruncheck();
+      if(timer4.stopjob==0) {
+        input();
+        /* now we can start the solver */
+        proces();
+        phastaio_printStats();
+      }
     }
     else{
         printf("error during reading ascii input \n");

@@ -3,7 +3,7 @@
      &                   iBC,       BC,         
      &                   iper,      ilwork,     shp,       
      &                   shgl,      shpb,       shglb,
-     &                   ifath,     velbar,     nsons ) 
+     &                   ifath,     nsons ) 
 c
 c----------------------------------------------------------------------
 c
@@ -41,6 +41,8 @@ c
       use solvedata
       use iso_c_binding
       use spat_var_eps !use spatial varying eps_ls
+      use STG_BC
+      use spanStats
 
 c      use readarrays !reads in uold and acold
       
@@ -84,7 +86,6 @@ c
 
         real*8 vbc_prof(nshg,3)
 
-        integer stopjob
         character*10 cname2
         character*5  cname
         integer i_redist_counter
@@ -93,7 +94,7 @@ c
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(numnp),    velbar(nfath,ndof),  nsons(nfath)
+        dimension ifath(nshg),    nsons(ndistsons)
 
         dimension wallubar(2),walltot(2)
 c
@@ -103,6 +104,7 @@ c
         character*20    fname2,fmt2
         character*60    fnamepold, fvarts
         character*4     fname4c ! 4 characters
+        character*255   fnameCoord
         integer         iarray(50) ! integers for headers
         integer         isgn(ndof), isgng(ndof)
 
@@ -124,9 +126,20 @@ c
         real*8, allocatable, dimension(:,:,:) :: yphbar
         real*8 CFLworst(numel)
         real*8 CFLls(nshg)
-
+c
+c ----  Variables for random initial condition field
+        real*8 r,randtime,var
+        integer seed, randtmp, seed_size
+        integer, allocatable :: seed1(:)
+c ---   Variables for LES channel flow IC
+        logical exlog
+        integer nx, ny, nz, nICpoints, ijkNum
+        real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
+        real*8, allocatable :: lesIC(:,:)
+c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
+
 !--------------------------------------------------------------------
 !     Setting up svLS
 #ifdef HAVE_SVLS
@@ -201,6 +214,103 @@ c
         yold   = y
         acold  = ac
 
+
+c ----- Add a random fluctiation to the initial velocity field
+c ----- to start the WMLES branch of the IDDES model
+        if (iRandomIC.eq.1) then
+          if (myrank.eq.master) then
+              write (*,*) "Adding random fluctuations to IC"
+          endif
+          call random_seed
+          do kk=1, nshg
+           if (d2wall(kk).lt.STGDelBL) then
+             do ik=1,3
+               call random_number(r) ! r is a random number between 0 and 1
+               if (ik.eq.1) then
+                 var = yold(kk,ik) 
+                 yold(kk,ik) = var + (0.2*r*var-0.1*var) 
+               else
+                 yold(kk,ik) = yold(kk,ik) + (1.0*r-0.5)
+               endif
+             enddo
+           endif
+          enddo
+        endif
+c ----- End of modification to the initial velocity field
+c ----- Write Coordinates of this part to file
+cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+cc       fnameCoord='coords'
+cc        fnameCoord= trim(fnameCoord)  // cname2(myrank+1)
+cc        open (unit=123,file=fnameCoord,
+cc     &        status="new",action="write")
+cc        write(123,*) numnp
+cc        do n=1,numnp
+cc           write(123,*) x(n,1),x(n,2),x(n,3)
+cc        enddo
+cc        close(123)
+cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+c ----- End of write coordinates to file
+c
+c ----- Read an initial condition for dynamic Smagorinsky LES
+        inquire(file="LES-CSmag-Ordered.dat",exist=exlog)
+        if(exlog) then
+          open (unit=123,file="LES-CSmag-Ordered.dat",status="old")
+          read(123,*) nICpoints
+          allocate(lesIC(nICpoints,7))
+          do i=1,nICpoints
+            read(123,*) (lesIC(i,j),j=1,7)
+          enddo
+          open (unit=234,file="dynSmagY.dat",status="old")
+          read(234,*) ny
+          allocate(ypoints(ny))
+          do i=1,ny
+            read(234,*) ypoints(i)
+          enddo
+          open (unit=345,file="dynSmagX.dat",status="old")
+          read(345,*) nx
+          allocate(xpoints(nx))
+          do i=1,nx
+            read(345,*) xpoints(i)
+          enddo
+          open (unit=456,file="dynSmagZ.dat",status="old")
+          read(456,*) nz
+          allocate(zpoints(nz))
+          do i=1,nz
+            read(456,*) zpoints(i)
+          enddo
+          do i=1,nshg
+            do j=1,nx
+              if (abs(x(i,1)-xpoints(j)).lt.1.0e-4) then
+                ix = j            
+              endif
+            enddo
+            do j=1,ny
+              if (abs(x(i,2)-ypoints(j)).lt.1.0e-4) then
+                iy = j            
+              endif
+            enddo
+            do j=1,nz
+              if (abs(x(i,3)-zpoints(j)).lt.1.0e-4) then
+                iz = j            
+              endif
+            enddo
+            ijkNum = nx*ny*(iz-1)+nx*(iy-1)+ix
+            yold(i,1:3) = lesIC(ijkNum,5:7)
+            yold(i,4) = lesIC(ijkNum,4)
+          enddo
+          deallocate(ypoints)
+          deallocate(xpoints)
+          deallocate(zpoints)
+          deallocate(lesIC)
+          close(123)
+          close(234)
+          close(345)
+          close(456)
+        else
+           if(myrank.eq.master) write(*,*) 
+     &                        'Did not read file LES-CSmag-Ordered.dat'
+        endif
+c ----  End of LES initial condition
 !!!!!!!!!!!!!!!!!!!
 !Init output fields
 !!!!!!!!!!!!!!!!!!
@@ -314,8 +424,8 @@ c
         lstep=lstep+10000  ! in SAM lstep was already written on the previous mesh.  Here we want solution on the new mesh
                  call  checkpoint (y,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
 ! shift the number to keep them distinct
         lstep=lstepSave
         output_mode=-1 ! reset to stream 
@@ -360,7 +470,7 @@ c         ilast=0
             if(stepseq(i).eq.0) nitr=nitr+1
          enddo
 
-         if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          tcorecp(:) = zero ! used in solfar.f (solflow)
          tcorecpscal(:) = zero ! used in solfar.f (solflow)
          if(myrank.eq.0)  then
@@ -386,11 +496,20 @@ c
             enddo
         endif
 
+        stopjob=-1
          do 2000 istp = 1, nstp
+           call TimeRemainingIntoDoubleRunCheck()
+
+c...       STG Inflow
+           tcurrent= (lstep+1-iSTGStart)*Delt(1)
+           if(iSTG.eq.1) then
+             call applySTG(tcurrent,BC,x)
+           endif
+
            if(iramp.eq.1) 
      &        call BCprofileScale(vbc_prof,BC,yold)
 
-           call rerun_check(stopjob)
+           call rerun_check()
            if(myrank.eq.master) write(*,*) 
      &         'stopjob,lstep,istep', stopjob,lstep,istep
            if(stopjob.eq.lstep) then
@@ -430,21 +549,18 @@ c
      &              numRCRSrfs)
             endif
 
-            if(iLES.gt.0) then  !complicated stuff has moved to
-                                        !routine below
+            if(iLES.gt.0) then  !complicated stuff has moved to routine below
                call lesmodels(yold,  acold,     shgl,      shp, 
      &                        iper,  ilwork,    rowp,      colm,
      &                        nsons, ifath,     x,   
-     &                        iBC,   BC)
-
-            
+     &                        iBC,   BC )
             endif
 
 c.... set traction BCs for modeled walls
 c
             if (itwmod.ne.0) then
                call asbwmod(yold,   acold,   x,      BC,     iBC,
-     &                      iper,   ilwork,  ifath,  velbar)
+     &                      iper,   ilwork,  ifath)
             endif
 
 c
@@ -456,7 +572,6 @@ c.... -----------------------> predictor phase <-----------------------
 c
             call itrPredict(yold, y,   acold,  ac ,  uold,  u, iBC)
             call itrBC (y,  ac,  iBC,  BC,  iper,ilwork)
-
             if(nsolt.eq.1) then
                isclr=0
                call itrBCSclr (y, ac,  iBC, BC, iper, ilwork)
@@ -519,6 +634,19 @@ c
 #endif
                   else
                   
+                    if(iRelTol.eq.1) then
+                        if((nitr.gt.1).and.(iter.eq.nitr)) then
+                           if(myrank.eq.master.and.istep.eq.1) then
+                              write(*,*) 
+     &                            'Changing solver tolerance'
+                           endif
+                           lesId=1
+                           call resetTol(lesId, tolFact*epstol(1), tolFact*prestol) 
+                        else
+                          lesId=1
+                         call resetTol( lesId, epstol(1), prestol)
+                        endif 
+                    endif
                     call SolFlow(yAlpha,     acAlpha,   uAlpha,
      &                         x,             iBC,
      &                         BC,            res,
@@ -766,7 +894,7 @@ c
 c.... obtain the time average statistics
 c
             if (ioform .eq. 2) then
-
+               icode=0 ! needed so that tauC and tauBar are computed again
                call stsGetStats( y,      yold,     ac,     acold,
      &                           u,      uold,     x,
      &                           shp,    shgl,     shpb,   shglb,
@@ -787,8 +915,9 @@ c
                Delt(1)=Deltt
                Dtgl =Dtglt
             endif          
-           if((myrank.eq.0) .and. 
-     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+!           if((myrank.eq.0) .and. 
+!     &   ((CFLfl_max .gt. 1.0).or.(mod(lstep+1,ntout).eq.0))) then
+           if((myrank.eq.0)) then 
             write(*,7001) 'CFL Flow  Step  CFLfl_max  dt',
      &                    lstep+1, CFLfl_max, delt(itseq)
            endif
@@ -849,14 +978,16 @@ c...  dump TIME SERIES
               if ( mod(lstep-1,freq).eq.0) call dumpTimeSeries()
             endif
 
-            if((irscale.ge.0).or.(itwmod.gt.0)) 
-     &           call getvel (yold,     ilwork, iBC,
-     &                        nsons,    ifath, velbar)
+            if((irscale.ge.0).or.(itwmod.gt.0)
+     &                       .or.(ispanAvg.eq.1)) then 
+                 call getvel (yold,     ilwork, iBC,
+     &                        nsons,    ifath)
+                 call getStsBar(yold, GradV, ilwork, nsons, ifath, iBC)
+            endif
 
             if((irscale.ge.0).and.(myrank.eq.master)) then
                call genscale(yold,       x,       iper, 
-     &                       iBC,     ifath,   velbar,
-     &                       nsons)
+     &                       iBC,     ifath, nsons)
         endif
 c.... -------------------> error calculation  <-----------------
 c 
@@ -877,22 +1008,24 @@ c .. write out the instantaneous solution
              if(istep == nstp) then ! go ahead and take care of it
                call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
              endif
              if(ntout.le.lstep) then ! user also wants file output
                   output_mode=0   ! only writing posix for now
                  call  checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
                   output_mode=-1 ! reset to stream 
              endif
            else
+             if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
+             if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
            endif
         endif
         !next 2 lines are two ways to end early
@@ -900,6 +1033,7 @@ c .. write out the instantaneous solution
         if(istop.eq.1000) goto 2002 ! stop when delta small (see rstatic)
  2000 continue ! nstp loop
  2002 continue
+        call clearDoubleRunCheck()
 
 ! done with time stepping so deallocate fields already written
 !
@@ -926,11 +1060,13 @@ c .. write out the instantaneous solution
           if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
             deallocate(wallssVec) 
           endif
-          if(iRANS.lt.0) then
+          if(iRANS.lt.0.or.iSTG.eq.1) then
             deallocate(d2wall)
           endif
 
-         if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+          if(iSTG.eq.1) deallocate(STGrnd)
+
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
             tcorecp2 = TMRC()
              write(6,*) 'T(core) cpu = ',tcorecp2-tcorecp1
@@ -945,7 +1081,7 @@ c .. write out the instantaneous solution
          call print_system_stats(tcorecp, tcorecpscal)
          call print_mesh_stats()
          call print_mpi_stats()
-         if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 !         return
 c         call MPI_Finalize()
 c         call MPI_ABORT(MPI_COMM_WORLD, ierr)
@@ -968,7 +1104,7 @@ c.... close varts file for probes
 c
       call finalizeTimeSeries()
 
-      if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'itrdrv - done with aerodynamic forces'
       endif
@@ -981,7 +1117,7 @@ c
         endif
       enddo
 
-      if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'itrdrv - done with MAXSURF'
       endif
@@ -1001,7 +1137,7 @@ c
 
       if(iabc==1) deallocate(acs)
 
-      if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'itrdrv - done - BACK TO process.f'
       endif
@@ -1012,7 +1148,7 @@ c
       subroutine lesmodels(y,     ac,        shgl,      shp, 
      &                     iper,  ilwork,    rowp,      colm,    
      &                     nsons, ifath,     x,   
-     &                     iBC,   BC)
+     &                     iBC,   BC )
       
       include "common.h"
 
@@ -1027,7 +1163,7 @@ c
      &            iBC(nshg),
      &            ilwork(nlwork),
      &            iper(nshg)
-      dimension ifath(numnp),    nsons(nfath)
+      dimension ifath(nshg),    nsons(ndistsons)
 
       real*8, allocatable, dimension(:) :: fwr2,fwr3,fwr4
       real*8, allocatable, dimension(:) :: stabdis,cdelsq1
@@ -1070,7 +1206,7 @@ c
                if(modlstats .eq. 0) then ! If no model stats wanted
                   call getdmc (y,       shgl,      shp, 
      &                         iper,       ilwork,    nsons,
-     &                         ifath,      x)
+     &                         ifath,      x )
                else             ! else get model stats 
                   call stdfdmc (y,       shgl,      shp, 
      &                          iper,       ilwork,    nsons,
@@ -1925,7 +2061,7 @@ c
        character*10    cname2
    
                   
-                  if (numpe > 1) then
+                  if (numpe .gt. 1) then
                      do jj = 1, ntspts
                         vartssoln((jj-1)*ndof+1:jj*ndof)=varts(jj,:)
                         ivarts=zero
@@ -2025,6 +2161,7 @@ c averaging procedure justified only for identical time step sizes
 c ybar(:,13) is average of eddy viscosity
 c ybar(:,14:16) is average vorticity components
 c ybar(:,17) is average vorticity magnitude
+c ybar(:,19) is average Q
 c istep is number of time step
 c
       icollectybar = 0
@@ -2218,10 +2355,13 @@ c
 
       subroutine checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
-     &                       velbar,rerr,ybar,wallssVecBar,yphbar,
-     &                       vorticity,irank2ybar,irank2yphbar)
+     &                       rerr,ybar,wallssVecBar,yphbar,
+     &                       vorticity,irank2ybar,irank2yphbar,istp)
       use solvedata
       use turbSA 
+      use STG_BC
+      use spanStats
+      use lesArrs
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
@@ -2233,17 +2373,22 @@ c
 
       real*8    ac(nshg,ndof),          uold(nshg,nsd),           
      &            yold(nshg,ndof),      acold(nshg,ndof),
-     &            BC(nshg,ndofBC),      velbar(nfath,ndof),
+     &            BC(nshg,ndofBC), 
      &            shpb(MAXTOP,maxsh,MAXQPT),
      &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
 
-      real*8 ybar(nshg,irank2yphbar),vorticity(nshg,5)
+      real*8 ybar(nshg,irank2ybar),vorticity(nshg,5)
       real*8 yphbar(nshg,irank2yphbar,nphasesincycle)
       real*8 wallssvec(nshg,3),wallssVecBar(nshg,3), rerr(nshg,numerr)
+      integer istp
 
 !              Call to restar() will open restart file in write mode (and not append mode)
 !              that is needed as other fields are written in append mode
       call restar ('out ',  yold  ,ac)
+c ...
+c     If the conservative statistics are wanted, write them to restart
+      if ( ioform.eq.2) call stsWriteStats(istp)
+c ...
       if(ivort == 1) then 
              call write_field(myrank,'a','vorticity',9,vorticity,
      &                       'd',nshg,5,lstep)
@@ -2258,12 +2403,8 @@ c.... compute the consistent boundary flux
      &                      BC,        iper,       wallssVec)
       endif
 c....  print out results.
-cDEPRICATED       if( (mod(lstep, ntout) .eq. 0) .and.
-cDEPRICATED      &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
-cDEPRICATED      &              ((nsonmax.eq.1).and.(iLES.gt.0))))
-cDEPRICATED      &              call rwvelb  ('out ',  velbar  ,ifail)
       lesId   = numeqns(1)
-      if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
         tcormr1 = TMRC()
       endif
@@ -2271,7 +2412,7 @@ cDEPRICATED      &              call rwvelb  ('out ',  velbar  ,ifail)
 #ifdef HAVE_LESLIB
         call saveLesRestart( lesId,  aperm , nshg, myrank, lstep,
      &                    nPermDims )
-        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr2 = TMRC()
           write(6,*) 'call saveLesRestart for projection and'//
@@ -2286,12 +2427,12 @@ c.....smooth the error indicators
           call errsmooth( rerr, x, iper, ilwork, shp, shgl, iBC )
         end do
         call LSbandError(rerr,yold)
-        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr1 = TMRC()
         endif
         call write_error(myrank, lstep, nshg, numerr, rerr )
-        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr2 = TMRC()
           write(6,*) 'Time to write the error fields to the disks',
@@ -2299,33 +2440,23 @@ c.....smooth the error indicators
         endif
       endif ! ierrcalc
       if(ioybar.eq.1) then
-        if(ivort == 1) then
           call write_field(myrank,'a','ybar',4,
-     &              ybar,'d',nshg,17,lstep)
-        else
-          call write_field(myrank,'a','ybar',4,
-     &            ybar,'d',nshg,13,lstep)
-        endif
+     &              ybar,'d',nshg,irank2ybar,lstep)
         if(abs(itwmod).ne.1 .and. iowflux.eq.1) then
           call write_field(myrank,'a','wssbar',6,
      &         wallssVecBar,'d',nshg,3,lstep)
         endif
 
         if(nphasesincycle .gt. 0) then
-          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
           if(myrank.eq.0)  then
             tcormr1 = TMRC()
           endif
           do iphase=1,nphasesincycle
-            if(ivort == 1) then
               call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &          nphasesincycle,yphbar(:,:,iphase),'d',nshg,15,lstep)
-            else
-              call write_phavg2(myrank,'a','phase_average',13,iphase,
-     &            nphasesincycle,yphbar(:,:,iphase),'d',nshg,11,lstep)
-            endif
+     &          nphasesincycle,yphbar(:,:,iphase),'d',nshg,irank2yphbar,lstep)
           end do
-          if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
           if(myrank.eq.0)  then
             tcormr2 = TMRC()
             write(6,*) 'write all phase avg to the disks = ',
@@ -2333,20 +2464,168 @@ c.....smooth the error indicators
           endif
         endif !nphasesincyle
       endif !ioybar
-      if(iRANS.lt.0) then
-        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      if(iRANS.lt.0.or.iSTG.eq.1) then
+        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr1 = TMRC()
         endif
         call write_field(myrank,'a','dwal',4,d2wall,'d',
      &                   nshg,1,lstep)
-        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr2 = TMRC()
           write(6,*) 'Time to write dwal to the disks = ',
      &    tcormr2-tcormr1
         endif
-      endif !iRANS
+      endif !iRANS or iSTG
+
+cc....    Write the STG fields to be read in the next run
+c         STGrnd(:,1:3)=dVect
+c         STGrnd(:,4)=phiVect
+c         STGrnd(:,5:7)=sigVect        
+          if(iSTG.eq.1) then
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+cc ......   Write the STG random variables
+            call write_field(myrank,'a','STG_rnd',7,STGrnd,'d',
+     &                       nKWave,7,lstep)
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write STG_rnd to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+cc ......   Write the BC array. Quick fix to problem with inflow BC in geombc files
+            call write_field(myrank,'a','BCs',3,BC,'d',
+     &                       nshg,ndofBC,lstep)
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write BCs to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+
+          endif ! end of STG fields
+
+cc ....   Write velbar if wanted
+          if (ispanAvg.eq.1) then
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
+
+!             if (myrank.eq.master) then  
+!               call write_field(myrank,'a','velbar nfath',12,velbar,'d',
+!     &                       nfath,nflow,lstep)
+!             endif
+
+             if (myrank.eq.master) then
+                ifail = 0
+                call rwvelb('out ',velbar,ifail) ! write the velbar field to a file
+                if (ifail.ne.0) write(*,*) 
+     &                            'Problem writing velbar to file'
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write velbar to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+          endif
+
+cc ....   Write span avg stats if wanted
+          if (ispanAvg.eq.1) then
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
+
+!             if (myrank.eq.master) then 
+!                call write_field(myrank,'a','stats nfath',11,stsBar,'d',
+!     &                       nfath,iConsStressSz,lstep)
+!             endif
+
+             if (myrank.eq.master) then
+                ifail = 0
+                call wstsBar(ifail) ! write the stsBar field to a file
+                if (ifail.ne.0) write(*,*) 
+     &                            'Problem writing stsBar to file'
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write stsBar to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+          endif
+
+cc ....   Write span avg stats for K eq if wanted
+          if (ispanAvg.eq.1.and.iKeq.eq.1) then
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
+ 
+!             if (myrank.eq.master) then
+!                call write_field(myrank,'a','stats Keq nfath',15,
+!     &                        stsBarKeq,'d',nfath,10,lstep)
+!             endif
+
+             if (myrank.eq.master) then
+                ifail = 0
+                call wstsBarKeq(ifail) ! write the stsBar field to a file
+                if (ifail.ne.0) write(*,*) 
+     &                            'Problem writing stsBarKeq to file'
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write stsBarKeq to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
+          endif
+
+cc ..... Write the eddy viscosity when doing a dynamic Smag LES (iLES=1)
+          if (iLES.gt.0) then
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+            call write_field(myrank,'a','cdelsq',6,cdelsq,'d',
+     &                       nshg,3,lstep)
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write cdelsq to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+            endif
+            call write_field(myrank,'a','lesnut',6,lesnut,'d',
+     &                       numel,2,lstep)
+            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write lesnut to the disks = ',
+     &        tcormr2-tcormr1
+            endif
+          endif
+cc ....  End of iLES conditional
+
       return
       end subroutine
 

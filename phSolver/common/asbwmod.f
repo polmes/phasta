@@ -1,5 +1,5 @@
       subroutine asbwmod (y,      ac,      x,      BC,   iBC,
-     &                    iper,   ilwork,  ifath,  velbar)
+     &                    iper,   ilwork,  ifath)
 c
 c----------------------------------------------------------------------
 c
@@ -8,20 +8,19 @@ c
 c----------------------------------------------------------------------
 c
       use pointer_data
+      use spanStats
       include "common.h"
 c
       dimension y(nshg,ndof),         x(numnp, nsd),
      &          BC(nshg,ndofBC),      iBC(nshg),
      &          iper(nshg),           ilwork(nlwork),
-     &          ifath(numnp),         velbar(nfath,nflow),
+     &          ifath(numnp),
      &          ac(nshg,ndof)
 c
 c.... compute and assemble the residuals corresponding to the 
 c     boundary integral
 c
-              call settauw (y,              x,
-     &             BC,
-     &             ifath,                   velbar)
+              call settauw (y, x, BC, ifath)
 c
 c.... enforce the new BC for SA variable
 c

@@ -323,8 +323,24 @@ void countfieldstowriterestart()
 
   }
 
-  if(turbvari.irans < 0) {
+  if(turbvari.irans < 0||turbvari.iSTG== 1) {
     nfields++; /*dwal*/
+  }
+  
+  if(outpar.ioform == 2) {
+    nfields++; /*conservative stats*/
+  }
+ 
+  /* STG arrays */
+  if(turbvari.iSTG==1) {
+    nfields++; /* STG random vars */
+    nfields++; /* BCs */
+  }
+
+  /* LES cdelsq and nut field */
+  if(turbvari.iles>0) {
+    nfields++;
+    nfields++;
   }
 
   outpar.nsynciofieldswriterestart = nfields;
@@ -635,3 +651,5 @@ Write_PhAvg2( int* pid,
     }
     free(fieldlabel);
 }
+
+

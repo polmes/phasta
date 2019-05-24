@@ -792,7 +792,7 @@ c
 !     &                     - BC(in,6) * xlhs(iel,ire23,inod,i) 
 !doubtful above is right but in first pass matching JRT-posix code
                xlhs(iel,iadj1,inod,i) = xlhs(iel,iadj1,inod,i) 
-     &                     - BC(in,4) * xlhs(iel,irem1,inod,i) 
+     &                     - BC(in,4) * xlhs(iel,irem1,inod,i)
      &                     - BC(in,6) * xlhs(iel,ire21,inod,i) 
                xlhs(iel,iadj2,inod,i) = xlhs(iel,iadj2,inod,i) 
      &                     - BC(in,4) * xlhs(iel,irem2,inod,i) 
