@@ -25,11 +25,11 @@
          if(statptts(jj,1).gt.0) then
             if(statptts(jj,1).eq.iblkts) then
                if(blk%l.eq.2) then ! hex
-                  call shphex (blk%o, parptts(jj,:),shape(:),
-     &                 shgradl(:,:))
+                  call shphex (blk%o, parptts(jj,:),shape(1:blk%s),
+     &                 shgradl(1:blk%s,:))
                elseif(blk%l.eq.1) then
-                  call shptet (blk%o, parptts(jj,:),shape(:),
-     &                 shgradl(:,:))
+                  call shptet (blk%o, parptts(jj,:),shape(1:blk%s),
+     &                 shgradl(1:blk%s,:))
                endif
                founde=statptts(jj,2)
             endif
@@ -40,39 +40,56 @@
 
             if(blk%l.eq.2) then ! hex
 
-               call get_a_not_hex(xl,al) ! get mapping poly. coeff.
+               call get_a_not_hex(blk,xl,al) ! get mapping poly. coeff.
          
 c...  get initial guess for Newton Iteration procedure
          
-               detaij(:) = -al(:,2,1)*al(:,3,2)*al(:,4,3) + 
-     &              al(:,2,1)*al(:,4,2)*al(:,3,3) + al(:,2,2)*
-     &              al(:,3,1)*al(:,4,3) - al(:,2,2)*al(:,4,1)*
-     &              al(:,3,3) - al(:,2,3)*al(:,3,1)*al(:,4,2)+
-     &              al(:,2,3)*al(:,4,1)*al(:,3,2)
+               detaij(1:blk%e) = 
+     &              -al(1:blk%e,2,1)*al(1:blk%e,3,2)*al(1:blk%e,4,3)  
+     &              +al(1:blk%e,2,1)*al(1:blk%e,4,2)*al(1:blk%e,3,3)
+     &              + al(1:blk%e,2,2)*al(1:blk%e,3,1)*al(1:blk%e,4,3) 
+     &              - al(1:blk%e,2,2)*al(1:blk%e,4,1)*al(1:blk%e,3,3) 
+     &              - al(1:blk%e,2,3)*al(1:blk%e,3,1)*al(1:blk%e,4,2)
+     &              +al(1:blk%e,2,3)*al(1:blk%e,4,1)*al(1:blk%e,3,2)
             
                detaij = 1./detaij
             
-               zi0(:,1) = detaij(:)*((al(:,4,2)*al(:,3,3)
-     &              - al(:,3,2)*al(:,4,3))*(xts1-al(:,1,1)) +
-     &              (al(:,3,1)*al(:,4,3)
-     &              - al(:,4,1)*al(:,3,3))*(xts2-al(:,1,2)) +
-     &              (al(:,4,1)*al(:,3,2)
-     &              - al(:,3,1)*al(:,4,2))*(xts3-al(:,1,3)))
+               zi0(1:blk%e,1) = 
+     &           detaij(1:blk%e)
+     &              *((al(1:blk%e,4,2)*al(1:blk%e,3,3)
+     &              - al(1:blk%e,3,2)*al(1:blk%e,4,3))
+     &              *(xts1-al(1:blk%e,1,1)) +
+     &              (al(1:blk%e,3,1)*al(1:blk%e,4,3)
+     &              - al(1:blk%e,4,1)*al(1:blk%e,3,3))
+     &              *(xts2-al(1:blk%e,1,2)) +
+     &              (al(1:blk%e,4,1)*al(1:blk%e,3,2)
+     &              - al(1:blk%e,3,1)*al(1:blk%e,4,2))
+     &              *(xts3-al(1:blk%e,1,3)))
             
             
-               zi0(:,2) = detaij(:)*((al(:,2,2)*al(:,4,3)
-     &              - al(:,4,2)*al(:,2,3))*(xts1-al(:,1,1)) +
-     &              (al(:,4,1)*al(:,2,3)
-     &              - al(:,2,1)*al(:,4,3))*(xts2-al(:,1,2)) +
-     &              (al(:,2,1)*al(:,4,2)
-     &              - al(:,4,1)*al(:,2,2))*(xts3-al(:,1,3)))
+               zi0(1:blk%e,2) = 
+     &           detaij(1:blk%e)
+     &              *((al(1:blk%e,2,2)*al(1:blk%e,4,3)
+     &              - al(1:blk%e,4,2)*al(1:blk%e,2,3))
+     &              *(xts1-al(1:blk%e,1,1)) +
+     &              (al(1:blk%e,4,1)*al(1:blk%e,2,3)
+     &              - al(1:blk%e,2,1)*al(1:blk%e,4,3))
+     &              *(xts2-al(1:blk%e,1,2)) +
+     &              (al(1:blk%e,2,1)*al(1:blk%e,4,2)
+     &              - al(1:blk%e,4,1)*al(1:blk%e,2,2))
+     &              *(xts3-al(1:blk%e,1,3)))
             
-               zi0(:,3) = detaij(:)*((al(:,3,2)*al(:,2,3)
-     &              - al(:,2,2)*al(:,3,3))*(xts1-al(:,1,1)) +
-     &              (al(:,2,1)*al(:,3,3)
-     &              - al(:,3,1)*al(:,2,3))*(xts2-al(:,1,2)) +
-     &              (al(:,3,1)*al(:,2,2)
-     &              - al(:,2,1)*al(:,3,2))*(xts3-al(:,1,3)))
+               zi0(1:blk%e,3) =
+     &           detaij(1:blk%e)
+     &              *((al(1:blk%e,3,2)*al(1:blk%e,2,3)
+     &              - al(1:blk%e,2,2)*al(1:blk%e,3,3))
+     &              *(xts1-al(1:blk%e,1,1)) +
+     &              (al(1:blk%e,2,1)*al(1:blk%e,3,3)
+     &              - al(1:blk%e,3,1)*al(1:blk%e,2,3))
+     &              *(xts2-al(1:blk%e,1,2)) +
+     &              (al(1:blk%e,3,1)*al(1:blk%e,2,2)
+     &              - al(1:blk%e,2,1)*al(1:blk%e,3,2))
+     &              *(xts3-al(1:blk%e,1,3)))
             
             
 c...  iterate to convergence
@@ -81,47 +98,80 @@ c...  iterate to convergence
                
 c...  build matrix
                
-                  m11(:)=al(:,2,1)+al(:,5,1)*zi0(:,2)+al(:,7,1)*zi0(:,3)
-     &                 +al(:,8,1)*zi0(:,2)*zi0(:,3)
-                  m12(:)=al(:,3,1)+al(:,5,1)*zi0(:,1)+al(:,6,1)*zi0(:,3)
-     &                 +al(:,8,1)*zi0(:,1)*zi0(:,3)
-                  m13(:)=al(:,4,1)+al(:,6,1)*zi0(:,2)+al(:,7,1)*zi0(:,1)
-     &                 +al(:,8,1)*zi0(:,1)*zi0(:,2)
+                  m11(1:blk%e)=
+     &              al(1:blk%e,2,1)+al(1:blk%e,5,1)*zi0(1:blk%e,2)
+     &              +al(1:blk%e,7,1)*zi0(1:blk%e,3)
+     &                 +al(1:blk%e,8,1)*zi0(1:blk%e,2)*zi0(1:blk%e,3)
+                  m12(1:blk%e)=
+     &              al(1:blk%e,3,1)+al(1:blk%e,5,1)*zi0(1:blk%e,1)
+     &                  +al(1:blk%e,6,1)*zi0(1:blk%e,3)
+     &                 +al(1:blk%e,8,1)*zi0(1:blk%e,1)*zi0(1:blk%e,3)
+                  m13(1:blk%e)=
+     &              al(1:blk%e,4,1)+al(1:blk%e,6,1)*zi0(1:blk%e,2)
+     &                  +al(1:blk%e,7,1)*zi0(1:blk%e,1)
+     &                 +al(1:blk%e,8,1)*zi0(1:blk%e,1)*zi0(1:blk%e,2)
 
-                  m21(:)=al(:,2,2)+al(:,5,2)*zi0(:,2)+al(:,7,2)*zi0(:,3)
-     &                 +al(:,8,2)*zi0(:,2)*zi0(:,3)
-                  m22(:)=al(:,3,2)+al(:,5,2)*zi0(:,1)+al(:,6,2)*zi0(:,3)
-     &                 +al(:,8,2)*zi0(:,1)*zi0(:,3)
-                  m23(:)=al(:,4,2)+al(:,6,2)*zi0(:,2)+al(:,7,2)*zi0(:,1)
-     &                 +al(:,8,2)*zi0(:,1)*zi0(:,2)
+                  m21(1:blk%e)=
+     &              al(1:blk%e,2,2)+al(1:blk%e,5,2)*zi0(1:blk%e,2)
+     &                  +al(1:blk%e,7,2)*zi0(1:blk%e,3)
+     &                 +al(1:blk%e,8,2)*zi0(1:blk%e,2)*zi0(1:blk%e,3)
+                  m22(1:blk%e)=
+     &              al(1:blk%e,3,2)+al(1:blk%e,5,2)*zi0(1:blk%e,1)
+     &                  +al(1:blk%e,6,2)*zi0(1:blk%e,3)
+     &                 +al(1:blk%e,8,2)*zi0(1:blk%e,1)*zi0(1:blk%e,3)
+                  m23(1:blk%e)=
+     &              al(1:blk%e,4,2)+al(1:blk%e,6,2)*zi0(1:blk%e,2)
+     &                  +al(1:blk%e,7,2)*zi0(1:blk%e,1)
+     &                 +al(1:blk%e,8,2)*zi0(1:blk%e,1)*zi0(1:blk%e,2)
 
-                  m31(:)=al(:,2,3)+al(:,5,3)*zi0(:,2)+al(:,7,3)*zi0(:,3)
-     &                 +al(:,8,3)*zi0(:,2)*zi0(:,3)
-                  m32(:)=al(:,3,3)+al(:,5,3)*zi0(:,1)+al(:,6,3)*zi0(:,3)
-     &                 +al(:,8,3)*zi0(:,1)*zi0(:,3)
-                  m33(:)=al(:,4,3)+al(:,6,3)*zi0(:,2)+al(:,7,3)*zi0(:,1)
-     &                 +al(:,8,3)*zi0(:,1)*zi0(:,2)
+                  m31(1:blk%e)=
+     &              al(1:blk%e,2,3)+al(1:blk%e,5,3)*zi0(1:blk%e,2)
+     &                  +al(1:blk%e,7,3)*zi0(1:blk%e,3)
+     &                 +al(1:blk%e,8,3)*zi0(1:blk%e,2)*zi0(1:blk%e,3)
+                  m32(1:blk%e)=
+     &              al(1:blk%e,3,3)+al(1:blk%e,5,3)*zi0(1:blk%e,1)
+     &                  +al(1:blk%e,6,3)*zi0(1:blk%e,3)
+     &                 +al(1:blk%e,8,3)*zi0(1:blk%e,1)*zi0(1:blk%e,3)
+                  m33(1:blk%e)=
+     &              al(1:blk%e,4,3)+al(1:blk%e,6,3)*zi0(1:blk%e,2)
+     &                  +al(1:blk%e,7,3)*zi0(1:blk%e,1)
+     &                 +al(1:blk%e,8,3)*zi0(1:blk%e,1)*zi0(1:blk%e,2)
                
                
 c...  build rhs
                
-                  r1(:)=al(:,1,1)+al(:,2,1)*zi0(:,1)+al(:,3,1)*zi0(:,2)+
-     &                 al(:,4,1)*zi0(:,3)+al(:,5,1)*zi0(:,1)*zi0(:,2)+
-     &                 al(:,6,1)*zi0(:,2)*zi0(:,3)+al(:,7,1)*
-     &                 zi0(:,1)*zi0(:,3)+al(:,8,1)*zi0(:,1)*
-     &                 zi0(:,2)*zi0(:,3) - xts1
+                  r1(1:blk%e)=
+     &              al(1:blk%e,1,1)+al(1:blk%e,2,1)*zi0(1:blk%e,1)
+     &              +al(1:blk%e,3,1)*zi0(1:blk%e,2)+
+     &                 al(1:blk%e,4,1)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,5,1)*zi0(1:blk%e,1)*zi0(1:blk%e,2)+
+     &                 al(1:blk%e,6,1)*zi0(1:blk%e,2)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,7,1)*
+     &                 zi0(1:blk%e,1)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,8,1)*zi0(1:blk%e,1)*
+     &                 zi0(1:blk%e,2)*zi0(1:blk%e,3) - xts1
 
-                  r2(:)=al(:,1,2)+al(:,2,2)*zi0(:,1)+al(:,3,2)*zi0(:,2)+
-     &                 al(:,4,2)*zi0(:,3)+al(:,5,2)*zi0(:,1)*zi0(:,2)+
-     &                 al(:,6,2)*zi0(:,2)*zi0(:,3)+al(:,7,2)*
-     &                 zi0(:,1)*zi0(:,3)+al(:,8,2)*zi0(:,1)*
-     &                 zi0(:,2)*zi0(:,3) - xts2
+                  r2(1:blk%e)=
+     &              al(1:blk%e,1,2)+al(1:blk%e,2,2)*zi0(1:blk%e,1)
+     &              +al(1:blk%e,3,2)*zi0(1:blk%e,2)+
+     &                 al(1:blk%e,4,2)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,5,2)*zi0(1:blk%e,1)*zi0(1:blk%e,2)+
+     &                 al(1:blk%e,6,2)*zi0(1:blk%e,2)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,7,2)*
+     &                 zi0(1:blk%e,1)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,8,2)*zi0(1:blk%e,1)*
+     &                 zi0(1:blk%e,2)*zi0(1:blk%e,3) - xts2
                
-                  r3(:)=al(:,1,3)+al(:,2,3)*zi0(:,1)+al(:,3,3)*zi0(:,2)+
-     &                 al(:,4,3)*zi0(:,3)+al(:,5,3)*zi0(:,1)*zi0(:,2)+
-     &                 al(:,6,3)*zi0(:,2)*zi0(:,3)+al(:,7,3)*
-     &                 zi0(:,1)*zi0(:,3)+al(:,8,3)*zi0(:,1)*
-     &                 zi0(:,2)*zi0(:,3) - xts3
+                  r3(1:blk%e)=
+     &              al(1:blk%e,1,3)+al(1:blk%e,2,3)*zi0(1:blk%e,1)+
+     &              al(1:blk%e,3,3)*zi0(1:blk%e,2)+
+     &                 al(1:blk%e,4,3)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,5,3)*zi0(1:blk%e,1)*zi0(1:blk%e,2)+
+     &                 al(1:blk%e,6,3)*zi0(1:blk%e,2)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,7,3)*
+     &                 zi0(1:blk%e,1)*zi0(1:blk%e,3)
+     &              +al(1:blk%e,8,3)*zi0(1:blk%e,1)*
+     &                 zi0(1:blk%e,2)*zi0(1:blk%e,3) - xts3
 
 c...  get solution
 
@@ -130,17 +180,29 @@ c...  get solution
 
                   detaij = 1./detaij
 
-                  dzi0(:,1) = -detaij(:)*((m22(:)*m33(:)-m23(:)*m32(:))*
-     &                 r1(:) + (m13(:)*m32(:)-m12(:)*m33(:))*r2(:) + 
-     &                 (m12(:)*m23(:)-m13(:)*m22(:))*r3(:))
-                  dzi0(:,2) = -detaij(:)*((m23(:)*m31(:)-m21(:)*m32(:))*
-     &                 r1(:) + (m11(:)*m33(:)-m13(:)*m31(:))*r2(:) + 
-     &                 (m13(:)*m21(:)-m11(:)*m23(:))*r3(:))
-                  dzi0(:,3) = -detaij(:)*((m21(:)*m32(:)-m22(:)*m31(:))*
-     &                 r1(:) + (m12(:)*m31(:)-m11(:)*m32(:))*r2(:) + 
-     &                 (m11(:)*m22(:)-m12(:)*m21(:))*r3(:))
+                  dzi0(1:blk%e,1) = 
+     &              -detaij(1:blk%e)*((m22(1:blk%e)*m33(1:blk%e)
+     &              -m23(1:blk%e)*m32(1:blk%e))*
+     &                 r1(1:blk%e) + (m13(1:blk%e)*m32(1:blk%e)
+     &              -m12(1:blk%e)*m33(1:blk%e))*r2(1:blk%e) + 
+     &                 (m12(1:blk%e)*m23(1:blk%e)
+     &              -m13(1:blk%e)*m22(1:blk%e))*r3(1:blk%e))
+                  dzi0(1:blk%e,2) = 
+     &              -detaij(1:blk%e)*((m23(1:blk%e)*m31(1:blk%e)
+     &              -m21(1:blk%e)*m32(1:blk%e))*
+     &                 r1(1:blk%e) + (m11(1:blk%e)*m33(1:blk%e)
+     &              -m13(1:blk%e)*m31(1:blk%e))*r2(1:blk%e) + 
+     &                 (m13(1:blk%e)*m21(1:blk%e)
+     &              -m11(1:blk%e)*m23(1:blk%e))*r3(1:blk%e))
+                  dzi0(1:blk%e,3) =
+     &              -detaij(1:blk%e)*((m21(1:blk%e)*m32(1:blk%e)
+     &              -m22(1:blk%e)*m31(1:blk%e))*
+     &                 r1(1:blk%e) + (m12(1:blk%e)*m31(1:blk%e)
+     &              -m11(1:blk%e)*m32(1:blk%e))*r2(1:blk%e) + 
+     &                 (m11(1:blk%e)*m22(1:blk%e)
+     &              -m12(1:blk%e)*m21(1:blk%e))*r3(1:blk%e))
 
-                  zi0(:,:) = zi0(:,:) + dzi0(:,:)
+                  zi0(1:blk%e,:) = zi0(1:blk%e,:) + dzi0(1:blk%e,:)
                
                enddo
             
@@ -149,8 +211,8 @@ c...  get solution
      &                 (abs(zi0(e,2)).lt.(one+tolpt)).and.
      &                 (abs(zi0(e,3)).lt.(one+tolpt))) then ! got the element
 
-                     call shphex (blk%o, zi0(e,:),shape(:),
-     &                    shgradl(:,:))
+                     call shphex (blk%o, zi0(e,:),shape(1:blk%s),
+     &                    shgradl(1:blk%s,:))
                   
                      founde=e
                      exit
@@ -159,7 +221,7 @@ c...  get solution
                enddo
             elseif (blk%l.eq.1) then !tet
 
-               call get_a_not_tet(xl,al)
+               call get_a_not_tet(blk,xl,al)
                        
 c
 c solve for r, s, t  for each elements
@@ -202,8 +264,8 @@ c
      &                 zi0(e,3).lt.(one +tolpt).and.    !should not be necessary 
      &                 zi0(e,3).gt.(zero-tolpt)) then
                      
-                     call shptet (blk%o, zi0(e,:), shape(:),
-     &                    shgradl(:,:))
+                     call shptet (blk%o, zi0(e,:), shape(1:blk%s),
+     &                    shgradl(1:blk%s,:))
 
                      founde=e
                      exit
