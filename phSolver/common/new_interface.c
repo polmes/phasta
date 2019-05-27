@@ -116,11 +116,9 @@ void print_mpi_stats(void) {
   rgetMinMaxAvg(&mpistats.rCommu,rStats,statRanks);
   if(workfc.myrank==workfc.master)
     printf("rCommu : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
-/* unit cell
   rgetMinMaxAvg(&mpistats.rthreads,rStats,statRanks);
   if(workfc.myrank==workfc.master)
     printf("rthreads : min [%d,%2.5f], max[%d,%2.5f] and avg[.,%2.5f] (rms=%2.5f)\n",statRanks[0],rStats[0],statRanks[1],rStats[1],rStats[2],rStats[3]);
-*/
 
   rgetMinMaxAvg(&mpistats.rspmvphasta,rStats,statRanks);
   if(workfc.myrank==workfc.master)
