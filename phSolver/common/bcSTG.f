@@ -18,7 +18,7 @@
       
        integer STGmeth, nKWave,nNSurf
        real*8 alphaWave,alphaGR 
-       real*8, allocatable :: le(:),lt(:), kCut(:)
+       real*8, allocatable :: le(:),lt(:), kCut(:), keta(:)
        real*8 kMax,kMax_all,lCut,leMax,leMax_all,kMin
        integer iSTGInread, nPoints
 
@@ -59,6 +59,7 @@
         real*8 :: hzS1
         real*8 :: hzS2
         real*8 :: norm
+        real*8 reyS(6), turbVisc, eps
 
         logical exlog
         integer,allocatable :: sta(:),holdSurf(:),markHold(:)
@@ -78,11 +79,11 @@ c       If a file with the baseline profile at the inflow exists, read from it a
         if(exlog) then ! the STG baseline profile is set in a file so read it
             open (unit=654,file="STGInflow.dat",status="old")
             read(654,*) nPoints ! first line of file MUST contain number of rows of data
-c           This file contains in the columns d2wal, ubar(1:3), Reynolds stresses, eddy viscosity,k,w
+c           This file contains in the columns d2wal, ubar(1:3), Reynolds stresses, eddy viscosity,lt,epsilon
 c           Where Re stresses are R11,R22,R33,R12,R13,R23
-            allocate(STGInflow(nPoints,12))
+            allocate(STGInflow(nPoints,13))
             do i=1,nPoints
-              read(654,*) (STGInflow(i,j),j=1,12) ! read the data
+              read(654,*) (STGInflow(i,j),j=1,13) ! read the data
             enddo
             iSTGInread=1
             if (myrank.eq.master) then
@@ -96,11 +97,14 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
         alphaGR=STGMeshGrow    ! growth rate of boundary layer mesh
         call findSTG_mesh_hs(x)
         !loop over STG Plane find lcut->kCut->kMax
-        allocate(le(nNSurf),lt(nNSurf),kCut(nNSurf))
+        allocate(le(nNSurf),lt(nNSurf),kCut(nNSurf),keta(nNSurf))
         do n=1,nNSurf
             lCut=2.0*min(max(hy1(n),hz1(n),0.3*hMax(n))
      &             +0.1*d2Wall(stgSurf(n)),hMax(n))
             kCut(n)=2.0*atan2(0.0,-1.0)/lCut
+            call getEps(x,n,eps)
+            leta = (nu**3/eps)**0.25
+            keta(n) = 2.0*atan2(0.0,-1.0)/leta
             if(1.5*kCut(n).gt.kMax)then
                 kMax=1.5*kCut(n)
             endif
@@ -427,12 +431,12 @@ c       If not the first time step of STG, the random variables were read from t
       real*8 :: midTemp,hTemp,lTemp,uBar_Tol,ka,qN,totqN,rPrime1,rPrime2 
       real*8 :: rPrime3,dNdotRPrime,vPrime1,vPrime2,vPrime3,rPrime1Den
       real*8 :: turbKin,lAta
-      real*8 :: fcut,leta,keta,feta
+      real*8 :: fcut,feta
       real*8, dimension(3,3) :: Cho
       real*8 :: eng(nNSurf,nKWave),totEng(nNSurf)
       real*8 :: kN(nKWave)
       real*8 :: uPrime(nNSurf,3)
-      real*8 :: reyS(6), turbVisc, dist, sumBC, tmp
+      real*8 :: reyS(6), turbVisc, dist, sumBC, tmp, eps
       integer :: noTurbMod
       
 
@@ -445,8 +449,8 @@ c        call openFiles()
 
        uBar=zero
    
-       leta=(nu**3/STGeps)**0.25 ! Kolmogorov length scale
-       keta=2.0*atan2(0.0,-1.0)/leta ! Kolmogorov wave number
+       !leta=(nu**3/STGeps)**0.25 ! Kolmogorov length scale
+       !keta=2.0*atan2(0.0,-1.0)/leta ! Kolmogorov wave number
         do n=1,nNSurf
             totEng(n)=0.0
             !This is for the energySpectrum for the n Point
@@ -458,7 +462,7 @@ c        call openFiles()
                   ke=2.0*atan2(0.0,-1.0)/le(n)
                   eng(n,k)=(kN(k)/ke)**4.0/((1.0+2.4*(kN(k)/ke)**2.0)**(17.0/6.0))
 !                  eng(n,kN)=eng(n,kN)*exp(-((12*kN*lAta/(2*atan2(0.0,-1.0)))**2))
-                  feta=exp(-(12*kN(k)/keta)**2) ! damping function
+                  feta=exp(-(12*kN(k)/keta(n))**2) ! damping function
                   fcut=exp(-(((4.0*max(kN(k)-0.9*kCut(n),zero))/kCut(n))**3.0))
 !                  write(*,*) d2Wall(stgSurf(n)), lcut,  kCut
                   eng(n,k)=eng(n,k)*fcut*feta
@@ -1074,6 +1078,36 @@ c      Now need to interpolate from the file data for the current node point
        endif
        lt(n)=(xi*STGInflow(iupper,12)
      &          +(one-xi)*STGInflow(iupper-1,12))
+
+      end
+
+
+      subroutine getEps(x,n,eps)
+      use STG_BC
+      use turbSA ! d2wall(1:numnp) gives distance to wall for each node
+      use pvsQbi ! ndsurf(1:nshg) comes from this module and it has "marked" the inflow nodes for this BC
+      include "common.h"
+      
+      real*8 ::  x(numnp,nsd), eps
+      integer n
+
+c      Now need to interpolate from the file data for the current node point
+       y=d2wall(stgSurf(n))
+       iupper=0
+       do j=2,nPoints
+           if(STGInflow(j,1).gt.y) then !bound found
+               xi=(y-STGInflow(j-1,1))/
+     &             (STGInflow(j,1)-STGInflow(j-1,1))
+               iupper=j
+               exit
+           endif
+       enddo
+       if(iupper.eq.0) then ! node is higher than interpolating stack so use the top of interpolating stack
+            iupper=nPoints
+            xi=1.0
+       endif
+       eps=(xi*STGInflow(iupper,13)
+     &          +(one-xi)*STGInflow(iupper-1,13))
 
       end
 
