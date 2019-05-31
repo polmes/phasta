@@ -16,11 +16,10 @@ c
      &          ilwork(nlwork),        iBC(nshg)
       real*8 tmp, den, tfact 
       integer periodicity, minifath, maxifath, ifathrng,
-     &        ifathi, ind, c
+     &        ifathi, ind, c, sumper
       logical, allocatable, dimension (:) :: isonpart 
+      
       peroidicity = 0
-
-     
       den = max(1,lstep-istartSpanAvg)
       tfact = one/den
 
@@ -39,16 +38,16 @@ c
 c     
 c     zero on processor periodic nodes so that they will not be added twice
 c    
-         if(myrank.eq.master) then
-            do i=1, nshg
-               if(btest(iBC(i),10)) then 
-                 periodicity = 1
-                 exit
-               endif
-            enddo
-         endif
-         call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
-     &               MPI_COMM_WORLD,ierr)
+         do i=1, nshg
+            if(btest(iBC(i),10)) then 
+              periodicity = 1
+              exit
+            endif
+         enddo
+         call drvAllreduceSumInt(periodicity,sumper)
+!         call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
+!     &               MPI_COMM_WORLD,ierr)
+         if (sumper.gt.0) periodicity = 1
 
          if (periodicity.eq.1.and.nohomog.eq.1) then
              rinvsons = one/(nsons-one)   ! division is expensive

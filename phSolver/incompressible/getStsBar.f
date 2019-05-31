@@ -14,9 +14,10 @@
      &          tmpKeqft(nfath), GradV(nshg,nsdsq)
       real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
      &       S12(nshg),S13(nshg),S23(nshg), invtmp
-      integer periodicity
+      integer periodicity, sumper
 
-
+      
+      peroidicity = 0
       den = max(1,lstep-istartSpanAvg)
       tfact = one/den
       
@@ -56,16 +57,16 @@ c     Assign the conservative statistics to a temporary array
       endif
 
 c     Zero on processor periodic nodes so will not be added twice
-      if(myrank.eq.master) then
          do i=1, nshg
             if(btest(iBC(i),10)) then 
               periodicity = 1
               exit
             endif
          enddo
-      endif
-      call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
-     &               MPI_COMM_WORLD,ierr)
+         call drvAllreduceSumInt(periodicity,sumper)
+!         call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
+!     &               MPI_COMM_WORLD,ierr)
+         if (sumper.gt.0) periodicity = 1
 
       if (periodicity.eq.1.and.nohomog.eq.1) then
          rinvsons = one/(nsons-one)   ! division is expensive
