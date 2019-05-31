@@ -17,7 +17,7 @@
       integer periodicity, sumper
 
       
-      peroidicity = 0
+      periodicity = 0
       den = max(1,lstep-istartSpanAvg)
       tfact = one/den
       
@@ -57,16 +57,16 @@ c     Assign the conservative statistics to a temporary array
       endif
 
 c     Zero on processor periodic nodes so will not be added twice
-         do i=1, nshg
-            if(btest(iBC(i),10)) then 
-              periodicity = 1
-              exit
-            endif
-         enddo
-         call drvAllreduceSumInt(periodicity,sumper)
+      do i=1, nshg
+         if(btest(iBC(i),10)) then 
+           periodicity = 1
+           exit
+         endif
+      enddo
+      call drvAllreduceSumInt(periodicity,sumper)
 !         call MPI_BCAST(periodicity,1,MPI_INTEGER,master,
 !     &               MPI_COMM_WORLD,ierr)
-         if (sumper.gt.0) periodicity = 1
+      if (sumper.gt.0) periodicity = 1
 
       if (periodicity.eq.1.and.nohomog.eq.1) then
          rinvsons = one/(nsons-one)   ! division is expensive
@@ -147,7 +147,9 @@ c     accumulate sum of sons to the fathers
       if (iKeq.eq.1) maxsz = max(10,iConsStressSz)
       do n=1,maxsz
          tmpStatsf = zero
+         tmpStatsft = zero
          tmpKeqf = zero
+         tmpStatsft = zero
          do i = 1,nshg
             ifathi=ifath(i)
             if (n.le.iConsStressSz) then
