@@ -60,6 +60,7 @@
         real*8 :: hzS2
         real*8 :: norm
         real*8 reyS(6), turbVisc, eps
+        real*8 leta, y
 
         logical exlog
         integer,allocatable :: sta(:),holdSurf(:),markHold(:)
@@ -70,6 +71,7 @@
         kMax=zero
         deltaBLSTG=STGDelBL
         alphaGR=STGMeshGrow    ! growth rate of boundary layer mesh
+        nu = datmat(1,2,1) 
 ! Initialize Fourier Modes for STG        
         !begin by finding nKWave
         !Read in STGinflow 
@@ -156,6 +158,8 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
 
 c       Compute the random variables only on the first step
         if (lstep.eq.iSTGStart) then
+          if (myrank.eq.master) write(*,*) 
+     &                           'Computing the STG random numbers'
           call random_seed()
           call random_number(rTemp)
           do id=1,nKWave
