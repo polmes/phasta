@@ -133,9 +133,9 @@ c ----  Variables for random initial condition field
         integer, allocatable :: seed1(:)
 c ---   Variables for LES channel flow IC
         logical exlog
-        integer nx, ny, nz, nICpoints, ijkNum
+        integer nx, ny, nyTot, nz, nICpoints, kijNum
         real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
-        real*8, allocatable :: lesIC(:,:)
+        real*8, allocatable :: ordIC(:,:)
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -251,28 +251,29 @@ cc        close(123)
 cc        if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 c ----- End of write coordinates to file
 c
-c ----- Read an initial condition for dynamic Smagorinsky LES
-        inquire(file="LES-CSmag-Ordered.dat",exist=exlog)
+c ----- Read an initial condition for ordered meshes k,j,i
+        inquire(file="InitialCondition-Ord.dat",exist=exlog)
         if(exlog) then
-          open (unit=123,file="LES-CSmag-Ordered.dat",status="old")
+          open (unit=123,file="InitialCondition-Ord.dat",status="old")
           read(123,*) nICpoints
-          allocate(lesIC(nICpoints,7))
+          allocate(ordIC(nICpoints,7))
           do i=1,nICpoints
-            read(123,*) (lesIC(i,j),j=1,7)
+            read(123,*) (ordIC(i,j),j=1,7)
           enddo
-          open (unit=234,file="dynSmagY.dat",status="old")
+          open (unit=234,file="crdY.dat",status="old")
+          read(234,*) nyTot
           read(234,*) ny
           allocate(ypoints(ny))
           do i=1,ny
             read(234,*) ypoints(i)
           enddo
-          open (unit=345,file="dynSmagX.dat",status="old")
+          open (unit=345,file="crdX.dat",status="old")
           read(345,*) nx
           allocate(xpoints(nx))
           do i=1,nx
             read(345,*) xpoints(i)
           enddo
-          open (unit=456,file="dynSmagZ.dat",status="old")
+          open (unit=456,file="crdZ.dat",status="old")
           read(456,*) nz
           allocate(zpoints(nz))
           do i=1,nz
@@ -280,35 +281,42 @@ c ----- Read an initial condition for dynamic Smagorinsky LES
           enddo
           do i=1,nshg
             do j=1,nx
-              if (abs(x(i,1)-xpoints(j)).lt.1.0e-4) then
-                ix = j            
+              if (abs(x(i,1)-xpoints(j)).lt.1.0e-5) then
+                ix = j
+                exit         
               endif
             enddo
             do j=1,ny
-              if (abs(x(i,2)-ypoints(j)).lt.1.0e-4) then
-                iy = j            
+              if (abs(x(i,2)-ypoints(j)).lt.1.0e-5) then
+                iy = j
+                exit            
+              else
+                iy = -1
               endif
             enddo
             do j=1,nz
-              if (abs(x(i,3)-zpoints(j)).lt.1.0e-4) then
-                iz = j            
+              if (abs(x(i,3)-zpoints(j)).lt.1.0e-5) then
+                iz = j   
+                exit         
               endif
             enddo
-            ijkNum = nx*ny*(iz-1)+nx*(iy-1)+ix
-            yold(i,1:3) = lesIC(ijkNum,5:7)
-            yold(i,4) = lesIC(ijkNum,4)
+            kjiNum = nz*nyTot*(ix-1)+nz*(iy-1)+iz
+            if (iy.ne.-1) then 
+               yold(i,1:3) = ordIC(kjiNum,5:7)
+               yold(i,4) = ordIC(kjiNum,4)
+            endif
           enddo
           deallocate(ypoints)
           deallocate(xpoints)
           deallocate(zpoints)
-          deallocate(lesIC)
+          deallocate(ordIC)
           close(123)
           close(234)
           close(345)
           close(456)
         else
            if(myrank.eq.master) write(*,*) 
-     &                        'Did not read file LES-CSmag-Ordered.dat'
+     &                     'Did not read file InitialCondition-Ord.dat'
         endif
 c ----  End of LES initial condition
 !!!!!!!!!!!!!!!!!!!
