@@ -223,21 +223,36 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "RANS-SA" ) {
       turbvari.iles  = 0;
       turbvari.irans = -1;
+      if ((string)inp.GetValue("SA Low Re Correction") == "True" ) {
+         turbvari.iSAlowRe = 1;
+      } else { turbvari.iSAlowRe = 0;}
     } else if ((string)inp.GetValue("Turbulence Model") == "RANS" ) {
       turbvari.iles  = 0;
       turbvari.irans = -1; // assume S-A for backward compatibility
+      if ((string)inp.GetValue("SA Low Re Correction") == "True" ) {
+         turbvari.iSAlowRe = 1;
+      } else { turbvari.iSAlowRe = 0;}
     } else if ((string)inp.GetValue("Turbulence Model") == "RANS-KE" ) {
       turbvari.iles  = 0;
       turbvari.irans = -2;
     } else if ((string)inp.GetValue("Turbulence Model") == "DES97" ) {
       turbvari.iles  = -1;
       turbvari.irans = -1;
+      if ((string)inp.GetValue("SA Low Re Correction") == "True" ) {
+         turbvari.iSAlowRe = 1;
+      } else { turbvari.iSAlowRe = 0;}
     } else if ((string)inp.GetValue("Turbulence Model") == "DDES" ) {
       turbvari.iles  = -2;
       turbvari.irans = -1;
+      if ((string)inp.GetValue("SA Low Re Correction") == "True" ) {
+         turbvari.iSAlowRe = 1;
+      } else { turbvari.iSAlowRe = 0;}
     } else if ((string)inp.GetValue("Turbulence Model") == "IDDES" ) {
       turbvari.iles  = -3;
       turbvari.irans = -1;
+      if ((string)inp.GetValue("SA Low Re Correction") == "True" ) {
+         turbvari.iSAlowRe = 1;
+      } else { turbvari.iSAlowRe = 0;}
     } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
       turbvari.irans = 0;
       turbvari.iles  = 0;

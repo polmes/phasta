@@ -502,9 +502,15 @@ c --------- End of IDDES Model Implementation
                 rp = k2d2Inv / st**2 * (ep*st - SclrNN*stp)
             endif
             rP5     = r * (r * r) ** 2
-            tmp     = 1.0 + saCw2 * (rP5 - 1.0)
-            g       = r * tmp
-            gp      = rp * (tmp + 5.0 * saCw2 * rP5)
+            if (iSAlowRe.eq.0) then
+               tmp     = 1.0 + saCw2 * (rP5 - 1.0)
+               g       = r * tmp
+               gp      = rp * (tmp + 5.0 * saCw2 * rP5)
+            else
+               tmp     = 1.0 + saCw2lowRe * (rP5 - 1.0)
+               g       = r * tmp
+               gp      = rp * (tmp + 5.0 * saCw2lowRe * rP5)
+            endif
             
             gP6     = (g * g * g) ** 2
             tmp     = 1.0 / (gP6 + saCw3P6)
