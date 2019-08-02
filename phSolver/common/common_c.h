@@ -493,6 +493,7 @@ extern "C" {
     int i2DIC;
     int i3DIC;
     int iSTGIC;
+    int iMoveTopWall;
   } inpdat ;
 
   extern struct { 

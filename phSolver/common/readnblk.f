@@ -81,6 +81,8 @@ c
       real*8, allocatable :: ypoints(:)
       logical exlog
 
+      real*8, allocatable :: tpW(:,:),tpW2(:,:),tpC(:,:),tpC2(:,:)
+
       dataInt = c_char_'integer'//c_null_char
       dataDbl = c_char_'double'//c_null_char
 c
@@ -270,6 +272,54 @@ c
      & c_char_'co-ordinates' // char(0),
      & c_loc(xread),ixsiz, dataDbl, iotype)
       point2x = xread
+
+      if (iMoveTopWall) then
+        open (unit=123,file="TopWallWrong.dat",status="old")
+        allocate(tpW(4553,2))
+        do i=1,4553
+          read(123,*) (tpW(i,j),j=1,2)
+        enddo
+        close(123)
+        open (unit=124,file="TopWallWrong2.dat",status="old")
+        allocate(tpW2(4553,2))
+        do i=1,4553
+           read(124,*) (tpW2(i,j),j=1,2)
+        enddo
+        close(124)
+        open (unit=125,file="TopWallCorrect.dat",status="old")
+        allocate(tpC(4553,2))
+        do i=1,4553
+           read(125,*) (tpC(i,j),j=1,2)
+        enddo
+        close(125)
+        open (unit=126,file="TopWallCorrect2.dat",status="old")
+        allocate(tpC2(4553,2))
+        do i=1,4553
+           read(126,*) (tpC2(i,j),j=1,2)
+        enddo
+        close(126)
+        ic = 0
+        do n=1,nshg
+           do j=1,4553 
+             if (abs(point2x(n,1)-tpW(j,1)).lt.1.0d-5.and.
+     &         abs(point2x(n,2)-tpW(j,2)).lt.1.0d-5) then
+               point2x(n,2) = tpC(j,2)
+               ic = ic+1
+               exit
+             endif
+             if (abs(point2x(n,1)-tpW2(j,1)).lt.1.0d-5.and.
+     &         abs(point2x(n,2)-tpW2(j,2)).lt.1.0d-5) then
+               point2x(n,2) = tpC2(j,2)
+               ic = ic+1
+               exit
+             endif
+           enddo
+        enddo
+        deallocate(tpW,tpW2,tpC,tpC2)
+        !write(*,*) 'Moved ',ic,' nodes'
+      endif
+
+
 
 c..............................for Duct
       if(istretchOutlet.eq.1)then

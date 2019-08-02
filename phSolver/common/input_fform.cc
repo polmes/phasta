@@ -885,6 +885,11 @@ int input_fform(phSolver::Input& inp)
     } else {
        inpdat.iSTGIC = 0;
     }
+    if((string)inp.GetValue("Modify Top Surface of Bump Domain") == "True") {
+       inpdat.iMoveTopWall = 1;
+    } else {
+       inpdat.iMoveTopWall = 0;
+    }
 
     // TURBULENCE MODELING PARAMETER
     int tpturb = turbvari.iles-turbvari.irans;

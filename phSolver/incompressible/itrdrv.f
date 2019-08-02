@@ -2528,11 +2528,6 @@ cc ....   Write velbar if wanted
               tcormr1 = TMRC()
              endif
 
-!             if (myrank.eq.master) then  
-!               call write_field(myrank,'a','velbar nfath',12,velbar,'d',
-!     &                       nfath,nflow,lstep)
-!             endif
-
              if (myrank.eq.master) then
                 ifail = 0
                 call rwvelb('out ',velbar,ifail) ! write the velbar field to a file
@@ -2555,11 +2550,6 @@ cc ....   Write span avg stats if wanted
              if(myrank.eq.0)  then
               tcormr1 = TMRC()
              endif
-
-!             if (myrank.eq.master) then 
-!                call write_field(myrank,'a','stats nfath',11,stsBar,'d',
-!     &                       nfath,iConsStressSz,lstep)
-!             endif
 
              if (myrank.eq.master) then
                 ifail = 0
@@ -2584,11 +2574,6 @@ cc ....   Write span avg stats for K eq if wanted
               tcormr1 = TMRC()
              endif
  
-!             if (myrank.eq.master) then
-!                call write_field(myrank,'a','stats Keq nfath',15,
-!     &                        stsBarKeq,'d',nfath,10,lstep)
-!             endif
-
              if (myrank.eq.master) then
                 ifail = 0
                 call wstsBarKeq(ifail) ! write the stsBar field to a file
