@@ -273,7 +273,7 @@ c
      & c_loc(xread),ixsiz, dataDbl, iotype)
       point2x = xread
 
-      if (iMoveTopWall) then
+      if (iMoveTopWall.eq.1) then
         open (unit=123,file="TopWallWrong.dat",status="old")
         allocate(tpW(4553,2))
         do i=1,4553
