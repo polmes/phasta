@@ -23,10 +23,10 @@ c
       include "common.h"
       include "mpif.h"
 c     
-      real*8 lhs16(16,nnz_tot)
+      real*4 lhs16(16,nnz_tot)
       dimension flowDiag(nshg,4), ilwork(nlwork)
       dimension iBC(nshg), iper(nshg), BC(nshg,ndofBC)
-      real*8 lhsP(4,nnz_tot)
+      real*4 lhsP(4,nnz_tot)
       integer rowp(nnz_tot),  colm(nshg+1)
       integer	n,	k
 c
@@ -161,7 +161,8 @@ c
       integer  ilwork(nlwork),    iBC(nshg),     iper(nshg),
      &         rowp(nnz_tot),    colm(nshg+1)
 
-      real*8   sclrDiag(nshg),    lhsS(nnz_tot), BC(nshg,ndofBC)
+      real*4   lhsS(nnz_tot)
+      real*8   sclrDiag(nshg),   BC(nshg,ndofBC)
       integer sparseloc
 
       sclrDiag = zero
@@ -217,9 +218,10 @@ c
       include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	pLhs(4,nnz_tot),	p(nNodes),	q(nNodes,3)
+        real*8	p(nNodes),	q(nNodes,3)
 c
         real*8	pisave
+        real*4	pLhs(4,nnz_tot)
         integer	i,	j,	k
         rstart=TMRC()
 c
@@ -271,13 +273,16 @@ c      implicit none
       integer	nNodes
       integer	col(nNodes+1),	row(nnz_tot)
       real*8 	p(nNodes,4),  q(nNodes,3)
-      real*8    q3(3,nNodes), p3(3,nNodes)
-      real*8    q4(4,nNodes), p4(4,nNodes)
-      real*8    pLhs(4,nnz_tot)  ! old way passed in matrices
-      real*8    lhs9(9,nnz_tot), lhs16(16,nnz_tot) ! needed for 3x3 options
+      real*4    lhs9(9,nnz_tot)! needed for 3x3 options
+      real*4    q3(3,nNodes), p3(3,nNodes)
+!      real*4    lhs16sp(16,nnz_tot)
+      real*4    lhs16(16,nnz_tot)
+      real*4    pLhs(4,nnz_tot)
+      real*4    q4(4,nNodes), p4(4,nNodes)
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
+      
 !
 ! This routine performs K.p_m + G.p_c
 ! The K.p_m is a 3x3 . 3x1 (standard). The second part is G.p_c is a 3x1 . 1x1
@@ -288,6 +293,7 @@ c
 ! than directly computing and using the full matrix.
 !
       rstart=TMRC()
+! make local single precision
       iwork=ieqswork/10
 ! chosen: 0 as above,  1 as above^T, 2 use MKL for the K.p_m then OS G.p_c
 ! 3 MKL on 4x4, 4 use 4x4 ^T, 5 use 4x4  no ^T, 6, 0 using 4x4
@@ -394,17 +400,18 @@ cdir$ ivdep
         enddo
       endif !iwork 1 }
       if(iwork.eq.2) then ! { mkl sparse  3x3
+        lhs9(1:3,:)=lhs16(1:3,:)
+        lhs9(4:6,:)=lhs16(5:7,:)
+        lhs9(7:9,:)=lhs16(9:11,:)
+        rdelta=TMRC()
         do i = 1, nNodes
           p3(1,i)=p(i,1)
           p3(2,i)=p(i,2)
           p3(3,i)=p(i,3)
         enddo
-        lhs9(1:3,:)=lhs16(1:3,:)
-        lhs9(4:6,:)=lhs16(5:7,:)
-        lhs9(7:9,:)=lhs16(9:11,:)
-        rdelta=TMRC()
 #ifdef HAVE_MKL
-        call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
+!        call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
+        call mkl_sbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
 #endif
         rspmvmkl=rspmvmkl + TMRC()-rdelta
         ispmvmkl=ispmvmkl + 1
@@ -427,13 +434,13 @@ cdir$ ivdep
           q3(2,i) = q3(2,i) + tmp2
           q3(3,i) = q3(3,i) + tmp3
         enddo
-        rspmvphasta=rspmvphasta + TMRC()-rdelta
-        ispmvphasta=ispmvphasta + 1
         do i =1, nNodes ! transpose back from  dof_var first
           q(i,1)=q3(1,i)
           q(i,2)=q3(2,i)
           q(i,3)=q3(3,i)
         enddo
+        rspmvphasta=rspmvphasta + TMRC()-rdelta
+        ispmvphasta=ispmvphasta + 1
 !SLOWER ALT c
 !SLOWER ALT c.... Do an AP product
 !SLOWER ALT c
@@ -458,32 +465,34 @@ cdir$ ivdep
 !SLOWER ALT         rspmvphasta=rspmvphasta + TMRC()-rdelta
       endif !} mkl sparse 3x3
       if(iwork.eq.3) then ! { mkl  with 4x4 matrix
+        rdelta=TMRC()
         do i =1, nNodes  !mkl requires dof_var first
           p4(1,i)=p(i,1)
           p4(2,i)=p(i,2)
           p4(3,i)=p(i,3)
           p4(4,i)=p(i,4)
         enddo
-        rdelta=TMRC()
+!        lhs16sp=lhs16
 #ifdef HAVE_MKL
-        call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+!        call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+         call mkl_sbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
 #endif
-        rspmvmkl=rspmvmkl + TMRC()-rdelta
-        ispmvmkl=ispmvmkl + 1
         do i =1, nNodes ! transpose back mkl's dof_var first
           q(i,1)=q4(1,i)
           q(i,2)=q4(2,i)
           q(i,3)=q4(3,i)
         enddo
+        rspmvmkl=rspmvmkl + TMRC()-rdelta
+        ispmvmkl=ispmvmkl + 1
       endif !} end mkl 4x4
       if(iwork.eq.4) then !{ 4x4 transposed p
+        rdelta= TMRC()
         do i =1, nNodes
           p4(1,i)=p(i,1)
           p4(2,i)=p(i,2)
           p4(3,i)=p(i,3)
           p4(4,i)=p(i,4)
         enddo
-        rdelta= TMRC()
 c
 c.... Do an AP product
 c
@@ -625,7 +634,8 @@ c
         include "common.h"
 
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	pLhs(4,nnz_tot),	p(nNodes,3),	q(nNodes)
+        real*8	p(nNodes,3),	q(nNodes)
+        real*4	pLhs(4,nnz_tot)
 c
         real*8	tmp
         integer	i,	j,	k
@@ -671,7 +681,8 @@ c
       include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	pLhs(4,nnz_tot),	p(nNodes,4),	q(nNodes)
+        real*8	p(nNodes,4),	q(nNodes)
+        real*4	pLhs(4,nnz_tot)
 c
         real*8	tmp
         integer	i,	j,	k
@@ -720,10 +731,10 @@ c	implicit none
 
       integer	nNodes, nnz_tot
       integer	col(nNodes+1),	row(nnz_tot)
-      real*8	lhs9(9,nnz_tot),	pLhs(4,nnz_tot)
-      real*8	lhs16(16,nnz_tot)
+      real*4	lhs9(9,nnz_tot),	pLhs(4,nnz_tot)
+      real*4	lhs16(16,nnz_tot)
       real*8  p(nNodes,4),	q(nNodes,4)
-      real*8  p4(4,nNodes),	q4(4,nNodes)
+      real*4  p4(4,nNodes),	q4(4,nNodes)
 c
       real*8	tmp1,	tmp2,	tmp3,	tmp4
       integer	i,	j,	k
@@ -799,7 +810,7 @@ c
         enddo
         rstart=TMRC()
 #ifdef HAVE_MKL
-        call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+        call mkl_sbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
 #endif
         rspmvFull=rspmvFull+TMRC()-rstart
         ispmvFull=ispmvFull+1
@@ -942,7 +953,8 @@ c
         implicit none
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
-        real*8	lhs(nnz_tot),	p(nNodes),	q(nNodes)
+        real*8	p(nNodes),	q(nNodes)
+        real*4	lhs(nnz_tot)
 c
         real*8	tmp
         integer	i,	j,	k

@@ -1,6 +1,6 @@
       subroutine ctypes (ilwork)
 
-      parameter (maxseg = 30000)
+      parameter (maxseg = 300000)
 
       include "common.h"
       include "mpif.h"

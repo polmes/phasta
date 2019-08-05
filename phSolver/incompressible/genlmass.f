@@ -214,7 +214,8 @@ c
       include "common.h"
 c     
       real*8 ac(nshg,ndof), res(nshg,4), tmp,tmp1
-      real*8 lhs16(16,nnz_tot), gmass(nshg), rho(nshg)
+      real*8 gmass(nshg), rho(nshg)
+      real*4 lhs16(16,nnz_tot)
       integer rowp(nnz*nshg),  colm(nshg+1)
       integer	n,	k
 c

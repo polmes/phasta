@@ -155,7 +155,8 @@ c the local information is the global information for single-processor
             nwall=nwalli
             nwallt=nwalli
          endif                  ! if-else for multiple processors
-       if(myrank.eq.0) write(*,*) maxval(nwall),nwallt,' max-on-part and total wall nodes found'
+       if(myrank.eq.0) write(*,*) maxval(nwall),nwallt,
+     &                         " max-on-part and total wall nodes found"
       if(idwalmode.eq.0) then  ! allgather approach
 c  Make all-processor wallnode-coord collage
 c

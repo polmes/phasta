@@ -59,9 +59,9 @@ void   usrNew(	UsrHd	  usrHd,
                         int*	  nTmpDims,
                         int*	  rowp,
                         int*	  colm,
-                        double*   lhsK,
-                        double*   lhsP,
-                        double*   lhsS,
+                        float*   lhsK,
+                        float*   lhsP,
+                        float*   lhsS,
                         int*      nnz_tot,
                         double*   CGsol
     )

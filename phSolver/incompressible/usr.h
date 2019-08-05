@@ -37,9 +37,9 @@ typedef struct _Usr {
     int		nTmpDims ;		/* number of temporary data	  */
     int*       	rowp ;		        /* row of p for nonzero's of A    */
     int*       	colm ;		        /* start index for rowp vector    */
-    double*     lhsK ;		        /* sparse K matrix (9,nnzeros)    */
-    double*     lhsP ;		        /* sparse GoC matrix (4,nnzeros)  */
-    double*     lhsS ;
+    float*     lhsK ;		        /* sparse K matrix (9,nnzeros)    */
+    float*     lhsP ;		        /* sparse GoC matrix (4,nnzeros)  */
+    float*     lhsS ;
     int*        nnz_tot  ;              /* factor for number of nonzeros) */
     double*     CGsol;                  /* pdot after CG solve */
 } Usr ;
@@ -128,9 +128,9 @@ void 		usrNew(			UsrHd		usrHd,
                                     int*		nTmpDims,
                                     int*		rowp,
                                     int*		colm,
-                                    double*		lhsK,
-                                    double*		lhsP,
-                                    double*         lhsS,
+                                    float*		lhsK,
+                                    float*		lhsP,
+                                    float*         lhsS,
                                     int*             nnz_tot,
                                     double*         CGsol) ;
 

@@ -124,12 +124,12 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
                 endif
         enddo
         !communicate kMax about proccessors
-        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
         call MPI_ALLREDUCE(kMax,kMax_all,1,MPI_REAL8,MPI_MAX,
      &   MPI_COMM_WORLD,ierr)
         kMax=kMax_all
        !communicate leMax about Proccessors
-        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!        call MPI_BARRIER(MPI_COMM_WORLD,ierr)
         call MPI_ALLREDUCE(leMax,leMax_all,1,MPI_REAL8,MPI_MAX,
      &   MPI_COMM_WORLD,ierr)
         leMax=leMax_all
@@ -246,7 +246,7 @@ c       If not the first time step of STG, the random variables were read from t
                 allocate(holdSurf(prs))
             endif
             !Halt all proccesses
-            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
             !Gather nNSurf into holdSurf in the master process
             call MPI_GATHER(nNSurf,1,MPI_INT,holdSurf,1,MPI_INT,master
      &          ,MPI_COMM_WORLD,ierr)
@@ -263,7 +263,7 @@ c       If not the first time step of STG, the random variables were read from t
             call MPI_TYPE_CONTIGUOUS(3,MPI_DOUBLE_PRECISION,
      &          newtype,ierr)
             call MPI_TYPE_COMMIT(newtype,ierr)
-            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
             !Send from each non-master proccess the position vectors of the nNSurf nodes
             if(myRank.ne.master.and.nNSurf.ne.0) then
                 !create an array sending pos vectors of nNSurf nodes
@@ -293,7 +293,7 @@ c       If not the first time step of STG, the random variables were read from t
                 enddo
             endif
             !Brodcast nNsurfs_a to all proccesses
-            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
             call MPI_BCAST(nNSurfs_tot,1,MPI_INTEGER,master,
      &          MPI_COMM_WORLD,ierr)
             if(myRank.ne.master)then
@@ -410,7 +410,7 @@ c       If not the first time step of STG, the random variables were read from t
 
 
             !xyzts.dat file must exist before other proccesses hit ln 687 "c...DUMP TIME SERIES"
-            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
 
                
                    

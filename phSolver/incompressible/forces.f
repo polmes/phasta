@@ -56,7 +56,7 @@ c
       if (numpe > 1) then
          Forin = (/ Force(1), Force(2), Force(3), HFlux, 
      &              entrop /)
-         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          call MPI_ALLREDUCE (Forin(1), Forout(1),5,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
          Force = Forout(1:3)
@@ -65,19 +65,19 @@ c
       endif
 
       if (numpe > 1) then
-         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          call MPI_ALLREDUCE (flxID(1,isrfIM), Atots,1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
-         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          call MPI_ALLREDUCE (flxID(2,isrfIM), spmasss,1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
-         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          call MPI_ALLREDUCE (flxID(3,:), Ftots(1,:),MAXSURF+1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
-         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          call MPI_ALLREDUCE (flxID(4,:), Ftots(2,:),MAXSURF+1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
-         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          call MPI_ALLREDUCE (flxID(5,:), Ftots(3,:),MAXSURF+1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
       else
@@ -142,10 +142,10 @@ c     pavet=pavet/nshgt
          pave=sum(y(1:numnp,4)) 
          if (numpe .gt. 1) then
             xnpts=numnp
-           call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!           call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             call MPI_ALLREDUCE (pave, pavet, 1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
-            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             call MPI_ALLREDUCE (xnpts, xnptst, 1,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
             pavet=pavet/xnptst 
@@ -231,7 +231,7 @@ c
         if ( nsrflist(isrf).ne.0 ) then
           SFlux(:) = flxID(:,isrf) ! Area, Mass Flux, Force 1, Force 2, Force 3, Scalars
           if ( numpe > 1 ) then
-            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             call MPI_ALLREDUCE (SFlux, SFluxg,10,
      .        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)
             SFlux = SFluxg

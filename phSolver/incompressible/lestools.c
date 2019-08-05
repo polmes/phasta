@@ -12,7 +12,7 @@
 #ifdef intel
 void  DRVSCLRDIAG(	double *sclrDiag,	int *ilwork,	int *iBC,
                                 double *BC,		int *iper,	int *rowp,
-                                int *colm,	        double *lhsS);
+                                int *colm,	        float *lhsS);
 
 void  FMTXBLKDAXPY(double *srcpnt, double *dstpnt,	double *coef,
                             int *mDims,			int *dim);
@@ -28,7 +28,7 @@ void  FMTXVDIMVECCP(double *srcpnt,		double *dstpnt,	int *nSrcDims,
 
 void  DRVLESPREPDIAG(	double *flowDiag,	int *ilwork,	int *iBC,
 								double *BC,			int *iper,		int *rowp,
-								int *colm,			double *lhsK,   double *lhsP) ;
+								int *colm,			float *lhsK,   float *lhsP) ;
 
 void  FMTXVDIMVECMULT(	double* ,			double*,
 								double *dstpnt,		int *nSrcDims,
@@ -88,12 +88,12 @@ void  COMMIN(	double *lesQ,		int *ilwork,		int *nPs,
 void  COMMOUT(	double *lesP,		int *ilwork,		int *nQs,
 						int *iper,			int *iBC,			double *BC);
 
-void  FLESSPARSEAPFULL(int *colm,		int *rowp,		double *lhsK,
-								double *lhsP,	double *lesP,	double *lesQ,
+void  FLESSPARSEAPFULL(int *colm,		int *rowp,		float *lhsK,
+								float *lhsP,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
 
 void  FLESSPARSEAPSCLR(int *colm,		int *rowp,
-								double *lhsS,	double *lesP,	double *lesQ,
+								float *lhsS,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
 
 void  FMTXVDIMVECDOT2 (double *src1pnt, double *src2pnt, double *coefp,
@@ -104,21 +104,21 @@ void  FMTXVDIMVECDAXPY (	double *srcpnt, double *dstpnt, double *coef,
 								int *nNodes);
 
 void  FLESSPARSEAPG	(	int *colm,		int *rowp,
-								double *lhsP,	double *lesP,	double *lesQ,
+								float *lhsP,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
 
 void  FLESSPARSEAPNGT	(	int *colm,		int *rowp,
-								double *lhsP,	double *lesP,	double *lesQ,
+								float *lhsP,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
 	
 void  FLESSPARSEAPNGTC (	int *colm,		int *rowp,
-								double *lhsP,	double *lesP,	double *lesQ,
+								float *lhsP,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
 
-void  FLESSPARSEAPKG (	int *colm,		int *rowp,		double *lhsK,
-								double *lhsP,	double *lesP,	double *lesQ,
+void  FLESSPARSEAPKG (	int *colm,		int *rowp,		float *lhsK,
+								float *lhsP,	double *lesP,	double *lesQ,
 								int *nNodes,	int *nnz);
-void  RAMG_INTERFACE ( int *colm, int *rowp, double *lhsK,double *lhsP,
+void  RAMG_INTERFACE ( int *colm, int *rowp, float *lhsK,float *lhsP,
                        double *mcgR,double *mcgZ,
                        int *ilwork, double *BC, int *iBC,int *iper);
 #endif
@@ -191,7 +191,10 @@ void lesDiagScaleCp ( UsrHd   usrHd,
                        &nDofs,
                        &nDstDims,
                        &nDims,
-                       &(usrHd->nNodes) ) ;
+                       &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
     }
  
     if ( (usrHd->eqnType) == 2 )  {
@@ -208,7 +211,10 @@ void lesDiagScaleCp ( UsrHd   usrHd,
                        &nDofs,
                        &nDstDims,
                        &nDims,
-                       &(usrHd->nNodes) ) ;
+                       &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
     }
 
 } 
@@ -623,7 +629,12 @@ void lesBlkDot2 ( UsrHd   usrHd,
                  src2pnt,
                  valuesp,
                  &mDims,
-                 &dim ) ;
+                 &dim,
+                 &mpistats.rblasphasta,
+                 &mpistats.rblasmkl, 
+                 &mpistats.iblasphasta,
+                 &mpistats.iblasmkl,
+                 &workfc.ieqswork ) ;
 
     drvAllreduce ( valuesp,
                    values,
@@ -755,8 +766,10 @@ void lesBlkDmaxpy ( UsrHd   usrHd,
                    &mDims,
                    &dim, 
                    &mpistats.rblasmaxpy,
-                   &mpistats.iblasmaxpy ) ;
+                   &mpistats.iblasmaxpy,
+                   &workfc.ieqswork ) ;
 }
+
 
 /*-----------------------------------------------------------------------
  *
@@ -914,7 +927,10 @@ void lesApG ( UsrHd   usrHd,
                      &nDofs,
                      &nPs,
                      &nPs,
-                     &(usrHd->nNodes) ) ;
+                     &(usrHd->nNodes), 
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork ) ;
 
     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	      usrHd->iper, usrHd->iBC, usrHd->BC );
@@ -935,7 +951,10 @@ void lesApG ( UsrHd   usrHd,
                      &nDofs,
                      &nDstDims,
                      &nQs,
-                     &(usrHd->nNodes) ) ;
+                     &(usrHd->nNodes), 
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork ) ;
 }
 
 /*-----------------------------------------------------------------------
@@ -990,7 +1009,10 @@ void lesApKG ( UsrHd   usrHd,
                      &nDofs,
                      &nPs,
                      &nP1s,
-                     &(usrHd->nNodes) ) ;
+                     &(usrHd->nNodes) ,
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork ) ;
 
     fMtxVdimVecMult( src2pnt,
                      usrHd->flowDiag+p2Off,
@@ -999,7 +1021,10 @@ void lesApKG ( UsrHd   usrHd,
                      &nDofs,
                      &nPs,
                      &nP2s,
-                     &(usrHd->nNodes) );
+                     &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  );
 
     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	      usrHd->iper, usrHd->iBC, usrHd->BC  );
@@ -1021,7 +1046,10 @@ void lesApKG ( UsrHd   usrHd,
 		     &nDofs,
 		     &nDstDims,
 		     &nQs,
-		     &(usrHd->nNodes) ) ;
+		     &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
 }
 
 /*-----------------------------------------------------------------------
@@ -1064,7 +1092,10 @@ void lesApNGt ( UsrHd   usrHd,
                      &nDofs,
                      &nPs,
                      &nPs,
-                     &(usrHd->nNodes) ) ;
+                     &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
 
     commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	      usrHd->iper, usrHd->iBC, usrHd->BC  );
@@ -1085,7 +1116,10 @@ void lesApNGt ( UsrHd   usrHd,
 		     &nDofs,
 		     &nDstDims,
 		     &nQs,
-		     &(usrHd->nNodes) ) ;
+		     &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
 } 
 
 /*-----------------------------------------------------------------------
@@ -1140,7 +1174,10 @@ void lesApNGtC ( UsrHd   usrHd,
                       &nDofs,
                       &nPs,
                       &nP1s,
-                      &(usrHd->nNodes) ) ; 
+                      &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ; 
 
      fMtxVdimVecMult( src2pnt,
                       usrHd->flowDiag+p2Off,
@@ -1149,7 +1186,10 @@ void lesApNGtC ( UsrHd   usrHd,
                       &nDofs,
                       &nPs,
                       &nP2s,
-                      &(usrHd->nNodes) ) ;
+                      &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
      commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	       usrHd->iper, usrHd->iBC, usrHd->BC  );
 
@@ -1169,7 +1209,10 @@ void lesApNGtC ( UsrHd   usrHd,
                       &nDofs,
                       &nDstDims,
                       &nQs,
-                      &(usrHd->nNodes) ) ;
+                      &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
 }
 
 /*-----------------------------------------------------------------------
@@ -1213,7 +1256,10 @@ void lesApFull ( UsrHd   usrHd,
                       &nDofs,
                       &nPs,
                       &nPs,
-                      &(usrHd->nNodes) ) ;
+                      &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
      commOut ( usrHd->lesP, usrHd->ilwork, &nPs,
 	       usrHd->iper, usrHd->iBC, usrHd->BC  );
 
@@ -1233,7 +1279,10 @@ void lesApFull ( UsrHd   usrHd,
 		      &nDofs,
 		      &nDstDims,
 		      &nQs,
-		      &(usrHd->nNodes) ) ;
+		      &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
 }
 
 /*-----------------------------------------------------------------------
@@ -1284,7 +1333,10 @@ void lesApSclr ( UsrHd   usrHd,
                        &nDofs,
                        &nPs,
                        &nPs,
-                       &(usrHd->nNodes) ) ;
+                       &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
      /*POTENTIAL DEV  post sends by owners and then wait for completion */
      commOut ( usrHd->lesP, usrHd->ilwork, &nPs,   /* first argument is going to be copied from owner/master to all non-owner/slaves */
 	       usrHd->iper, usrHd->iBC, usrHd->BC  ); /* this makes all non-owner/slaves "globally complete" ... same value as owner/master */
@@ -1306,7 +1358,10 @@ void lesApSclr ( UsrHd   usrHd,
                               &nDofs,
                               &nDstDims,
                               &nQs,
-                              &(usrHd->nNodes) ) ;
+                              &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
 
             flesDaxpy ( srcpnt,
                         usrHd->lesP,
@@ -1328,7 +1383,10 @@ void lesApSclr ( UsrHd   usrHd,
                               &nDofs,
                               &nDstDims,
                               &nQs,
-                              &(usrHd->nNodes) ) ;
+                              &(usrHd->nNodes),
+                     &mpistats.rblasvvm,
+                     &mpistats.iblasvvm,
+                     &workfc.ieqswork  ) ;
         }
     
 }

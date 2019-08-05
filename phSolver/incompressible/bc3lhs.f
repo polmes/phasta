@@ -23,7 +23,8 @@ c
       include "common.h"
 c
       dimension iBC(nshg),      ien(npro,nshl)
-      real*8 BC(nshg,ndofBC), xlhs(bsz,16,nshl,nshl)
+      real*8 BC(nshg,ndofBC)
+      real*4 xlhs(bsz,16,nshl,nshl)
       integer aa,b
       integer iens(npro,nshl)
 c
@@ -864,7 +865,8 @@ c
       include "common.h"
 c
       dimension iBC(nshg),      ien(npro,nshl)
-      real*8 BC(nshg,ndofBC), xlhs(bsz,nshl,nshl)
+      real*8 BC(nshg,ndofBC)
+      real*4 xlhs(bsz,nshl,nshl)
       integer aa,b
       integer iens(npro,nshl)
       logical :: ibool

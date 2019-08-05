@@ -478,7 +478,7 @@ c         ilast=0
             if(stepseq(i).eq.0) nitr=nitr+1
          enddo
 
-         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          tcorecp(:) = zero ! used in solfar.f (solflow)
          tcorecpscal(:) = zero ! used in solfar.f (solflow)
          if(myrank.eq.0)  then
@@ -1028,12 +1028,12 @@ c .. write out the instantaneous solution
                   output_mode=-1 ! reset to stream 
              endif
            else
-             if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!             if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              call checkpoint (yold,ac,acold,uold,x,shp, shgl, shpb, 
      &                       shglb,ilwork, iBC,BC,iper,wallsvec,
      &                       rerr,ybar,wallssVecBar,yphbar,
      &                       vorticity,irank2ybar,irank2yphbar,istp)
-             if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!             if (numpe.gt.1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
            endif
         endif
         !next 2 lines are two ways to end early
@@ -1074,7 +1074,7 @@ c .. write out the instantaneous solution
 
           if(iSTG.eq.1) deallocate(STGrnd)
 
-         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
             tcorecp2 = TMRC()
              write(6,*) 'T(core) cpu = ',tcorecp2-tcorecp1
@@ -1112,7 +1112,7 @@ c.... close varts file for probes
 c
       call finalizeTimeSeries()
 
-      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'itrdrv - done with aerodynamic forces'
       endif
@@ -1125,7 +1125,7 @@ c
         endif
       enddo
 
-      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'itrdrv - done with MAXSURF'
       endif
@@ -1145,7 +1145,7 @@ c
 
       if(iabc==1) deallocate(acs)
 
-      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
           write(*,*) 'itrdrv - done - BACK TO process.f'
       endif
@@ -2082,7 +2082,7 @@ c
 !     &                    MPI_DOUBLE_PRECISION, MPI_SUM, master,
 !     &                    MPI_COMM_WORLD, ierr)
 
-                     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!                     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                      call MPI_ALLREDUCE(vartssoln, vartssolng, 
      &                    ndof*ntspts,
      &                    MPI_DOUBLE_PRECISION, MPI_SUM,
@@ -2092,7 +2092,7 @@ c
 !     &                    MPI_INTEGER, MPI_SUM, master,
 !     &                    MPI_COMM_WORLD, ierr)
 
-                     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!                     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                      call MPI_ALLREDUCE(ivarts, ivartsg, ndof*ntspts,
      &                    MPI_INTEGER, MPI_SUM,
      &                    MPI_COMM_WORLD, ierr)
@@ -2412,7 +2412,7 @@ c.... compute the consistent boundary flux
       endif
 c....  print out results.
       lesId   = numeqns(1)
-      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!      if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       if(myrank.eq.0)  then
         tcormr1 = TMRC()
       endif
@@ -2420,7 +2420,7 @@ c....  print out results.
 #ifdef HAVE_LESLIB
         call saveLesRestart( lesId,  aperm , nshg, myrank, lstep,
      &                    nPermDims )
-        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr2 = TMRC()
           write(6,*) 'call saveLesRestart for projection and'//
@@ -2435,12 +2435,12 @@ c.....smooth the error indicators
           call errsmooth( rerr, x, iper, ilwork, shp, shgl, iBC )
         end do
         call LSbandError(rerr,yold)
-        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr1 = TMRC()
         endif
         call write_error(myrank, lstep, nshg, numerr, rerr )
-        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr2 = TMRC()
           write(6,*) 'Time to write the error fields to the disks',
@@ -2456,7 +2456,7 @@ c.....smooth the error indicators
         endif
 
         if(nphasesincycle .gt. 0) then
-          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
           if(myrank.eq.0)  then
             tcormr1 = TMRC()
           endif
@@ -2464,7 +2464,7 @@ c.....smooth the error indicators
               call write_phavg2(myrank,'a','phase_average',13,iphase,
      &          nphasesincycle,yphbar(:,:,iphase),'d',nshg,irank2yphbar,lstep)
           end do
-          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
           if(myrank.eq.0)  then
             tcormr2 = TMRC()
             write(6,*) 'write all phase avg to the disks = ',
@@ -2473,13 +2473,13 @@ c.....smooth the error indicators
         endif !nphasesincyle
       endif !ioybar
       if(iRANS.lt.0.or.iSTG.eq.1) then
-        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr1 = TMRC()
         endif
         call write_field(myrank,'a','dwal',4,d2wall,'d',
      &                   nshg,1,lstep)
-        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
         if(myrank.eq.0)  then
           tcormr2 = TMRC()
           write(6,*) 'Time to write dwal to the disks = ',
@@ -2492,28 +2492,28 @@ c         STGrnd(:,1:3)=dVect
 c         STGrnd(:,4)=phiVect
 c         STGrnd(:,5:7)=sigVect        
           if(iSTG.eq.1) then
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr1 = TMRC()
             endif
 cc ......   Write the STG random variables
             call write_field(myrank,'a','STG_rnd',7,STGrnd,'d',
      &                       nKWave,7,lstep)
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write STG_rnd to the disks = ',
      &        tcormr2-tcormr1
             endif
 
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr1 = TMRC()
             endif
 cc ......   Write the BC array. Quick fix to problem with inflow BC in geombc files
             call write_field(myrank,'a','BCs',3,BC,'d',
      &                       nshg,ndofBC,lstep)
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write BCs to the disks = ',
@@ -2546,7 +2546,7 @@ cc ....   Write velbar if wanted
 
 cc ....   Write span avg stats if wanted
           if (ispanAvg.eq.1) then
-             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then
               tcormr1 = TMRC()
              endif
@@ -2569,7 +2569,7 @@ cc ....   Write span avg stats if wanted
 
 cc ....   Write span avg stats for K eq if wanted
           if (ispanAvg.eq.1.and.iKeq.eq.1) then
-             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
              if(myrank.eq.0)  then
               tcormr1 = TMRC()
              endif
@@ -2592,25 +2592,25 @@ cc ....   Write span avg stats for K eq if wanted
 
 cc ..... Write the eddy viscosity when doing a dynamic Smag LES (iLES=1)
           if (iLES.gt.0) then
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr1 = TMRC()
             endif
             call write_field(myrank,'a','cdelsq',6,cdelsq,'d',
      &                       nshg,3,lstep)
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write cdelsq to the disks = ',
      &        tcormr2-tcormr1
             endif
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr1 = TMRC()
             endif
             call write_field(myrank,'a','lesnut',6,lesnut,'d',
      &                       numel,2,lstep)
-            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
             if(myrank.eq.0)  then
               tcormr2 = TMRC()
               write(6,*) 'Time to write lesnut to the disks = ',

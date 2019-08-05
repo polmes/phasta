@@ -4,9 +4,9 @@ c
 c
 c
       include "common.h"
-      real*8	xlhs(bsz,16,nshl,nshl)
+      real*4	xlhs(bsz,16,nshl,nshl)
       integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
-      real*8	lhs16(16,nnz_tot)
+      real*4	lhs16(16,nnz_tot)
 c
       integer	aa,	b,	c,	e,	i,	k,	n
 c
@@ -203,9 +203,9 @@ cdir$ ivdep
      1                         row,    col)
       
       include "common.h"
-      real*8    xSebe(bsz,nshl,nshl)
+      real*4    xSebe(bsz,nshl,nshl)
       integer    ien(npro,nshl),    col(nshg+1), row(nshg*nnz)
-      real*8    lhsS(nnz_tot)    
+      real*4    lhsS(nnz_tot)    
 
       integer    aa,    b,    c,    e,    i,    k,    n
 

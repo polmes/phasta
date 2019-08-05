@@ -54,7 +54,7 @@ c
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp,rerrl_qp
 
-        dimension xlhs(bsz,16,blk%s,blk%s)
+        real*4 xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
 c
@@ -266,9 +266,10 @@ c
       real*8    yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof),       
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
      &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
-     &            ql(bsz,blk%s,nsd),      xSebe(bsz,blk%s,blk%s),
+     &            ql(bsz,blk%s,nsd),     
      &            dwl(bsz,blk%n),         cfll(bsz,blk%s),
      &          cfllold(bsz,blk%s),     evl(bsz,blk%s)
+      real*4    xSebe(bsz,blk%s,blk%s)
 c
 c.... local declarations
 c

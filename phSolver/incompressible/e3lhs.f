@@ -39,7 +39,7 @@ c------------------------------------------------------------------------
      &          tauC(blk%e),       tauM(blk%e),     tauBar(blk%e),
      &          shpfun(blk%e,blk%s),shg(blk%e,blk%s,3)
       
-      dimension xlhs(bsz,16,blk%s,blk%s)
+      real*4 xlhs(bsz,16,blk%s,blk%s)
 c
 c.... local declarations
 c
@@ -288,8 +288,8 @@ c
      &          Sclr(blk%e),       Sdot(blk%e),   gradS(blk%e,nsd),
      &          WdetJ(blk%e),      rLS(blk%e),        rho(blk%e), 
      &          tauS(blk%e),       shpfun(blk%e,blk%s),  
-     &          srcL(blk%e),        shg(blk%e,blk%s,3),
-     &			xSebe(bsz,blk%s,blk%s)
+     &          srcL(blk%e),        shg(blk%e,blk%s,3)
+      real*4    xSebe(bsz,blk%s,blk%s)
       
       real*8    diffus(blk%e),  cp,  kptmp(blk%e),tauSo(blk%e)
 

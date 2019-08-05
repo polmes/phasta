@@ -130,8 +130,10 @@ c
 c.... form the LHS matrices, the residual vector (at alpha)
 c
 c      call summary_start()
+      if(1.eq.1) then
       impistat=1
       impistat2=1
+      endif
       telmcp1 = TMRC()
       call ElmGMR (u,         y,     ac,    x,
      &             shp,       shgl,       iBC,       
@@ -200,8 +202,10 @@ c
       eqnType = 1
 
 c      call summary_start()
+      if(1.eq.1) then
       impistat=1
       impistat2=1
+      endif
       tlescp1 = TMRC()
 #ifdef AMG      
       ! Initial Time Profiling
@@ -405,8 +409,10 @@ c.... *******************>> Element Data Formation <<******************
 c
 c.... form the LHS matrices, the residual vector (at alpha)
 c
+      if(1.eq.1) then
       impistat=2
       impistat2=1
+      endif
       telmcp1 = TMRC()
       jsol=nsolt+isclr
       call ElmGMRSclr(y,      ac,    x,
@@ -465,8 +471,10 @@ c
 c.... setup the linear algebra solver
 c
 
+      if(1.eq.1) then
       impistat=2
       impistat2=1
+      endif
       tlescp1 = TMRC()
       call usrNew ( usr,        eqnType,          apermS(1,1,jsol),
      &              atempS,     res,              solinc,          

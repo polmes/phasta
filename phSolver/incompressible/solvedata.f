@@ -2,7 +2,7 @@
 
       integer nsolflow,npermDims, nTmpDims, nPermDimsS, nTmpDimsS
 
-      real*8,  allocatable :: lhs16(:,:), lhsP(:,:), lhsS(:,:)
+      real*4,  allocatable :: lhs16(:,:), lhsP(:,:), lhsS(:,:)
       real*8,  allocatable :: aperm(:,:), atemp(:,:)
       real*8,  allocatable :: apermS(:,:,:), atempS(:,:)
 

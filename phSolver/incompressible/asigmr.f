@@ -41,7 +41,7 @@ c
      &            evl(bsz,blk%s),
      &            cfll(bsz,blk%s)
 c        
-        dimension xlhs(bsz,16,blk%s,blk%s)
+        real*4 xlhs(bsz,16,blk%s,blk%s)
 c
         dimension rlsl(bsz,blk%s,6) 
 
@@ -170,7 +170,8 @@ c
      &            dwl(bsz,blk%n),             evl(bsz,blk%s),
      &            cfll(bsz,blk%s),            cfllold(bsz,blk%s)            
 c        
-        real*8    xSebe(bsz,blk%s,blk%s),      xmudmi(blk%e,blk%g) 
+        real*8    xmudmi(blk%e,blk%g) 
+        real*4    xSebe(bsz,blk%s,blk%s)
 c
 c.... gather the variables
 c

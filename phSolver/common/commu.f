@@ -40,7 +40,7 @@ c
  
       character*3 code
 
-      if(impistat2.eq.1) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+      if(impistat2.eq.1 .and. (0.eq.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
       if(impistat.gt.0) rDelIRecv = zero
       if(impistat.gt.0) rDelISend = zero
       if(impistat.gt.0) rDelWaitAll = zero

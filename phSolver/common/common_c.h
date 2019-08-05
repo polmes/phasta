@@ -224,6 +224,8 @@ extern "C" {
     double rspmvNGtC;
     double rspmvFull;
     double rblasmaxpy;
+    double rblasvvm;
+    int iblasvvm;
     int iblasmaxpy;
     int ispmvKG;
     int ispmvphasta;
