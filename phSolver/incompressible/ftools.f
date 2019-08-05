@@ -327,7 +327,6 @@ c
 c
 c.... Data declaration
 c
-        implicit none
         integer m,      n
         real*8  x(n,m), y(n),   c(m), d(m)
 
