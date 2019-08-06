@@ -17,6 +17,7 @@ c
 c
 c.... Data declaration
 c
+        implicit none
         include "mymkl_vml.fi"
         integer na,     nb,     nc,     m,      n
         real*8  a(n,na),        b(n,nb),        c(n,nc)
@@ -383,7 +384,9 @@ c
 cdir$ ivdep
           rdelta=TMRC()
           do i=1,m
+#ifdef HAVE_MKL
             c(i)=ddot(n,x(1,i),1,y,1)
+#endif
           enddo
           rblasmkl=rblasmkl+TMRC()-rdelta
           iblasmkl=iblasmkl+m
