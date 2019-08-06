@@ -43,13 +43,7 @@
         include "common.h"
         include "mpif.h"
         include "auxmpi.h"
-        real*8, allocatable :: rTemp(:),tdump(:)
-        real*8, allocatable :: tempdump(:,:)
-        double precision, allocatable ::writeTOFile(:,:),thisData(:,:)
-        double precision, allocatable ::writeTOFile_a(:,:)
-        double precision, allocatable ::nNSurfs(:,:), nNSurfs_a(:,:)
-        double precision, allocatable :: tempAllo(:,:)
-        double precision :: temp
+        real*8, allocatable :: rTemp(:)
         real*8, dimension(3) :: tHat,bHat 
         real*8 :: x(numnp,nsd)
         real*8  :: theta
@@ -154,8 +148,9 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
         uTau=nu*reTau/deltaBLSTG
         !find nKWave
         
-        allocate(rTemp(nKWave*5))
-        allocate (dVect(nKWave,3),sigVect(nKWave,3),phiVect(nKWave))
+        allocate (rTemp(nKWave*5))
+        allocate (dVect(nKWave,3),sigVect(nKWave,3))
+        allocate (phiVect(nKWave),phiVectTWO(nKWave))
 
 c       Compute the random variables only on the first step
         if (lstep.eq.iSTGStart) then
@@ -164,9 +159,9 @@ c       Compute the random variables only on the first step
           call random_seed()
           call random_number(rTemp)
           do id=1,nKWave
-                theta=acos(-2.0*Rtemp((id-1)*5+1)+1.0)
-                phiVect(id)=Rtemp((id-1)*5+2)*(2.0*atan2(0.0,-1.0))
-                phiVectTWO(id)=Rtemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
+                theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
+                phiVect(id)=rTemp((id-1)*5+2)*(2.0*atan2(0.0,-1.0))
+                phiVectTWO(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
                 dVect(id,1)=cos(theta)
                 dVect(id,2)=sin(theta)*sin(phiVect(id))
                 dVect(id,3)=sin(theta)*cos(phiVect(id))
@@ -194,10 +189,16 @@ c              bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)
 c              norm=sqrt(bHat(1)**2+bHat(2)**2+bHat(3)**2)
           enddo
 c          Put all needed random numbers in a single array to be written to restart
-           allocate(STGrnd(nKWave,7))
-           STGrnd(:,1:3)=dVect
-           STGrnd(:,4)=phiVect
-           STGrnd(:,5:7)=sigVect
+           if(allocated(STGrnd)) then 
+              STGrnd(:,1:3)=dVect
+              STGrnd(:,4)=phiVect
+              STGrnd(:,5:7)=sigVect
+           else
+              allocate(STGrnd(nKWave,7))
+              STGrnd(:,1:3)=dVect
+              STGrnd(:,4)=phiVect
+              STGrnd(:,5:7)=sigVect
+           endif
 
 c       If not the first time step of STG, the random variables were read from the restart files
         else
