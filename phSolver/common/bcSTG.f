@@ -8,7 +8,8 @@
 
        real*8, allocatable :: dVect(:,:), sigVect(:,:)
        real*8, allocatable :: STGrnd(:,:), BCrestart(:,:) 
-       real*8, allocatable :: phiVect(:),hx1(:),hx2(:),hy1(:),hy2(:)
+       real*8, allocatable :: phiVect(:), phiVectTWO(:)
+       real*8, allocatable :: hx1(:),hx2(:),hy1(:),hy2(:)
        real*8, allocatable :: hz1(:),hz2(:),hMax(:)
        real*8, allocatable :: uBar(:,:), dUBardY(:), duBardYADJ(:)
        real*8, allocatable :: STGInflow(:,:)
