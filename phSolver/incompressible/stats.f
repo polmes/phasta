@@ -216,8 +216,6 @@ c
          call elmStatsRes( yAlpha,   acAlpha,     uAlpha, x,       shp,   shgl, 
      &                     shpb,     shglb,       iBC,     BC, 
      &                     iper,     ilwork, rowp, colm )
-!         call MPI_BARRIER(MPI_COMM_WORLD,ierr) 
-!         if(myrank.eq.master) write(*,*) 'after elmStatsRes'
 c
 c.... compute the statistics
 c

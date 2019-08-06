@@ -136,7 +136,7 @@ c
      &                                   sevsegtype(itask,11), ierr)
 !       call MPI_TYPE_HVECTOR(22,1,lstride,sevsegtype(itask,1),
 !     &                                   sevsegtype(itask,12), ierr)
-       call MPI_TYPE_HVECTOR(17,1,lstride,sevsegtype(itask,1),
+       call MPI_TYPE_HVECTOR(18,1,lstride,sevsegtype(itask,1),
      &                                   sevsegtype(itask,12), ierr)
        call MPI_TYPE_HVECTOR(16,1,lstride,sevsegtype(itask,1),
      &                                   sevsegtype(itask,13), ierr)

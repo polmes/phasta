@@ -149,7 +149,10 @@ c
         do iel=1,npro
            if (iBCB(iel,2) .ne. 0) then
               iface = iBCB(iel,2)
-              ndsurf(ienb(iel,1:nshlb))=iface   
+              do i=1,nshlb
+                ifc=ndsurf(ienb(iel,i))
+                ndsurf(ienb(iel,i))=max(ifc,iface)  ! when people put surfIDs on faces thatshare an edge....  
+              enddo
            endif
         enddo
 c     

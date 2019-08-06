@@ -209,7 +209,11 @@ c
 ! for  such mistakes here by introducing a new variable, iphShift which
 ! can be calculated  with knowledge of the number of time steps per cycle
 ! which is a new required variable with this version.
-          itsStart=timestep-sumts
+          if(sumts .lt. 0) then ! JF - negative sumts is used in subtracting the already acustat'ed solution
+            itsStart=timestep
+          else 
+            itsStart=timestep-sumts
+          endif
           iCycleStep=mod(itsStart,iStepsPerCycle)
           iphShift=(iCycleStep*numphavg)/iStepsPerCycle ! will be zero if old way
           if((debug.ge.1).and.(myrank.eq.0)) then
@@ -466,7 +470,7 @@ c
             nshg2=intfromfile(1)
             ndof2=intfromfile(2)
             allocate( qold(nshg2,ndof2) )
-            qold(:,:) = -9.87654321e32
+            qold(:,:) = -9.5e32
             lstep=intfromfile(3)
             allocate( qread(nshg2,ndof2) ) ; qread = 0.d0
             iqsiz=nshg2*ndof2
@@ -494,7 +498,7 @@ c
               nshg2=intfromfile(1)
               ndofvort=intfromfile(2)
               allocate( qvorticity(nshg2,ndofvort) )
-              qvorticity(:,:) = -9.87654321e32
+              qvorticity(:,:) = -9.5e32
               allocate( qread(nshg2,ndofvort) ) ; qread = 0.d0
               iqsiz=nshg2*ndofvort
               call readdatablock(descriptor,fname1//char(0),qread,
@@ -521,7 +525,7 @@ c
             if(intfromfile(1).ne.0) then 
               nshg2=intfromfile(1)
               allocate( dwal(nshg2) )
-              dwal(:) = -9.87654321e32
+              dwal(:) = -9.5e32
               allocate( qread1(nshg2) ) ; qread1 = 0.d0
               iqsiz=nshg2*1
               call readdatablock(descriptor,fname1//char(0),qread1,

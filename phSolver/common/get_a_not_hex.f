@@ -6,7 +6,7 @@
       include "common.h"
       type (LocalBlkData) blk  
 
-      dimension xc(blk%e,blk%n,nsd), anot(blk%e,blk%n,nsd)
+      dimension xc(bsz,blk%n,nsd), anot(blk%e,blk%n,nsd)
 
 
       do i = 1, nsd
@@ -70,7 +70,7 @@
       use eblock
       include "common.h"
       type (LocalBlkData) blk
-      dimension xc(blk%e,blk%n,nsd), anot(blk%e,blk%n,nsd)
+      dimension xc(bsz,blk%n,nsd), anot(blk%e,blk%n,nsd)
 
 
       do i = 1, nsd

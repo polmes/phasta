@@ -754,31 +754,31 @@
         nshgN=maxvIDout(myrank+1) ! number of vtx on my part computed above
 
         allocate(qoldN(nshgN,ndof))! size of my final mapped field array
-        qoldN=-9.87654321e32       ! set to absurd, easily recognized value to find holes
+        qoldN=-9.6e32       ! set to absurd, easily recognized value to find holes
 
         if(iybar == 1) then
           allocate(ybarN(nshgN,ndofybar))   ! size of my final mapped field array
-          ybarN=-9.87654321e32       ! set to absurd, easily recognized value to find holes
+          ybarN=-9.6e32       ! set to absurd, easily recognized value to find holes
         endif
 
         if(ierror == 1) then
           allocate(errorsN(nshgN,ndoferrors))   ! size of my final mapped field array
-          errorsN=-9.87654321e32       ! set to absurd, easily recognized value to find holes
+          errorsN=-9.6e32       ! set to absurd, easily recognized value to find holes
         endif
 
         if(numphavg .gt. 0) then
           allocate(yphbarN(nshgN,ndofyphbar,numphavg))   ! size of my final mapped field array
-          yphbarN=-9.87654321e32       ! set to absurd, easily recognized value to find holes
+          yphbarN=-9.6e32       ! set to absurd, easily recognized value to find holes
         endif
 
         if(ivort == 1) then
           allocate( vortN(nshgN,ndofvort))
-          vortN=-9.87654321e32
+          vortN=-9.6e32
         endif
 
         if(idwal == 1) then
           allocate(dwalN(nshgN))   ! size of my final mapped field array
-          dwalN=-9.87654321e32       ! set to absurd, easily recognized value to find holes
+          dwalN=-9.6e32       ! set to absurd, easily recognized value to find holes
         endif
  
 
@@ -905,7 +905,7 @@
                   ! there are really data to receive
 !                  write(*,*) '  ', irN,'receives',ifill,'data from',irM
                   allocate(qrecv(ifill*numvar))
-                  qrecv = -9.87654321e32 
+                  qrecv = -9.6e32 
                   call mpi_recv(qrecv, ifill*numvar, MPI_DOUBLE, irM,
      &                                tag, mpi_comm_world, stat, ierr)
                   do i=1,ifill
@@ -965,7 +965,7 @@
                 ifill = 0
                 if (icountN(irN+1) .gt. 0) then !there are data to transfer
                   allocate(qsend(icountN(irN+1)*numvar))
-                  qsend(:) = -9.87654321e32
+                  qsend(:) = -9.6e32
                   do i=1,nshg
                     ifileN = pID(i)+1.1 !shift to start from 1
                     if(ifileN == irN+1) then 
@@ -1066,7 +1066,7 @@
 !      write(*,*) 'maxicountN:',myrank, maxicountN, maxicountNglob, nshg
 !      call mpi_barrier(mpi_comm_world, ierr)
 !      allocate(qTota2as(numvar*maxicountNglob,numpe))
-!      qTota2as(:,:) = -9.87654321e32
+!      qTota2as(:,:) = -9.6e32
 
 !      allocate(indexpart(numpe)); indexpart(:)=0
 !      do i=1,nshg
@@ -1088,7 +1088,7 @@
 !      enddo
       
 !      allocate(qTota2ar(numvar*maxicountNglob,numpe))
-!      qTota2ar(:,:) = -9.87654321e32
+!      qTota2ar(:,:) = -9.6e32
 
 !      ncount = numvar*maxicountNglob
 !      call mpi_alltoall(qTota2as(1,1), ncount, MPI_DOUBLE, 
@@ -1365,7 +1365,7 @@
 !
 !      Test the result from mpi_alltoall
 !
-!      qoldN=-9.87654321e32
+!      qoldN=-9.6e32
 !      l=myrank+1
 !      do j=1,numpe ! should really go to irankN
 !        do i=1,maxicountNglob

@@ -498,6 +498,7 @@ c
 
         if(iramp.eq.1) then
             call BCprofileScale(vbc_prof,BC,yold) ! fix the yold values to the reset BC
+            call itrBC (yold,  ac,  iBC,  BC,  iper,ilwork)
             isclr=1 ! fix scalar
             do isclr=1,nsclr
                call itrBCSclr(yold,ac,iBC,BC,iper,ilwork)
@@ -514,8 +515,10 @@ c...       STG Inflow
              call applySTG(tcurrent,BC,x)
            endif
 
-           if(iramp.eq.1) 
-     &        call BCprofileScale(vbc_prof,BC,yold)
+           if(iramp.eq.1)  then
+            call BCprofileScale(vbc_prof,BC,yold)
+            call itrBC (yold,  ac,  iBC,  BC,  iper,ilwork)
+           endif
 
            call rerun_check()
            if(myrank.eq.master) write(*,*) 

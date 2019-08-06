@@ -330,7 +330,7 @@ c
          ndof2=intfromfile(2)
          ndof=ndof2 !This must be the same anyway
          allocate( qold(nshg,ndof) )
-         qold(:,:) = -9.87654321e32
+         qold(:,:) = -9.8e32
          lstep=intfromfile(3)
          allocate( qread(nshg2,ndof2) )
 
@@ -345,6 +345,9 @@ c
          call readdatablock(descriptor,fname1//char(0),qread,iqsiz,
      &                         'double'//char(0),iotype)
          qold(1:nshg2,1:ndof2)=qread(1:nshg2,1:ndof2)
+         qhole1=minval(qread(:,1))
+         qhole2=minval(qold(:,1))
+         if(qhole2 .lt. -9.0e31) write(*,*) "myrank,qholeRead,qholdOld",myrank,qhole1,qhole2
          deallocate(qread)
       else
          if (myrank.eq.master) then
@@ -391,7 +394,7 @@ c
         !lstep=intfromfile(3)
         if(ndofybar .ne. 0) then 
           allocate( ybar(nshg,ndofybar) )
-          ybar(:,:) = -9.87654321e32
+          ybar(:,:) = -9.8e32
           allocate( qread(nshg2,ndofybar) )
 
           iqsiz=nshg2*ndofybar
@@ -422,7 +425,7 @@ c
         !lstep=intfromfile(3)
         if(ndoferrors .ne. 0) then 
           allocate( errors(nshg,ndoferrors) )
-          errors(:,:) = -9.87654321e32
+          errors(:,:) = -9.8e32
           allocate( qread(nshg2,ndoferrors) )
           iqsiz=nshg2*ndoferrors
           call readdatablock(descriptor,fname1//char(0),qread,iqsiz,
@@ -463,7 +466,7 @@ c
             ! Allocate some memory for the first ts only
             if(iphavg==1) then
               allocate( yphbar(nshg,ndofyphbar,numphavg) )
-              yphbar(:,:,:) = -9.87654321e32
+              yphbar(:,:,:) = -9.8e32
             endif
 
             allocate( qread(nshg2,ndofyphbar) )
@@ -506,7 +509,7 @@ c
 
         if(ndofvort .ne. 0) then 
           allocate(vort(nshg,ndofvort))
-          vort(:,:) = -9.87654321e32
+          vort(:,:) = -9.8e32
           allocate(qread(nshg2,ndofvort))
           iqsiz = nshg2*ndofvort
           call readdatablock(descriptor,fname1//char(0),qread,iqsiz,
@@ -542,7 +545,7 @@ c
             write(*,*) warning, ndofdwal
           endif
           allocate( dwal(nshg) )
-          dwal(:) = -9.87654321e32
+          dwal(:) = -9.8e32
           allocate( qread1(nshg2) )
           iqsiz=nshg2*1
           call readdatablock(descriptor,fname1//char(0),qread1,iqsiz,
@@ -696,6 +699,7 @@ c
 
       if (numpe > 1) then
          ! solution
+       if(idebug .ne. 2) then
           call commuMax (qold, point2ilwork, ndof, 'in '//char(0))
           do k = 1,ndof
              do j = 1,nshg 
@@ -709,8 +713,11 @@ c
              enddo
           enddo
           call commuMax (qold, point2ilwork, ndof, 'out'//char(0))
+         qhole2=minval(qold(:,1))
+         if(qhole2 .lt. -9.0e31) write(*,*) "ACom myrank,,qholdOld",myrank,qhole2
           call mpi_barrier(mpi_comm_world, ierr)  ! make sure everybody is done with ilwork
 
+      endif
           if(idebug==1) then
           nholes = 0
           nTempdot = 0
