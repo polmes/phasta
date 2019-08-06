@@ -17,7 +17,6 @@ c
 c
 c.... Data declaration
 c
-        implicit none
         include "mymkl_vml.fi"
         integer na,     nb,     nc,     m,      n
         real*8  a(n,na),        b(n,nb),        c(n,nc)
@@ -29,7 +28,7 @@ c
         iwork=mod(ieqswork,10)
         if(iwork.eq.2) then
          do j=1,m
-           call vdmul(n,a(1,j),b(1,j),c(1,j))
+!           call vdmul(n,a(1,j),b(1,j),c(1,j))
          enddo
         else if(iwork.eq.8) then
             do i = 1, n 
