@@ -132,13 +132,13 @@ c
            !read inlet.dat meta data
            read(654,*) ninterp,ICset,iBCset,isrfidmatch,(interp_mask(j),j=1,ndof)
            !ninterp = number of data points to interpolate between
-           !ICset = 0,1 depending on whether IC need to be set
+           !ICset = 0,1,2 depending on whether IC need to be set
            !iBCset = 0,1 depending on whether BCs need to be set
            !isrfidmatch = surf ID where BCs need to be set
            !interp_mask(j) = 0,1 whether p,T,u,v,w,scalar needs to be set
 
 
-           if(ICset.eq.1) then  ! we need a map that takes IC# and returns IC #
+           if(ICset.ge.1) then  ! we need a map that takes IC# and returns IC #
              Map2ICfromBC(1)=4
              Map2ICfromBC(2)=5
              Map2ICfromBC(3)=1
@@ -157,10 +157,21 @@ c
            do i=1,ninterp
               read(654,*) (bcinterp(i,j),j=1,ndof+1)
            enddo
+
+!           speedTargetInv=1.0/sqrt(bcinterp(ninterp,4)**2 
+!     &                           + bcinterp(ninterp,5)**2
+!     &                           + bcinterp(ninterp,6)**2)
+!           vUnitTargetx=bcinterp(ninterp,4)*speedInv
+!           vUnitTargety=bcinterp(ninterp,5)*speedInv
+!           vUnitTargetz=bcinterp(ninterp,6)*speedInv
+           vTargetx=bcinterp(ninterp,4)
+           vTargety=bcinterp(ninterp,5)
+           vTargetz=bcinterp(ninterp,6)
+ 
            do i=1,nshg  ! only correct for linears at this time
               iBcon = 0
               if((ndsurf(i).eq.isrfidmatch).and.(iBCset.eq.1)) iBCon=1
-              if((IBCon.eq.1).or.(ICset.eq.1)) then ! need to compute the bounding points and interpolator, xi
+              if((IBCon.eq.1).or.(ICset.ge.1)) then ! need to compute the bounding points and interpolator, xi
                  iupper=0
                  do j=2,ninterp
                     if(bcinterp(j,1).gt.d2wall(i)) then !bound found
@@ -202,8 +213,26 @@ c
                    enddo
                  endif ! ICset
 
+                 if(ICset.eq.2) then  ! adding ability to rotate velocity vector only to simulate AOA change
+
+                   y(i,1)=(xi*vTargetx
+     &                    +(one-xi)*y(i,1) )
+                   y(i,2)=(xi*vTargety
+     &                    +(one-xi)*y(i,2) )
+                   y(i,3)=(xi*vTargetz
+     &                    +(one-xi)*y(i,3) )
+                  
+                 endif ! ICset
+
               endif ! either IBC active or icset active
            enddo
+!
+! since we have changed the BC it is essential that we apply it.
+! Otherwise the BC that was applied from the geombc.dat files will be
+! what we start with since it has already overwritten the IC in genini.f
+!
+         call itrBC (y, ac,  iBC, BC, point2iper, point2ilwork)
+
         endif  ! inlet.dat existed
 c$$$$$$$$$$$$$$$$$$$$
 
@@ -392,16 +421,6 @@ c
         if (allocated(velbar)) deallocate(velbar)
         if (allocated(stsBar)) deallocate(stsBar)
         if (allocated(stsBarKeq)) deallocate(stsBarKeq)
-!        if (allocated(velf)) deallocate(velf)
-!        if (allocated(velftG)) deallocate(velftG)
-!        if (allocated(locifath)) deallocate(locifath)
-!        if (allocated(ifathG)) deallocate(ifathG)
-!        if (allocated(rcounts)) deallocate(rcounts)
-!        if (allocated(displs)) deallocate(displs)
-!        if (allocated(tmpStatsf)) deallocate(tmpStatsf)
-!        if (allocated(tmpStatsftG)) deallocate(tmpStatsftG)
-!        if (allocated(tmpKeqf)) deallocate(tmpKeqf)
-!        if (allocated(tmpKeqftG)) deallocate(tmpKeqftG)
         deallocate(cdelsq)
         deallocate(uold)
         deallocate(wnrm)

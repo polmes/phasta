@@ -8,7 +8,8 @@
 
        real*8, allocatable :: dVect(:,:), sigVect(:,:)
        real*8, allocatable :: STGrnd(:,:), BCrestart(:,:) 
-       real*8, allocatable :: phiVect(:),hx1(:),hx2(:),hy1(:),hy2(:)
+       real*8, allocatable :: phiVect(:), phiVectTWO(:)
+       real*8, allocatable :: hx1(:),hx2(:),hy1(:),hy2(:)
        real*8, allocatable :: hz1(:),hz2(:),hMax(:)
        real*8, allocatable :: uBar(:,:), dUBardY(:), duBardYADJ(:)
        real*8, allocatable :: STGInflow(:,:)
@@ -163,36 +164,34 @@ c       Compute the random variables only on the first step
           call random_seed()
           call random_number(rTemp)
           do id=1,nKWave
-              theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
-              phiVect(id)=rTemp((id-1)*5+4)*(2.0*atan2(0.0,-1.0))
+                theta=acos(-2.0*Rtemp((id-1)*5+1)+1.0)
+                phiVect(id)=Rtemp((id-1)*5+2)*(2.0*atan2(0.0,-1.0))
+                phiVectTWO(id)=Rtemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
+                dVect(id,1)=cos(theta)
+                dVect(id,2)=sin(theta)*sin(phiVect(id))
+                dVect(id,3)=sin(theta)*cos(phiVect(id))
+                tHat(1)=cos(theta +atan2(0.0,-1.0)/2)
+                tHat(2)=sin(theta+atan2(0.0,-1.0)/2)*sin(phiVect(id))
+                tHat(3)=sin(theta+atan2(0.0,-1.0)/2)*cos(phiVect(id))
+                bHat(1)=dVect(id,2)*tHat(3)-dVect(id,3)*tHat(2)
+                bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
+                bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
+                sigVect(id,1:3)=cos(phiVectTWO(id))*bHat(1:3)+
+     &          sin(phiVectTWO(id))*tHat(1:3)
 
-              dVect(id,1)=cos(theta)
-              dVect(id,2)=sin(theta)*sin(phiVect(id))
-              dVect(id,3)=sin(theta)*cos(phiVect(id))
-
-              theta=acos(-2.0*rTemp((id-1)*5+2)+1.0)
-              phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
-              tHat(1)=cos(theta)
-              tHat(2)=sin(theta)*sin(phiVect(id))
-              tHat(3)=sin(theta)*cos(phiVect(id))
-
-c              if(abs(dVect(id,1)*tHat(1)+
-c     &                dVect(id,2)*tHat(2)+dVect(id,3)*tHat(3))-1.0.le.1E-4)then
-c                theta=acos(-2.0*rTemp((id-1)*5+5)+1.0)
-c                phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
-c                tHat(1)=cos(theta)
-c                tHat(2)=sin(theta)*sin(phiVect(id))
-c                tHat(3)=sin(theta)*cos(phiVect(id))
-c              endif
-
-              bHat(1)=dVect(id,2)*tHat(3)-dVect(id,3)*tHat(2)
-              bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
-              bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
-              norm=sqrt(bHat(1)**2+bHat(2)**2+bHat(3)**2)
-              sigVect(id,1:3)=bHat(1:3)/norm
-
-
-
+c              theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
+c              phiVect(id)=rTemp((id-1)*5+4)*(2.0*atan2(0.0,-1.0))
+c              dVect(id,1)=cos(theta)
+c              dVect(id,2)=sin(theta)*sin(phiVect(id))
+c              dVect(id,3)=sin(theta)*cos(phiVect(id))              theta=acos(-2.0*rTemp((id-1)*5+2)+1.0)
+c              phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
+c              tHat(1)=cos(theta)
+c              tHat(2)=sin(theta)*sin(phiVect(id))
+c              tHat(3)=sin(theta)*cos(phiVect(id))
+c              bHat(1)=dVect(id,2)*tHat(3)-dVect(id,3)*tHat(2)
+c              bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
+c              bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
+c              norm=sqrt(bHat(1)**2+bHat(2)**2+bHat(3)**2)
           enddo
 c          Put all needed random numbers in a single array to be written to restart
            allocate(STGrnd(nKWave,7))
@@ -211,210 +210,6 @@ c       If not the first time step of STG, the random variables were read from t
         allocate(uBar(nNsurf,nsd),duBardy(nNsurf),duBardyADJ(nNsurf)) 
 
 
-        inquire(file='xyzts.dat',exist=exts)
-! Check to see if time statistics are wanted and where they are wanted
-        if(iSTGspec.eq.1.and.(.not.exts.or.lstep.eq.iSTGStart))then
-            if(myRank.eq.master)then
-            write(*,*) "Finding Probe Points and Writing to xyzts.dat"
-            endif
-            allocate(tdump(4))
-            do i=1,4
-                tdump(i)=0.0
-            enddo
-            !check to see if xyzts.dat exists and if it does save the points it has in it
-           inquire(file='xyzts_add.dat',exist=exts) 
-           if(exts.and.myrank.eq.master)then
-               open(unit=626,file='xyzts_add.dat',status='old')
-               read(626,*) tdump(1),tdump(2),tdump(3),tdump(4)
-                allocate(tempdump(int(tdump(1)),3))
-               do jj=1,int(tdump(1))
-                   read(626,*) tempdump(jj,1),tempdump(jj,2),tempdump(jj,3)
-               enddo
-               close(626,status='DELETE')
-            endif
-            inquire(file='xyzts.dat',exist=exts)
-            if(exts)then
-               open(unit=626,file='xyzts.dat',status='old')
-               close(626,status='DELETE')
-            endif
-            !accumulate the STG surface nodes on master, broadcast them to all 
-            
-            allocate(sta(MPI_STATUS_SIZE))
-            call MPI_COMM_SIZE(MPI_COMM_WORLD,prs,ierr)
-            if(myRank.eq.master)then 
-                !make an array that will hold all of the amounts of surface points for each process
-                allocate(holdSurf(prs))
-            endif
-            !Halt all proccesses
-!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-            !Gather nNSurf into holdSurf in the master process
-            call MPI_GATHER(nNSurf,1,MPI_INT,holdSurf,1,MPI_INT,master
-     &          ,MPI_COMM_WORLD,ierr)
-            !add up lengths and allocate nNSurfs_a
-            nNSurfs_tot=0
-            if(myRank.eq.master)then
-                do ii=1,prs
-                    nNSurfs_tot=nNSurfs_tot+holdSurf(ii)
-                enddo
-                !Assign the final Gathered array of surface positions
-                allocate(nNSurfs_a(nNSurfs_tot,3))
-            endif
-            !Create a MPI vector type (real8,real8,real8) 
-            call MPI_TYPE_CONTIGUOUS(3,MPI_DOUBLE_PRECISION,
-     &          newtype,ierr)
-            call MPI_TYPE_COMMIT(newtype,ierr)
-!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-            !Send from each non-master proccess the position vectors of the nNSurf nodes
-            if(myRank.ne.master.and.nNSurf.ne.0) then
-                !create an array sending pos vectors of nNSurf nodes
-                call MPI_SEND(x(stgSurf,:),nNSurf,
-     &          newtype,master,5253,MPI_COMM_WORLD,ierr)
-            endif
-            
-            !Recieve from each proccess to master
-            if(myRank.eq.master)then
-                cou=1
-                i=1
-                do while(i.le.prs)
-                    if(i-1.eq.master)then
-                        nNSurfs_a(cou:cou+nNSurf-1,:)=x(stgSurf,:)
-                        cou=cou+nNSurf
-                    elseif(holdSurf(i).ne.0)then
-                        allocate(thisData(holdSurf(i),3))
-                        thisData=0.0
-                        call MPI_RECV(thisData,holdSurf(i),
-     &                       newtype,i-1,5253,
-     &                      MPI_COMM_WORLD,sta,ierr)
-                        nNSurfs_a(cou:cou+holdSurf(i)-1,1:3)=thisData
-                        deallocate(thisData)
-                        cou=cou+holdSurf(i)
-                    endif
-                    i=i+1
-                enddo
-            endif
-            !Brodcast nNsurfs_a to all proccesses
-!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-            call MPI_BCAST(nNSurfs_tot,1,MPI_INTEGER,master,
-     &          MPI_COMM_WORLD,ierr)
-            if(myRank.ne.master)then
-                allocate(nNSurfs_a(nNSurfs_tot,3))
-            endif
-            call MPI_BCAST(nNSurfs_a,nNSurfs_tot,newtype,master,
-     &          MPI_COMM_WORLD,ierr)
-
-            !FIND POINTS ON this PROCCESS TO WRITE TO XYZTS.DAT
-
-              next=1
-              do i=1,nshg!local accumulation
-                  if(d2Wall(i).gt.1e-15.and.
-     &                d2Wall(i).lt.deltaBLSTG.and.
-     &                size(writeToFile_a,DIM=1).le.iSTGEngPNTS)then
-                      mark=0
-                      NNcheck=1
-                      do while(NNcheck.le.nNSurfs_tot.and.mark.ne.1)
-                          jj=1
-                          do while(jj.le.size(STGdes).and.mark.ne.1)!loop over all input downstream distances
-                              if(abs(nNSurfs_a(NNcheck,1)+STGdes(jj)
-     &                            -x(i,1)).lt.STGdesol)then
-                                  mark=1
-                                  !reAssignment of writeToFile_a
-                                  if(allocated(writeToFile_a))then
-                                      next=next+1
-                                      deallocate(writeToFile_a)
-                                  endif
-                                  allocate(writeToFile_a(next,3))
-                                  if(allocated(tempAllo))then
-                                      writeToFile_a(1:next-1,:)=tempAllo
-                                  endif
-                                  writeToFile_a(next,:)=x(i,:)
-                                  if(allocated(tempAllo))then
-                                      deallocate(tempAllo)
-                                  endif
-                                  allocate(tempAllo(next,3))
-                                  tempAllo=writeToFile_a
-                              endif
-                              jj=jj+1
-                          enddo
-                          NNcheck=NNcheck+1
-                      enddo
-                  endif
-              enddo
-
-            stopFlag=0
-                if(myRank.eq.master)then
-                    do ip=0,prs-1
-                        if(ip.eq.master)then
-                            StopFlag=stopFlag+size(writeToFile_a,DIM=1)
-                        else
-                            NNCheck=0
-                            call MPI_RECV(NNCheck,1,MPI_INTEGER,ip,
-     &                          5111,MPI_COMM_WORLD,sta,ierr)
-                            if(recvTot.ne.-1)then
-                                stopFlag=stopFlag+NNCheck
-                            endif
-                        endif
-                        kk=kk+1    
-                    enddo
-                else
-                    if(.not.allocated(writeToFile_a))then
-                        call MPI_SEND(-1,1,
-     &                  MPI_INTEGER,master,5111,MPI_COMM_WORLD,ierr)
-                    else
-                        NNCheck=size(writeToFile_a,DIM=1)
-                        call MPI_SEND(NNCheck,1,
-     &                  MPI_INTEGER,master,5111,MPI_COMM_WORLD,ierr)
-                    endif
-                endif
-
-              call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-            jj=0
-            do ip=0,prs-1!loop over proccesses number
-                if(myrank.eq.master)then
-                    write(*,*) "Writing Probe Points to xyzts.dat
-     &              from proccess: ",ip
-                endif
-              !write to xyzts.dat one by one
-              if(ip.ne.myRank)then
-                  call MPI_BCAST(jj,1,MPI_INTEGER,ip,MPI_COMM_WORLD,
-     &            ierr)
-              else
-
-            !write to the xyzts.dat file for ip proccess
-                open (unit=626,file="xyzts.dat",position="append")
-                if(ip.eq.0)then
-                    if(stopFlag.gt.iSTGEngPNTS)then
-                        write(626,*) iSTGEngPNTS,1,1,1,1
-                    else
-                        write(626,*) stopFlag,1,1,1,1
-                    endif
-                endif
-                if(.not.allocated(writeTOFile_a))then
-                    call MPI_BCAST(jj,1,MPI_INTEGER,ip,MPI_COMM_WORLD,
-     &              ierr)
-                    close(626)
-                else
-                    ii=1
-                    do while(ii.le.size(writeTOFile_a,dim=1)
-     &                  .and.jj.lt.iSTGEngPNTS )
-                        write(626,'(F18.15,F18.15,F18.15)')
-     &  writeTOFile_a(ii,1), writeTOFile_a(ii,2), writeTOFile_a(ii,3)
-                        ii=ii+1
-                        jj=jj+1
-                    enddo
-                    close(626)
-                    call MPI_BCAST(jj,1,MPI_INTEGER,ip,MPI_COMM_WORLD,
-     &              ierr)
-                endif
-              endif
-            enddo
-
-
-            !xyzts.dat file must exist before other proccesses hit ln 687 "c...DUMP TIME SERIES"
-!            call MPI_BARRIER(MPI_COMM_WORLD,ierr)
-
-               
-                   
-        endif 
         end
 !----------------------------------------------------------------------
 !
@@ -577,10 +372,6 @@ c        call openFiles()
         enddo 
 !End U calculation over the plane at this Time step
 
-!Close varification Files
-!        call closeFiles()
-
-
 c        Loop to check if just put NaNs or Infs in the BC array
 c         do n=1,nNSurf
 c             do j=3,7
@@ -594,55 +385,6 @@ c             enddo
 c         enddo
  
        end
-
-
-    
-        subroutine openFiles()
-       open(unit=117,file='coords4Matlab.dat',status='unknown',iostat=ierr)
-       if (ierr.eq.0)then
-            close(unit=117,status='delete')
-         endif
-         open(unit=117,file='coords4Matlab.dat')
- 
-        open(unit=118,file='currentUbar.dat',status='unknown',iostat=ierr)
-        if(ierr.eq.0)then
-            close(unit=118,status='delete')
-         endif
-         open(unit=118,file='currentUbar.dat')
-
-         open(unit=119,file='duBardY.dat',status='unknown',iostat=ierr)
-         if(ierr.eq.0)then
-             close(unit=119,status='delete')
-        endif
-        open(unit=119,file='duBardY.dat')
-
-        open(unit=120,file='energySpec.dat',status='unknown',iostat=ierr)
-        if(ierr.eq.0)then
-            close(unit=120,status='delete')
-        endif
-        open(unit=120,file='energySpec.dat')
-         open(unit=121,file='kN.dat',status='unknown',iostat=ierr)
-         if(ierr.eq.0)then
-             close(unit=121,status='delete')
-         endif
-         open(unit=121,file='kN.dat')
-          open(unit=122,file='uTot.dat',status='unknown',iostat=ierr)
-          if(ierr.eq.0)then
-              close(unit=122,status='delete')
-          endif
-          open(unit=122,file='uTot.dat')
-
-        end
-
-        subroutine closeFiles()
-        close(unit=117)
-        close(unit=118)
-        close(unit=119)
-        close(unit=120)
-        close(unit=121)
-        close(unit=122)
-        end
-
 
 
       subroutine findSTG_mesh_hs(x)
@@ -669,7 +411,6 @@ c         enddo
 !                                           Finding the Spacing via elements  
 !
 !--------------------------------------------------------------------------------------------------------------------! 
-      if(STGmeth.eq.0)then
 !This is for the mapping that are still required by both methodologies so the the apply STG may loop over the survace rather than the whole mesh
         nNSurf=0
         do n=1,nshg
@@ -781,147 +522,6 @@ c         enddo
 ! wall normal.
 
       return
-!--------------------------------------------------------------------------------------------------------------------!
-!
-!                                           Finding the Spacing via search (nshg^2 inefficant) 
-!
-!--------------------------------------------------------------------------------------------------------------------!      
-      elseif(STGmeth.eq.1)then
-      
-
-!Find the length of the array that holds global nodes on the STG inflow
-        nNSurf=0
-        do n=1,nshg
-            if(ndsurf(n).eq.iSTGsurfID)then
-                nNSurf=nNSurf+1
-                
-            endif
-        enddo
-        allocate(stgSurf(nNSurf))   ! takes in a surface node number and returns the global node number
-        allocate(mapBack(numnp))   ! takes in a global node number and returns its surface node number
-!Find the hx(1,2),hy(1,2),hz(1,2),hMax for each node on the STG inflow
-!Also n_hxl,n_hxh,n_hyl,n_hyh,n_hzl,n_hzh
-!Current code requires rectangular mesh
-        hxS1=minval(x(:,1))-1
-        hxS2=maxval(x(:,1))+1
-        hyS1=minval(x(:,2))-1
-        hyS2=maxval(x(:,2))+1
-        hzS1=minval(x(:,3))-1
-        hzS2=maxval(x(:,3))+1
-
-        nNSurf=0
-        do n=1,nshg
-            if(ndsurf(n).eq.iSTGsurfID)then
-                !fill stgSurf with the node numbers
-                nNSurf=nNSurf+1
-                stgSurf(nNSurf)=n
-                !Find map from numnp node number to stgSurf node number
-                mapBack(n)=nNSurf
-                !if h_i is unset the defalt is node where it's at
-                n_hxl(n)=n
-                n_hxh(n)=n
-                n_hyl(n)=n
-                n_hyh(n)=n
-                n_hzl(n)=n
-                n_hzh(n)=n
-
-                !initialize to outside of mesh domain
-                tempHx1=hxS1
-                tempHx2=hxS2
-                tempHy1=hyS1
-                tempHy2=hyS2
-                tempHz1=hzS1
-                tempHz2=hzS2
-                do id=1,nshg
-                    !hx conditional
-                    if(n.ne.id.and.
-     &              x(n,1).ne.x(id,1).and.
-     &              abs(x(n,2)-x(id,2)).lt.1e-15.and.
-     &              abs(x(n,3)-x(id,3)).lt.1e-15)then
-                        if(x(n,1).ge.x(id,1).and.x(id,1).ge.tempHx1)then
-                            tempHx1=x(id,1)
-                            n_hxl(n)=id
-                        endif
-                        if(x(n,1).le.x(id,1).and.x(id,1).le.tempHx2)then
-                            tempHx2=x(id,1)
-                            n_hxh(n)=id
-                        endif
-                    endif
-                    !hy conditional
-                     if(n.ne.id.and.
-     &              abs(x(n,1)-x(id,1)).lt.1e-15.and.
-     &              x(n,2).ne.x(id,2).and.
-     &              abs(x(n,3)-x(id,3)).lt.1e-15)then
-                         if(x(n,2).ge.x(id,2).and.x(id,2).ge.tempHy1)then
-                             tempHy1=x(id,2)
-                             n_hyl(n)=id
-                         endif
-                         if(x(n,2).le.x(id,2).and.x(id,2).le.tempHy2)then
-                             tempHy2=x(id,2)
-                             n_hyh(n)=id
-                         endif
-                     endif
-                    !hz conditional
-                     if(n.ne.id.and.
-     &              abs(x(n,1)-x(id,1)).lt.1e-15.and.
-     &              abs(x(n,2)-x(id,2)).lt.1e-15.and.
-     &              x(n,3).ne.x(id,3))then
-                         if(x(n,3).ge.x(id,3).and.x(id,3).ge.tempHz1)then
-                             tempHz1=x(id,3)
-                             n_hzl(n)=id
-                         endif
-                         if(x(n,3).le.x(id,3).and.x(id,3).le.tempHz2)then
-                             tempHz2=x(id,3)
-                             n_hzh(n)=id
-                         endif
-                     endif
-                enddo
-                !Catch if the node is on the edge of the plane
-                if(tempHx1.eq.hxS1)then
-                    tempHx1=tempHx1+1
-                endif
-                 if(tempHx2.eq.hxS2)then
-                     tempHx2=tempHx2-1
-                 endif
-                 if(tempHy1.eq.hyS1)then
-                     tempHy1=tempHy1+1
-                 endif
-                 if(tempHy2.eq.hyS2)then
-                     tempHy2=tempHy2-1
-                 endif
-                 if(tempHz1.eq.hzS1)then
-                     tempHz1=tempHz1+1
-                 endif
-                 if(tempHz2.eq.hzS2)then
-                     tempHz2=tempHz2+1
-                 endif
-
-                hx1(nNsurf)=abs(x(n,1)-tempHx1)
-                hx2(nNsurf)=abs(x(n,1)-tempHx2)
-                hy1(nNsurf)=abs(x(n,2)-tempHy1)
-                hy2(nNsurf)=abs(x(n,2)-tempHy2)
-                hz1(nNsurf)=abs(x(n,3)-tempHz1)
-                hz2(nNsurf)=abs(x(n,3)-tempHz2)
-
-                tempHx1=min(hx2(nNsurf),hx1(nNsurf))
-                tempHy1=min(hy2(nNsurf),hy1(nNsurf))
-                tempHz1=min(hz2(nNsurf),hz1(nNsurf))
-                if(tempHx1.ge.tempHy1)then
-                    if(tempHx1.ge.tempHz1) then
-                        hMax(nNsurf)=tempHx1
-                    else
-                        hMax(nNsurf)=tempHz1
-                    endif
-                else
-                    if(tempHy1.ge.tempHz1)then
-                        hMax(nNsurf)=tempHy1
-                    else
-                        hMax(nNsurf)=tempHz1
-                    endif
-                endif
-            endif
-        enddo
-        endif
       end 
 
       subroutine findUBarandDeriv(x,n,reyS,turbVisc)
@@ -932,7 +532,6 @@ c         enddo
       real*8 ::  x(numnp,nsd)
       real*8 :: reyS(6), lm, turbVisc
  
-      if(STGmeth.eq.0) then ! this is the parallel way
       
            if (iSTGInread.eq.0) then ! this is the case where no profile from a file exists
               utauonu=utau/nu
@@ -1002,58 +601,7 @@ c             Now need to interpolate from the file data for the current node po
               endif
 
            endif ! whether inflow profile is read from file
-
-
-
-      elseif(STGmeth.eq.1)then !Original way (not parallel)
-                lTemp=0
-                hTemp=50
-                do while(hTemp-lTemp.ge.uBar_Tol)
-                    midTemp=(hTemp+lTemp)/2
-                    if(0.ge.(midTemp+Exp(-kappa*b)*
-     &              (Exp(kappa*midTemp)-1-(kappa*midTemp)-(((kappa*midTemp)**2)/2)-(((kappa*midTemp)**3)/6))
-     &              -reTau*d2Wall(stgSurf(n))/deltaBLSTG))then
-                        lTemp=midTemp
-                    elseif(0.eq.(midTemp+Exp(-kappa*b)*
-     &              (Exp(kappa*midTemp)-1-(kappa*midTemp)-(((kappa*midTemp)**2)/2)-(((kappa*midTemp)**3)/6))
-     &              -reTau*d2Wall(stgSurf(n))/deltaBLSTG))then
-                        lTemp=midTemp
-                        hTemp=midTemp
-                    else
-                        hTemp=midTemp
-                    endif
-                enddo
-           !turn u+ to uBar for this node (1st midTemp=u+ then midTemp=ubar)
-                uBar(n,1)=midTemp*uTau
-                if(uBar(n,1).ge.uNaught) then
-                    uNaught=uBar(n,1)
-                endif
-
-                duBardy(n)=(uBar(mapBack(n_hyh(stgSurf(n))),1)-uBar(mapBack(n_hyl(stgSurf(n))),1))/
-     &           (x(n_hyh(stgSurf(n)),2)-x(n_hyl(stgSurf(n)),2))
-                !for lm hypothesis duBardy should always be increasing away from a wall
-                !and so the centerline for channel flow must be fixed. Use duBardyADJ at a node away
-                !for this mesh
-!                if(istep.eq.0)         write(119,*) duBardy
-                    if(x(n,2)-d2Wall(n).eq.0)then
-                        duBardyADJ(n)=
-     &                  (uBar(mapBack(n_hyl(n_hyl(stgSurf(n)))),1)
-     &                  -uBar(n,1))/
-     &                  (x(n_hyl(n_hyl(stgSurf(n))),2)-
-     &                  x(stgSurf(n),2))
-                    else
-                        duBardyADJ(n)=
-     &                  (uBar(mapBack(n_hyh(n_hyh(stgSurf(n)))),1)-
-     &                  uBar(n,1))/
-     &                  (x(n_hyh(n_hyh(stgSurf(n))),2)-
-     &                  x(stgSurf(n),2))
-                    endif
-                if(abs(duBardy(n)).lt.1e-2)then
-                    duBardy(n)=duBardyADJ(n)
-                endif
-             endif !end of original way abandonded for parallel
-                   ! if(istep.eq.0)      write(118,*) uBar(n),0,0
-        
+       
       end
 
 

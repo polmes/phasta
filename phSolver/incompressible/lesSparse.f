@@ -282,7 +282,6 @@ c      implicit none
 c
       real*8	tmp1,	tmp2,	tmp3,	pisave
       integer	i,	j,	k
-      
 !
 ! This routine performs K.p_m + G.p_c
 ! The K.p_m is a 3x3 . 3x1 (standard). The second part is G.p_c is a 3x1 . 1x1

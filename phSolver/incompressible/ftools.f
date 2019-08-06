@@ -28,7 +28,9 @@ c
         iwork=mod(ieqswork,10)
         if(iwork.eq.2) then
          do j=1,m
-!           call vdmul(n,a(1,j),b(1,j),c(1,j))
+#ifdef HAVE_MKL
+           call vdmul(n,a(1,j),b(1,j),c(1,j))
+#endif
          enddo
         else if(iwork.eq.8) then
             do i = 1, n 
@@ -122,7 +124,7 @@ c
             b(i,j) = a(i,j)
           enddo
         enddo
-c
+c 
         return
         end
 c
@@ -256,14 +258,16 @@ c
 c
         if(1.eq.0) then
          do j=1,m
+#ifdef HAVE_MKL
            call daxpy(n,a,x(1,j),1,y(1,j),1)
+#endif
          enddo
         else
-         do i = 1, n
+        do i = 1, n
           do j= 1, m
             y(i,j) = y(i,j) + a * x(i,j)
           enddo
-         enddo
+        enddo
         endif
 c
         return
@@ -362,7 +366,9 @@ c
 !  them    y=alpha*A^T x +beta*y
 !  us     d=alpha*x^T y +beta*d
             rdelta=TMRC()
+#ifdef HAVE_MKL
             call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
+#endif
             rblasmkl=rblasmkl+TMRC()-rdelta
             iblasmkl=iblasmkl+m
             return
@@ -800,10 +806,11 @@ c
           enddo
           do j=2,m
            tmp1=c(j)
+#ifdef HAVE_MKL
            call daxpy(n,tmp1,x(1,j),1,y,1)
+#endif
           enddo
         else
-       
 c
 c.... Determine the left overs
 c
@@ -958,7 +965,9 @@ c
         if(iwork.eq.2) then
           do j=1,m
             a=-1.0d0*c(j)
+#ifdef HAVE_MKL
             call daxpy(n,a,x(1,j),1,y,1)
+#endif
           enddo
         else if(iwork.eq.8) then
           do j=1,m
@@ -1110,7 +1119,9 @@ c
 !        include "mymkl.fi"
         if(1.eq.0) then  ! this is slower
          do j=1,m
+#ifdef HAVE_MKL
            call dcopy(n,a(1,j),1,b(1,j),1)
+#endif
          enddo
         else
 c

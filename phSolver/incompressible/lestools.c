@@ -770,7 +770,6 @@ void lesBlkDmaxpy ( UsrHd   usrHd,
                    &workfc.ieqswork ) ;
 }
 
-
 /*-----------------------------------------------------------------------
  *
  * lesVdimCp

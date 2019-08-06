@@ -266,7 +266,11 @@ c
                      
                      call shptet (blk%o, zi0(e,:), shape(1:blk%s),
      &                    shgradl(1:blk%s,:))
-
+                     if(jj.eq.2) then
+                       write(*,*) 'second point found: rst=', zi0(e,1),zi0(e,2),zi0(e,3)
+                       write(*,*) 'xyz_nd1=', xl(e,1,1),xl(e,1,2),xl(e,1,3)
+                       write(*,*) 'soln_nd1=', ycl(e,1,1),ycl(e,1,2),ycl(e,1,3),ycl(e,1,4)
+                     endif
                      founde=e
                      exit
                   endif
