@@ -77,7 +77,7 @@ c
       type(c_ptr) :: handle
       character(len=1024) :: dataInt, dataDbl
 
-      integer ny
+      integer ny, nx
       real*8, allocatable :: ypoints(:)
       logical exlog
 
@@ -275,32 +275,36 @@ c
 
       if (iMoveTopWall.eq.1) then
         open (unit=123,file="TopWallWrong.dat",status="old")
-        allocate(tpW(4553,2))
-        do i=1,4553
+        read(123,*) nx
+        allocate(tpW(nx,2))
+        do i=1,nx
           read(123,*) (tpW(i,j),j=1,2)
         enddo
         close(123)
         open (unit=124,file="TopWallWrong2.dat",status="old")
-        allocate(tpW2(4553,2))
-        do i=1,4553
+        read(124,*) nx
+        allocate(tpW2(nx,2))
+        do i=1,nx
            read(124,*) (tpW2(i,j),j=1,2)
         enddo
         close(124)
         open (unit=125,file="TopWallCorrect.dat",status="old")
-        allocate(tpC(4553,2))
-        do i=1,4553
+        read(125,*) nx
+        allocate(tpC(nx,2))
+        do i=1,nx
            read(125,*) (tpC(i,j),j=1,2)
         enddo
         close(125)
         open (unit=126,file="TopWallCorrect2.dat",status="old")
-        allocate(tpC2(4553,2))
-        do i=1,4553
+        read(126,*) nx
+        allocate(tpC2(nx,2))
+        do i=1,nx
            read(126,*) (tpC2(i,j),j=1,2)
         enddo
         close(126)
         ic = 0
         do n=1,nshg
-           do j=1,4553 
+           do j=1,nx 
              if (abs(point2x(n,1)-tpW(j,1)).lt.1.0d-5.and.
      &         abs(point2x(n,2)-tpW(j,2)).lt.1.0d-5) then
                point2x(n,2) = tpC(j,2)
