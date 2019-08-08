@@ -49,9 +49,9 @@ c
       include "common.h"
       include "mpif.h"
 #ifdef SP_Solve     
-      real*4 eachproc(m), result(m)
+      real*4 eachproc, result
 #else   
-      real*8 eachproc(m), result(m)
+      real*8 eachproc, result
 #endif
 c     
       if (numpe > 1) then

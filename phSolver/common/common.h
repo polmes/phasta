@@ -289,7 +289,10 @@ c
      &                  dtol(2), iCFLworst, lskeep
 c
         common /timpar/ LCtime, ntseq
-c
+c probably should pull these out of common so that it is easier to control them
+c#ifdef SP_Solve
+c        real*4 statsflow,statssclr
+c#endif
         common /incomp/ numeqns(100), minIters, maxIters, 
      &                  iprjFlag,     nPrjs,    ipresPrjFlag, nPresPrjs,
      &                  prestol,      

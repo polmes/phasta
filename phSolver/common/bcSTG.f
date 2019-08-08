@@ -173,7 +173,7 @@ c               Latest version from John
                 bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
                 bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
                 sigVect(id,1:3)=cos(phiVectTWO(id))*bHat(1:3)+
-     &          sin(phiVectTWO(id))*tHat(1:3)
+     &                          sin(phiVectTWO(id))*tHat(1:3)
 c               Previous version used on flat plate and bump DNS 
 !                theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
 !                phiVect(id)=rTemp((id-1)*5+4)*(2.0*atan2(0.0,-1.0))
