@@ -159,6 +159,7 @@ c       Compute the random variables only on the first step
           call random_seed()
           call random_number(rTemp)
           do id=1,nKWave
+c               Latest version from John
                 theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
                 phiVect(id)=rTemp((id-1)*5+2)*(2.0*atan2(0.0,-1.0))
                 phiVectTWO(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
@@ -173,20 +174,22 @@ c       Compute the random variables only on the first step
                 bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
                 sigVect(id,1:3)=cos(phiVectTWO(id))*bHat(1:3)+
      &          sin(phiVectTWO(id))*tHat(1:3)
-
-c              theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
-c              phiVect(id)=rTemp((id-1)*5+4)*(2.0*atan2(0.0,-1.0))
-c              dVect(id,1)=cos(theta)
-c              dVect(id,2)=sin(theta)*sin(phiVect(id))
-c              dVect(id,3)=sin(theta)*cos(phiVect(id))              theta=acos(-2.0*rTemp((id-1)*5+2)+1.0)
-c              phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
-c              tHat(1)=cos(theta)
-c              tHat(2)=sin(theta)*sin(phiVect(id))
-c              tHat(3)=sin(theta)*cos(phiVect(id))
-c              bHat(1)=dVect(id,2)*tHat(3)-dVect(id,3)*tHat(2)
-c              bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
-c              bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
-c              norm=sqrt(bHat(1)**2+bHat(2)**2+bHat(3)**2)
+c               Previous version used on flat plate and bump DNS 
+!                theta=acos(-2.0*rTemp((id-1)*5+1)+1.0)
+!                phiVect(id)=rTemp((id-1)*5+4)*(2.0*atan2(0.0,-1.0))
+!                dVect(id,1)=cos(theta)
+!                dVect(id,2)=sin(theta)*sin(phiVect(id))
+!                dVect(id,3)=sin(theta)*cos(phiVect(id))              
+!                theta=acos(-2.0*rTemp((id-1)*5+2)+1.0)
+!                phiVect(id)=rTemp((id-1)*5+3)*(2.0*atan2(0.0,-1.0))
+!                tHat(1)=cos(theta)
+!                tHat(2)=sin(theta)*sin(phiVect(id))
+!                tHat(3)=sin(theta)*cos(phiVect(id))
+!                bHat(1)=dVect(id,2)*tHat(3)-dVect(id,3)*tHat(2)
+!                bHat(2)=dVect(id,3)*tHat(1)-dVect(id,1)*tHat(3)
+!                bHat(3)=dVect(id,1)*tHat(2)-dVect(id,2)*tHat(1)  
+!                norm=sqrt(bHat(1)**2+bHat(2)**2+bHat(3)**2)
+!                sigVect(id,1:3)=bHat(1:3)/norm
           enddo
 c          Put all needed random numbers in a single array to be written to restart
            if(allocated(STGrnd)) then 
