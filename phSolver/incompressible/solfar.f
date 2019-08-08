@@ -98,12 +98,20 @@ c
      &          iBC(nshg),                ilwork(nlwork),
      &          iper(nshg)
 c
-      real*8    lesP(nshg,4),             lesQ(nshg,4),
-     &          solinc(nshg,ndof),        CGsol(nshg)
+      real*8    solinc(nshg,ndof)
+
+#ifdef SP_Solve      
+      real*4    rtmp(nshg,4), BCsp(nshg,ndofBC),  lesP(nshg,4),     lesQ(nshg,4),
+     &          solincSP(nshg,ndof),        CGsol(nshg)
+#else    
+      real*8    rtmp(nshg,4),      lesQ(nshg,4), lesP(nshg,4),   
+     &          CGsol(nshg)
+#endif
+
 
       real*8    tcorecp(2)
       
-      real*8    rerr(nshg,numerr),            rtmp(nshg,4),rtemp
+      real*8    rerr(nshg,numerr),        rtemp
       
       real*8    msum(4),mval(4),cpusec(10)
 #ifdef HAVE_SVLS      
@@ -231,10 +239,18 @@ c
 c.... setup the linear algebra solver
 c
       rtmp = res(:,1:4)
+#ifdef SP_Solve
+      BCsp=BC
+      call usrNew ( usr,        eqnType,          aperm,
+     &              atemp,      rtmp,             solincSP,          
+     &              flowDiag,   sclrDiag,         lesP,   
+     &              lesQ,       iBC,              BCsp,
+#else
       call usrNew ( usr,        eqnType,          aperm,
      &              atemp,      rtmp,             solinc,          
      &              flowDiag,   sclrDiag,         lesP,   
      &              lesQ,       iBC,              BC,
+#endif
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDims,  
      &              nTmpDims,   rowp,             colm,     
@@ -257,10 +273,18 @@ c
 c.... setup the linear algebra solver
 c
       rtmp = res(:,1:4)
+#ifdef SP_Solve
+      BCsp=BC
+      call usrNew ( usr,        eqnType,          aperm,
+     &              atemp,      rtmp,             solincSP,          
+     &              flowDiag,   sclrDiag,         lesP,   
+     &              lesQ,       iBC,              BCsp,
+#else
       call usrNew ( usr,        eqnType,          aperm,
      &              atemp,      rtmp,             solinc,          
      &              flowDiag,   sclrDiag,         lesP,   
      &              lesQ,       iBC,              BC,
+#endif
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDims,  
      &              nTmpDims,   rowp,             colm,     
@@ -305,8 +329,13 @@ c
 #endif     
       
       ! End Time profiling output
-      
+
+#ifdef SP_Solve      
+      call getSol ( usr, solincSP )
+      solinc=solincSP
+#else
       call getSol ( usr, solinc )
+#endif
 
       if (numpe > 1) then
          call commu ( solinc, ilwork, nflow, 'out')
@@ -378,9 +407,19 @@ c
 c     
       real*8    y(nshg,ndof),             ac(nshg,ndof),
      &          x(numnp,nsd),             BC(nshg,ndofBC),
-     &          res(nshg,1),
-     &          flowDiag(nshg,4),
-     &          sclrDiag(nshg,1)           
+     &          res(nshg,1)
+
+#ifdef SP_Solve
+      real*4   flowDiag(nshg,4),
+     &          sclrDiag(nshg,1)  
+      real*4    BCsp(nshg,ndofBC), lesP(nshg,1),               lesQ(nshg,1),
+     &          solincSP(nshg,1),           CGsol(nshg) 
+#else
+      real*8   flowDiag(nshg,4),
+     &          sclrDiag(nshg,1)  
+      real*8    lesP(nshg,1),               lesQ(nshg,1),
+     &          CGsol(nshg) 
+#endif        
 c
       real*8    shp(MAXTOP,maxsh,MAXQPT),  
      &          shgl(MAXTOP,nsd,maxsh,MAXQPT), 
@@ -392,9 +431,8 @@ c
      &          iBC(nshg),                ilwork(nlwork),
      &          iper(nshg)
 c
-      real*8    lesP(nshg,1),               lesQ(nshg,1),
-     &          solinc(nshg,1),           CGsol(nshg),
-     &          tcorecpscal(2),           cfl(nshg)
+      real*8    solinc(nshg,1)
+      real*8          tcorecpscal(2),           cfl(nshg)
 #ifdef HAVE_SVLS     
       TYPE(svLS_lhsType), INTENT(INOUT) :: svLS_lhs
       TYPE(svLS_lsType), INTENT(INOUT) ::  svLS_ls
@@ -476,10 +514,18 @@ c
       impistat2=1
       endif
       tlescp1 = TMRC()
+#ifdef SP_Solve
+      BCsp=BC
+      call usrNew ( usr,        eqnType,          apermS(1,1,jsol),
+     &              atempS,     res,              solincSP,          
+     &              flowDiag,   sclrDiag,         lesP,   
+     &              lesQ,       iBC,              BCsp,
+#else
       call usrNew ( usr,        eqnType,          apermS(1,1,jsol),
      &              atempS,     res,              solinc,          
      &              flowDiag,   sclrDiag,         lesP,   
      &              lesQ,       iBC,              BC,
+#endif
      &              iper,       ilwork,           numpe,
      &              nshg,       nshl,             nPermDimsS,  
      &              nTmpDimsS,  rowp,             colm,     
@@ -489,7 +535,12 @@ c
 c.... solve linear system
 c
       call myfLesSolve ( lesId, usr )
+#ifdef SP_Solve
+      call getSol ( usr, solincSP )
+      solinc=solincSP
+#else
       call getSol ( usr, solinc )
+#endif
 
       if (numpe > 1) then
          call commu ( solinc, ilwork, 1, 'out')

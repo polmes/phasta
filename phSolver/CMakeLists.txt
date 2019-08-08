@@ -19,6 +19,16 @@ if(PHASTA_USE_MKL)
 add_definitions(-DHAVE_MKL)
 endif(PHASTA_USE_MKL)
 
+option(PHASTA_USE_SP_Solve "Build with Single Precision Solver" OFF)
+if(PHASTA_USE_SP_Solve)
+        add_definitions(-DSP_Solve)
+endif(PHASTA_USE_SP_Solve)
+
+option(PHASTA_USE_SP_LHS "Build with Single Precision LHS" OFF)
+if(PHASTA_USE_SP_LHS)
+        add_definitions(-DSP_LHS)
+endif(PHASTA_USE_SP_LHS)
+
 option(PHASTA_USE_PETSC "Use PETSc GMRES Solver" OFF)
 if(PHASTA_USE_PETSC)
 find_package(PETSC REQUIRED)

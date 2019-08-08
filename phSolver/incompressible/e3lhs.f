@@ -39,7 +39,11 @@ c------------------------------------------------------------------------
      &          tauC(blk%e),       tauM(blk%e),     tauBar(blk%e),
      &          shpfun(blk%e,blk%s),shg(blk%e,blk%s,3)
       
+#ifdef SP_LHS
       real*4 xlhs(bsz,16,blk%s,blk%s)
+#else
+      real*8 xlhs(bsz,16,blk%s,blk%s)
+#endif
 c
 c.... local declarations
 c
@@ -289,7 +293,12 @@ c
      &          WdetJ(blk%e),      rLS(blk%e),        rho(blk%e), 
      &          tauS(blk%e),       shpfun(blk%e,blk%s),  
      &          srcL(blk%e),        shg(blk%e,blk%s,3)
+#ifdef SP_LHS
       real*4    xSebe(bsz,blk%s,blk%s)
+#else
+      real*8    xSebe(bsz,blk%s,blk%s)
+#endif
+
       
       real*8    diffus(blk%e),  cp,  kptmp(blk%e),tauSo(blk%e)
 

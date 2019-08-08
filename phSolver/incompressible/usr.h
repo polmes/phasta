@@ -9,6 +9,11 @@
 #define	__USR_H__
 
 #include <FCMangle.h>
+#ifndef SP_Solve
+typedef	double	Real ;			/* real    type			*/
+#else
+typedef	float	Real ;			/* real    type			*/
+#endif
 
 /*===========================================================================
  *
@@ -18,16 +23,16 @@
  */
 typedef struct _Usr {
     int         eqnType ;               /* equation type flag             */
-    double*	aperm ;			/* permanent data	          */
-    double*	atemp ;			/* temporary data	          */
-    double*	resf ;			/* residual vector	          */
-    double*	solinc ;		/* solution increment	          */
-    double*     flowDiag ;              /* global diagonal of total lhs   */
-    double*     sclrDiag ;              /* global diagonal of energy lhs  */
-    double*     lesP ;                  /* utility vector for Q = A * P   */
-    double*     lesQ ;                  /* utility vector for Q = A * P   */
+    Real*	aperm ;			/* permanent data	          */
+    Real*	atemp ;			/* temporary data	          */
+    Real*	resf ;			/* residual vector	          */
+    Real*	solinc ;		/* solution increment	          */
+    Real*     flowDiag ;              /* global diagonal of total lhs   */
+    Real*     sclrDiag ;              /* global diagonal of energy lhs  */
+    Real*     lesP ;                  /* utility vector for Q = A * P   */
+    Real*     lesQ ;                  /* utility vector for Q = A * P   */
     int*        iBC  ;                  /* boundary condition code        */
-    double*     BC   ;                  /* boundary condition array       */
+    Real*     BC   ;                  /* boundary condition array       */
     int*        iper ;                  /* periodic nodal information     */
     int*        ilwork ;                /* local MPI communication array  */
     int         numpe ;                 /* number of processors           */
@@ -37,11 +42,17 @@ typedef struct _Usr {
     int		nTmpDims ;		/* number of temporary data	  */
     int*       	rowp ;		        /* row of p for nonzero's of A    */
     int*       	colm ;		        /* start index for rowp vector    */
+#ifdef SP_LHS
     float*     lhsK ;		        /* sparse K matrix (9,nnzeros)    */
     float*     lhsP ;		        /* sparse GoC matrix (4,nnzeros)  */
     float*     lhsS ;
+#else
+    Real*     lhsK ;		        /* sparse K matrix (9,nnzeros)    */
+    Real*     lhsP ;		        /* sparse GoC matrix (4,nnzeros)  */
+    Real*     lhsS ;
+#endif
     int*        nnz_tot  ;              /* factor for number of nonzeros) */
-    double*     CGsol;                  /* pdot after CG solve */
+    Real*     CGsol;                  /* pdot after CG solve */
 } Usr ;
 
 typedef struct _Usr* UsrHd ;
@@ -109,16 +120,16 @@ typedef struct _Usr* UsrHd ;
  */
 void 		usrNew(			UsrHd		usrHd,
                                     int*            eqnType,
-                                    double*		aperm,
-                                    double*		atemp,
-                                    double*         resf,
-                                    double*         solinc,
-                                    double*         flowDiag,
-                                    double*         sclrDiag,
-                                    double*         lesP,
-                                    double*         lesQ,
+                                    Real*		aperm,
+                                    Real*		atemp,
+                                    Real*         resf,
+                                    Real*         solinc,
+                                    Real*         flowDiag,
+                                    Real*         sclrDiag,
+                                    Real*         lesP,
+                                    Real*         lesQ,
                                     int*            iBC,
-                                    double*         BC,
+                                    Real*         BC,
                                     int*            iper,
                                     int*            ilwork,
                                     int*            numpe,
@@ -128,19 +139,25 @@ void 		usrNew(			UsrHd		usrHd,
                                     int*		nTmpDims,
                                     int*		rowp,
                                     int*		colm,
-                                    float*		lhsK,
-                                    float*		lhsP,
-                                    float*         lhsS,
+#ifdef SP_LHS
+                                    float*     lhsK , 
+                                    float*     lhsP ,		        
+                                    float*     lhsS ,
+#else
+                                    Real*		lhsK,
+                                    Real*		lhsP,
+                                    Real*         lhsS,
+#endif
                                     int*             nnz_tot,
-                                    double*         CGsol) ;
+                                    Real*         CGsol) ;
 
-double*	usrPointer(			UsrHd   usrHd,
+Real*	usrPointer(			UsrHd   usrHd,
                             int	id,
                             int	offset,
                             int	nDims ) ;
 
 void              getSol(      UsrHd            usrHd,
-                                        double*          Dy		) ;
+                                        Real*          Dy		) ;
 
 /*===========================================================================
  *
@@ -148,11 +165,11 @@ void              getSol(      UsrHd            usrHd,
  *
  *===========================================================================
  */
-double    flesDot1(		double*		a,
+Real    flesDot1(		Real*		a,
                                     int*		m,
                                     int*		n		) ;
-double	  flesDot2(		double*		a,
-                                    double*		b,
+Real	  flesDot2(		Real*		a,
+                                    Real*		b,
                                     int*		m,
                                     int*		n		) ;
 

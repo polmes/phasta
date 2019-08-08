@@ -10,117 +10,145 @@
 #include "usr.h"
 #include "common_c.h"
 #ifdef intel
-void  DRVSCLRDIAG(	double *sclrDiag,	int *ilwork,	int *iBC,
-                                double *BC,		int *iper,	int *rowp,
+void  DRVSCLRDIAG(	Real *sclrDiag,	int *ilwork,	int *iBC,
+                                Real *BC,		int *iper,	int *rowp,
+#ifdef SP_LHS
                                 int *colm,	        float *lhsS);
+#else
+                                int *colm,	        Real *lhsS);
+#endif
 
-void  FMTXBLKDAXPY(double *srcpnt, double *dstpnt,	double *coef,
+void  FMTXBLKDAXPY(Real *srcpnt, Real *dstpnt,	Real *coef,
                             int *mDims,			int *dim);
 
-void  FMTXBLKDYEAX(double *srcpnt,		double *dstpnt,	double *coef,
+void  FMTXBLKDYEAX(Real *srcpnt,		Real *dstpnt,	Real *coef,
 							int *mDims,			int *dim);
 
-void  FMTXBLKDMAXPY(double *srcpnt,		double *dstpnt,	double *coef,
+void  FMTXBLKDMAXPY(Real *srcpnt,		Real *dstpnt,	Real *coef,
 							int *mDims,				int *dim);
 
-void  FMTXVDIMVECCP(double *srcpnt,		double *dstpnt,	int *nSrcDims,
+void  FMTXVDIMVECCP(Real *srcpnt,		Real *dstpnt,	int *nSrcDims,
 							 int *nDstDims,			int *nDims,		int *nNodes );
 
-void  DRVLESPREPDIAG(	double *flowDiag,	int *ilwork,	int *iBC,
-								double *BC,			int *iper,		int *rowp,
-								int *colm,			float *lhsK,   float *lhsP) ;
-
-void  FMTXVDIMVECMULT(	double* ,			double*,
-								double *dstpnt,		int *nSrcDims,
+void  DRVLESPREPDIAG(	Real *flowDiag,	int *ilwork,	int *iBC,
+								Real *BC,			int *iper,		int *rowp,
+								int *colm,
+#ifdef SP_LHS
+			float *lhsK,   float *lhsP) ;
+#else
+			Real *lhsK,   Real *lhsP) ;
+#endif
+void  FMTXVDIMVECMULT(	Real* ,			Real*,
+								Real *dstpnt,		int *nSrcDims,
 								int *nDofs,			int *nDstDims,
 								int *nDims,			int *nNodes);
 
-void  FLESZERO(		double *dstpnt,		int *nDims,		int *nNodes);
+void  FLESZERO(		Real *dstpnt,		int *nDims,		int *nNodes);
 
-void  FLESCP(			double *srcpnt,		double *dstpnt, int *nDims, 
+void  FLESCP(			Real *srcpnt,		Real *dstpnt, int *nDims, 
 								int *dim ) ;
 
-void  FLESSCALE(		double *dstpnt,
-								double *coef,
+void  FLESSCALE(		Real *dstpnt,
+								Real *coef,
 								int *nDims,
 								int *dim ) ;
 
-void  FLESSCALECP(		double *srcpnt, 
-								double *dstpnt,
-								double *coef,
+void  FLESSCALECP(		Real *srcpnt, 
+								Real *dstpnt,
+								Real *coef,
 								int *nDims,
 								int *dim ) ;
 
-void  FLESADD(			double *srcpnt, 
-								double *dstpnt,
+void  FLESADD(			Real *srcpnt, 
+								Real *dstpnt,
 								int *nDims,
 								int *dim ) ;
 
-void  FLESSUB(			double *srcpnt, 
-								double *dstpnt,
+void  FLESSUB(			Real *srcpnt, 
+								Real *dstpnt,
 								int *nDims,
 								int *dim ) ;
 
-void  DRVALLREDUCESCLR(double *tmpp, double *tmp);
+void  DRVALLREDUCESCLR(Real *tmpp, Real *tmp);
 
-void   DRVALLREDUCE(double *valuesp, double *values, int* mDims);
+void   DRVALLREDUCE(Real *valuesp, Real *values, int* mDims);
 
-double   FLESDOT1( double *srcpnt, int* nDims, int* dim );
+Real   FLESDOT1( Real *srcpnt, int* nDims, int* dim );
 
-double   FLESDOT2(double *src1pnt, double *src2pnt, int* nDims, int* dim );
+Real   FLESDOT2(Real *src1pnt, Real *src2pnt, int* nDims, int* dim );
 
-void  FLESDAXPY(	double *srcpnt, double *lesP,		double *sclrRegFct,
+void  FLESDAXPY(	Real *srcpnt, Real *lesP,		Real *sclrRegFct,
 							int *nDstDims,	int *nNodes);
 
-void  FLESDXPAY(	double *srcpnt, double *dstpnt,		double *coef,
+void  FLESDXPAY(	Real *srcpnt, Real *dstpnt,		Real *coef,
 							int *nDims,		int *dim);
 
-void  FLESINV(		double *dstpnt, int *nDims,			int *dim ) ;
+void  FLESINV(		Real *dstpnt, int *nDims,			int *dim ) ;
 
 
 
-void  FMTXBLKDOT2 (double *src1pnt,  double *src2pnt, double *valuesp, 
+void  FMTXBLKDOT2 (Real *src1pnt,  Real *src2pnt, Real *valuesp, 
 	                          int* mDims, int* dim);
 
-void  COMMIN(	double *lesQ,		int *ilwork,		int *nPs,
-						int *iper,			int *iBC,			double *BC);
+void  COMMIN(	Real *lesQ,		int *ilwork,		int *nPs,
+						int *iper,			int *iBC,			Real *BC);
 
-void  COMMOUT(	double *lesP,		int *ilwork,		int *nQs,
-						int *iper,			int *iBC,			double *BC);
+void  COMMOUT(	Real *lesP,		int *ilwork,		int *nQs,
+						int *iper,			int *iBC,			Real *BC);
 
-void  FLESSPARSEAPFULL(int *colm,		int *rowp,		float *lhsK,
-								float *lhsP,	double *lesP,	double *lesQ,
+void  FLESSPARSEAPFULL(int *colm,		int *rowp,		Real *lhsK,
+								Real *lhsP,	Real *lesP,	Real *lesQ,
 								int *nNodes,	int *nnz);
 
 void  FLESSPARSEAPSCLR(int *colm,		int *rowp,
-								float *lhsS,	double *lesP,	double *lesQ,
+#ifdef SP_LHS
+		      float *lhsS,	Real *lesP,	Real *lesQ,
+#else
+		       Real *lhsS,	Real *lesP,	Real *lesQ,
+#endif
 								int *nNodes,	int *nnz);
 
-void  FMTXVDIMVECDOT2 (double *src1pnt, double *src2pnt, double *coefp,
+void  FMTXVDIMVECDOT2 (Real *src1pnt, Real *src2pnt, Real *coefp,
 						int *nSrc1Dims,int *nSrc2Dims, int *nDims, int *nNodes);
 
-void  FMTXVDIMVECDAXPY (	double *srcpnt, double *dstpnt, double *coef,
+void  FMTXVDIMVECDAXPY (	Real *srcpnt, Real *dstpnt, Real *coef,
 								int *nSrcDims, int *nDstDims,	int *nDims,
 								int *nNodes);
 
 void  FLESSPARSEAPG	(	int *colm,		int *rowp,
-								float *lhsP,	double *lesP,	double *lesQ,
+#ifdef SP_LHS
+				float *lhsP,	Real *lesP,	Real *lesQ,
+#else
+				Real *lhsP,	Real *lesP,	Real *lesQ,
+#endif
 								int *nNodes,	int *nnz);
 
 void  FLESSPARSEAPNGT	(	int *colm,		int *rowp,
-								float *lhsP,	double *lesP,	double *lesQ,
+#ifdef SP_LHS
+				float *lhsP,	Real *lesP,	Real *lesQ,
+#else
+				Real *lhsP,	Real *lesP,	Real *lesQ,
+#endif
 								int *nNodes,	int *nnz);
 	
 void  FLESSPARSEAPNGTC (	int *colm,		int *rowp,
-								float *lhsP,	double *lesP,	double *lesQ,
+#ifdef SP_LHS
+				float *lhsP,	Real *lesP,	Real *lesQ,
+#else
+				Real *lhsP,	Real *lesP,	Real *lesQ,
+#endif
 								int *nNodes,	int *nnz);
 
-void  FLESSPARSEAPKG (	int *colm,		int *rowp,		float *lhsK,
-								float *lhsP,	double *lesP,	double *lesQ,
+void  FLESSPARSEAPKG (	int *colm,		int *rowp,
+#ifdef SP_LHS
+		float *lhsK,    float *lhsP,	Real *lesP,	Real *lesQ,
+#else
+		Real *lhsK,    Real *lhsP,	Real *lesP,	Real *lesQ,
+#endif
 								int *nNodes,	int *nnz);
-void  RAMG_INTERFACE ( int *colm, int *rowp, float *lhsK,float *lhsP,
-                       double *mcgR,double *mcgZ,
-                       int *ilwork, double *BC, int *iBC,int *iper);
+void  RAMG_INTERFACE ( int *colm, int *rowp, Real *lhsK,Real *lhsP,
+                       Real *mcgR,Real *mcgZ,
+                       int *ilwork, Real *BC, int *iBC,int *iper);
 #endif
 /*----------------------------------------------------------------------
  *
@@ -615,7 +643,7 @@ void lesBlkDot2 ( UsrHd   usrHd,
          return ;
     }
 
-    valuesp = (double *) malloc (mDims * sizeof(double)) ;
+    valuesp = (Real *) malloc (mDims * sizeof(Real)) ;
 
     src1Off       = 0 ;
     src2Off       = 0 ;
@@ -830,7 +858,7 @@ void lesVdimDot2 ( UsrHd   usrHd,
         return ;
     }
 
-    coefp = (double *) malloc (nDims * sizeof(double)) ;
+    coefp = (Real *) malloc (nDims * sizeof(Real)) ;
 
     src1pnt        = usrPointer ( usrHd, src1Id, src1Off, nSrc1Dims ) ;
     src2pnt        = usrPointer ( usrHd, src2Id, src2Off, nSrc2Dims ) ;
@@ -1309,7 +1337,7 @@ void lesApSclr ( UsrHd   usrHd,
      Real*       srcpnt ;                 /* Source             */
      Real*       dstpnt ;                 /* Destination        */
      Integer     lhsStiffFlag ;
-     double     sclrRegFct ;
+     Real     sclrRegFct ;
 
      nDofs       = 1 ;
      nPs         = 1 ;

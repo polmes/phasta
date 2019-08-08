@@ -39,7 +39,11 @@
  *===========================================================================
  */
 typedef	int	Integer	;		/* integer type			*/
+#ifdef SP_Solve
+typedef	float	Real ;			/* real    type			*/
+#else
 typedef	double	Real ;			/* real    type			*/
+#endif
 typedef	float	Float ;			/* float   type			*/
 typedef	char*	String ;		/* string  type			*/
 typedef	void*	Data ;			/* data    type			*/

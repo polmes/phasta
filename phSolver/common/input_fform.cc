@@ -1098,9 +1098,12 @@ int input_fform(phSolver::Input& inp)
     outpar.temper = inp.GetValue("Temperature");
     outpar.entrop = inp.GetValue("Entropy");
 
-    // Step Sequencing
- 
 
+    // MPI Parameters
+    mpistats.ibarrier = inp.GetValue("MPI Barrier Flag");
+
+
+    // Step Sequencing
     ivec = inp.GetValue("Step Construction");
     sequence.seqsize = ivec.size();
     if( sequence.seqsize > 100 || sequence.seqsize < 2 )

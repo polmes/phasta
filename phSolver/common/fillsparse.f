@@ -4,9 +4,14 @@ c
 c
 c
       include "common.h"
+#ifdef SP_LHS
       real*4	xlhs(bsz,16,nshl,nshl)
-      integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
       real*4	lhs16(16,nnz_tot)
+#else
+      real*8	xlhs(bsz,16,nshl,nshl)
+      real*8	lhs16(16,nnz_tot)
+#endif
+      integer	ien(npro,nshl),	col(nshg+1), row(nshg*nnz)
 c
       integer	aa,	b,	c,	e,	i,	k,	n
 c
@@ -203,10 +208,14 @@ cdir$ ivdep
      1                         row,    col)
       
       include "common.h"
+#ifdef SP_LHS
       real*4    xSebe(bsz,nshl,nshl)
-      integer    ien(npro,nshl),    col(nshg+1), row(nshg*nnz)
       real*4    lhsS(nnz_tot)    
-
+#else  
+      real*8    xSebe(bsz,nshl,nshl)
+      real*8    lhsS(nnz_tot)   
+#endif
+      integer    ien(npro,nshl),    col(nshg+1), row(nshg*nnz)
       integer    aa,    b,    c,    e,    i,    k,    n
 
       integer sparseloc

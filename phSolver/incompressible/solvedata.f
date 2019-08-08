@@ -1,10 +1,18 @@
       module solvedata
 
       integer nsolflow,npermDims, nTmpDims, nPermDimsS, nTmpDimsS
-
+#ifdef SP_LHS
       real*4,  allocatable :: lhs16(:,:), lhsP(:,:), lhsS(:,:)
+#else
+      real*8,  allocatable :: lhs16(:,:), lhsP(:,:), lhsS(:,:)
+#endif
+#ifdef SP_Solve
+      real*4,  allocatable :: aperm(:,:), atemp(:,:)
+      real*4,  allocatable :: apermS(:,:,:), atempS(:,:)
+#else
       real*8,  allocatable :: aperm(:,:), atemp(:,:)
       real*8,  allocatable :: apermS(:,:,:), atempS(:,:)
+#endif
 
       end module
 

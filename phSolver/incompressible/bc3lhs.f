@@ -24,7 +24,11 @@ c
 c
       dimension iBC(nshg),      ien(npro,nshl)
       real*8 BC(nshg,ndofBC)
+#ifdef SP_LHS
       real*4 xlhs(bsz,16,nshl,nshl)
+#else
+      real*8 xlhs(bsz,16,nshl,nshl)
+#endif
       integer aa,b
       integer iens(npro,nshl)
 c
@@ -874,7 +878,11 @@ c
 c
       dimension iBC(nshg),      ien(npro,nshl)
       real*8 BC(nshg,ndofBC)
+#ifdef SP_LHS
       real*4 xlhs(bsz,nshl,nshl)
+#else
+      real*8 xlhs(bsz,nshl,nshl)
+#endif
       integer aa,b
       integer iens(npro,nshl)
       logical :: ibool

@@ -20,7 +20,11 @@ c
         implicit none
         include "mymkl_vml.fi"
         integer na,     nb,     nc,     m,      n
+#ifdef SP_Solve
+        real*4  a(n,na),        b(n,nb),        c(n,nc)
+#else
         real*8  a(n,na),        b(n,nb),        c(n,nc)
+#endif
 c
         integer i,      j
         integer iwork, iblasvvm, ieqswork
@@ -28,11 +32,15 @@ c
         rdelta=TMRC()
         iwork=mod(ieqswork,10)
         if(iwork.eq.2) then
-         do j=1,m
 #ifdef HAVE_MKL
+         do j=1,m
+#ifdef SP_Solve
+           call vsmul(n,a(1,j),b(1,j),c(1,j))
+#else
            call vdmul(n,a(1,j),b(1,j),c(1,j))
 #endif
          enddo
+#endif
         else if(iwork.eq.8) then
             do i = 1, n 
                 do j = 1, m 
@@ -99,7 +107,11 @@ c
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   a(n,m)
+#else
         real*8   a(n,m)
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -118,14 +130,18 @@ c
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   a(n,m), b(n,m)
+#else
         real*8   a(n,m), b(n,m)
+#endif
 c
         do i = 1, n
           do j = 1, m
             b(i,j) = a(i,j)
           enddo
         enddo
-c 
+c
         return
         end
 c
@@ -137,7 +153,11 @@ c
 c
         implicit none
         integer  m, n, i, j   
+#ifdef SP_Solve
+        real*4   a(n,m), s
+#else
         real*8   a(n,m), s
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -155,8 +175,12 @@ c
 	subroutine flesScaleCp ( a, b, s, m, n )
 c
         implicit none
-        integer  m, n, i, j
+        integer  m, n, i, j  
+#ifdef SP_Solve
+        real*4   a(n,m), b(n,m), s
+#else
         real*8   a(n,m), b(n,m), s
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -174,8 +198,12 @@ c
 	subroutine flesAdd ( a, b, m, n )
 c
         implicit none
-        integer  m, n, i, j
+        integer  m, n, i, j 
+#ifdef SP_Solve
+        real*4   a(n,m), b(n,m)
+#else
         real*8   a(n,m), b(n,m)
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -194,7 +222,11 @@ c
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   a(n,m), b(n,m)
+#else
         real*8   a(n,m), b(n,m)
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -209,11 +241,19 @@ c----------
 c flesDot1
 c----------
 c
+#ifdef SP_Solve
+ 	real*4 function flesDot1 ( a, m, n )
+#else
  	real*8 function flesDot1 ( a, m, n )
+#endif
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   a(n,m)
+#else
         real*8   a(n,m)
+#endif
 c
 	flesDot1 = 0
         do i = 1, n
@@ -229,11 +269,19 @@ c----------
 c flesDot2
 c----------
 c
-	real*8 function flesDot2 ( a, b, m, n )
+#ifdef SP_Solve
+	real*4 function flesDot2 ( a, b, m, n )
+#else
+ 	real*8 function flesDot2 ( a, b, m, n )
+#endif
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   a(n,m), b(n,m)
+#else
         real*8   a(n,m), b(n,m)
+#endif
 c
 	flesDot2 = 0
         do i = 1, n
@@ -254,21 +302,30 @@ c
         implicit none
         include "mymkl.fi"
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   x(n,m), y(n,m)
+        real*4   a
+#else
         real*8   x(n,m), y(n,m)
         real*8   a
+#endif
 c
         if(1.eq.0) then
-         do j=1,m
 #ifdef HAVE_MKL
+         do j=1,m
+#ifdef SP_Solve
+           call saxpy(n,a,x(1,j),1,y(1,j),1)
+#else
            call daxpy(n,a,x(1,j),1,y(1,j),1)
 #endif
          enddo
+#endif
         else
-        do i = 1, n
+         do i = 1, n
           do j= 1, m
             y(i,j) = y(i,j) + a * x(i,j)
           enddo
-        enddo
+         enddo
         endif
 c
         return
@@ -282,8 +339,13 @@ c
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   x(n,m), y(n,m)
+        real*4   a
+#else
         real*8   x(n,m), y(n,m)
         real*8   a
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -302,7 +364,11 @@ c
 c
         implicit none
         integer  m, n, i, j
+#ifdef SP_Solve
+        real*4   x(n,m)
+#else
         real*8   x(n,m)
+#endif
 c
         do i = 1, n
           do j = 1, m
@@ -332,13 +398,19 @@ c
 c.... Data declaration
 c
         integer m,      n
+#ifdef SP_Solve
+        real*4  x(n,m), y(n),   c(m), d(m)
+        real*4 alpha,beta
+        real*4  tmp1,   tmp2,   tmp3,   tmp4
+        real*4  tmp5,   tmp6,   tmp7,   tmp8
+#else
         real*8  x(n,m), y(n),   c(m), d(m)
-
         real*8 alpha,beta
-        real*8 rdelta, TMRC, rblasphasta,rblasmkl
-c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
+#endif
+        real*8 rdelta, TMRC, rblasphasta,rblasmkl
+c
         integer i,      j,      m1,lda,incx,incy
         integer iwork, ieqswork,     icut
         integer iblasphasta,      iblasmkl
@@ -368,7 +440,11 @@ c
 !  us     d=alpha*x^T y +beta*d
             rdelta=TMRC()
 #ifdef HAVE_MKL
+#ifdef SP_Solve
+            call sgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
+#else
             call dgemv('T',n,m,alpha,x,lda,y,incx,beta,c,incy)
+#endif
 #endif
             rblasmkl=rblasmkl+TMRC()-rdelta
             iblasmkl=iblasmkl+m
@@ -383,11 +459,15 @@ c
         if(iwork.eq.2) then  
 cdir$ ivdep
           rdelta=TMRC()
-          do i=1,m
 #ifdef HAVE_MKL
+          do i=1,m
+#ifdef SP_Solve
+            c(i)=sdot(n,x(1,i),1,y,1)
+#else
             c(i)=ddot(n,x(1,i),1,y,1)
 #endif
           enddo
+#endif
           rblasmkl=rblasmkl+TMRC()-rdelta
           iblasmkl=iblasmkl+m
           return
@@ -657,10 +737,17 @@ c.... Data declaration
 c
         implicit none
         integer m,      n
+#ifdef SP_Solve
+        real*4  x(n,m), y(n),   c(m)
+c
+        real*4  tmp1,   tmp2,   tmp3,   tmp4
+        real*4  tmp5,   tmp6,   tmp7,   tmp8
+#else
         real*8  x(n,m), y(n),   c(m)
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
+#endif
         integer i,      j,      m1
 c
 c.... Determine the left overs
@@ -796,12 +883,20 @@ c
         implicit none
 !        include "mymkl.fi"
         integer m,      n
+#ifdef SP_Solve
+        real*4  x(n,m), y(n),   c(m)
+c
+        real*4  tmp1,   tmp2,   tmp3,   tmp4
+        real*4  tmp5,   tmp6,   tmp7,   tmp8
+#else
         real*8  x(n,m), y(n),   c(m)
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
+#endif
         integer i,      j,      m1
         if(1.eq.0) then
+#ifdef HAVE_MKL
           tmp1=c(1)
           do i = 1, n
               y(i) = 
@@ -809,11 +904,15 @@ c
           enddo
           do j=2,m
            tmp1=c(j)
-#ifdef HAVE_MKL
+#ifdef SP_Solve
+           call saxpy(n,tmp1,x(1,j),1,y,1)
+#else
            call daxpy(n,tmp1,x(1,j),1,y,1)
 #endif
           enddo
+#endif
         else
+       
 c
 c.... Determine the left overs
 c
@@ -955,23 +1054,36 @@ c
         include "mymkl.fi"
 !        include "blas.f90"
         integer m,      n
+#ifdef SP_Solve
+        real*4  x(n,m), y(n),   c(m)
+c
+        real*4  tmp1,   tmp2,   tmp3,   tmp4
+        real*4  tmp5,   tmp6,   tmp7,   tmp8
+
+        real*4 a
+#else
         real*8  x(n,m), y(n),   c(m)
 c
         real*8  tmp1,   tmp2,   tmp3,   tmp4
         real*8  tmp5,   tmp6,   tmp7,   tmp8
+#endif
         integer i,      j,      m1
         integer iwork,iblasmaxpy, ieqswork
-        real*8 a,rdelta,TMRC,rblasmaxpy
+        real*8 rdelta,TMRC,rblasmaxpy
         rdelta=TMRC()
 !        include "mymkl.fi"
         iwork=mod(ieqswork,10)
         if(iwork.eq.2) then
+#ifdef HAVE_MKL
           do j=1,m
             a=-1.0d0*c(j)
-#ifdef HAVE_MKL
-            call daxpy(n,a,x(1,j),1,y,1)
+#ifdef SP_Solve
+            call saxpy(n,a,x(1,j),1,y,1)
+#else
+           call daxpy(n,a,x(1,j),1,y,1)
 #endif
           enddo
+#endif
         else if(iwork.eq.8) then
           do j=1,m
            tmp1=c(j)
@@ -1116,16 +1228,24 @@ c
         implicit none
         include "mymkl.fi"
         integer na,     nb,     m,      n
+#ifdef SP_Solve
+        real*4  a(n,na),        b(n,nb)
+#else
         real*8  a(n,na),        b(n,nb)
+#endif
 c
         integer i,      j
 !        include "mymkl.fi"
         if(1.eq.0) then  ! this is slower
-         do j=1,m
 #ifdef HAVE_MKL
+         do j=1,m
+#ifdef SP_Solve
+           call scopy(n,a(1,j),1,b(1,j),1)
+#else
            call dcopy(n,a(1,j),1,b(1,j),1)
 #endif
          enddo
+#endif
         else
 c
 c.... Do the work
@@ -1186,7 +1306,11 @@ c.... Data declaration
 c
         implicit none
         integer na,     nb,     m,      n
+#ifdef SP_Solve
+        real*4  a(n,na),        b(n,nb),        c(m)
+#else
         real*8  a(n,na),        b(n,nb),        c(m)
+#endif
 c
         integer i,      j
 c
@@ -1258,7 +1382,11 @@ c.... Data declaration
 c
         implicit none
         integer na,     nb,     m,      n
+#ifdef SP_Solve
+        real*4  a(n,na),        b(n,nb),        c(m)
+#else
         real*8  a(n,na),        b(n,nb),        c(m)
+#endif
 c
         integer i,      j
 c

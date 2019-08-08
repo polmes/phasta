@@ -89,7 +89,8 @@ c from different modules
      &                   ispmvKG, ispmvphasta, ispmvmkl, 
      &                   iblasphasta, iblasmkl,
      &                   ispmvD,  ispmvG, ispmvNGt,
-     &                   ispmvNGtC, ispmvFull
+     &                   ispmvNGtC, ispmvFull,
+     &                   ibarrier
 
         common /memstats/rheap,rheapavail,rstack,rstackavail,rshared,
      &                   rpersist,rguard,rmmap,rmemstats
@@ -291,8 +292,9 @@ c
 c
         common /incomp/ numeqns(100), minIters, maxIters, 
      &                  iprjFlag,     nPrjs,    ipresPrjFlag, nPresPrjs,
-     &                  prestol,      statsflow(6), statssclr(6),
-     &                  iverbose, iRelTol, tolFact
+     &                  prestol,      
+     &                  iverbose, iRelTol, tolFact,
+     &                  statsflow(6), statssclr(6)
 c
         character(8) :: ccode(13)
         common /mtimer1/ ccode

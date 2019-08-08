@@ -86,6 +86,8 @@ c
 
         real*8 vbc_prof(nshg,3)
 
+        real*4 epstolSP(6),prestolSP
+
         character*10 cname2
         character*5  cname
         integer i_redist_counter
@@ -652,10 +654,20 @@ c
      &                            'Changing solver tolerance'
                            endif
                            lesId=1
+#ifdef SP_Solve
+                           tolFactSP=tolFact
+                           epstolSP=epstol
+                           prestolSP=prestol
+                           call resetTol(lesId, tolFactSP*epstolSP(1), tolFactSP*prestolSP) 
+                        else
+                          lesId=1
+                         call resetTol( lesId, epstolSP(1), prestolSP)
+#else
                            call resetTol(lesId, tolFact*epstol(1), tolFact*prestol) 
                         else
                           lesId=1
                          call resetTol( lesId, epstol(1), prestol)
+#endif
                         endif 
                     endif
                     call SolFlow(yAlpha,     acAlpha,   uAlpha,
@@ -1784,6 +1796,9 @@ c
 #endif
         integer, allocatable :: gNodes(:)
         real*8, allocatable :: sV(:,:)
+#ifdef SP_Solve
+        real*4 epstolSP(6),prestolSP
+#endif
         character*1024    servername
         integer   rowp(nshg,nnz),         colm(nshg+1),
      &            iBC(nshg)
@@ -1903,6 +1918,10 @@ c
 #endif
         ENDIF !of svLS init. inside ifdef so we can trap above else
 ! note input_fform does not allow svLSFlag=1 AND leslib=1 so above or below only
+#ifdef SP_Solve
+        epstolSP=epstol
+        prestolSP=prestol
+#endif
         if(leslib.eq.1) then
 ! ifdef leslib_1 : setup for leslib
 #ifdef HAVE_LESLIB 
@@ -1911,8 +1930,13 @@ c
      &                 eqnType,
      &                 nDofs,          minIters,       maxIters,
      &                 Kspace,         iprjFlag,        nPrjs,
+#ifdef SP_Solve
+     &                 ipresPrjFlag,    nPresPrjs,      epstolSP(1),
+     &                 prestolSP,        iverbose,      statsflow,
+#else
      &                 ipresPrjFlag,    nPresPrjs,      epstol(1),
      &                 prestol,        iverbose,        statsflow,
+#endif
      &                 nPermDims,      nTmpDims,      servername  )
           call aSDf  
           call readLesRestart( lesId,  aperm, nshg, myrank, lstep,
@@ -1996,8 +2020,13 @@ c
      &                 eqnType,
      &                 nDofs,          minIters,       maxIters,
      &                 Kspace,         isclprjFlag,        nPrjs,
+#ifdef SP_Solve
+     &                 isclpresPrjFlag,isclrnPresPrjs,      epstolSP(indx),
+     &                 prestolSP,        iverbose,        statssclr,
+#else
      &                 isclpresPrjFlag,isclrnPresPrjs,      epstol(indx),
      &                 prestol,        iverbose,        statssclr,
+#endif
      &                 nPermDimsS,     nTmpDimsS,   servername )
         endif
 #endif

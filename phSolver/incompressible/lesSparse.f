@@ -22,11 +22,24 @@ c
 
       include "common.h"
       include "mpif.h"
-c     
+c
+#ifdef SP_LHS     
       real*4 lhs16(16,nnz_tot)
-      dimension flowDiag(nshg,4), ilwork(nlwork)
-      dimension iBC(nshg), iper(nshg), BC(nshg,ndofBC)
       real*4 lhsP(4,nnz_tot)
+#else  
+      real*8 lhs16(16,nnz_tot)
+      real*8 lhsP(4,nnz_tot)
+#endif
+#ifdef SP_Solve
+      real*4 flowDiag(nshg,4)
+      real*8 flowDiagDP(nshg,4)
+      real*4 BC(nshg,ndofBC)
+#else
+      real*8 flowDiag(nshg,4)
+      real*8 BC(nshg,ndofBC)
+#endif
+      dimension ilwork(nlwork)
+      dimension iBC(nshg), iper(nshg)
       integer rowp(nnz_tot),  colm(nshg+1)
       integer	n,	k
 c
@@ -108,6 +121,33 @@ c
 c     
 
 c
+#ifdef SP_Solve
+      flowdiagDP=flowdiag
+      if(iabc==1)    !are there any axisym bc's
+     &      call rotabc(flowdiagDP, iBC, 'in ')
+c
+
+c     
+c.... communicate : add the slaves part to the master's part of flowDiag
+c     
+        if (numpe > 1) then 
+           call commu (flowDiagDP, ilwork, nflow, 'in ') 
+        endif
+c
+c.... satisfy the boundary conditions on the diagonal
+c
+        call bc3diag(iBC, BC,  flowDiagDP)
+c
+c     
+c.... on processor periodicity was not taken care of in the setting of the 
+c     boundary conditions on the matrix.  Take care of it now.
+c
+        call bc3per(iBC,  flowDiagDP, iper, ilwork, 4)
+c
+c... slaves and masters have the correct values
+c
+       flowdiag=flowdiagDP
+#else
       if(iabc==1)    !are there any axisym bc's
      &      call rotabc(flowdiag, iBC, 'in ')
 c
@@ -131,6 +171,7 @@ c
 c
 c... slaves and masters have the correct values
 c
+#endif
 c     
 c.... Calculate square root
 c     
@@ -161,8 +202,17 @@ c
       integer  ilwork(nlwork),    iBC(nshg),     iper(nshg),
      &         rowp(nnz_tot),    colm(nshg+1)
 
+#ifdef SP_LHS
       real*4   lhsS(nnz_tot)
+#else
+      real*8   lhsS(nnz_tot)
+#endif
+#ifdef SP_Solve
+      real*4   sclrDiag(nshg),   BC(nshg,ndofBC)
+      real*8   sclrDiagDP(nshg)
+#else
       real*8   sclrDiag(nshg),   BC(nshg,ndofBC)
+#endif
       integer sparseloc
 
       sclrDiag = zero
@@ -174,8 +224,28 @@ c
       enddo
 c     
 c.... communicate : add the slaves part to the master's part of sclrDiag
-c     
+c 
+#ifdef SP_Solve    
+        sclrDiagDP=sclrDiag
         if (numpe > 1) then 
+           call commu (sclrDiagDP, ilwork, 1, 'in ') 
+        endif
+c
+c.... satisfy the boundary conditions on the diagonal
+c
+        call bc3SclrDiag(iBC,  sclrDiagDP)
+c
+c     
+c.... on processor periodicity was not taken care of in the setting of the 
+c     boundary conditions on the matrix.  Take care of it now.
+c
+        call bc3per(iBC,  sclrDiagDP, iper, ilwork, 1)
+c
+c... slaves and masters have the correct values
+c
+        sclrDiag=sclrDiagDP
+#else
+       if (numpe > 1) then 
            call commu (sclrDiag, ilwork, 1, 'in ') 
         endif
 c
@@ -191,6 +261,7 @@ c
 c
 c... slaves and masters have the correct values
 c
+#endif
 c     
 c.... Calculate square root
 c     
@@ -218,10 +289,21 @@ c
       include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
+#ifdef SP_Solve
+        real*4	p(nNodes),	q(nNodes,3)
+c
+        real*4	pisave
+#else
         real*8	p(nNodes),	q(nNodes,3)
 c
         real*8	pisave
+#endif
+
+#ifdef SP_LHS
         real*4	pLhs(4,nnz_tot)
+#else
+        real*8	pLhs(4,nnz_tot)
+#endif
         integer	i,	j,	k
         rstart=TMRC()
 c
@@ -272,16 +354,29 @@ c      implicit none
       include "common.h"
       integer	nNodes
       integer	col(nNodes+1),	row(nnz_tot)
+#ifdef SP_Solve
+      real*4 	p(nNodes,4),  q(nNodes,3)
+      real*4	tmp1,	tmp2,	tmp3,	pisave
+#else
       real*8 	p(nNodes,4),  q(nNodes,3)
+      real*8	tmp1,	tmp2,	tmp3,	pisave
+#endif
+#ifdef SP_LHS
       real*4    lhs9(9,nnz_tot)! needed for 3x3 options
       real*4    q3(3,nNodes), p3(3,nNodes)
-!      real*4    lhs16sp(16,nnz_tot)
       real*4    lhs16(16,nnz_tot)
       real*4    pLhs(4,nnz_tot)
       real*4    q4(4,nNodes), p4(4,nNodes)
-c
-      real*8	tmp1,	tmp2,	tmp3,	pisave
+#else
+      real*8    lhs9(9,nnz_tot)! needed for 3x3 options
+      real*8    q3(3,nNodes), p3(3,nNodes)
+      real*8    lhs16(16,nnz_tot)
+      real*8    pLhs(4,nnz_tot)
+      real*8    q4(4,nNodes), p4(4,nNodes)
+#endif
+
       integer	i,	j,	k
+      
 !
 ! This routine performs K.p_m + G.p_c
 ! The K.p_m is a 3x3 . 3x1 (standard). The second part is G.p_c is a 3x1 . 1x1
@@ -409,8 +504,11 @@ cdir$ ivdep
           p3(3,i)=p(i,3)
         enddo
 #ifdef HAVE_MKL
-!        call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
+#ifdef SP_LHS
         call mkl_sbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
+#else
+        call mkl_dbsrgemv('N', nNodes, 3, lhs9, col, row, p3, q3)
+#endif
 #endif
         rspmvmkl=rspmvmkl + TMRC()-rdelta
         ispmvmkl=ispmvmkl + 1
@@ -473,8 +571,11 @@ cdir$ ivdep
         enddo
 !        lhs16sp=lhs16
 #ifdef HAVE_MKL
-!        call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#ifdef SP_LHS
          call mkl_sbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#else
+       call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#endif
 #endif
         do i =1, nNodes ! transpose back mkl's dof_var first
           q(i,1)=q4(1,i)
@@ -633,10 +734,20 @@ c
         include "common.h"
 
         integer	col(nNodes+1),	row(nnz_tot)
+#ifdef SP_Solve
+        real*4	p(nNodes,3),	q(nNodes)
+        real*4	tmp
+#else
         real*8	p(nNodes,3),	q(nNodes)
-        real*4	pLhs(4,nnz_tot)
-c
         real*8	tmp
+#endif
+#ifdef SP_LHS
+        real*4	pLhs(4,nnz_tot)
+#else
+        real*8	pLhs(4,nnz_tot)
+#endif
+c
+
         integer	i,	j,	k
         rstart=TMRC()
 c
@@ -680,10 +791,19 @@ c
       include "common.h"
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
+#ifdef SP_Solve
+        real*4	p(nNodes,4),	q(nNodes)
+        real*4	tmp
+#else
         real*8	p(nNodes,4),	q(nNodes)
-        real*4	pLhs(4,nnz_tot)
-c
         real*8	tmp
+#endif
+#ifdef SP_LHS
+        real*4	pLhs(4,nnz_tot)
+#else
+        real*8	pLhs(4,nnz_tot)
+#endif
+
         integer	i,	j,	k
         rstart=TMRC()
 c
@@ -730,12 +850,22 @@ c	implicit none
 
       integer	nNodes, nnz_tot
       integer	col(nNodes+1),	row(nnz_tot)
+#ifdef SP_LHS
       real*4	lhs9(9,nnz_tot),	pLhs(4,nnz_tot)
       real*4	lhs16(16,nnz_tot)
-      real*8  p(nNodes,4),	q(nNodes,4)
       real*4  p4(4,nNodes),	q4(4,nNodes)
-c
+#else
+      real*8	lhs9(9,nnz_tot),	pLhs(4,nnz_tot)
+      real*8	lhs16(16,nnz_tot)
+      real*8  p4(4,nNodes),	q4(4,nNodes)
+#endif
+#ifdef SP_Solve
+      real*4  p(nNodes,4),	q(nNodes,4)
+      real*4	tmp1,	tmp2,	tmp3,	tmp4
+#else
+      real*8  p(nNodes,4),	q(nNodes,4)
       real*8	tmp1,	tmp2,	tmp3,	tmp4
+#endif
       integer	i,	j,	k
        
       iwork=ieqswork/10
@@ -809,7 +939,11 @@ c
         enddo
         rstart=TMRC()
 #ifdef HAVE_MKL
+#ifdef SP_LHS
         call mkl_sbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#else
+        call mkl_dbsrgemv('N', nNodes, 4, lhs16, col, row, p4, q4)
+#endif
 #endif
         rspmvFull=rspmvFull+TMRC()-rstart
         ispmvFull=ispmvFull+1
@@ -952,10 +1086,19 @@ c
         implicit none
         integer	nNodes, nnz_tot
         integer	col(nNodes+1),	row(nnz_tot)
+#ifdef SP_Solve
+        real*4	p(nNodes),	q(nNodes)
+        real*4	tmp
+#else
         real*8	p(nNodes),	q(nNodes)
-        real*4	lhs(nnz_tot)
-c
         real*8	tmp
+#endif
+#ifdef SP_LHS
+        real*4	lhs(nnz_tot)
+#else
+        real*8	lhs(nnz_tot)
+#endif
+c
         integer	i,	j,	k
 c
 c.... Do an AP product
@@ -979,10 +1122,36 @@ C============================================================================
      &                       iper,    iBC, BC  )
         
         include "common.h"
-        
+#ifdef SP_Solve        
+        real*8  globaldp(nshg,n)
+        real*4  global(nshg,n), BC(nshg,ndofBC)
+#else        
         real*8  global(nshg,n), BC(nshg,ndofBC)
+#endif
         integer ilwork(nlwork), iper(nshg), iBC(nshg)
 c
+
+#ifdef SP_Solve
+                globaldp=global  ! until we change other parts of code that use commu and rotabc to sp
+        if ( numpe .gt. 1) then 
+           call commu ( globaldp, ilwork, n, 'out')
+        endif
+c
+c     before doing AP product P must be made periodic
+c     on processor slaves did not get updated with the 
+c     commu (out) so do it here
+c
+        do i=1,n
+           globaldp(:,i) = globaldp(iper(:),i)  ! iper(i)=i if non-slave so no danger
+        enddo
+c
+c       slave has masters value, for abc we need to rotate it
+c        (if this is a vector only no SCALARS)
+        if((iabc==1) .and. (n.gt.1)) !are there any axisym bc's
+     &     call rotabc(globaldp, iBC,  'out')
+
+        global=globaldp
+#else
         if ( numpe .gt. 1) then 
            call commu ( global, ilwork, n, 'out')
         endif
@@ -999,7 +1168,7 @@ c       slave has masters value, for abc we need to rotate it
 c        (if this is a vector only no SCALARS)
         if((iabc==1) .and. (n.gt.1)) !are there any axisym bc's
      &     call rotabc(global, iBC,  'out')
-
+#endif
 
 c$$$        do j = 1,nshg
 c$$$           if (btest(iBC(j),10)) then
@@ -1017,9 +1186,29 @@ C============================================================================
         
         include "common.h"
         
+
+#ifdef SP_Solve
+        real*8  globaldp(nshg,n)
+        real*4  global(nshg,n), BC(nshg,ndofBC)
+#else
         real*8  global(nshg,n), BC(nshg,ndofBC)
+#endif
+
         integer ilwork(nlwork), iper(nshg), iBC(nshg)
 c
+#ifdef SP_Solve
+        globaldp=global
+        if((iabc==1) .and. (n.gt.1)) !are there any axisym bc's
+     &       call rotabc(globaldp, iBC, 'in ')
+c
+
+        if ( numpe .gt. 1 ) then
+           call commu ( globaldp, ilwork, n, 'in ')
+        endif
+        	
+        call bc3per ( iBC, globaldp, iper, ilwork, n)
+        global=globaldp
+#else
         if((iabc==1) .and. (n.gt.1)) !are there any axisym bc's
      &       call rotabc(global, iBC, 'in ')
 c
@@ -1029,6 +1218,7 @@ c
         endif
         	
         call bc3per ( iBC, global, iper, ilwork, n)
+#endif
         
         return 
         end

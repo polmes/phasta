@@ -103,7 +103,7 @@ c           if (resmax .eq. resvec(1) ) then
            elseif(impistat.eq.2) then
              iAllRScal = iAllRScal+1
            endif
-           if(impistat2.eq.1.and.(0.eq.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+           if(impistat2.eq.1.and.(ibarrier.ge.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
            if(impistat.gt.0) rmpitmr = TMRC()
            call MPI_ALLREDUCE (resvec, rvec, irecvcount,
      &          MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr)
@@ -122,7 +122,7 @@ c           nrsmax = rvec(1)
            elseif(impistat.eq.2) then 
              iAllRScal = iAllRScal+1
            endif
-           if(impistat2.eq.1.and.(0.eq.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+           if(impistat2.eq.1.and.(ibarrier.ge.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
            if(impistat.gt.0) rmpitmr = TMRC()
            call MPI_ALLREDUCE (resvec, rvec, irecvcount,
      &          MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr)
@@ -167,7 +167,7 @@ c
 c
 c.... output the result
 c
-c        if (numpe > 1.and.(0.eq.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+c        if (numpe > 1.and.(ibarrier.ge.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
         
         if (myrank .eq. master) then
 c

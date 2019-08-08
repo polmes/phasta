@@ -40,16 +40,16 @@ static int lmNum = 0;
 static LesHd lesArray[8];
 void   usrNew(	UsrHd	  usrHd,
                         int*      eqnType,
-                        double*	  aperm,
-                        double*	  atemp,
-                        double*   resf,
-                        double*   solinc,
-                        double*   flowDiag,
-                        double*   sclrDiag,
-                        double*   lesP,
-                        double*   lesQ,
+                        Real*	  aperm,
+                        Real*	  atemp,
+                        Real*   resf,
+                        Real*   solinc,
+                        Real*   flowDiag,
+                        Real*   sclrDiag,
+                        Real*   lesP,
+                        Real*   lesQ,
                         int*      iBC,
-                        double*   BC,
+                        Real*   BC,
                         int*      iper,
                         int*      ilwork,
                         int*      numpe,
@@ -59,11 +59,17 @@ void   usrNew(	UsrHd	  usrHd,
                         int*	  nTmpDims,
                         int*	  rowp,
                         int*	  colm,
+#ifndef SP_LHS
+                        Real*   lhsK,
+                        Real*   lhsP,
+                        Real*   lhsS,
+#else
                         float*   lhsK,
                         float*   lhsP,
                         float*   lhsS,
+#endif
                         int*      nnz_tot,
-                        double*   CGsol
+                        Real*   CGsol
     )
 {
     char*	funcName = "usrNew" ;	/* function name		*/
@@ -176,8 +182,8 @@ usrPointer(	UsrHd	usrHd,
 void  _CrtDbgReport() {
     return ;}
 
-double __vcos_(double fg) { fflush(stdout); printf(" vcos got called \n"); fflush(stdout);}
-double __vlog_(double fg)  { fflush(stdout); printf(" vlog got called \n"); fflush(stdout);}
+Real __vcos_(Real fg) { fflush(stdout); printf(" vcos got called \n"); fflush(stdout);}
+Real __vlog_(Real fg)  { fflush(stdout); printf(" vlog got called \n"); fflush(stdout);}
 
 
 #endif /* we are in unix land... whew.  secretly we have equivalenced fileName and  */
@@ -211,7 +217,7 @@ void    myflesnew(	     Integer*	lesId,
 #endif
     MPI_Comm_rank( MPI_COMM_WORLD, &procId ) ;
     if(lmNum==0){
-        if(procId==0){
+        if(procId==0){     
             lesArray[ *lesId ] = lesNew( lmhost, *lmport, &lmNum, *eqnType,
                                          *nDofs, *minIters, *maxIters, *nKvecs,
                                          *prjFlag, *nPrjs, *presPrjFlag, *nPresPrjs,presPrec,
@@ -250,7 +256,8 @@ savelesrestart( Integer* lesId,
     char filename[255];
     int iarray[3];
     int size, nitems;
-    double* projVec;
+    double* projVec; // note this is intentionally double precision regardless of what Real is.  Because aperm is copied to this, it should 
+                     // allow us to always write/read DP and yet use as SP or DP within the solver and thus restart from other
     int i, j, count;
 // pressure projection vectors
     nPresPrjs = (Integer) lesGetPar( lesArray[ *lesId ], LES_ACT_PRES_PRJS );
@@ -363,7 +370,8 @@ readlesrestart( Integer* lesId,
     int size, nitems;
     int itwo=2;
     int lnshg;
-    double* projVec;
+    double* projVec; // note this is intentionally double precision regardless of what Real is.  Because aperm is copied to this, it should 
+                     // allow us to always write/read DP and yet use as SP or DP within the solver and thus restart from other
     int i,j,count;
     int nfields;
     int numParts;

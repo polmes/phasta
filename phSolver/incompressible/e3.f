@@ -54,7 +54,11 @@ c
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp,rerrl_qp
 
+#ifdef SP_LHS
         real*4 xlhs(bsz,16,blk%s,blk%s)
+#else
+        real*8 xlhs(bsz,16,blk%s,blk%s)
+#endif
 c
 c.... local declarations
 c
@@ -269,7 +273,11 @@ c
      &            ql(bsz,blk%s,nsd),     
      &            dwl(bsz,blk%n),         cfll(bsz,blk%s),
      &          cfllold(bsz,blk%s),     evl(bsz,blk%s)
+#ifdef SP_LHS
       real*4    xSebe(bsz,blk%s,blk%s)
+#else
+      real*8    xSebe(bsz,blk%s,blk%s)
+#endif
 c
 c.... local declarations
 c

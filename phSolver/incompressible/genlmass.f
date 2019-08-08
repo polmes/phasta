@@ -215,7 +215,11 @@ c
 c     
       real*8 ac(nshg,ndof), res(nshg,4), tmp,tmp1
       real*8 gmass(nshg), rho(nshg)
+#ifdef SP_LHS
       real*4 lhs16(16,nnz_tot)
+#else
+      real*8 lhs16(16,nnz_tot)
+#endif
       integer rowp(nnz*nshg),  colm(nshg+1)
       integer	n,	k
 c

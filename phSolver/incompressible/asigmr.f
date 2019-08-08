@@ -40,8 +40,12 @@ c
      &            ql(bsz,blk%s,idflx),
      &            evl(bsz,blk%s),
      &            cfll(bsz,blk%s)
-c        
+c     
+#ifdef SP_LHS   
         real*4 xlhs(bsz,16,blk%s,blk%s)
+#else 
+        real*8 xlhs(bsz,16,blk%s,blk%s)
+#endif
 c
         dimension rlsl(bsz,blk%s,6) 
 
@@ -171,7 +175,11 @@ c
      &            cfll(bsz,blk%s),            cfllold(bsz,blk%s)            
 c        
         real*8    xmudmi(blk%e,blk%g) 
+#ifdef SP_LHS
         real*4    xSebe(bsz,blk%s,blk%s)
+#else
+        real*8    xSebe(bsz,blk%s,blk%s)
+#endif
 c
 c.... gather the variables
 c

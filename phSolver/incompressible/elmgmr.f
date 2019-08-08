@@ -54,8 +54,11 @@ c
 
         integer rowp(nshg*nnz),         colm(nshg+1)
 
-
+#ifdef SP_LHS
         real*4, allocatable, dimension(:,:,:,:,:) :: xlhs
+#else
+        real*8, allocatable, dimension(:,:,:,:,:) :: xlhs
+#endif
         real*8, allocatable, dimension(:,:,:,:) :: rl, rerrl,StsVecl
 
         real*8  rerr(nshg,numerr)
@@ -933,7 +936,7 @@ c
        elseif(impistat.eq.2) then
           iAllR = iAllR+1
        endif
-       if(impistat2.eq.1 .and. (0.eq.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+       if(impistat2.eq.1 .and. (ibarrier.ge.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
        if(impistat.gt.0) rmpitmr = TMRC()
        call MPI_ALLREDUCE (qsurfProc, qsurf(:), npars,
      &        MPI_DOUBLE_PRECISION,MPI_SUM, MPI_COMM_WORLD,ierr)

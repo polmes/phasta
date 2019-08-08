@@ -237,6 +237,7 @@ extern "C" {
     int ispmvNGt;
     int ispmvNGtC;
     int ispmvFull;
+    int ibarrier;
   } mpistats ;
 
   extern struct { 
@@ -658,11 +659,16 @@ extern "C" {
     int ipresPrjFlag;
     int nPresPrjs;
     double prestol;
-    double statsflow[6];
-    double statssclr[6];
     int iverbose;
     int iRelTol;
     double tolFact;
+#ifdef SP_Solve
+    float statsflow[6];
+    float statssclr[6];
+#else
+    double statsflow[6];
+    double statssclr[6];
+#endif
   } incomp ;
 
   extern struct { 
