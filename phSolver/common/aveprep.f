@@ -59,19 +59,6 @@ c------------------------------------------------------------------------------
       end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
       subroutine getnu (ien, strl, xmudmi, cdelsq, lfathe)
 
       include "common.h"
@@ -196,14 +183,6 @@ c         xdenli = xdenli
       return
 
       end
-
-
-
-
-
-
-
-
 
       subroutine getylist (ylist, lfathe, shp, x, ien)
 
@@ -379,8 +358,8 @@ c
       enddo      	
 
       if(numpe.gt.1)then
-         call drvAllreduce( xden, xdent, idim )
-         call drvAllreduce( xnum, xnumt, idim )
+         call drvAllreduceDP( xden, xdent, idim )
+         call drvAllreduceDP( xnum, xnumt, idim )
       else
          xdent  = xden
          xnumt  = xnum

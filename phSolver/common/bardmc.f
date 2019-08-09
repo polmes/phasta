@@ -444,7 +444,7 @@ c
 c ONLY DO THIS IF  1) multiprocessors AND 2) homogenous directions exist 
   
       if(numpe .gt. 1 .and. nsons(1).ne.1 )then
-         call drvAllreduce(xnude, xnuder,2*nfath)
+         call drvAllreduceDP(xnude, xnuder,2*nfath)
 c
 c  xnude is the sum of the sons for each father on this processor
 c

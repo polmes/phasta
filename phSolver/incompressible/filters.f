@@ -1179,7 +1179,7 @@ c
       enddo
 
       if(numpe .gt. 1)then
-         call drvAllreduce(xaveg, xavegr,12*nfath)         
+         call drvAllreduceDP(xaveg, xavegr,12*nfath)         
 
          do m = 1, 12
             xavegr(:,m) = xavegr(:,m)/nsons(:)
@@ -1487,7 +1487,7 @@ c  if parallel the above is only this processors part of the dot product.
 c  get the total result
 c
 	   dotTot=zero
-	   call drvAllreduce(rr,dotTot,1)
+	   call drvAllreduceDP(rr,dotTot,1)
 	   rr=dotTot
 	rr0 = rr
 c
@@ -1577,7 +1577,7 @@ c  if parallel the above is only this processors part of the dot product.
 c  get the total result
 c
            dotTot=zero
-	   call drvAllreduce(pap,dotTot,1)
+	   call drvAllreduceDP(pap,dotTot,1)
 	   pap=dotTot
 	   alpha = rr / pap 
 c
@@ -1599,7 +1599,7 @@ c  if parallel the above is only this processors part of the dot product.
 c  get the total result
 c
            dotTot=zero
-	   call drvAllreduce(rr,dotTot,1)
+	   call drvAllreduceDP(rr,dotTot,1)
 	   rr=dotTot
 c
 c.... check for convergence
@@ -1986,14 +1986,14 @@ c Now  the true fathers and serrogates combine results and update
 c each other.
 c       
       if(numpe .gt. 1)then
-         call drvAllreduce(xnude, xnuder,2*nfath)
-         call drvAllreduce(ynude, ynuder,6*nfath)
-         call drvAllreduce(xm, xmr,6*nfath)
-         call drvAllreduce(xl, xlr,6*nfath)
-         call drvAllreduce(xl1, xl1r,6*nfath)
-         call drvAllreduce(xl2, xl2r,6*nfath)
-         call drvAllreduce(ui, uir,3*nfath)
-         call drvAllreduce(snorm, snormr,nfath)
+         call drvAllreduceDP(xnude, xnuder,2*nfath)
+         call drvAllreduceDP(ynude, ynuder,6*nfath)
+         call drvAllreduceDP(xm, xmr,6*nfath)
+         call drvAllreduceDP(xl, xlr,6*nfath)
+         call drvAllreduceDP(xl1, xl1r,6*nfath)
+         call drvAllreduceDP(xl2, xl2r,6*nfath)
+         call drvAllreduceDP(ui, uir,3*nfath)
+         call drvAllreduceDP(snorm, snormr,nfath)
 
          do i = 1, nfath
             ynuder(i,6) = ( ynuder(i,4) - fwr1*ynuder(i,2) ) /
@@ -2289,7 +2289,7 @@ c
          enddo
 
          if(numpe .gt. 1) then
-             call drvAllreduce(xnude(:,2), xnuder(:,2),nfath)
+             call drvAllreduceDP(xnude(:,2), xnuder(:,2),nfath)
           else
              xnuder=xnude
           endif
@@ -2307,7 +2307,7 @@ c
          enddo
 
          if(numpe .gt. 1) 
-     &        call drvAllreduce(xnude, xnuder,2*nfath)
+     &        call drvAllreduceDP(xnude, xnuder,2*nfath)
          xnuder(:,1)=xnuder(:,1)/nsons(:)
          xnuder(:,2)=xnuder(:,2)/nsons(:)
 c
@@ -2727,14 +2727,14 @@ c Now  the true fathers and serrogates combine results and update
 c each other.
 c       
       if(numpe .gt. 1)then
-         call drvAllreduce(xnude, xnuder,2*nfath)
-         call drvAllreduce(ynude, ynuder,6*nfath)
-         call drvAllreduce(xm, xmr,6*nfath)
-         call drvAllreduce(xl, xlr,6*nfath)
-         call drvAllreduce(xl1, xl1r,6*nfath)
-         call drvAllreduce(xl2, xl2r,6*nfath)
-         call drvAllreduce(ui, uir,3*nfath)
-         call drvAllreduce(snorm, snormr,nfath)
+         call drvAllreduceDP(xnude, xnuder,2*nfath)
+         call drvAllreduceDP(ynude, ynuder,6*nfath)
+         call drvAllreduceDP(xm, xmr,6*nfath)
+         call drvAllreduceDP(xl, xlr,6*nfath)
+         call drvAllreduceDP(xl1, xl1r,6*nfath)
+         call drvAllreduceDP(xl2, xl2r,6*nfath)
+         call drvAllreduceDP(ui, uir,3*nfath)
+         call drvAllreduceDP(snorm, snormr,nfath)
 
          do i = 1, nfath
             ynuder(i,6) = ( ynuder(i,4) - fwr1*ynuder(i,2) ) /
@@ -3041,7 +3041,7 @@ c
          enddo
 
          if(numpe .gt. 1) then
-             call drvAllreduce(xnude(:,2), xnuder(:,2),nfath)
+             call drvAllreduceDP(xnude(:,2), xnuder(:,2),nfath)
           else
              xnuder=xnude
           endif
@@ -3059,7 +3059,7 @@ c
          enddo
 
          if(numpe .gt. 1) 
-     &        call drvAllreduce(xnude, xnuder,2*nfath)
+     &        call drvAllreduceDP(xnude, xnuder,2*nfath)
          xnuder(:,1)=xnuder(:,1)/nsons(:)
          xnuder(:,2)=xnuder(:,2)/nsons(:)
 c

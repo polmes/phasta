@@ -109,7 +109,7 @@ c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
             if(numpe .gt. 1) then
-               call drvAllreduce(velf, velft,nfath)
+               call drvAllreduceDP(velf, velft,nfath)
             else
                velft=velf
             endif

@@ -166,9 +166,9 @@ c     Now  the true fathers and serrogates combine results and update
 c     each other.
 c     
          if(numpe .gt. 1) then
-            call drvAllreduce(tmpStatsf, tmpStatsft,nfath)
+            call drvAllreduceDP(tmpStatsf, tmpStatsft,nfath)
             if (iKeq.eq.1) then
-               call drvAllreduce(tmpKeqf, tmpKeqft,nfath)
+               call drvAllreduceDP(tmpKeqf, tmpKeqft,nfath)
             endif
          else
             tmpStatsft=tmpStatsf

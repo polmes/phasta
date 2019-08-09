@@ -39,6 +39,41 @@ c
 c     
       return
       end
+
+c     
+c--------------
+c     drvAllreduceDP
+c--------------
+c     
+      subroutine drvAllreduceDP ( eachproc, result, m )
+c     
+      include "common.h"
+      include "mpif.h"
+c
+      real*8 eachproc(m), result(m)
+c     
+      if (numpe > 1) then
+         if(impistat.eq.1) then
+           iAllR = iAllR+1
+         elseif(impistat.eq.2) then
+           iAllRScal = iAllRScal+1
+         endif
+         if(impistat2.eq.1 .and. (ibarrier.ge.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+         if(impistat.gt.0) rmpitmr = TMRC()
+         call MPI_ALLREDUCE ( eachproc, result, m, 
+     &        MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
+         if(impistat.eq.1) then
+           rAllR = rAllR+TMRC()-rmpitmr
+         elseif(impistat.eq.2) then
+           rAllRScal = rAllRScal+TMRC()-rmpitmr
+         endif
+      else
+         result = eachproc
+      endif
+c     
+      return
+      end
+
 c     
 c------------------
 c     drvAllreducesclr
@@ -68,6 +103,38 @@ c
 #else
      &        MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
 #endif
+         if(impistat.eq.1) then
+           rAllR = rAllR+TMRC()-rmpitmr
+         elseif(impistat.eq.2) then
+           rAllRScal = rAllRScal+TMRC()-rmpitmr
+         endif
+      else
+         result = eachproc
+      endif
+c     
+      return
+      end
+c     
+c------------------
+c     drvAllreducesclrDP
+c------------------
+c     
+      subroutine drvAllreducesclrDP ( eachproc, result ) 
+c     
+      include "common.h"
+      include "mpif.h"
+      real*8 eachproc, result
+c     
+      if (numpe > 1) then
+         if(impistat.eq.1) then
+           iAllR = iAllR+1
+         elseif(impistat.eq.2) then 
+           iAllRScal = iAllRScal+1
+         endif
+         if(impistat2.eq.1 .and. (ibarrier.ge.1)) call MPI_BARRIER (MPI_COMM_WORLD, ierr)
+         if(impistat.gt.0) rmpitmr = TMRC()
+         call MPI_ALLREDUCE ( eachproc, result, 1,
+     &        MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, ierr )
          if(impistat.eq.1) then
            rAllR = rAllR+TMRC()-rmpitmr
          elseif(impistat.eq.2) then
