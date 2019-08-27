@@ -291,7 +291,9 @@ c
         common /timpar/ LCtime, ntseq
 c probably should pull these out of common so that it is easier to control them
 c#ifdef SP_Solve
-        real*4 statsflow,statssclr
+c Comment line below when doing dp or SP_LHS
+c Uncomment when doing SP_SOLVE
+c        real*4 statsflow,statssclr
 c#endif
         common /incomp/ numeqns(100), minIters, maxIters, 
      &                  iprjFlag,     nPrjs,    ipresPrjFlag, nPresPrjs,
