@@ -38,12 +38,14 @@ c
         dimension g1yi(blk%e,nflow),           g2yi(blk%e,nflow),
      &            g3yi(blk%e,nflow),           shg(blk%e,blk%s,nsd),
      &            dxidx(blk%e,nsd,nsd),       WdetJ(blk%e),
-     &            rmu(blk%e) 
+     &            rmu(blk%e),                 Sclr(blk%e),
+     &            TauSST(blk%e,6) 
 c
         dimension qdi(blk%e,idflx),alph1(blk%e),alph2(blk%e)
 c
         dimension sgn(blk%e,blk%s),          shape(blk%e,blk%s),
-     &            shdrv(blk%e,nsd,blk%s),    shpsum(blk%e)
+     &            shdrv(blk%e,nsd,blk%s),    shpsum(blk%e),
+     &            ssq(blk%e)
 
         real*8 tmp(blk%e)
 c
@@ -70,6 +72,12 @@ c
 c.... initialize
 c
         qdi = zero
+        Sclr = zero
+        if (iRANS.eq.-5) then
+          do n = 1, blk%s
+            Sclr(1:blk%e) = Sclr(1:blk%e) + shape(1:blk%e,n) * yl(1:blk%e,n,6) !k for SST
+          enddo
+        endif
 c
 c
 c.... calculate the integration variables necessary for the
@@ -90,6 +98,39 @@ c.... compute diffusive fluxes
 c
 c.... compute the viscosity
 c
+        if(iRANS.eq.-5) then ! solving K-W model
+         ssq(:)    = sqrt( 2.0d0 * (g1yi(:,2) ** 2
+     &         + g2yi(:,3) ** 2
+     &         + g3yi(:,4) ** 2
+     &         + 0.5d0
+     &         * ( (g3yi(:,3) + g2yi(:,4)) ** 2
+     &           + (g1yi(:,4) + g3yi(:,2)) ** 2
+     &           + (g2yi(:,2) + g1yi(:,3)) ** 2 )))
+
+         call AddEddyViscKomgq(blk,intp,yl, dwl, shdrv, shape, tmp, rmu, 
+     &                         ssq, xl)
+
+         call SSTStress(blk,rmu, g1yi, g2yi, g3yi, Sclr, TauSST)
+!        qdi(:,1) = TauSST(:,1)
+!        qdi(:,4) = TauSST(:,4)
+!        qdi(:,7) = TauSST(:,6)
+!        qdi(:,2) = TauSST(:,4)
+!        qdi(:,5) = TauSST(:,2)
+!        qdi(:,8) = TauSST(:,5)
+!        qdi(:,3) = TauSST(:,6)
+!        qdi(:,6)=  TauSST(:,5)
+!        qdi(:,9)=  TauSST(:,3)
+         qdi(:,1) =  two * rmu *  g1yi(:,2)
+         qdi(:,4) =        rmu * (g1yi(:,3) + g2yi(:,2))
+         qdi(:,7) =        rmu * (g1yi(:,4) + g3yi(:,2))
+         qdi(:,2) =        rmu * (g1yi(:,3) + g2yi(:,2))
+         qdi(:,5) =  two * rmu *  g2yi(:,3)
+         qdi(:,8) =        rmu * (g2yi(:,4) + g3yi(:,3))
+         qdi(:,3) =        rmu * (g1yi(:,4) + g3yi(:,2))
+         qdi(:,6)=         rmu * (g2yi(:,4) + g3yi(:,3))
+         qdi(:,9)=  two * rmu *  g3yi(:,4)
+
+       else 
         call getdiff(blk,intp,dwl, yl, shape, xmudmi, xl, rmu, tmp,
      &               elem_local_size(blk%i),
      &               evl)
@@ -111,6 +152,8 @@ c
         qdi(:,3) =        rmu * (g1yi(:,4) + g3yi(:,2))
         qdi(:,6)=         rmu * (g2yi(:,4) + g3yi(:,3))
         qdi(:,9)=  two * rmu *  g3yi(:,4)
+
+      endif
 c
 c
 c.... assemble contribution of qdi to ql,i.e., contribution to 
@@ -245,7 +288,8 @@ c
         dimension sgn(blk%e,blk%s),          shape(blk%e,blk%s),
      &            shdrv(blk%e,nsd,blk%s),    shpsum(blk%e)
 
-        real*8 diffus(blk%e)
+        real*8 diffus(blk%e),    mut(blk%e),
+     &         F1(blk%e),        F2(blk%e)
         real*8 u1(blk%e), u2(blk%e), u3(blk%e)
 c
 c... needed for CFL calculation
@@ -296,8 +340,12 @@ c assemble contribution to CFL number
 c
 c.... compute diffusive flux vector at this integration point
 c
-        call getdiffsclr(blk,shape, dwl, yl, diffus, evl)
-
+        if(iRANS.eq.-5) then ! solving K-W model
+           call getdiffsclrKW(blk,intp,shape, shdrv, dwl, yl, xl, 
+     &                        diffus, mut, F1, F2)
+        else
+           call getdiffsclr(blk,shape, dwl, yl, diffus, evl)
+        endif
 c
 c.... diffusive flux 
 c

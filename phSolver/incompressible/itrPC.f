@@ -203,6 +203,46 @@ c
 
 c-----------------------------------------------------------------------
 c
+c    Correct solution at time n+1, doing a local relaxation on solution delta
+c
+c-----------------------------------------------------------------------
+      subroutine itrCorrectSclrRelax (y, ac, solinc)
+      
+      include "common.h"
+      
+      real*8 y(nshg,ndof), ac(nshg,ndof), solinc(nshg)
+      real*8 fct1, solincFct(nshg), nnodes
+      integer is, n, ic
+
+      fct1 = gami*Delt(itseq)
+      is = 5+isclr
+      ic = 0
+      if(fct1.eq.0) then
+         call itrCorrectSclr( y, ac, solinc)
+      else
+         solincFct = abs(fct1*solinc(:)/y(:,is))
+         where (y(:,is).eq.zero) 
+           solincFct = zero
+         endwhere
+         do n=1,nshg
+            if (solincFct(n).gt.0.7.and.solinc(n).lt.zero) then
+              ic = ic+1
+              solinc(n) = solinc(n)/(solincFct(n)/0.7)
+            endif
+         enddo
+      endif
+
+      y(:,is)  = y(:,is)  + fct1 * solinc(:)
+      ac(:,is) = ac(:,is) + solinc(:)
+
+      nnodes = 100.0*real(ic)/real(nshg)
+!      write(*,*) 'Solution delta was larger than',90,'percent at',
+!     &           nnodes,' percent of the nodes'
+
+      return
+      end
+c-----------------------------------------------------------------------
+c
 c    Compute solution and acceleration at n+alpha
 c
 c-----------------------------------------------------------------------

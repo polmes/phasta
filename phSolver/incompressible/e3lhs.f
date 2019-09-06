@@ -356,7 +356,9 @@ c
          t1(:,3) = kptmp * shg(:,b,3) + uMod(:,3) * tmp
          if (idcsclr(1) .ne. 0) then
             if ((idcsclr(2).eq.1 .and. isclr.eq.1) .or. 
-     &           (idcsclr(2).eq.2 .and. isclr.eq.2)) then ! scalar with dc
+     &          (idcsclr(2).eq.2 .and. isclr.eq.2) .or.
+     &          (idcsclr(2).eq.3 .and. isclr.eq.1) .or.
+     &           (idcsclr(2).eq.3 .and. isclr.eq.2)) then ! scalar with dc
 c
                tmp = WdetJ * dcFct * lhsFct
 c

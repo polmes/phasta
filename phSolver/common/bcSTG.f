@@ -15,7 +15,7 @@
        real*8, allocatable :: STGInflow(:,:)
        integer,allocatable :: n_hxl(:),n_hxh(:),n_hyl(:),n_hyh(:)
        integer,allocatable :: n_hzl(:),n_hzh(:)
-       integer,allocatable :: stgSurf(:),mapBack(:)!,d2Wall(:) 
+       integer,allocatable :: stgSurf(:),mapBack(:) 
       
        integer STGmeth, nKWave,nNSurf
        real*8 alphaWave,alphaGR 
@@ -24,7 +24,7 @@
        integer iSTGInread, nPoints
 
 !Flow Parameters
-        real*8 reTau,uTau,deltaBLSTG,uNaught,kappa,b,nu
+        real*8 deltaBLSTG,uNaught,nu
 !$$$      integer itvn
 
 
@@ -54,7 +54,7 @@
         real*8 :: hzS1
         real*8 :: hzS2
         real*8 :: norm
-        real*8 reyS(6), turbVisc, eps
+        real*8 eps
         real*8 leta, y
 
         logical exlog
@@ -76,11 +76,11 @@ c       If a file with the baseline profile at the inflow exists, read from it a
         if(exlog) then ! the STG baseline profile is set in a file so read it
             open (unit=654,file="STGInflow.dat",status="old")
             read(654,*) nPoints ! first line of file MUST contain number of rows of data
-c           This file contains in the columns d2wal, ubar(1:3), Reynolds stresses, eddy viscosity,lt,epsilon
+c           This file contains in the columns d2wal, ubar(1:3), Reynolds stresses, scalar 1-2,lt,epsilon
 c           Where Re stresses are R11,R22,R33,R12,R13,R23
-            allocate(STGInflow(nPoints,13))
+            allocate(STGInflow(nPoints,14))
             do i=1,nPoints
-              read(654,*) (STGInflow(i,j),j=1,13) ! read the data
+              read(654,*) (STGInflow(i,j),j=1,14) ! read the data
             enddo
             iSTGInread=1
             if (myrank.eq.master) then
@@ -141,12 +141,6 @@ c           Where Re stresses are R11,R22,R33,R12,R13,R23
         endif
         !find other variables
         uNaught=STGUo
-        kappa=0.41
-        b=5.2
-        nu=datmat(1,2,1) !1.81e-5  ! this should come from material properties
-        reTau=400.0
-        uTau=nu*reTau/deltaBLSTG
-        !find nKWave
         
         allocate (rTemp(nKWave*5))
         allocate (dVect(nKWave,3),sigVect(nKWave,3))
@@ -220,7 +214,7 @@ c       If not the first time step of STG, the random variables were read from t
 !     Apply STG at current time step (modeled after BCprofile not bctint.f)
 !
 !-----------------------------------------------------------------------
-      subroutine applySTG(t, BC,x)
+      subroutine applySTG(t, BC,x,GradV)
       use STG_BC
       use turbSA ! d2wall(1:numnp) gives distance to wall for each node
       use pvsQbi ! ndsurf(1:nshg) comes from this module and it has "marked" the inflow nodes for this BC
@@ -239,7 +233,10 @@ c       If not the first time step of STG, the random variables were read from t
       real*8 :: eng(nNSurf,nKWave),totEng(nNSurf)
       real*8 :: kN(nKWave)
       real*8 :: uPrime(nNSurf,3)
-      real*8 :: reyS(6), turbVisc, dist, sumBC, tmp, eps
+      real*8 :: reyS(6), sclr1, sclr2, dist, sumBC, tmp, eps
+      real*8 :: ss1, ss2, ss, ssq, arg1, arg2, tmp1, tmp2, nut,
+     &          GradV(nshg,nsdsq), yp
+      integer :: inode
       integer :: noTurbMod
       
 
@@ -285,7 +282,7 @@ c        call openFiles()
         enddo 
         do n=1,nNSurf
             if(iLES.ne.0.or.noTurbMod.eq.0) then
-                call findUBarandDeriv(x,n,reyS,turbVisc)
+                call findUBarandDeriv(x,n,reyS,sclr1,sclr2)
                 dist=d2Wall(stgSurf(n))
                 if(abs(dist).gt.1e-15.and.
      &              dist.lt.1.2*deltaBLSTG)then
@@ -350,6 +347,33 @@ c        call openFiles()
                     uPrime(n,1)=vPrime1*Cho(1,1)+vPrime2*Cho(1,2)+vPrime3*Cho(1,3)
                     uPrime(n,2)=vPrime1*Cho(2,1)+vPrime2*Cho(2,2)+vPrime3*Cho(2,3)
                     uPrime(n,3)=vPrime1*Cho(3,1)+vPrime2*Cho(3,2)+vPrime3*Cho(3,3)
+
+                    if (iRANS.eq.-5.and.iSTGSSTMeth.eq.2) then
+                      inode = stgSurf(n)
+                      ss1 = GradV(inode,1) ** 2 + GradV(inode,2) ** 2
+     &                     + GradV(inode,3) ** 2 + GradV(inode,4) ** 2
+     &                     + GradV(inode,5) ** 2 + GradV(inode,6) ** 2
+     &                     + GradV(inode,7) ** 2 + GradV(inode,8) ** 2
+     &                     + GradV(inode,9) ** 2
+                      ss2 = GradV(inode,1) ** 2 + GradV(inode,5) ** 2
+     &                     + GradV(inode,9) ** 2 + 2*(
+     &                       GradV(inode,2)*GradV(inode,4)
+     &                       + GradV(inode,3)*GradV(inode,7)
+     &                       + GradV(inode,6)*GradV(inode,8)) 
+                      ss = 0.5 * (ss1 + ss2)
+                      ssq = sqrt(two*ss)
+                      arg1 = 0.410*dist
+                      arg2 = 0.3250*hMax(n)
+                      tmp1 = min(arg1**2,arg2**2)
+                      yp = dist*STGSSTuTau/nu
+                      tmp2 = one-exp(-(yp/25)**3)
+                      nut = tmp1*tmp2*ssq
+                      if (istep.eq.0) then
+                         sclr1 = BC(stgSurf(n),7)
+                      else
+                         sclr1 = nut*sclr2*0.1
+                      endif
+                    endif
                 else ! node is outside BL
                     uPrime(n,1)=0.0
                     uPrime(n,2)=0.0
@@ -359,17 +383,26 @@ c        call openFiles()
                 if(sumBC.ne.zero) then ! protect no slip BC from getting overwritten
                    BC(stgSurf(n),3)=uBar(n,1)+uPrime(n,1)            
                    BC(stgSurf(n),4)=uBar(n,2)+uPrime(n,2)            
-                   BC(stgSurf(n),5)=uBar(n,3)+uPrime(n,3)   
+                   BC(stgSurf(n),5)=uBar(n,3)+uPrime(n,3)
+                   if (iRANS.eq.-5) then
+                     if (iSTGSSTMeth.eq.1) then
+                        BC(stgSurf(n),7)=0.5*nu*sclr2
+                     elseif (iSTGSSTMeth.eq.2) then
+                        BC(stgSurf(n),7)=sclr1
+                     endif
+                     BC(stgSurf(n),8)=sclr2
+                   endif
                 endif         
             else ! iLES.ne.0
 !   if the model is not scale-resolving (RANS) then don't include u' but include eddy visc
-                call findUBarandDeriv(x,n,reyS,turbVisc)
+                call findUBarandDeriv(x,n,reyS,sclr1,sclr2)
                 sumBC=BC(stgSurf(n),3)+BC(stgSurf(n),4)+BC(stgSurf(n),5)
                 if(sumBC.ne.zero) then ! protect no slip BC from getting overwritten
                    BC(stgSurf(n),3)=uBar(n,1)            
                    BC(stgSurf(n),4)=uBar(n,2)
                    BC(stgSurf(n),5)=uBar(n,3)  
-                   BC(stgSurf(n),7)=turbVisc
+                   BC(stgSurf(n),7)=sclr1
+                   if (iRANS.eq.-5) BC(stgSurf(n),8)=sclr2
                 endif
             endif ! end if iLES ne 0              
 !                if(istep.eq.0) write(122,*) BC(stgSurf(n),3),BC(stgSurf(n),4), BC(stgSurf(n),5) 
@@ -528,13 +561,13 @@ c         enddo
       return
       end 
 
-      subroutine findUBarandDeriv(x,n,reyS,turbVisc)
+      subroutine findUBarandDeriv(x,n,reyS,sclr1,sclr2)
       use STG_BC
       use turbSA ! d2wall(1:numnp) gives distance to wall for each node
       use pvsQbi ! ndsurf(1:nshg) comes from this module and it has "marked" the inflow nodes for this BC
       include "common.h"
       real*8 ::  x(numnp,nsd)
-      real*8 :: reyS(6), lm, turbVisc
+      real*8 :: reyS(6), lm, sclr1, sclr2
  
       
            if (iSTGInread.eq.0) then ! this is the case where no profile from a file exists
@@ -564,11 +597,11 @@ c                   duBardY(n)=utau*rkapinv/y
               endif
               
               lm=kappa*y*(1.0-exp(-((y*reTau)/(deltaBLSTG*26.0))))
-              turbVisc=abs(duBardY(n))*lm**2.0
+              sclr1=abs(duBardY(n))*lm**2.0
               spre=sqrt(2.0)*abs(duBardY(n))
-              turbKin=turbVisc*spre/0.3
+              turbKin=sclr1*spre/0.3
               reyS(1)=2.0*turbKin/3.0
-              reyS(4)=turbVisc*abs(duBardY(n))
+              reyS(4)=sclr1*abs(duBardY(n))
               reyS(5)=0.0
               reyS(2)=2.0*turbKin/3.0
               reyS(6)=0.0
@@ -594,8 +627,10 @@ c             Now need to interpolate from the file data for the current node po
      &                +(one-xi)*STGInflow(iupper-1,2:4))
               reyS=(xi*STGInflow(iupper,5:10)
      &                +(one-xi)*STGInflow(iupper-1,5:10))
-              turbVisc=(xi*STGInflow(iupper,11)
+              sclr1=(xi*STGInflow(iupper,11)
      &                +(one-xi)*STGInflow(iupper-1,11))
+              sclr2=(xi*STGInflow(iupper,12)
+     &                +(one-xi)*STGInflow(iupper-1,12))
 
 !             This is for the channel where the shear stress changes sign across the centerline
               if(iSTGChan.eq.1) then
@@ -632,8 +667,8 @@ c      Now need to interpolate from the file data for the current node point
             iupper=nPoints
             xi=1.0
        endif
-       lt(n)=(xi*STGInflow(iupper,12)
-     &          +(one-xi)*STGInflow(iupper-1,12))
+       lt(n)=(xi*STGInflow(iupper,13)
+     &          +(one-xi)*STGInflow(iupper-1,13))
 
       end
 
@@ -662,8 +697,8 @@ c      Now need to interpolate from the file data for the current node point
             iupper=nPoints
             xi=1.0
        endif
-       eps=(xi*STGInflow(iupper,13)
-     &          +(one-xi)*STGInflow(iupper-1,13))
+       eps=(xi*STGInflow(iupper,14)
+     &          +(one-xi)*STGInflow(iupper-1,14))
 
       end
 

@@ -543,6 +543,10 @@ c
      &                        "Setting ifath from dynSmagY.dat"
               open (unit=123,file="dynSmagY.dat",status="old")
               read(123,*) ny
+              nfath = ny
+              ndistsons = 1
+              point2nsons = 15000
+              nsonmax=maxval(point2nsons)
               allocate(ypoints(ny))
               do i=1,ny
                 read(123,*) ypoints(i)
@@ -556,6 +560,8 @@ c
               enddo
               deallocate(ypoints)
               close(123)
+              if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
+              if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
             else
                if(myrank.eq.master) 
      &               write(*,*) 'Did not read file dynSmagY.dat'
@@ -754,16 +760,16 @@ cc
            fnamev = trim(fnamev) // cname(myrank+1)
            inquire(file=fnamev,exist=exlog)
            if (exlog) then
-             allocate(velbar(nfath,nflow))
+             allocate(velbar(nfath,ndof))
              open(unit=123,file=fnamev,status="old")
              do i=1,nfath
-                read(123,*) (velbar(i,j),j=1,nflow)
+                read(123,*) (velbar(i,j),j=1,ndof)
              enddo
              close(123)
              write(*,*) 'Read velbar from file ',fnamev
            else ! did not find velbar for current time step
              write(*,*) 'Velbar not read from file, setting to zero'
-             allocate(velbar(nfath,nflow),STAT=IERR1)
+             allocate(velbar(nfath,ndof),STAT=IERR1)
              if(IERR1.gt.0) write(*,*) 
      &                 'Not enough space to allocate velbar'
              velbar = zero

@@ -65,14 +65,16 @@ c from different modules
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
      &                   nlist, nintf(MAXTOP), ddesConsts(2),
      &                   STGDelBL, STGUo, STGModeGrow, STGMeshGrow, 
-     &                   STGeps, STGdesol, STGdes(3)
+     &                   STGeps, STGdesol, STGdes(3), dist, sstU, sstL,
+     &                   STGSSTuTau
         common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
      &                   ierrsmooth, iramp, idwalmode,
      &                   iSTG, iSTGSurfID, iSTGChan, iSTGnModes, 
      &                   iSTGspec, iSTGStart, ispanAvg, istartSpanAvg,
      &                   ispanAvgWPer, iKeq, iConsStress, iConsStressSz,
-     &                   irunTave, irunTaveSt, iclipCdelsq, iSAlowRe
+     &                   irunTave, irunTaveSt, iclipCdelsq, iSAlowRe,
+     &                   iClipKW, iSAIC, iClipKWMeth, iSTGSSTMeth
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,

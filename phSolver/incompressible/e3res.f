@@ -57,6 +57,9 @@ c
      &          tmp(blk%e),    rGNa(blk%e,nsd,nsd),  rNa(blk%e,nsd),
      &          locmass(blk%e,blk%s),omega(3)
 
+c ... Total viscous (viscous+Reynolds) stresses when using SST turb model
+      real*8    TauSST(blk%e,6)
+
       integer aa
 c     
 c.... initialize multipliers for Na and Na_{,i}
@@ -123,15 +126,39 @@ c
      &            + ubar(:,2) * g2yi(:,4)
      &            + ubar(:,3) * g3yi(:,4)
 
-         rGNa(:,1,1) = two * rmu * g1yi(:,2) + tmp
-         rGNa(:,1,2) = tmp1
-         rGNa(:,1,3) = tmp3
-         rGNa(:,2,1) = tmp1
-         rGNa(:,2,2) = two * rmu * g2yi(:,3) + tmp
-         rGNa(:,2,3) = tmp2
-         rGNa(:,3,1) = tmp3
-         rGNa(:,3,2) = tmp2
-         rGNa(:,3,3) = two * rmu * g3yi(:,4) + tmp
+         if (iRANS.eq.-5) then
+!            call SSTStress(blk,rmu, g1yi, g2yi, g3yi, Sclr, TauSST)
+!            rGNa(:,1,1) = TauSST(:,1) + tmp
+!            rGNa(:,1,2) = TauSST(:,4)
+!            rGNa(:,1,3) = TauSST(:,6)
+!            rGNa(:,2,1) = TauSST(:,4)
+!            rGNa(:,2,2) = TauSST(:,2) + tmp
+!            rGNa(:,2,3) = TauSST(:,5)
+!            rGNa(:,3,1) = TauSST(:,6)
+!            rGNa(:,3,2) = TauSST(:,5)
+!            rGNa(:,3,3) = TauSST(:,3) + tmp
+            rGNa(:,1,1) = two * rmu * g1yi(:,2) + tmp
+            rGNa(:,1,2) = tmp1
+            rGNa(:,1,3) = tmp3
+            rGNa(:,2,1) = tmp1
+            rGNa(:,2,2) = two * rmu * g2yi(:,3) + tmp
+            rGNa(:,2,3) = tmp2
+            rGNa(:,3,1) = tmp3
+            rGNa(:,3,2) = tmp2
+            rGNa(:,3,3) = two * rmu * g3yi(:,4) + tmp
+
+         else ! regular Boussinesq approximation for the Reynolds stresses
+            rGNa(:,1,1) = two * rmu * g1yi(:,2) + tmp
+            rGNa(:,1,2) = tmp1
+            rGNa(:,1,3) = tmp3
+            rGNa(:,2,1) = tmp1
+            rGNa(:,2,2) = two * rmu * g2yi(:,3) + tmp
+            rGNa(:,2,3) = tmp2
+            rGNa(:,3,1) = tmp3
+            rGNa(:,3,2) = tmp2
+            rGNa(:,3,3) = two * rmu * g3yi(:,4) + tmp
+         endif
+
       else   ! conservative form (with IBP)
 
 c                                            IBP conservative convection
@@ -319,7 +346,9 @@ c
 c
       if (idcsclr(1) .ne. 0) then
          if ((idcsclr(2).eq.1 .and. isclr.eq.1) .or. 
-     &        (idcsclr(2).eq.2 .and. isclr.eq.2)) then ! scalar with dc
+     &          (idcsclr(2).eq.2 .and. isclr.eq.2) .or.
+     &          (idcsclr(2).eq.3 .and. isclr.eq.1) .or.
+     &           (idcsclr(2).eq.3 .and. isclr.eq.2)) then ! scalar with dc
 c
 c.... add the contribution of DC to residual
 c

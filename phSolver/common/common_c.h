@@ -155,7 +155,10 @@ extern "C" {
     double STGeps;
     double STGdesol;
     double STGdes[3];
-
+    double dist;
+    double sstU;
+    double sstL;
+    double STGSSTuTau;
   } turbvar ;
 
   extern struct {
@@ -184,6 +187,10 @@ extern "C" {
     int irunTaveSt;
     int iclipCdelsq;
     int iSAlowRe;
+    int iClipKW;
+    int iSAIC;
+    int iClipKWMeth;
+    int iSTGSSTMeth;
 /*      int itwmod; */
 /*      double rtavei; */
 /*      int ierrcalc; */

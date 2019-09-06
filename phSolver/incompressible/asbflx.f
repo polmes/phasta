@@ -53,7 +53,7 @@ c
         call localy(blk,ac,     acl,    ienb,   ndofl,  'gather  ')
         call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
         call localx(blk,u,      ul,     ienb,   nsd,    'gather  ')
-        if(iRANS.eq.-2) then
+        if(iRANS.eq.-2 .or. iRANS.eq.-5) then !SST and k-epsilon
            call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then

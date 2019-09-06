@@ -36,8 +36,8 @@ c
       dimension g1yi(blk%e,ndof),           g2yi(blk%e,ndof),
      &          g3yi(blk%e,ndof),           shg(blk%e,blk%s,nsd),
      &          dxidx(blk%e,nsd,nsd),       WdetJ(blk%e),
-     &          rmu(blk%e),
-     &          rminv(blk%e,blk%s,blk%s),
+     &          rmu(blk%e),                 ssq(blk%e),
+     &          rminv(blk%e,blk%s,blk%s),   Sclr(blk%e),
      &          qrl(blk%e,blk%s,nsd*nsd)
 c
       dimension qdi(blk%e,nsd*nsd),    shape(blk%e,blk%s),
@@ -45,13 +45,14 @@ c
      &          rmass(blk%e,blk%s,blk%s)
 
 
-        real*8 tmp(blk%e)
+        real*8 tmp(blk%e), mut(blk%e), rho(blk%e)
 c
 c.... loop through the integration points
 c
       rminv = zero
       rmass = zero
       qrl   = zero
+      rho   = datmat(1,1,1)
         
       do ith = 1, blk%g
 
@@ -67,26 +68,58 @@ c
      &                  g2yi,         g3yi,         shg,
      &                  dxidx,        WdetJ )
 
-         call getdiff(blk,ith,dwl,  yl, shape, xmudmi, xl,rmu, tmp,
+         if(iRANS.eq.-5) then ! solving K-W model
+           ssq(:)    = sqrt( 2.0d0 * ( 2.0d0 * (g1yi(:,2) ** 2
+     &         + g2yi(:,3) ** 2
+     &         + g3yi(:,4) ** 2
+     &         + 0.5d0
+     &         * ( (g3yi(:,3) + g2yi(:,4)) ** 2
+     &           + (g1yi(:,4) + g3yi(:,2)) ** 2
+     &           + (g2yi(:,2) + g1yi(:,3)) ** 2 ))))
+           call AddEddyViscKomgq(yl, dwl, shdrv, shape, tmp, rmu, ssq, xl)
+         else
+           call getdiff(blk,ith,dwl,  yl, shape, xmudmi, xl,rmu, tmp,
      &               elem_local_size(blk%i))
+         endif
+
+         if (iRANS.eq.-5) then 
+           do n = 1, blk%s
+             Sclr(1:blk%e) = Sclr(1:blk%e) + 
+     &                       shape(1:blk%e,n) * yl(1:blk%e,n,6) !scalar - 1 (k)
+           enddo
+         endif
+
 c
 c.... diffusive flux in x1-direction
 c
          qdi(:,1) =  two * rmu *  g1yi(:,2)
          qdi(:,4) =        rmu * (g1yi(:,3) + g2yi(:,2))
          qdi(:,7) =        rmu * (g1yi(:,4) + g3yi(:,2))
-c
+         if(iRANS .eq. -5) then !in SST case
+           qdi(:,1) = qdi(:,1) + two * mut * (g1yi(:,2) + g2yi(:,3) +
+     &            g3yi(:,4) + rho * Sclr(:)) / three
+         endif
+
+c        
 c.... diffusive flux in x2-direction
 c
          qdi(:,2) =        rmu * (g1yi(:,3) + g2yi(:,2))
          qdi(:,5) =  two * rmu *  g2yi(:,3)
          qdi(:,8) =        rmu * (g2yi(:,4) + g3yi(:,3))
-c     
-c.... diffusive flux in /x3-direction
+         if(iRANS .eq. -5) then !in SST case
+           qdi(:,5) = qdi(:,5) + two * mut * (g1yi(:,2) + g2yi(:,3) +
+     &            g3yi(:,4) + rho * Sclr(:)) / three
+         endif
+ 
+c.... diffusive flux in x3-direction
 c
          qdi(:,3) =        rmu * (g1yi(:,4) + g3yi(:,2))
          qdi(:,6)=        rmu * (g2yi(:,4) + g3yi(:,3))
          qdi(:,9)=  two * rmu *  g3yi(:,4)
+         if(iRANS .eq. -5) then !in SST case
+           qdi(:,9) = qdi(:,9) + two * mut * (g1yi(:,2) + g2yi(:,3) +
+     &            g3yi(:,4) + rho * Sclr(:)) / three
+         endif
 c
 c
 c.... assemble contribution of qdi to qrl,i.e., contribution to 
@@ -212,6 +245,8 @@ c
      &          rmass(blk%e,blk%s,blk%s),     gradT(blk%e,nsd),
      &          eviscv(blk%e)
 
+      real*8    mut(blk%e),     F1(blk%e),   F2(blk%e)
+
 c
 c.... loop through the integration points
 c
@@ -233,7 +268,12 @@ c
 c
 c....  call function to sort out diffusivity (at end of this file)
 c
-         call getdiffsclr(dwl,shape,yl, diffus)
+         if(iRANS.eq.-5) then ! solving K-W model          
+           call getdiffsclrKW( shape, shdrv, dwl, yl, xl, diffus, mut, 
+     &                          F1, F2)
+         else
+           call getdiffsclr(dwl,shape,yl, diffus)
+         endif
 c
 c.... diffusive flux in x1-direction
 c

@@ -55,6 +55,8 @@ c
         !Duct
         real*8 c0, c1, c2, c3, x1, x2
         integer nn
+c... omega wall BC for SST k-omega model
+        real*8  omegaVal, nu
 
 c        if ((irscale .ge. 0) .and. (myrank.eq.master)) then
 c           call setSPEBC(numnp, point2nfath, nsonmax)
@@ -88,6 +90,23 @@ c.... RANS turbulence model
 c
         if (iRANS .lt. 0.or.iSTG.eq.1) then
            call initTurb( point2x )
+           if (iRANS.eq.-5) then
+c            now add the correction for the k-w model to extend the wall BC for omega
+c            to a few interior nodes
+             nu = datmat(1,2,1)/datmat(1,1,1) ! nu=mu/rho
+             do i=1,nshg
+              if (d2wall(i).le.dist) then ! below dist 
+                if (.not.btest(iBC(i),7)) then
+                  iBC(i) = iBC(i)+128 ! 128 is the code for scalar 2
+                  omegaVal = 6.0*nu/(0.0708*d2wall(i)**2)
+                  BC(i,8) = omegaVal
+                endif
+              endif
+              !if (point2x(i,1).lt.0.98.and.d2wall(i).lt.1.0e-10) then
+              !    BC(i,8) = 6.0*nu/(0.0708*(1.0d-6)**2)
+              !endif
+             enddo
+           endif
         endif
 c
 c.... p vs. Q boundary

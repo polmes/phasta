@@ -87,7 +87,8 @@ c loop over element blocks for the global reconstruction
 c of the diffusive flux vector, q, and lumped mass matrix, rmass
 c
         qres = zero
-        if(iter == nitr .and. icomputevort == 1 ) then
+        if((iter == nitr .and. icomputevort == 1)
+     &           .or. iRANS.eq.-5 ) then
           GradV = zero
         endif
         rmass = zero
@@ -131,8 +132,8 @@ c
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
 
-
-          if(iter == nitr .and. icomputevort == 1 ) then
+          if((iter == nitr .and. icomputevort == 1)
+     &           .or. iRANS.eq.-5 ) then
             call AsIqGradV (blk,y,                x,
      &                   tmpshp,
      &                   tmpshgl,
@@ -149,7 +150,8 @@ c
 c.... form the diffusive flux approximation
 c
         call qpbc( rmass, qres, iBC, iper, ilwork )       
-        if(iter == nitr .and. icomputevort == 1 ) then
+        if((iter == nitr .and. icomputevort == 1)
+     &          .or. iRANS.eq.-5 ) then
           call solveGradV( rmass, GradV, iBC, iper, ilwork )
         endif
         deallocate (tmpshp)
@@ -539,9 +541,9 @@ c      call timer ('Back    ')
      &                       rowp,      colm,
      &                       cfl      
 #ifdef HAVE_PETSC
-     &                       ,lhsPs)
+     &                       , lhsPs, GradV )
 #else
-     &                       )
+     &                       , GradV )
 #endif
 c
 c----------------------------------------------------------------------
@@ -556,6 +558,7 @@ c
       use pointer_data
       use local_mass
       use eblock
+      use turbSA
 c
       include "common.h"
       type (LocalBlkData) blk
@@ -564,7 +567,7 @@ c
         dimension y(nshg,ndof),         ac(nshg,ndof),
      &            x(numnp,nsd),         iBC(nshg),           
      &            BC(nshg,ndofBC),      res(nshg),
-     &            iper(nshg)
+     &            iper(nshg),           GradV(nshg,nsdsq)
 c
         dimension shp(MAXTOP,maxsh,MAXQPT),  
      &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
@@ -723,7 +726,7 @@ c
      &                 tmpshgl,
      &                 mien(iblk)%p,        res,
      &                 qres,                xSebe, mxmudmi(iblk)%p,
-     &                 cfl,  icflhits, cflold )
+     &                 cfl,  icflhits, cflold, GradV )
 c
 c.... satisfy the BC's on the implicit LHS
 c     

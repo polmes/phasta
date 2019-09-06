@@ -55,7 +55,7 @@ c
 
         call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
         call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
-        if (iRANS .eq. -2) then ! kay-epsilon
+        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
            call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
         endif
 
@@ -123,7 +123,7 @@ c.... gather the variables
 c
         call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
         call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
-        if (iRANS .eq. -2) then ! kay-epsilon
+        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
            call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
         endif
 

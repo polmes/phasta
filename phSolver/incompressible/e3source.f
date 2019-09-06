@@ -214,7 +214,7 @@ c
      &                          yl,        dxidx,     rmu,
      &                          u1,        u2,        u3,   xl,
      &                          srcR,      srcL,      uMod,
-     &                          srcRat,    cfll) 
+     &                          srcRat,    cfll, gradVl ) 
 
 
 c-----------------------------------------------------------------------
@@ -234,7 +234,7 @@ c                         (srcR * turb)
 c             srcL :   jacobian of srcR
 c
 c-----------------------------------------------------------------------
-      use     turbSA
+      use turbSA
       use turbKE
       use  spat_var_eps ! for spatially varying epsilon_ls
       use  eblock
@@ -247,8 +247,8 @@ c coming in
      &        yl(bsz,blk%s,ndof),  dxidx(blk%e,nsd,nsd),
      &        rmu(blk%e),           u1(blk%e),
      &        u2(blk%e),            u3(blk%e),
-     &        xl(bsz,blk%n,nsd),
-     &        cfll(bsz,blk%s)
+     &        xl(bsz,blk%n,nsd),    add(blk%e,nsd),
+     &        cfll(bsz,blk%s),      gradVl(bsz,blk%s,nsdsq)
 c going out
       real*8  srcR(blk%e),          srcL(blk%e),
      &        uMod(blk%e,nsd),      cfl_loc(blk%e)
@@ -263,11 +263,11 @@ c used locally
      &        sclr_ls(blk%e)
       real*8  SclrNN,qfac,dx,dy,dz,dmax
       real*8  rd,fd,dwallsqqfact,ep
-c    Kay-Epsilon
+c    Kay-Epsilon and Kay-Omega
       real*8 Ry(blk%e), Rt(blk%e), RtP2(blk%e), f2(blk%e), f1(blk%e),
      &       kay(blk%e), epsilon(blk%e), fmu(blk%e), fmui(blk%e),
-     &       srcjac(blk%e,4), srcRat(blk%e)
-      integer e,n
+     &       srcjac(blk%e,4), srcRat(blk%e), omega(blk%e)
+      integer e,n,k
       real*8 small,epsilon_lsd_tmp
 
 c    IDDES
@@ -277,7 +277,7 @@ c    IDDES
 
 c    For Debug
       real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
-      integer nnum
+      integer nnum, iadvdiff
 c----------------------------------------------------------------------
 c
 c           --             --              --           --
@@ -662,6 +662,78 @@ c             write(*,5002) u1(ipro),u2(ipro),u3(ipro)
         
           endif
 c
+
+c.... /start of k-omega model
+      elseif(iRANS.eq.-5) then    ! K-omega
+c.... compute the global gradient of u
+c
+              gradV = zero
+              do n = 1, blk%s
+c
+c           i j   indices match array where V is the velocity (u in our notes)
+!                 gradV(:,1,1) = gradV(:,1,1) + shg(:,n,1) * yl(:,n,2)
+!                 gradV(:,2,1) = gradV(:,2,1) + shg(:,n,1) * yl(:,n,3)
+!                 gradV(:,3,1) = gradV(:,3,1) + shg(:,n,1) * yl(:,n,4)
+c
+!                 gradV(:,1,2) = gradV(:,1,2) + shg(:,n,2) * yl(:,n,2)
+!                 gradV(:,2,2) = gradV(:,2,2) + shg(:,n,2) * yl(:,n,3)
+!                 gradV(:,3,2) = gradV(:,3,2) + shg(:,n,2) * yl(:,n,4)
+c
+!                 gradV(:,1,3) = gradV(:,1,3) + shg(:,n,3) * yl(:,n,2)
+!                 gradV(:,2,3) = gradV(:,2,3) + shg(:,n,3) * yl(:,n,3)
+!                 gradV(:,3,3) = gradV(:,3,3) + shg(:,n,3) * yl(:,n,4)
+
+                  gradV(:,1,1) = gradV(:,1,1) + shape_funct(:,n) * gradVl(1:blk%e,n,1)
+                  gradV(:,2,1) = gradV(:,2,1) + shape_funct(:,n) * gradVl(1:blk%e,n,4)
+                  gradV(:,3,1) = gradV(:,3,1) + shape_funct(:,n) * gradVl(1:blk%e,n,7)
+
+                  gradV(:,1,2) = gradV(:,1,2) + shape_funct(:,n) * gradVl(1:blk%e,n,2)
+                  gradV(:,2,2) = gradV(:,2,2) + shape_funct(:,n) * gradVl(1:blk%e,n,5)
+                  gradV(:,3,2) = gradV(:,3,2) + shape_funct(:,n) * gradVl(1:blk%e,n,8)
+
+                  gradV(:,1,3) = gradV(:,1,3) + shape_funct(:,n) * gradVl(1:blk%e,n,3)
+                  gradV(:,2,3) = gradV(:,2,3) + shape_funct(:,n) * gradVl(1:blk%e,n,6)
+                  gradV(:,3,3) = gradV(:,3,3) + shape_funct(:,n) * gradVl(1:blk%e,n,9)
+
+c                                             a j     u   a i
+c from our notes where we had N_{a,j} = dN_a/dx_j  note that i is off by one because p was first in yl vector
+c
+              enddo
+              dwall = zero
+              do n = 1, blk%n
+                 dwall(:) = dwall(:) + shape_funct(:,n) * dwl(1:blk%e,n)
+              enddo
+
+              kay=zero
+              omega=zero
+              do n = 1, blk%s
+                 kay(:) = kay(:) + shape_funct(:,n) * yl(1:blk%e,n,6)
+                 omega(:) = omega(:) + shape_funct(:,n) * yl(1:blk%e,n,7)
+              enddo
+c        no source term in the LHS yet
+              srcL(:)=zero
+              call elm3SST(blk, yl, xl, shg, kay, omega,
+     &                    dwall,   dwl, gradV,
+     &                    srcRat,  srcR,     srcJac,  add)
+              if(isclr.eq.1) srcL = srcJac(:,1)
+              if(isclr.eq.2) srcL = srcJac(:,4)
+              if (isclr .eq. 2) then
+                uMod(:,1) = u1(:) - add(:,1)
+                uMod(:,2) = u2(:) - add(:,2)
+                uMod(:,3) = u3(:) - add(:,3)
+              else
+                uMod(:,1) = u1(:) - zero
+                uMod(:,2) = u2(:) - zero
+                uMod(:,3) = u3(:) - zero
+              endif
+              iadvdiff=0 ! scalar advection-diffusion flag
+              if(iadvdiff.eq.1)then
+                 srcL(:)=zero
+                 srcR(:)=zero
+                 srcRat(:)=zero
+              endif
+
+c.........................End of k-omega model
 
       else        ! NOT turbulence and NOT level set so this is a simple
                   ! scalar. If your scalar equation has a source term

@@ -250,9 +250,67 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "IDDES" ) {
       turbvari.iles  = -3;
       turbvari.irans = -1;
-      if ((string)inp.GetValue("SA Low Re Correction") == "True" ) {
-         turbvari.iSAlowRe = 1;
-      } else { turbvari.iSAlowRe = 0;}
+    } else if ((string)inp.GetValue("Turbulence Model") == "RANS-KOMEGA" ) {
+      turbvari.iles  = 0;
+      turbvari.irans = -5;
+      turbvar.dist = (double)inp.GetValue("Omega Interior BC Dist");
+      if ((string)inp.GetValue("Clip k and Omega Solutions") == "True") {
+         turbvari.iClipKW = 1;
+         turbvari.iClipKWMeth = inp.GetValue("Clip k and Omega Solutions Method");
+      } else { 
+         turbvari.iClipKW = 0;
+         turbvari.iClipKWMeth = 0;
+      }
+      if ((string)inp.GetValue("Use SA Solution as IC") == "True") {
+         turbvari.iSAIC = 1;
+         turbvar.sstU = (double)inp.GetValue("SST Velocity Scale");
+         turbvar.sstL = (double)inp.GetValue("SST Length Scale");
+         
+      } else { 
+         turbvari.iSAIC = 0;
+         turbvar.sstU = 1.0;
+         turbvar.sstL = 1.0;
+      }
+    } else if ((string)inp.GetValue("Turbulence Model") == "DDES-KOMEGA" ) {
+      turbvari.iles  = -2;
+      turbvari.irans = -5;
+      turbvar.dist = (double)inp.GetValue("Omega Interior BC Dist");
+      if ((string)inp.GetValue("Clip k and Omega Solutions") == "True") {
+         turbvari.iClipKW = 1;
+         turbvari.iClipKWMeth = inp.GetValue("Clip k and Omega Solutions Method");
+      } else { 
+         turbvari.iClipKW = 0;
+         turbvari.iClipKWMeth = 0;
+      }
+      if ((string)inp.GetValue("Use SA Solution as IC") == "True") {
+         turbvari.iSAIC = 1;
+         turbvar.sstU = (double)inp.GetValue("SST Velocity Scale");
+         turbvar.sstL = (double)inp.GetValue("SST Length Scale");
+      } else { 
+         turbvari.iSAIC = 0;
+         turbvar.sstU = 1.0;
+         turbvar.sstL = 1.0;
+      }
+    } else if ((string)inp.GetValue("Turbulence Model") == "IDDES-KOMEGA" ) {
+      turbvari.iles  = -3;
+      turbvari.irans = -5;
+      turbvar.dist = (double)inp.GetValue("Omega Interior BC Dist");
+      if ((string)inp.GetValue("Clip k and Omega Solutions") == "True") {
+         turbvari.iClipKW = 1;
+         turbvari.iClipKWMeth = inp.GetValue("Clip k and Omega Solutions Method");
+      } else { 
+         turbvari.iClipKW = 0;
+         turbvari.iClipKWMeth = 0;
+      }
+      if ((string)inp.GetValue("Use SA Solution as IC") == "True") {
+         turbvari.iSAIC = 1;
+         turbvar.sstU = (double)inp.GetValue("SST Velocity Scale");
+         turbvar.sstL = (double)inp.GetValue("SST Length Scale");
+      } else { 
+         turbvari.iSAIC = 0;
+         turbvar.sstU = 1.0;
+         turbvar.sstL = 1.0;
+      }
     } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
       turbvari.irans = 0;
       turbvari.iles  = 0;
@@ -277,7 +335,9 @@ int input_fform(phSolver::Input& inp)
            } 
         if((string)inp.GetValue("Collect STG Energy Spectrum Data")=="True"){
             turbvari.iSTGspec= 1;
-            } 
+            }
+        turbvari.iSTGSSTMeth=(int)inp.GetValue("STG SST Method");
+        turbvar.STGSSTuTau=(double)inp.GetValue("STG SST uTau:); 
         turbvar.STGdesol=(double)inp.GetValue("STG Energy Distance Tolerance");   
         vector<double> readDist;
         readDist = inp.GetValue("Energy Spectrum at Distances");
@@ -312,6 +372,7 @@ int input_fform(phSolver::Input& inp)
     solscalr += ilset;
     if(turbvari.irans == -1) solscalr++;
     if(turbvari.irans == -2) solscalr=solscalr+2;
+    if(turbvari.irans == -5) solscalr=solscalr+2;
     if ( solscalr > 4 ) {
       cout << " Only Four Scalars are supported \n";
       cout <<" Please reduce number of scalars \n";

@@ -83,6 +83,7 @@ c.... ------------->  Primitive variables at int. point  <--------------
 c
 c.... compute primitive variables
 c
+       rho  = datmat(1,1,1)
        pres = zero
        u1   = zero
        u2   = zero
@@ -110,7 +111,7 @@ c         user-specified body force or coriolis force specified
           enddo
        endif
 c
-       if(iRANS.eq.-2) then ! kay-epsilon
+       if(iRANS.eq.-2.or.iRANS.eq.-5) then ! kay-epsilon and SST
           dist2w = zero
           do n = 1, blk%n
              dist2w = dist2w + shpfun(1:blk%e,n) * dwl(1:blk%e,n)
@@ -325,7 +326,7 @@ c-----------------------------------------------------------------------
      &                      ql,          rLS ,       SrcR,
      &                      SrcL,        uMod,      dwl,
      &                      diffus,      srcRat,
-     &                      cfll)
+     &                      cfll, gradVl )
 c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
@@ -348,15 +349,17 @@ c
      &          dwl(bsz,blk%n),            diffus(blk%e),
      &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
      &          divqi(blk%e) ,
-     &          cfll(bsz,blk%s)   
+     &          cfll(bsz,blk%s),   gradVl(bsz,blk%s,nsdsq) 
 c
       dimension tmp(blk%e), srcRat(blk%e)
       real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),
      &       g1yi(blk%e,nflow),   g2yi(blk%e,nflow),
      &       g3yi(blk%e,nflow),
      &       src(blk%e,nsd),      rho(blk%e),
-     &       rmu(blk%e)
+     &       rmu(blk%e),          ssq(blk%e)
       real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
+      real*8 denominv(blk%e)
+      integer comp
 
 c
 c.... ------------->  Primitive variables at int. point  <--------------
@@ -472,9 +475,21 @@ c
      &               g1yi, g2yi, g3yi,
      &         rLui, src, divqi,sforce)
 c     this call to getdiff is for the flow diffusive properties
-          call getdiff(blk,ith,dwl, yl, shpfun, xmudmi, xl, rmu, rho,
+
+      if(iRANS.eq.-5) then ! solving K-W model
+            ssq(:)    = sqrt( 2.0d0 * (g1yi(:,2) ** 2
+     &         + g2yi(:,3) ** 2
+     &         + g3yi(:,4) ** 2
+     &         + 0.5d0
+     &         * ( (g3yi(:,3) + g2yi(:,4)) ** 2
+     &           + (g1yi(:,4) + g3yi(:,2)) ** 2
+     &           + (g2yi(:,2) + g1yi(:,3)) ** 2 )))
+            call AddEddyViscKomgq(yl, dwl, shgl, shpfun, rho, rmu, ssq, xl)
+       else
+         call getdiff(blk,ith,dwl, yl, shpfun, xmudmi, xl, rmu, rho,
      &               elem_local_size(blk%i),
      &               evl)
+       endif
 ! bad to have a separate routine for something like Tau that may vary          call e3uBar(blk,rho, src, dxidx, rLui, rmu, uBar)
 ! changing to call e3stab that now has conditionals to skip computation of tauc and taubar so should be o.k. that they are note
 ! dimensioned in this case since memory not accessed
@@ -513,7 +528,7 @@ c
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,
      &                      xl,           srcR,      srcL,   uMod,
-     &                      srcRat,  cfll )
+     &                      srcRat,  cfll , gradVl)
        else
         srcRat = zero
         srcR   = zero

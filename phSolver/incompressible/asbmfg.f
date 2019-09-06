@@ -47,7 +47,7 @@ c
         call localy(blk,ac,     acl,    ienb,   ndofl,  'gather  ')
         call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
         call localx(blk,u,      ul,     ienb,   nsd,    'gather  ')
-        if(iRANS.eq.-2) then
+        if(iRANS.eq.-2 .or. iRANS.eq.-5) then !k-epsilon and SST
            call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
 
@@ -110,7 +110,7 @@ c
 c
         dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
      &            rl(bsz,nshl),     sgn(npro,nshl)
-        real*8 dwl(bsz,nshl),          evl(bsz,blk%s)
+        real*8 dwl(bsz,nenl),          evl(bsz,blk%s)
 c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
@@ -122,7 +122,7 @@ c.... gather the variables
 c
         call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
         call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
-        if(iRANS.eq.-2) then
+        if(iRANS.eq.-2.or.iRANS.eq.-5) then
            call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
         endif
 

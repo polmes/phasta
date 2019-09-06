@@ -12,7 +12,7 @@ c
         character*20 fname2
         character*60 syscmd
 c
-        dimension q(nfath,nflow)
+        dimension q(nfath,ndof)
         logical exlog
 c
 c.... -------------------------->  'in  '  <---------------------------
@@ -86,7 +86,7 @@ c
          if((itwmod.gt.0) .or. (irscale.ge.0)
      &      .or. (ispanAvg.eq.1)) then
             do i=1,nfath            
-               write (irstou,*) q(i,1),q(i,2),q(i,3),q(i,4)
+               write (irstou,*) (q(i,j),j=1,ndof)
             enddo
          endif
          if((nsonmax.eq.1) .and. (iLES.gt.0)) then

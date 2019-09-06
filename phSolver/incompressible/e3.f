@@ -73,7 +73,9 @@ c
      &            shpfun(blk%e,blk%s),      shdrv(blk%e,nsd,blk%s),
      &            rmu(blk%e),              tauC(blk%e),
      &            tauM(blk%e),             tauBar(blk%e),
-     &            src(blk%e,3)
+     &            src(blk%e,3),            gyti(blk%e,nsd),
+     &            Sclr(blk%e),             mut(blk%e),
+     &            ssq(blk%e)
 
         dimension rlsl(bsz,blk%s,6),      rlsli(blk%e,6)
 
@@ -125,12 +127,6 @@ c
         call getshp(blk,ith, shp,          shgl,      sgn, 
      &              shpfun,       shdrv)
 c
-c.... get necessary fluid properties (including eddy viscosity)
-c
-        call getdiff(blk,ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho,
-     &               elem_local_size(blk%i),
-     &               evl)
-c
 c.... calculate the integration variables
 c
         call e3ivar (blk, ith,yl,          acl,       shpfun,
@@ -147,6 +143,24 @@ c
 #endif
      &               rlsl,      rlsli,
      &               dwl) 
+c
+c.... get necessary fluid properties (including eddy viscosity)
+c
+        if(iRANS.eq.-5) then ! solving K-W model
+          ssq(:)    = sqrt( 2.0d0 * (g1yi(:,2) ** 2
+     &                + g2yi(:,3) ** 2
+     &                + g3yi(:,4) ** 2
+     &                + 0.5d0
+     &                * ( (g3yi(:,3) + g2yi(:,4)) ** 2
+     &                + (g1yi(:,4) + g3yi(:,2)) ** 2
+     &                + (g2yi(:,2) + g1yi(:,3)) ** 2 )))
+          call AddEddyViscKomgq(blk,ith,yl, dwl, shdrv, shpfun, rho, 
+     &                          rmu, ssq, xl)
+        else
+          call getdiff(blk,ith, dwl,  yl,     shpfun,     xmudmi, xl,   rmu, rho,
+     &               elem_local_size(blk%i),
+     &               evl)
+        endif
 c
 c.... compute CFL number
 c
@@ -251,7 +265,7 @@ c###################################################################
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
      &                     sgn,     xmudmi,  cfll,
-     &                   cfllold, evl)
+     &                   cfllold, evl, gradVl )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -272,7 +286,8 @@ c
      &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
      &            ql(bsz,blk%s,nsd),     
      &            dwl(bsz,blk%n),         cfll(bsz,blk%s),
-     &          cfllold(bsz,blk%s),     evl(bsz,blk%s)
+     &          cfllold(bsz,blk%s),     evl(bsz,blk%s),
+     &          gradVl(bsz,blk%s,nsdsq)
 #ifdef SP_LHS
       real*4    xSebe(bsz,blk%s,blk%s)
 #else
@@ -290,7 +305,8 @@ c
      &            tauS(blk%e),             diffus(blk%e),
      &            srcL(blk%e),             srcR(blk%e),
      &            gGradS(blk%e,nsd),       dcFct(blk%e),
-     &            giju(blk%e,6)
+     &            giju(blk%e,6),           mut(blk%e),
+     &            F1(blk%e),               F2(blk%e)
 c
 c.... Source terms sometimes take the form (beta_i)*(phi,_i).  Since
 c     the convective term has (u_i)*(phi,_i), it is useful to treat
@@ -328,7 +344,12 @@ c
 c
 c.... get necessary fluid properties
 c
-        call getdiffsclr(blk, shpfun,dwl,yl,diffus,evl)
+        if(iRANS.eq.-5) then ! solving K-W model
+          call getdiffsclrKW(blk,intqp,shpfun, shdrv, dwl, yl, xl, diffus, mut, 
+     &                     F1, F2)
+        else
+          call getdiffsclr(blk, shpfun,dwl,yl,diffus,evl)
+        endif
 c
 c.... calculate the integration variables
 c
@@ -340,7 +361,7 @@ c
      &                  ql,          rLS,       SrcR,
      &                  SrcL,        uMod,      dwl,
      &                  diffus,      srcRat,
-     &                  cfllold )
+     &                  cfllold, gradVl )
 c
 c.... compute CFL number
 c
@@ -364,7 +385,9 @@ c... computing the DC factor for the discontinuity capturing
 c
         if (idcsclr(1) .ne. 0) then
            if ((idcsclr(2).eq.1 .and. isclr.eq.1) .or. 
-     &          (idcsclr(2).eq.2 .and. isclr.eq.2)) then ! scalar with dc
+     &          (idcsclr(2).eq.2 .and. isclr.eq.2) .or.
+     &          (idcsclr(2).eq.3 .and. isclr.eq.1) .or.
+     &           (idcsclr(2).eq.3 .and. isclr.eq.2)) then ! scalar with dc
 c
               call e3dcSclr (blk, gradS,    giju,     gGradS,
      &                        rLS,      tauS,     srcR,

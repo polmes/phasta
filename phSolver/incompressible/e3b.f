@@ -84,7 +84,7 @@ c
      &            rNa(npro,4)
 
         real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl),
-     &            evl(bsz,blk%s)
+     &            evl(bsz,blk%s),           ssq(npro)
 c
 !disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
@@ -132,7 +132,7 @@ c
 c
 c.... calculate the integraton variables
 c
-        call e3bvar (blk, yl,              acl,             ul,              
+        call e3bvar (blk, intp, yl,   acl,            ul,              
      &               shape,
      &               shdrv,           xlb,
      &               lnode,           WdetJb,
@@ -141,7 +141,7 @@ c
      &               rmu,             unm,
      &               tau1n,           tau2n,           tau3n,
      &               vdot,            rlKwall,         
-     &               xKebe,           rKwall_glob)
+     &               xKebe,           rKwall_glob,     dwl )
         
 c        
 c.... -----------------> boundary conditions <-------------------
@@ -388,11 +388,11 @@ c*********************************************************************
       type (LocalBlkData) blk
 
 c
-        dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),
+        dimension yl(bsz,nshl,ndof),          iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,*),
      &            shglb(nsd,nshl,*),           
-     &            xlb(npro,nenl,nsd),          
-     &            rl(npro,nshl)
+     &            xlb(bsz,nenl,nsd),          
+     &            rl(bsz,nshl)
 c
         real*8    WdetJb(npro),                bnorm(npro,nsd)
 c
@@ -422,7 +422,7 @@ c
 c
 c.... calculate the integraton variables
 c
-        call e3bvarSclr (blk,yl,          shdrv,   xlb,
+        call e3bvarSclr (blk,intp,yl,          shdrv,   xlb,
      &                   shape,       WdetJb,  bnorm,
      &                   flux,        dwl,     evl )
 c        

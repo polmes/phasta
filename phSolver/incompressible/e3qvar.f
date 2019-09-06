@@ -205,5 +205,46 @@ c
        end
        
             
+c-----------------------------------------------------------------------
+c
+c     compute the variables for the local scalar diffusion (specifically for k-w) (Assembled Variables gradK and gradW)
+c
+c-----------------------------------------------------------------------
+       subroutine e3qvarkwSclr(blk, ith, yl, shgl, xl, gradK, gradW)
+
+       use eblock
+       include "common.h"
+       type (LocalBlkData) blk
+
+       real*8   yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
+     &         shgl(blk%e,nsd,blk%s),   xl(bsz,blk%n,nsd),
+     &         gradK(blk%e,nsd),    gradW(blk%e,nsd),
+     &         WdetJ(blk%e)
+       real*8   shg(blk%e,blk%s,nsd),
+     &         dxidx(blk%e,nsd,nsd)
+       integer id, n, ith
+
+
+       call e3metric(blk, ith, xl, shgl, dxidx, shg, WdetJ)
+
+       gradK = zero
+       gradW = zero
+
+       id=6
+       do n = 1, blk%s
+          gradK(:,1) = gradK(:,1) + shg(:,n,1) * yl(1:blk%e,n,id)
+          gradK(:,2) = gradK(:,2) + shg(:,n,2) * yl(1:blk%e,n,id)
+          gradK(:,3) = gradK(:,3) + shg(:,n,3) * yl(1:blk%e,n,id)
+       enddo
+
+       id=7
+       do n = 1, blk%s
+          gradW(:,1) = gradW(:,1) + shg(:,n,1) * yl(1:blk%e,n,id)
+          gradW(:,2) = gradW(:,2) + shg(:,n,2) * yl(1:blk%e,n,id)
+          gradW(:,3) = gradW(:,3) + shg(:,n,3) * yl(1:blk%e,n,id)
+       enddo
+
+       return
+       end
 
 

@@ -1,11 +1,11 @@
-      subroutine e3bvar (blk, yl,      acl,     ul,
+      subroutine e3bvar (blk, ith, yl,      acl,     ul,
      &                   shpb,    shglb,
      &                   xlb,     lnode,  
      &                   WdetJb,  bnorm,   pres,    
      &                   u1,      u2,      u3,      rmu,  
      &                   unm,     tau1n,   tau2n,   tau3n,
      &                   vdot,    rlKwall,         
-     &                   xKebe,   rKwall_glob)
+     &                   xKebe,   rKwall_glob, dwl )
 c
 c----------------------------------------------------------------------
 c
@@ -45,7 +45,7 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c Alberto Figueroa, Winter 2004.  CMM-FSI
 c----------------------------------------------------------------------
 c
-      use        turbsa
+      use turbsa
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -53,14 +53,15 @@ c
 c
       dimension yl(bsz,nshl,ndof),        rmu(npro),
      &            shpb(npro,nshl),           shglb(npro,nsd,nshl),
-     &            xlb(bsz,nenl,nsd),        
+     &            xlb(bsz,nenl,nsd),         dwl(bsz,nenl),
      &            lnode(27),                 g1yi(npro,ndof),
      &            g2yi(npro,ndof),           g3yi(npro,ndof),
      &            WdetJb(npro),              bnorm(npro,nsd),
      &            pres(npro),                
      &            u1(npro),                  u2(npro),
-     &            u3(npro),
-     &            unm(npro),                 
+     &            u3(npro),                  Sclr(npro),
+     &            unm(npro),                 shape(npro,nshl),
+     &            shdrv(npro,nsd,nshl),
      &            tau1n(npro),               tau2n(npro),
      &            tau3n(npro),
      &            acl(bsz,nshl,ndof),       ul(bsz,nshl,nsd),
@@ -104,16 +105,17 @@ c
 c     
       real*8      lhmFctvw, tsFctvw(npro)
 
-      dimension   tmp1(npro)       
+      dimension   tmp1(npro), TauSST(npro,6) , ssq(npro), rho(npro)
 c     
       real*8    Turb(npro),                xki,
      &            xki3,                      fv1
 c        
-      integer   e, i, j
+      integer   e, i, j, ith
 c      
       integer   aa, b
 
 
+      rho(:) = datmat(1,1,1)
 c
 c.... ------------------->  integration variables  <--------------------
 c
@@ -123,6 +125,7 @@ c
       u1   = zero
       u2   = zero
       u3   = zero
+      Sclr = zero
 c     
         
       do n = 1, nshlb
@@ -132,7 +135,8 @@ c
          u1   = u1   + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,2)
          u2   = u2   + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,3)
          u3   = u3   + shpb(1:npro,nodlcl) * yl(1:npro,nodlcl,4)
-
+         if (iRANS.eq.-5) Sclr = Sclr + shpb(1:npro,nodlcl)
+     &                           * yl(1:npro,nodlcl,6) !k for SST
       enddo
 c
 c.... ---------------------->  Element Metrics  <-----------------------
@@ -349,15 +353,47 @@ c
 c
 c.... viscous flux
 c
-      tau1n = bnorm(:,1) * two * rmu *  g1yi(:,2)  
+      if (iRANS.eq.-5) then
+       ssq(:)    = sqrt( 2.0d0 * (g1yi(:,2) ** 2
+     &         + g2yi(:,3) ** 2
+     &         + g3yi(:,4) ** 2
+     &         + 0.5d0
+     &         * ( (g3yi(:,3) + g2yi(:,4)) ** 2
+     &           + (g1yi(:,4) + g3yi(:,2)) ** 2
+     &           + (g2yi(:,2) + g1yi(:,3)) ** 2 )))
+       call AddEddyViscKomgq(blk,ith,yl, dwl, shglb, shpb, rho, rmu, ssq, xlb)
+c ... Call the function that computes the Reynolds stresses according to
+c     the SST model
+!        call SSTStress(blk,rmu, g1yi, g2yi, g3yi, Sclr, TauSST)
+!        tau1n = bnorm(:,1) * (TauSST(:,1))
+!     &     + bnorm(:,2) * TauSST(:,4)
+!     &     + bnorm(:,3) * TauSST(:,6)
+!        tau2n = bnorm(:,1) * TauSST(:,4)
+!     &     + bnorm(:,2) * (TauSST(:,2))
+!     &     + bnorm(:,3) * TauSST(:,5)
+!        tau3n = bnorm(:,1) * TauSST(:,6)
+!     &     + bnorm(:,2) * TauSST(:,5)
+!     &     + bnorm(:,3) * (TauSST(:,3))
+        tau1n = bnorm(:,1) * two * rmu *  g1yi(:,2)  
      &     + bnorm(:,2) *      (rmu * (g2yi(:,2) + g1yi(:,3)))
      &     + bnorm(:,3) *      (rmu * (g3yi(:,2) + g1yi(:,4)))
-      tau2n = bnorm(:,1) *      (rmu * (g2yi(:,2) + g1yi(:,3)))
+        tau2n = bnorm(:,1) *      (rmu * (g2yi(:,2) + g1yi(:,3)))
      &     + bnorm(:,2) * two * rmu *  g2yi(:,3) 
      &     + bnorm(:,3) *      (rmu * (g3yi(:,3) + g2yi(:,4)))
-      tau3n = bnorm(:,1) *      (rmu * (g3yi(:,2) + g1yi(:,4)))
+        tau3n = bnorm(:,1) *      (rmu * (g3yi(:,2) + g1yi(:,4)))
      &     + bnorm(:,2) *      (rmu * (g3yi(:,3) + g2yi(:,4)))
      &     + bnorm(:,3) * two * rmu *  g3yi(:,4) 
+      else
+        tau1n = bnorm(:,1) * two * rmu *  g1yi(:,2)  
+     &     + bnorm(:,2) *      (rmu * (g2yi(:,2) + g1yi(:,3)))
+     &     + bnorm(:,3) *      (rmu * (g3yi(:,2) + g1yi(:,4)))
+        tau2n = bnorm(:,1) *      (rmu * (g2yi(:,2) + g1yi(:,3)))
+     &     + bnorm(:,2) * two * rmu *  g2yi(:,3) 
+     &     + bnorm(:,3) *      (rmu * (g3yi(:,3) + g2yi(:,4)))
+        tau3n = bnorm(:,1) *      (rmu * (g3yi(:,2) + g1yi(:,4)))
+     &     + bnorm(:,2) *      (rmu * (g3yi(:,3) + g2yi(:,4)))
+     &     + bnorm(:,3) * two * rmu *  g3yi(:,4) 
+      endif
 c     
       temp1 = bnorm(:,1) * tau1n
      &     + bnorm(:,2) * tau2n
@@ -797,7 +833,7 @@ c
 c     variables for boundary elements
 c
 c---------------------------------------------------------------------
-        subroutine e3bvarSclr (blk,yl,        shdrv,    xlb,
+        subroutine e3bvarSclr (blk,ith,yl,        shdrv,    xlb,
      &                         shape,     WdetJb,   bnorm,
      &                         flux,      dwl,      evl )
 
@@ -819,9 +855,16 @@ c
      &            gradSl(npro,nsd),          gradS(npro,nsd)
 
         real*8    diffus(npro),              dwl(bsz,nenl),
-     &            evl(bsz,blk%s)
-        
-        call getdiffsclr(blk,shape,dwl,yl,diffus, evl)
+     &            evl(bsz,blk%s),            mut(npro),
+     &            F1(npro),                  F2(npro)
+        integer ith
+
+        if(iRANS.eq.-5) then ! solving K-W model
+          call getdiffsclrKW(blk,ith,shape, shdrv, dwl, yl, xlb, diffus, mut, 
+     &                        F1, F2)
+        else        
+          call getdiffsclr(blk,shape,dwl,yl,diffus, evl)
+        endif
 c
 c.... ---------------------->  Element Metrics  <-----------------------
 c
@@ -924,9 +967,9 @@ c
           gradSl = zero
           isc=5+isclr
           do n = 1, nshl
-            gradSl(:,1) = gradSl(:,1) + shdrv(:,1,n) * yl(1:npro,n,isc)
-            gradSl(:,2) = gradSl(:,2) + shdrv(:,2,n) * yl(1:npro,n,isc)
-            gradSl(:,3) = gradSl(:,3) + shdrv(:,3,n) * yl(1:npro,n,isc)
+            gradSl(:,1) = gradSl(:,1) + shdrv(:,1,n) * yl(1:blk%e,n,isc)
+            gradSl(:,2) = gradSl(:,2) + shdrv(:,2,n) * yl(1:blk%e,n,isc)
+            gradSl(:,3) = gradSl(:,3) + shdrv(:,3,n) * yl(1:blk%e,n,isc)
           enddo
 c
 c.... convert local-grads to global-grads

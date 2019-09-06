@@ -365,9 +365,9 @@ c
      &                   tcorecpscal,
      &                   cfl
 #ifdef HAVE_SVLS     
-     &                   ,svLS_lhs,  svLS_ls,   svLS_nFaces)
+     &                   ,svLS_lhs,  svLS_ls,   svLS_nFaces, GradV )
 #else
-     &                   )      
+     &                   , GradV )      
 #endif      
 c
 c----------------------------------------------------------------------
@@ -407,7 +407,7 @@ c
 c     
       real*8    y(nshg,ndof),             ac(nshg,ndof),
      &          x(numnp,nsd),             BC(nshg,ndofBC),
-     &          res(nshg,1)
+     &          res(nshg,1),              GradV(nshg,nsdsq)
 
 #ifdef SP_Solve
       real*4   flowDiag(nshg,4),
@@ -460,9 +460,9 @@ c
      &             rowp,      colm,
      &             cfl
 #ifdef HAVE_PETSC
-     &             ,lhsPs )
+     &             ,lhsPs, GradV )
 #else 
-     &             )
+     &             , GradV )
 #endif
       telmcp2 = TMRC()
       impistat=0

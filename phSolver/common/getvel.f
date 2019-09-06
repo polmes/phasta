@@ -9,7 +9,7 @@
 
 c
       dimension nsons(ndistsons),        rinvsons(ndistsons),
-     &          velo(nshg,nflow),    velf(nfath),
+     &          velo(nshg,ndof),    velf(nfath),
      &          velft(nfath), 
      &          y(nshg,ndof), 
      &          ifath(nshg),
@@ -26,11 +26,16 @@ c
 c
 c  for now keep the compressible numbering in velbar
 c
+      velo = zero
       velo(:,1)=y(:,4)
       velo(:,2)=y(:,1)      
       velo(:,3)=y(:,2)
       velo(:,4)=y(:,3)
       if(nflow.eq.5) velo(:,5)=y(:,5)
+      if (nsclr.gt.0) then
+         if (iRANS.eq.-1) velo(:,6) = y(:,6)
+         if (iRANS.eq.-5) velo(:,6:7) = y(:,6:7)
+      endif
       nsonmax=maxval(nsons)
       if ((nsonmax.eq.1)) then  ! we are doing local clipping -no homog dir
          !velft=velo
@@ -65,7 +70,20 @@ c
             where(btest(iBC,10).or.btest(iBC,12))
                 velo(:,5)=zero
             endwhere
-         endif         
+         endif
+         if (nsclr.gt.0) then  
+            if (iRANS.eq.-1) then
+               where(btest(iBC,10).or.btest(iBC,12))
+                  velo(:,6)=zero
+               endwhere
+            endif
+            if (iRANS.eq.-5) then
+               where(btest(iBC,10).or.btest(iBC,12))
+                  velo(:,6)=zero
+                  velo(:,7)=zero
+               endwhere
+            endif
+         endif     
 
          if (numpe.gt.1) then
             
@@ -96,7 +114,7 @@ c     zero the nodes that are "solved" on the other processors
 c     
 c     accumulate sum of sons to the fathers
 c    
-         do n=1,nflow 
+         do n=1,ndof 
             velf = zero
             do i = 1,nshg
                ifathi=ifath(i)

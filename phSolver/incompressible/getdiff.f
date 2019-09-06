@@ -4,7 +4,7 @@ c-----------------------------------------------------------------------
 c  compute and add the contribution of the turbulent
 c  eddy viscosity to the molecular viscosity.
 c-----------------------------------------------------------------------
-      use     turbSA
+      use  turbSA
       use  spat_var_eps !* for spatially varying epsilon_ls  
       use eblock
       include "common.h"
@@ -18,7 +18,7 @@ c-----------------------------------------------------------------------
       real*8 elem_size(blk%e)
       integer n, e
 
-      real*8  epsilon_ls, kay, epsilon
+      real*8  epsilon_ls, kay, epsilon, omega, mut(blk%e),
      &        h_param, prop_blend(blk%e),test_it(blk%e)
 c
 c    
@@ -112,6 +112,8 @@ c
          else if(iRANS.eq.-2) then ! RANS-KE
             sigmaInv=1.0        ! use full eddy viscosity for flow equations
             call AddEddyViscKE(blk,yl, dwl, shape, rho, sigmaInv, rmu)
+         else if(iRANS.eq.-5) then ! RANS-SST-KW
+            sigmaInv=one 
          endif
          if (iLES.gt.0) then    ! this is DES so we have to blend in
                                 ! xmudmi based on max edge length of
@@ -185,7 +187,64 @@ c
       return
       end
 
-      function ev2sa(xmut,rm,cv1)
+
+
+      subroutine getdiffsclrKW(blk,ith,shape, shgl, dwl, yl, xl, diffus,
+     &                         mut, F1, F2)
+     
+        use eblock
+        use turbKW ! access to K-W model constants
+        include "common.h"
+        type (LocalBlkData) blk
+
+        real*8   diffus(blk%e), rho(blk%e), mut(blk%e), F1(blk%e), F2(blk%e)
+        real*8   yl(bsz,blk%s,ndof), dwl(bsz,blk%n), shape(blk%e,blk%s)
+        real*8  sigmacount, shgl(blk%e,nsd,blk%s), xl(bsz,blk%n,nsd)
+        real*8  g1yi(blk%e,nflow),  g2yi(blk%e,nflow),  g3yi(blk%e,nflow)
+        real*8  ssq(blk%e), shg(blk%e,blk%s,nsd), WdetJ(blk%e)
+        real*8  dxidx(blk%e,nsd,nsd) 
+        integer n, e, ith  !possibly redundant
+        diffus(:) = datmat(1,2,1) ! mu
+        rho(:)    = datmat(1,1,1)
+        g1yi = zero
+        g2yi = zero
+        g3yi = zero
+        if(isclr.eq.2) then
+           sigmacount=0d0 ! eddy viscosity multiplier for omega
+        else
+           sigmacount=1d0 ! eddy viscosity multiplier for kay equation
+        endif
+
+        call e3metric(blk, ith, xl, shgl, dxidx, shg, WdetJ)
+c       Compute global velocity gradient
+        do n = 1,blk%s
+            g1yi(:,2) = g1yi(:,2) + shg(:,n,1) * yl(1:blk%e,n,2)
+            g1yi(:,3) = g1yi(:,3) + shg(:,n,1) * yl(1:blk%e,n,3)
+            g1yi(:,4) = g1yi(:,4) + shg(:,n,1) * yl(1:blk%e,n,4)
+            g2yi(:,2) = g2yi(:,2) + shg(:,n,2) * yl(1:blk%e,n,2)
+            g2yi(:,3) = g2yi(:,3) + shg(:,n,2) * yl(1:blk%e,n,3)
+            g2yi(:,4) = g2yi(:,4) + shg(:,n,2) * yl(1:blk%e,n,4)
+            g3yi(:,2) = g3yi(:,2) + shg(:,n,3) * yl(1:blk%e,n,2)
+            g3yi(:,3) = g3yi(:,3) + shg(:,n,3) * yl(1:blk%e,n,3)
+            g3yi(:,4) = g3yi(:,4) + shg(:,n,3) * yl(1:blk%e,n,4)
+        enddo
+c       Compute the strain rate invarient sqrt(2*S_ij*S_ij)
+        ssq(:)    = sqrt( 2.0d0 * (g1yi(:,2) ** 2
+     &         + g2yi(:,3) ** 2
+     &         + g3yi(:,4) ** 2
+     &         + 0.5d0
+     &         * ( (g3yi(:,3) + g2yi(:,4)) ** 2
+     &           + (g1yi(:,4) + g3yi(:,2)) ** 2
+     &           + (g2yi(:,2) + g1yi(:,3)) ** 2 )))
+c       Add the eddy viscosity to mu
+        call AddEddyViscKW(blk,ith,yl, dwl, shape, shgl, rho, sigmacount, 
+     &                       diffus, mut, ssq, F1, F2, xl)
+
+      return
+      end
+
+
+      function ev2sa(xmut,rm,cv1)      !eddy viscosity to SA function
       implicit none
       real*8 err,ev2sa,rm,cv1,f,dfds,rat,efac
       real*8 pt5,kappa,B,xmut,chi3,denom,cv1_3
@@ -504,3 +563,59 @@ c
       end subroutine AddEddyViscKE
 
 
+
+!!  Below modification needs refinement and clean up.
+ 
+      subroutine AddEddyViscKW(blk,ith,yl, dwl, shape, shgl, rho, sigmacount, 
+     &                          rmu, mut, ssq, F1, F2, xl)
+      
+      use eblock
+      use turbKW ! access to KW model constants
+      include "common.h"
+      type (LocalBlkData) blk
+
+      real*8 yl(bsz,blk%s,ndof), xl(bsz,blk%n,nsd), dwl(bsz,blk%n),
+     &       shape(blk%e,blk%s), shgl(blk%e,nsd,blk%s), rho(blk%e),
+     &       sigmacount, rmu(blk%e), mut(blk%e), ssq(blk%e),
+     &       F1(blk%e), F2(blk%e)
+      real*8 gradK(blk%e,nsd), gradW(blk%e,nsd)
+      real*8 kay, omg, nu
+      real*8 omgInv, delKdelW, Rou, mutden
+      real*8 sigmak, sigmaw, sigmafinal
+      integer e,n,ith
+
+c     Compute gradient of k and omega
+      call e3qvarkwSclr(blk,ith,yl, shgl, xl, gradK, gradW)
+c     Compute the eddy viscosity mut and add it to rmu
+      do e = 1, blk%e
+         kay = zero
+         omg = zero
+         dw = zero
+         do n = 1, blk%s
+            kay = kay + shape(e,n)*yl(e,n,6)
+            omg = omg + shape(e,n)*yl(e,n,7)
+            dw = dw + shape(e,n)*dwl(e,n)
+         enddo
+         kay = max(kay,zero)
+!         kay = abs(kay)
+         omg = max(omg,zero)
+         omgInv = one / omg
+         if ( omg.lt.1.d-32) then 
+            omgInv = 1.0d-32
+         endif
+         Rou = rho(e)
+         nu  = rmu(e) / Rou 
+         delKdelW = gradK(e,1)*gradW(e,1)  +  gradK(e,2)*gradW(e,2)
+     &          +    gradK(e,3)*gradW(e,3)
+         call getblendfunc (delKdelW, kay, omg, dw, Rou, nu, F1(e),
+     &                         F2(e))
+          mutden = max(a1*omg,F2(e)*ssq(e))
+          mut(e) = Rou * a1 *kay / mutden
+          mut(e) = max(mut(e),1.0d-4*rmu(e))
+          sigmak = F1(e)*sigk1 + (one-F1(e))*sigk2
+          sigmaw = F1(e)*sigw1 + (one-F1(e))*sigw2
+          sigmafinal = sigmacount*sigmak + (1.0d0-sigmacount)*sigmaw
+          rmu(e) = rmu(e) + sigmafinal*mut(e)
+          enddo
+        return
+        end subroutine AddEddyViscKW 

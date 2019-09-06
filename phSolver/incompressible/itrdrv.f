@@ -43,6 +43,7 @@ c
       use spat_var_eps !use spatial varying eps_ls
       use STG_BC
       use spanStats
+      use turbKW
 
 c      use readarrays !reads in uold and acold
       
@@ -135,9 +136,12 @@ c ----  Variables for random initial condition field
         integer, allocatable :: seed1(:)
 c ---   Variables for LES channel flow IC
         logical exlog
-        integer nx, ny, nyTot, nz, nICpoints, kijNum
+        integer nx, ny, nyTot, nz, nICpoints, kijNum, ijkNum
         real*8, allocatable :: xpoints(:), ypoints(:), zpoints(:)
         real*8, allocatable :: ordIC(:,:)
+c ---   Variables for SA IC to SST k-omega model
+        real*8 rnu, chi(nshg), fv1(nshg), nut(nshg), tmp1(nshg),
+     &         tmp2(nshg), ss(nshg), ssq(nshg), tmp
 c ---
         integer :: iv_rankpernode, iv_totnodes, iv_totcores
         integer :: iv_node, iv_core, iv_thread
@@ -337,6 +341,10 @@ c ----  End of LES initial condition
             irank2ybar=13
             allocate(ybar(nshg,irank2ybar))
           endif
+          if (iRANS.eq.-5) then
+            irank2ybar = irank2ybar+1 ! add omega for SST k-omega model
+          endif
+          allocate(ybar(nshg,irank2ybar))
           ybar = zero ! Initialize ybar to zero, which is essential
         endif
 
@@ -351,6 +359,9 @@ c ----  End of LES initial condition
             allocate(wallssVecbar(nshg,3))
             wallssVecbar = zero ! Initialization important if mean wss computed
           endif
+        else
+          allocate(wallssVec(1,1))
+          allocate(wallssVecbar(1,1))
         endif
 
 ! both nstepsincycle and nphasesincycle needs to be set
@@ -365,6 +376,8 @@ c ----  End of LES initial condition
             allocate(yphbar(nshg,irank2yphbar,nphasesincycle))
           endif
           yphbar = zero
+        else
+          allocate(yphbar(1,1,1))
         endif
 
 !!!!!!!!!!!!!!!!!!!
@@ -514,7 +527,7 @@ c
 c...       STG Inflow
            tcurrent= (lstep+1-iSTGStart)*Delt(1)
            if(iSTG.eq.1) then
-             call applySTG(tcurrent,BC,x)
+             call applySTG(tcurrent,BC,x,GradV)
            endif
 
            if(iramp.eq.1)  then
@@ -692,7 +705,7 @@ c
                         isclr=0
                         ifuncs(2)  = ifuncs(2) + 1
                         j=1
-                     else       ! solve a scalar  (encoded at isclr*10)
+                  else       ! solve a scalar  (encoded at isclr*10)
                         isclr=isolve  
                         ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
                         j=isclr+nsolt
@@ -749,25 +762,25 @@ c
 c....store the flow alpha, gamma parameter values and assigm them the 
 c....Backward Euler parameters to solve the second levelset scalar
 c     
-                      alfit=alfi
-                      gamit=gami
-                      almit=almi
-                      Deltt=Delt(1)
-                      Dtglt=Dtgl
-                      alfi = 1
-                      gami = 1
-                      almi = 1
+                           alfit=alfi
+                           gamit=gami
+                           almit=almi
+                           Deltt=Delt(1)
+                           Dtglt=Dtgl
+                           alfi = 1
+                           gami = 1
+                           almi = 1
 c     Delt(1)= Deltt ! Give a pseudo time step
                            Delt(1) = dtlset ! psuedo time step for level set
                            Dtgl = one / Delt(1)
                         endif  ! level set eq. 2
-                     endif ! deciding between temperature and scalar
+                  endif ! deciding between temperature and scalar
 
-                     lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
-     &                                   LHSupd(isclr+2))) 
-                     if((isclr.eq.1.and.iSolvLSSclr1.eq.1) .or. 
-     &                  (isclr.eq.2.and.iSolvLSSclr2.eq.1) .or.
-     &                  (isclr.eq.2.and.iSolvLSSclr2.eq.2)) then
+                  lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
+     &                                LHSupd(isclr+2))) 
+                  if((isclr.eq.1.and.iSolvLSSclr1.eq.1) .or. 
+     &               (isclr.eq.2.and.iSolvLSSclr2.eq.1) .or.
+     &               (isclr.eq.2.and.iSolvLSSclr2.eq.2)) then
                       lhs=0
                       call SolSclrExp(y,          ac,        yold,
      &                         acold,         x,         iBC,
@@ -777,28 +790,59 @@ c     Delt(1)= Deltt ! Give a pseudo time step
      &                         shpb,          shglb,     rowp,     
      &                         colm,          lhsS(1,j), 
      &                         solinc(1,isclr+5), CFLls)
-                     else
+                  else
+                      if (iRANS.eq.-5.and.iSAIC.eq.1
+     &                    .and.istep.eq.0.and.iter.eq.1.and.isclr.eq.1) then ! set SST k-w from SA solution
+                         if (myrank.eq.master) 
+     &                         write(*,*) 'Using SA solution as IC'
+                         ! k=nut*S/sqrt(C_mu) and w=max(S/sqrt(C_mu),U/L)
+                         rnu = datmat(1,2,1)/datmat(1,1,1)
+                         chi = y(:,6)/rnu
+                         fv1 = chi**3 / (chi**3 + saCv1**3)
+                         nut = max(y(:,6)*fv1,1.0d-4*rnu)
+                         tmp1 = GradV(:,1) ** 2 + GradV(:,2) ** 2
+     &                         + GradV(:,3) ** 2 + GradV(:,4) ** 2
+     &                         + GradV(:,5) ** 2 + GradV(:,6) ** 2
+     &                         + GradV(:,7) ** 2 + GradV(:,8) ** 2
+     &                         + GradV(:,9) ** 2
+                         tmp2 = GradV(:,1) ** 2 + GradV(:,5) ** 2
+     &                         + GradV(:,9) ** 2 + 2*(
+     &                           GradV(:,2)*GradV(:,4)
+     &                           + GradV(:,3)*GradV(:,7)
+     &                           + GradV(:,6)*GradV(:,8))
+                         ss = 0.50*(tmp1+tmp2)
+                         ssq = sqrt(two*ss)
+                         tmp = one/sqrt(CmuKW)
+                         y(:,6) = nut*ssq*tmp
+                         y(:,7) = max(ssq*tmp,sstU/sstL)
+                         yold(:,6) = y(:,6)
+                         yold(:,7) = y(:,7)
+                         ac(:,6:7) = zero
+                         acold(:,6:7) = zero
+                         call itrBCSclr (y, ac,  iBC, BC, iper, ilwork)
+                         call itrBCSclr (yold, acold,  iBC, BC, iper, ilwork)
+                      endif
                       call itrYAlpha( uold,    yold,    acold,
-     &                u,       y,       ac,
-     &                uAlpha,  yAlpha,  acAlpha)
+     &                                u,       y,       ac,
+     &                                uAlpha,  yAlpha,  acAlpha)
                
                       if(usingpetsc.eq.1) then
 #ifdef HAVE_PETSC
-                      call SolSclrp( yAlpha,      acAlpha,
-     &                         x,             iBC,
-     &                         BC,            
-     &                         iper,          
-     &                         ilwork,        shp,       shgl,
-     &                         shpb,          shglb,     rowp,
-     &                         colm,          res,
-     &                         solinc(1,isclr+5), tcorecpscal,
-     &                         fncorp)
+                        call SolSclrp( yAlpha,      acAlpha,
+     &                                 x,             iBC,
+     &                                 BC,            
+     &                                 iper,          
+     &                                 ilwork,        shp,       shgl,
+     &                                 shpb,          shglb,     rowp,
+     &                                 colm,          res,
+     &                                 solinc(1,isclr+5), tcorecpscal,
+     &                                 fncorp)
 #else
-                  write(*,*) 'requested PETSc but not built for it'
-                  call error('itrdrv  ','noPETSc',usingpetsc)  
+                        write(*,*)'requested PETSc but not built for it'
+                        call error('itrdrv  ','noPETSc',usingpetsc)  
 #endif
                       else
-                       call SolSclr(yAlpha,      acAlpha,
+                        call SolSclr(yAlpha,      acAlpha,
      &                         x,             iBC,
      &                         BC,            
      &                         iper,          
@@ -807,12 +851,13 @@ c     Delt(1)= Deltt ! Give a pseudo time step
      &                         colm,          
      &                         solinc(1,isclr+5), tcorecpscal, CFLls
 #ifdef HAVE_SVLS
-     &                         ,svLS_lhs_S(isclr),   svLS_ls_S(isclr), svls_nfaces)
+     &                         ,svLS_lhs_S(isclr),   svLS_ls_S(isclr), svls_nfaces,
+     &                         GradV )
 #else
-     &                         )
+     &                         , GradV )
 #endif
-                     endif !implicit petsc or else
-                 endif     ! explicity or implicit if/else
+                      endif !implicit petsc or else
+                  endif     ! explicity or implicit if/else
                 endif         ! end of scalar type solve
 
               else ! this is an update  (mod did not equal zero)
@@ -823,8 +868,12 @@ c     Delt(1)= Deltt ! Give a pseudo time step
                 else  ! update scalar
                   isclr=iupdate  !unless
                   if(icode.eq.6) isclr=0
-                  if(iRANS.lt.-100)then  ! RANS
-                    call itrCorrectSclrPos(y,ac,solinc(1,isclr+5))
+                  if((iRANS.eq.-5).and.(iClipKW.eq.1)) then
+                    if (iClipKWMeth.eq.1) then
+                      call itrCorrectSclrPos(y,ac,solinc(1,isclr+5))
+                    elseif (iClipKWMeth.eq.2) then
+                      call itrCorrectSclrRelax(y,ac,solinc(1,isclr+5))
+                    endif
                   else
                     call itrCorrectSclr (y, ac, solinc(1,isclr+5))
                   endif
@@ -2245,7 +2294,7 @@ c u^2, v^2, w^2, p^2 and cross terms of uv, uw and vw
      &                         (one-tfact)*ybar(:,11)
                   ybar(:,12) = tfact*yold(:,2)*yold(:,3) + !vw
      &                         (one-tfact)*ybar(:,12)
-                  if(nsclr.gt.0) !nut
+                  if(nsclr.gt.0) !nut or k for SST k-omega
      &             ybar(:,13) = tfact*yold(:,6) + (one-tfact)*ybar(:,13)
                   
                   if(ivort == 1) then !vorticity
@@ -2261,6 +2310,11 @@ c u^2, v^2, w^2, p^2 and cross terms of uv, uw and vw
      &                           (one-tfact)*ybar(:,18)
                   endif
 
+                  if (iRANS.eq.-5) then ! omega for SST k-omega model
+                    ybar(:,irank2ybar) = tfact*yold(:,7) + 
+     &                           (one-tfact)*ybar(:,irank2ybar)
+                  endif
+                  
                   if(abs(itwmod).ne.1 .and. iowflux.eq.1) then 
                     wallssVecBar(:,1) = tfact*wallssVec(:,1)
      &                                  +(one-tfact)*wallssVecBar(:,1)

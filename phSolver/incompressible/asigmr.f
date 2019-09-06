@@ -78,7 +78,7 @@ c
         call localy(blk,ac,    acl,     ien,    ndofl,  'gather  ')
         call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
         call local (blk,qres,   ql,     ien,    idflx,  'gather  ')
-        if (iRANS .eq. -2) then ! kay-epsilon
+        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
            call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
         endif
  
@@ -144,7 +144,7 @@ c=======================================================================
         subroutine AsIGMRSclr(blk, y,       ac,      x,       
      &                     shp,     shgl,    ien,     
      &                     res,     qres,    xSebe, xmudmi,
-     &                     cfl,     icflhits,  cflold )
+     &                     cfl,     icflhits,  cflold, GradV )
 c
 c----------------------------------------------------------------------
 c
@@ -165,14 +165,15 @@ c
      &            ien(blk%e,blk%s),
      &            res(nshg),                  qres(nshg,nsd),
      &            cfl(nshg),                  icflhits(nshg),
-     &            cflold(nshg)
+     &            cflold(nshg),               GradV(nshg,nsdsq)
 
 c
         real*8    yl(bsz,blk%s,ndofl),        acl(bsz,blk%s,ndofl),
      &            xl(bsz,blk%n,nsd),         
      &            rl(bsz,blk%s),              ql(bsz,blk%s,nsd),
      &            dwl(bsz,blk%n),             evl(bsz,blk%s),
-     &            cfll(bsz,blk%s),            cfllold(bsz,blk%s)            
+     &            cfll(bsz,blk%s),            cfllold(bsz,blk%s),
+     &            gradVl(bsz,blk%s,nsdsq)            
 c        
         real*8    xmudmi(blk%e,blk%g) 
 #ifdef SP_LHS
@@ -197,6 +198,7 @@ c
         if(iRANS.lt. 0) 
      &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
         call local (blk,qres,   ql,     ien,    nsd,    'gather  ')
+        call local (blk,GradV,  gradVl,    ien,    nsdsq,  'gather  ')
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call local(blk,effvisc, evl,    ien,    1,      'gather  ')
@@ -219,7 +221,7 @@ c
      &              shgl,    xl,      dwl,
      &              rl,      ql,      xSebe,   
      &              sgn, xmudmi,  cfll,
-     &              cfllold, evl)
+     &              cfllold, evl, gradVl)
 c
 c.... assemble the residual
 c
