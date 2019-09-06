@@ -332,18 +332,18 @@ int input_fform(phSolver::Input& inp)
         turbvar.STGeps=(double)inp.GetValue("STG Dissip. Rate");
         if((string)inp.GetValue("STG Channel") == "True" ) {
            turbvari.iSTGChan=1;
-           } 
+        }
         if((string)inp.GetValue("Collect STG Energy Spectrum Data")=="True"){
             turbvari.iSTGspec= 1;
-            }
+        }
         turbvari.iSTGSSTMeth=(int)inp.GetValue("STG SST Method");
-        turbvar.STGSSTuTau=(double)inp.GetValue("STG SST uTau:); 
+        turbvar.STGSSTuTau=(double)inp.GetValue("STG SST uTau"); 
         turbvar.STGdesol=(double)inp.GetValue("STG Energy Distance Tolerance");   
         vector<double> readDist;
         readDist = inp.GetValue("Energy Spectrum at Distances");
         for (i=0;i<=2;i++){
             turbvar.STGdes[i]=readDist[i];
-            }
+        }
       }
 
  //   if (turbvari.iles*turbvari.irans!=0) turbvar.eles=

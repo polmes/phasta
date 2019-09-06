@@ -176,7 +176,7 @@ c                 hwn is the local step in the wall normal direction
                   fbarg = two*exp(-9.0d0*alphaI**2)
                   fb = min(fbarg,one)
                   fdt = one-tanh((20.0d0*rdt)**3.0d0)
-                  fd = fb !max((one-fdt),fb)
+                  fd = max((one-fdt),fb)
                   lIDDES = fd*(one+fe)*lRANS+(one-fd)*lLES
                   if (minval(xl(e,:,1)).gt.2.0
      &                .and.maxval(xl(e,:,1)).lt.2.1) then
