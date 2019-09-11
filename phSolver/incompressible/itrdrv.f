@@ -336,15 +336,13 @@ c ----  End of LES initial condition
         if(ierrcalc.eq.1 .or. ioybar.eq.1) then ! we need ybar for error too
           if (ivort == 1) then
             irank2ybar=18 ! bumped by 1 to add Q
+            if (iRANS.eq.-5) irank2ybar = irank2ybar+1 ! add omega for SST k-omega model
             allocate(ybar(nshg,irank2ybar)) ! more space for vorticity if requested
           else
             irank2ybar=13
+            if (iRANS.eq.-5) irank2ybar = irank2ybar+1 ! add omega for SST k-omega model
             allocate(ybar(nshg,irank2ybar))
           endif
-          if (iRANS.eq.-5) then
-            irank2ybar = irank2ybar+1 ! add omega for SST k-omega model
-          endif
-          allocate(ybar(nshg,irank2ybar))
           ybar = zero ! Initialize ybar to zero, which is essential
         endif
 

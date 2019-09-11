@@ -384,6 +384,7 @@ c        call openFiles()
                    BC(stgSurf(n),3)=uBar(n,1)+uPrime(n,1)            
                    BC(stgSurf(n),4)=uBar(n,2)+uPrime(n,2)            
                    BC(stgSurf(n),5)=uBar(n,3)+uPrime(n,3)
+                   if (iRANS.eq.-1) BC(stgSurf(n),7)=sclr1
                    if (iRANS.eq.-5) then
                      if (iSTGSSTMeth.eq.1) then
                         BC(stgSurf(n),7)=0.5*nu*sclr2
