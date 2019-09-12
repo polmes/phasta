@@ -149,7 +149,7 @@ c     accumulate sum of sons to the fathers
          tmpStatsf = zero
          tmpStatsft = zero
          tmpKeqf = zero
-         tmpStatsft = zero
+         tmpKeqft = zero
          do i = 1,nshg
             ifathi=ifath(i)
             if (n.le.iConsStressSz) then

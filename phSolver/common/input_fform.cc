@@ -338,6 +338,7 @@ int input_fform(phSolver::Input& inp)
         }
         turbvari.iSTGSSTMeth=(int)inp.GetValue("STG SST Method");
         turbvar.STGSSTuTau=(double)inp.GetValue("STG SST uTau"); 
+        turbvar.STGSSTnut=(double)inp.GetValue("STG SST Eddy Viscosity Factor"); 
         turbvar.STGdesol=(double)inp.GetValue("STG Energy Distance Tolerance");   
         vector<double> readDist;
         readDist = inp.GetValue("Energy Spectrum at Distances");

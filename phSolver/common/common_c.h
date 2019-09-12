@@ -159,6 +159,7 @@ extern "C" {
     double sstU;
     double sstL;
     double STGSSTuTau;
+    double STGSSTnut;
   } turbvar ;
 
   extern struct {

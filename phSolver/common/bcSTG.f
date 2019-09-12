@@ -387,7 +387,7 @@ c        call openFiles()
                    if (iRANS.eq.-1) BC(stgSurf(n),7)=sclr1
                    if (iRANS.eq.-5) then
                      if (iSTGSSTMeth.eq.1) then
-                        BC(stgSurf(n),7)=0.5*nu*sclr2
+                        BC(stgSurf(n),7)=STGSSTnut*nu*sclr2
                      elseif (iSTGSSTMeth.eq.2) then
                         BC(stgSurf(n),7)=sclr1
                      endif

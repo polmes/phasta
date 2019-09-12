@@ -66,7 +66,7 @@ c from different modules
      &                   nlist, nintf(MAXTOP), ddesConsts(2),
      &                   STGDelBL, STGUo, STGModeGrow, STGMeshGrow, 
      &                   STGeps, STGdesol, STGdes(3), dist, sstU, sstL,
-     &                   STGSSTuTau
+     &                   STGSSTuTau, STGSSTnut
         common /turbvari/iRANS, iLES, iDNS, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
      &                   ierrsmooth, iramp, idwalmode,
