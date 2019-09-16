@@ -273,7 +273,8 @@ c    Kay-Epsilon and Kay-Omega
 c    IDDES
       real*8 delta, hmax, hwn, rdt, EV, fdt, fB, fdtilde,
      &       alpha, fe, Psi, fe1, fe2, ft, fl, rdl, ct,
-     &       cl, visc, ctnFct
+     &       cl, visc, ctnFct, xcenter, fb2, alpha2, cf,
+     &       utau, retau
 
 c    For Debug
       real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
@@ -450,7 +451,27 @@ c               dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
                fdt = one-tanh((8.00d0*rdt)**3)
                alpha = 0.25000d0-dwall(e)/hmax
                fB = min(two*exp(-9.0000000000000000d0*alpha**2), one)
-               fdtilde = max((one-fdt), fB)
+               if (iLocInterface.eq.0) then
+                  fdtilde = max((one-fdt), fB)
+               elseif (iLocInterface.eq.1) then
+                  xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                  tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
+                  tmp = tmp/10
+                  alpha2 = 0.25000d0-dwall(e)/tmp
+                  fB2 = min(two*exp(-9.0000000000000000d0*alpha2**2),one)
+                  fdtilde = fB2
+               elseif (iLocInterface.eq.2) then
+                  xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                  cf =  0.000016954*xcenter**2 ! Cf(x) for CRS flat plate with IDDES-SA
+     &                   - 0.000090025*xcenter+0.0038619
+                  utau = sqrt(cf*1.0**2/two) ! uTau=sqrt(Cf*Uinf^2/2) and Uinf=1
+                  retau = (0.01665*xcenter+0.16158)*utau/1.5d-5 ! ReTau=delta_995*uTau/nu
+                  tmp = 3.9*sqrt(retau) ! h+ = 3.9*sqrt(ReTau)
+                  tmp = tmp*1.5e-5/utau
+                  alpha2 = 0.25000d0-dwall(e)/tmp
+                  fB2 = min(two*exp(-9.0000000000000000d0*alpha2**2),one)
+                  fdtilde = fB2
+               endif
 C               fdtilde = fB
                if (alpha.ge.zero) then
                   fe1 = two*exp(-11.0900d0*alpha**2)

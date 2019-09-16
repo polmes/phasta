@@ -360,6 +360,9 @@ int input_fform(phSolver::Input& inp)
           turbvar.ddesConsts[i]=vec[i];
        }
     }
+    if (turbvari.irans<0 && turbvari.iles==-3) {
+       turbvari.iLocInterface = (int)inp.GetValue("IDDES RANS-LES Interface Location");
+    }
     if (turbvari.irans<0 && turbvari.iles<0)
       turbvar.DES_SA_hmin=(double)inp.GetValue("DES SA Minimum Edge Length");
 

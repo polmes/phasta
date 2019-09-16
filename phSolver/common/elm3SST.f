@@ -37,7 +37,8 @@
 c     DDES and IDDES variables
       real*8 dx, dy, dz, hmax, CDES, lLES, lRANS, qfac, dwallsqqfact,
      &       rd, fd, lDDES, hwn, delta, rdt, rdl, fl, ft, fe2, alphaI,
-     &       fe1, fe, fbarg, fb, fdt, lIDDES, kP3, lIDDESInv
+     &       fe1, fe, fbarg, fb, fdt, lIDDES, kP3, lIDDESInv, xcenter,
+     &       alphaI2, fb2, cf, utau, retau
 
 c     Density and molecular viscosity
       rho(:)=datmat(1,1,1)
@@ -176,14 +177,28 @@ c                 hwn is the local step in the wall normal direction
                   fbarg = two*exp(-9.0d0*alphaI**2)
                   fb = min(fbarg,one)
                   fdt = one-tanh((20.0d0*rdt)**3.0d0)
-                  fd = max((one-fdt),fb)
-                  lIDDES = fd*(one+fe)*lRANS+(one-fd)*lLES
-                  if (minval(xl(e,:,1)).gt.2.0
-     &                .and.maxval(xl(e,:,1)).lt.2.1) then
-                     if(minval(xl(e,:,3)).gt.1.0.and.maxval(xl(e,:,3)).lt.1.1) then
-                        !write(*,*) y,fd,fe,lRANS,lLES,lIDDES 
-                     endif
+                  if (iLocInterface.eq.0) then
+                     fd = max((one-fdt),fb)
+                  elseif (iLocInterface.eq.1) then
+                     xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                     tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
+                     tmp = tmp/10
+                     alphaI2 = 0.25000d0-dwall(e)/tmp
+                     fb2 = min(two*exp(-9.0000000000000000d0*alphaI2**2),one)
+                     fd = fb2
+                  elseif (iLocInterface.eq.2) then
+                     xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                     cf =  0.000016954*xcenter**2 ! Cf(x) for CRS flat plate with IDDES-SA
+     &                   - 0.000090025*xcenter+0.0038619
+                     utau = sqrt(cf*1.0**2/two) ! uTau=sqrt(Cf*Uinf^2/2) and Uinf=1
+                     retau = (0.01665*xcenter+0.16158)*utau/1.5d-5 ! ReTau=delta_995*uTau/nu
+                     tmp = 3.9*sqrt(retau) ! h+ = 3.9*sqrt(ReTau)
+                     tmp = tmp*1.5e-5/utau
+                     alphaI2 = 0.25000d0-dwall(e)/tmp
+                     fb2 = min(two*exp(-9.0000000000000000d0*alphaI2**2),one)
+                     fd = fb2
                   endif
+                  lIDDES = fd*(one+fe)*lRANS+(one-fd)*lLES
                endif
            endif
 
