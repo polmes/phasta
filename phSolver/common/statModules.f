@@ -34,6 +34,8 @@ c-----------------------------------------------------------------------
       real*8, allocatable, dimension (:,:) :: velbar
       real*8, allocatable, dimension (:,:) :: stsBar
       real*8, allocatable, dimension (:,:) :: stsBarKeq
+      real*8, allocatable, dimension (:,:) :: IDDESbar
+      real*8, allocatable, dimension (:,:) :: IDDESfung
 !      real*8, allocatable, dimension (:,:) :: velf
 !      real*8, allocatable, dimension (:,:) :: velftG
 !      real*8, allocatable, dimension (:,:) :: tmpStatsf

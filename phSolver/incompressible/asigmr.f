@@ -154,8 +154,9 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-      use     turbSA   ! access to d2wall and effvisc
+      use turbSA   ! access to d2wall and effvisc
       use eblock
+      use spanStats
       include "common.h"
       type (LocalBlkData) blk
 c
@@ -173,7 +174,8 @@ c
      &            rl(bsz,blk%s),              ql(bsz,blk%s,nsd),
      &            dwl(bsz,blk%n),             evl(bsz,blk%s),
      &            cfll(bsz,blk%s),            cfllold(bsz,blk%s),
-     &            gradVl(bsz,blk%s,nsdsq)            
+     &            gradVl(bsz,blk%s,nsdsq)
+        real*8    IDDESfunl(bsz,1)
 c        
         real*8    xmudmi(blk%e,blk%g) 
 #ifdef SP_LHS
@@ -217,15 +219,18 @@ c.... get the element residuals, LHS matrix, and preconditioner
 c
       rl = zero
       cfll = zero
+      if (ispanIDDES.eq.1) IDDESfunl = zero
+
       call e3Sclr  (blk,yl,      acl,     shp,
      &              shgl,    xl,      dwl,
      &              rl,      ql,      xSebe,   
      &              sgn, xmudmi,  cfll,
-     &              cfllold, evl, gradVl)
+     &              cfllold, evl, gradVl, IDDESfunl )
 c
 c.... assemble the residual
 c
         call local (blk,res,    rl,     ien,    1,  'scatter ')
+        call local (blk, IDDESfung, IDDESfunl, ien, 1, 'scatter ')
 c
 c.... assemble the CFL values.  cfl will contain the sum of
 c     all contributing integration points.  Will divide by

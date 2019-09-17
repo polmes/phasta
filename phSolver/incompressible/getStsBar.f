@@ -1,3 +1,6 @@
+c ------------------------------------------------------------------
+c     Update the spanwise average of the stresses and K equation
+c ------------------------------------------------------------------
       subroutine getStsBar(y, GradV, ilwork, nsons, ifath, iBC)
 
       use stats
@@ -208,7 +211,100 @@ c
 
       end subroutine getStsBar
 
+c ----------------------------------------------------------------------
+c     Update the spanwise average contribution of the IDDES functions
+c ----------------------------------------------------------------------
+      subroutine getIDDESbar
 
+      use spanStats
+      include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
+
+      dimension nsons(ndistsons), rinvsons(ndistsons),
+     &          ifath(nshg), ilwork(nlwork), iBC(nshg),
+     &          tmp(nshg,1), tmpft(nfath), tmpf(nfath)
+      integer periodicity, sumper
+
+      periodicity = 0
+      den = max(1,lstep-istartSpanAvg)
+      tfact = one/den
+
+c     Zero on processor periodic nodes so will not be added twice
+      do i=1, nshg
+         if(btest(iBC(i),10)) then
+           periodicity = 1
+           exit
+         endif
+      enddo
+      call drvAllreduceSumInt(periodicity,sumper)
+      if (sumper.gt.0) periodicity = 1
+
+      if (periodicity.eq.1.and.nohomog.eq.1) then
+         rinvsons = one/(nsons-one)   ! division is expensive
+      else
+         rinvsons = one/nsons   ! division is expensive
+      endif
+ 
+      tmp = IDDESfung
+      where(btest(iBC,10).or.btest(iBC,12))
+         tmp(:,1) = zero
+      endwhere
+
+      if (numpe.gt.1) then
+            numtask = ilwork(1)
+            itkbeg = 1 
+c     zero the nodes that are "solved" on the other processors  
+            do itask = 1, numtask
+               iacc   = ilwork (itkbeg + 2)
+               numseg = ilwork (itkbeg + 4)
+               if (iacc .eq. 0) then
+                  do is = 1,numseg
+                     isgbeg = ilwork (itkbeg + 3 + 2*is)
+                     lenseg = ilwork (itkbeg + 4 + 2*is)
+                     isgend = isgbeg + lenseg - 1 
+                     tmp(isgbeg:isgend,:) = zero
+                  enddo
+               endif
+               itkbeg = itkbeg + 4 + 2*numseg
+            enddo !itask
+      endif  ! numpe.gt.1
+
+c     accumulate sum of sons to the fathers
+      maxsz = 1
+      do n=1,maxsz
+         tmpf = zero
+         tmpft = zero
+         do i = 1,nshg
+            ifathi=ifath(i)
+            tmpf(ifathi) = tmpf(ifathi)+tmp(i,n)
+         enddo
+c     Now  the true fathers and serrogates combine results and update
+c     each other.
+         if(numpe .gt. 1) then
+            call drvAllreduceDP(tmpf, tmpft,nfath)
+         else
+            tmpft=tmpf
+         endif
+c     divide by # of sons to get average father for this step
+         if (ndistsons.eq.nfath) then
+            tmpft = tmpft * rinvsons
+         else if (ndistsons.eq.1) then
+            invtmp = rinvsons(1)
+            tmpft = tmpft * invtmp
+         endif
+c     add to current time and spanwise average
+         if (myrank.eq.master) then
+            IDDESbar(:,n)=tfact*tmpft+(one-tfact)*IDDESbar(:,n)
+         endif
+       enddo
+
+
+      end subroutine getIDDESbar
+
+c --------------------------------------------------------------------
+c     Write the stresses and K equation statistics to file
+c --------------------------------------------------------------------
       subroutine wstsBar(ifail)
 
       use spanStats
@@ -231,15 +327,7 @@ c
       if((itwmod.gt.0) .or. (irscale.ge.0)
      &   .or. (ispanAvg.eq.1)) then
            do i=1,nfath      
-             if (iConsStress.eq.0) then 
-               write (irstou,*) stsBar(i,1),stsBar(i,2),stsBar(i,3),
-     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6)
-             else
-               write (irstou,*) stsBar(i,1),stsBar(i,2),stsBar(i,3),
-     &                          stsBar(i,4),stsBar(i,5),stsBar(i,6),
-     &                          stsBar(i,7),stsBar(i,8),stsBar(i,9)
-
-             endif
+             write (irstou,*) (stsBar(i,j),j=1,iConsStressSz)
            enddo
       endif
       close (irstou)
@@ -271,10 +359,7 @@ c
 !      write (irstou,*) nfath, lstep
       if((ispanAvg.eq.1).and.(iKeq.eq.1)) then
         do i=1,nfath            
-          write (irstou,*) stsBarKeq(i,1),stsBarKeq(i,2),stsBarKeq(i,3),
-     &                     stsBarKeq(i,4),stsBarKeq(i,5),stsBarKeq(i,6),
-     &                     stsBarKeq(i,7),stsBarKeq(i,8),stsBarKeq(i,9),
-     &                     stsBarKeq(i,10)
+          write (irstou,*) (stsBarKeq(i,j),j=1,10)
         enddo
       endif
       close (irstou)
@@ -284,3 +369,33 @@ c
 996   call error ('stsBarKeq  ','opening ', irstou)
 
       end subroutine wstsBarKeq
+
+      subroutine wIDDESbar(ifail)
+
+      use spanStats
+      include "common.h"
+
+      character*25 fname1,fmt1
+      character*5 cname
+      integer itmp, irstou
+    
+      itmp = 1
+      if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+      write (fmt1,"('(''IDDESbar.'',i',i1,',1x)')") itmp
+      write (fname1,fmt1) lstep
+      fname1 = trim(fname1) // cname(myrank+1)
+      open (unit=irstou, file=fname1, status='unknown',
+     &     err=996)
+
+      if((ispanAvg.eq.1).and.(ispanIDDES.eq.1)) then
+        do i=1,nfath
+          write (irstou,*) (IDDESbar(i,j),j=1,1)
+        enddo              
+      endif
+      close (irstou)
+      
+      return
+      
+996   call error ('IDDESbar  ','opening ', irstou)
+
+      end subroutine wIDDESbar

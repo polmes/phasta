@@ -559,6 +559,7 @@ c
       use local_mass
       use eblock
       use turbSA
+      use spanStats
 c
       include "common.h"
       type (LocalBlkData) blk
@@ -666,6 +667,7 @@ c.... -------------------->   interior elements   <--------------------
 c
         res    = zero
         spmass = zero
+        if (ispanIDDES.eq.1) IDDESfung = zero
 
         if (lhs .eq. 1) then
            lhsS   = zero

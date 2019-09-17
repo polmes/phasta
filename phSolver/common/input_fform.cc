@@ -974,12 +974,16 @@ int input_fform(phSolver::Input& inp)
          if((string)inp.GetValue("TKE Transport Equation Terms") == "True") {
            turbvari.iKeq = 1;
          } else { turbvari.iKeq = 0; }
+         if ((string)inp.GetValue("Spanwise IDDES Functions") == "True") {
+           turbvari.ispanIDDES = 1;
+         } else { turbvari.ispanIDDES = 0; }
     } else {
          turbvari.ispanAvg = 0;
          turbvari.istartSpanAvg = 0;
          turbvari.ispanAvgWPer = 0;
          turbvari.iConsStress = 0;
          turbvari.iKeq = 0;
+         turbvari.ispanIDDES = 0;
     }
     
     if( tpturb != 0 ){

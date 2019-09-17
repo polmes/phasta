@@ -214,7 +214,7 @@ c
      &                          yl,        dxidx,     rmu,
      &                          u1,        u2,        u3,   xl,
      &                          srcR,      srcL,      uMod,
-     &                          srcRat,    cfll, gradVl ) 
+     &                          srcRat,    cfll, gradVl, IDDESfun ) 
 
 
 c-----------------------------------------------------------------------
@@ -275,6 +275,7 @@ c    IDDES
      &       alpha, fe, Psi, fe1, fe2, ft, fl, rdl, ct,
      &       cl, visc, ctnFct, xcenter, fb2, alpha2, cf,
      &       utau, retau
+      real*8 IDDESfun(blk%e,1)
 
 c    For Debug
       real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
@@ -472,6 +473,7 @@ c               dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
                   fB2 = min(two*exp(-9.0000000000000000d0*alpha2**2),one)
                   fdtilde = fB2
                endif
+               IDDESfun(e,1) = fdtilde
 C               fdtilde = fB
                if (alpha.ge.zero) then
                   fe1 = two*exp(-11.0900d0*alpha**2)
@@ -497,13 +499,6 @@ c                  write(*,*) dOld,dwall(e),hmax,hwn,delta,
 c     &                       rdt,fdt,alpha,fB,fe1,ft,
 c     &                       rdl,fl,fe2,Psi,fe
 c               endif
-c =========    for debug
-c               rd = SclrNN*saKappaP2Inv/dwallsqqfact
-c               fd = one-tanh((8.0000000000000000d0*rd)**3)
-c               dwallDDES(e) = dwall(e)-fd*max(zero,dwall(e)-0.325*hmax)
-c               diffD(e) = dwallDDES(e) - dwallIDDES(e)
-c               dwall(e) = dwallIDDES(e)
-c =========    end for debug            
             endif
 c --------- End of IDDES Model Implementation
 

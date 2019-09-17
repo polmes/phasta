@@ -378,6 +378,8 @@ c ----  End of LES initial condition
           allocate(yphbar(1,1,1))
         endif
 
+        if (ispanIDDES.eq.1) allocate(IDDESfung(nhsg,1))
+
 !!!!!!!!!!!!!!!!!!!
 !END Init output fields
 !!!!!!!!!!!!!!!!!!
@@ -1053,6 +1055,9 @@ c...  dump TIME SERIES
                  call getvel (yold,     ilwork, iBC,
      &                        nsons,    ifath)
                  call getStsBar(yold, GradV, ilwork, nsons, ifath, iBC)
+                 if (ispanIDDES.eq.1) then 
+                   call getIDDESbar(ilwork, nsons, ifath, iBC)
+                 endif
             endif
 
             if((irscale.ge.0).and.(myrank.eq.master)) then
@@ -1135,6 +1140,8 @@ c .. write out the instantaneous solution
           endif
 
           if(iSTG.eq.1) deallocate(STGrnd)
+
+          if (ispanIDDES.eq.1) deallocate(IDDESfung)
 
 !         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
          if(myrank.eq.0)  then
@@ -2627,7 +2634,7 @@ cc ....   Write velbar if wanted
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
           endif
-
+c
 cc ....   Write span avg stats if wanted
           if (ispanAvg.eq.1) then
 !             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -2650,7 +2657,7 @@ cc ....   Write span avg stats if wanted
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
           endif
-
+c
 cc ....   Write span avg stats for K eq if wanted
           if (ispanAvg.eq.1.and.iKeq.eq.1) then
 !             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -2673,7 +2680,29 @@ cc ....   Write span avg stats for K eq if wanted
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
           endif
+c
+cc ....   Write span avg IDDES functions
+          if (ispanAvg.eq.1.and.ispanIDDES.eq.1) then
+!             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+             if(myrank.eq.0)  then
+              tcormr1 = TMRC()
+             endif
 
+             if (myrank.eq.master) then
+                ifail = 0
+                call wIDDESbar(ifail) ! write the IDDESbar field to a file
+                if (ifail.ne.0) write(*,*)
+     &                            'Problem writing IDDESbar to file'
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+             if(myrank.eq.0)  then
+              tcormr2 = TMRC()
+              write(6,*) 'Time to write IDDESbar to the disks = ',
+     &        tcormr2-tcormr1
+             endif
+             if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+          endif
+c
 cc ..... Write the eddy viscosity when doing a dynamic Smag LES (iLES=1)
           if (iLES.gt.0) then
 !            if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)

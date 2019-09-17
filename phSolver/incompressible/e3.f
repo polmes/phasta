@@ -265,7 +265,7 @@ c###################################################################
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
      &                     sgn,     xmudmi,  cfll,
-     &                   cfllold, evl, gradVl )
+     &                   cfllold, evl, gradVl, IDDESfunl )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -314,16 +314,16 @@ c     beta_i as a "correction" to the velocity.  In calculating the
 c     stabilization terms, the new "modified" velocity (u_i-beta_i) is 
 c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.
-      real*8    uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
-c
-      integer   aa, b
+      real*8 uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
+      real*8 IDDESfun(blk%e,1), IDDESfunl(bsz,1)
+      integer aa, b
 
 c
 c... needed for CFL calculation
 c
       real*8 rmu_tmp(blk%e), rho_tmp(blk%e), cfll_loc(blk%e)
       rmu_tmp = zero
-      rho_tmp = 1.0  
+      rho_tmp = 1.0 
 c     
 c.... local reconstruction of diffusive flux vector
 c
@@ -361,7 +361,7 @@ c
      &                  ql,          rLS,       SrcR,
      &                  SrcL,        uMod,      dwl,
      &                  diffus,      srcRat,
-     &                  cfllold, gradVl )
+     &                  cfllold, gradVl, IDDESfun )
 c
 c.... compute CFL number
 c
@@ -417,9 +417,18 @@ c
         endif
 
 c
+c.... Acculumate IDDES functions for each integration point
+        if (ispanIDDES.eq.1) then
+          IDDESfunl(1:blk%e,:) = IDDESfunl(1:blk%e,:) + IDDESfun(:,:)
+        endif 
+
+c
 c.... end of integration loop
 c
       enddo
+c
+c.... Divide IDDEStmp by the number of integration points 
+      IDDESfunl = IDDESfunl/real(intqp)
 
 c
 c.... return

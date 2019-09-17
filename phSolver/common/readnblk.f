@@ -60,9 +60,9 @@ c
       character*10 cname2, cname2nd
       character*8 mach2
       character*30 fmt1
-      character*25 fmtv,fmts,fmtk
+      character*25 fmtv,fmts,fmtk,fmtI
       character*255 fname1,fnamer,fnamelr
-      character*25 fnamev,fnames,fnamek
+      character*25 fnamev,fnames,fnamek,fnameI
       character*255 warning
       integer igeomBAK, ibndc, irstin, ierr
       integer, target :: intfromfile(50) ! integers read from headers
@@ -836,6 +836,35 @@ cc
          endif
          if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of if for ispanAvg and iKeq for K eq terms
+cc
+cc.... Read the IDDESbar array if want spanwise average of IDDES functions
+cc
+      if (ispanAvg.eq.1.and.ispanIDDES.eq.1) then
+         if (myrank.eq.master) then 
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmtI,"('(''IDDESbar.'',i',i1,',1x)')") itmp
+           write (fnameI,fmtI) lstep
+           fnameI = trim(fnameI) // cname(myrank+1)
+           inquire(file=fnameI,exist=exlog)
+           if (exlog) then
+             allocate(IDDESbar(nfath,1))
+             open(unit=123,file=fnameI,status="old")
+             do i=1,nfath
+                read(123,*) (IDDESbar(i,j),j=1,1)
+             enddo
+             close(123)
+             write(*,*) 'Read IDDESbar from file ',fnameI
+           else ! did not find IDDESbar for current time step
+             write(*,*) 'IDDESbar not read from file, setting to zero'
+             allocate(IDDESbar(nfath,1),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate IDDESbar'
+             IDDESbar = zero
+           endif
+         endif
+         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+      endif ! end of if for ispanAvg and ispanIDDES for IDDES functions
 cc
 cc.... Read the cdelsq array if want running spanwise average and doing LES
 cc

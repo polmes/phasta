@@ -359,6 +359,7 @@ c
      &       rmu(blk%e),          ssq(blk%e)
       real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
       real*8 denominv(blk%e)
+      real*8 IDDESfun(blk%e,1)
       integer comp
 
 c
@@ -528,7 +529,7 @@ c
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,
      &                      xl,           srcR,      srcL,   uMod,
-     &                      srcRat,  cfll , gradVl)
+     &                      srcRat,  cfll , gradVl, IDDESfun )
        else
         srcRat = zero
         srcR   = zero

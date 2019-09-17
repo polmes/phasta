@@ -193,6 +193,7 @@ extern "C" {
     int iClipKWMeth;
     int iSTGSSTMeth;
     int iLocInterface;
+    int ispanIDDES;
 /*      int itwmod; */
 /*      double rtavei; */
 /*      int ierrcalc; */
