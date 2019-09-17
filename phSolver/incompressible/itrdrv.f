@@ -306,10 +306,11 @@ c ----- Read an initial condition for ordered meshes k,j,i
                 exit         
               endif
             enddo
-            kjiNum = nz*nyTot*(ix-1)+nz*(iy-1)+iz
+            kjiNum = nz*nyTot*(ix-1)+nz*(iy-1)+iz 
+            ijkNum = nx*nyTot*(iz-1)+nx*(iy-1)+ix
             if (iy.ne.-1) then 
-               yold(i,1:3) = ordIC(kjiNum,5:7)
-               yold(i,4) = ordIC(kjiNum,4)
+               yold(i,1:3) = ordIC(ijkNum,5:7)
+               yold(i,4) = ordIC(ijkNum,4)
             endif
           enddo
           deallocate(ypoints)
@@ -378,7 +379,7 @@ c ----  End of LES initial condition
           allocate(yphbar(1,1,1))
         endif
 
-        if (ispanIDDES.eq.1) allocate(IDDESfung(nhsg,1))
+        if (ispanIDDES.eq.1) allocate(IDDESfung(nshg,2))
 
 !!!!!!!!!!!!!!!!!!!
 !END Init output fields

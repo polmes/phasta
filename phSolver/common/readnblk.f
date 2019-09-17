@@ -545,7 +545,7 @@ c
               read(123,*) ny
               nfath = ny
               ndistsons = 1
-              point2nsons = 15000
+              point2nsons = 4800
               nsonmax=maxval(point2nsons)
               allocate(ypoints(ny))
               do i=1,ny

@@ -326,7 +326,7 @@ c-----------------------------------------------------------------------
      &                      ql,          rLS ,       SrcR,
      &                      SrcL,        uMod,      dwl,
      &                      diffus,      srcRat,
-     &                      cfll, gradVl )
+     &                      cfll, gradVl, IDDESfun )
 c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock

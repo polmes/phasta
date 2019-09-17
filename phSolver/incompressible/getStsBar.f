@@ -214,7 +214,7 @@ c
 c ----------------------------------------------------------------------
 c     Update the spanwise average contribution of the IDDES functions
 c ----------------------------------------------------------------------
-      subroutine getIDDESbar
+      subroutine getIDDESbar(ilwork, nsons, ifath, iBC)
 
       use spanStats
       include "common.h"
@@ -224,6 +224,7 @@ c ----------------------------------------------------------------------
       dimension nsons(ndistsons), rinvsons(ndistsons),
      &          ifath(nshg), ilwork(nlwork), iBC(nshg),
      &          tmp(nshg,1), tmpft(nfath), tmpf(nfath)
+      real*8 invtmp
       integer periodicity, sumper
 
       periodicity = 0
@@ -246,7 +247,7 @@ c     Zero on processor periodic nodes so will not be added twice
          rinvsons = one/nsons   ! division is expensive
       endif
  
-      tmp = IDDESfung
+      tmp(:,1) = IDDESfung(:,2)/IDDESfung(:,1)
       where(btest(iBC,10).or.btest(iBC,12))
          tmp(:,1) = zero
       endwhere
