@@ -40,7 +40,7 @@ c     DDES and IDDES variables
      &       rd, fd, lDDES, hwn, delta, rdt, rdl, fl, ft, fe2, alphaI,
      &       fe1, fe, fbarg, fb, fdt, lIDDES, kP3, lIDDESInv, xcenter,
      &       cf, utau, retau
-      real*8 IDDESfun(blk%e,nfun)
+      real*8 IDDESfun(blk%e,nfun) 
 c     Density and molecular viscosity
       rho(:)=datmat(1,1,1)
       rmu(:)=datmat(1,2,1)
