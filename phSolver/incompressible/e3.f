@@ -315,7 +315,7 @@ c     stabilization terms, the new "modified" velocity (u_i-beta_i) is
 c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.
       real*8 uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
-      real*8 IDDESfun(blk%e,1), IDDEStmp(blk%e,1), IDDESfunl(bsz,blk%s,2)
+      real*8 IDDESfun(blk%e,5), IDDEStmp(blk%e,5), IDDESfunl(bsz,blk%s,6)
       integer aa, b
 
 c
@@ -432,7 +432,7 @@ c.... Divide IDDEStmp by the number of integration points
       IDDEStmp = IDDEStmp/real(blk%g)
       do n=1,blk%s 
          IDDESfunl(1:blk%e,n,1) = one
-         IDDESfunl(1:blk%e,n,2) = IDDEStmp(1:blk%e,1)
+         IDDESfunl(1:blk%e,n,2:6) = IDDEStmp(1:blk%e,1:5)
       enddo
 
 c

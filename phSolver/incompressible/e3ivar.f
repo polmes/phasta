@@ -359,7 +359,7 @@ c
      &       rmu(blk%e),          ssq(blk%e)
       real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
       real*8 denominv(blk%e)
-      real*8 IDDESfun(blk%e,1)
+      real*8 IDDESfun(blk%e,5)
       integer comp
 
 c

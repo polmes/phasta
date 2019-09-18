@@ -275,7 +275,7 @@ c    IDDES
      &       alpha, fe, Psi, fe1, fe2, ft, fl, rdl, ct,
      &       cl, visc, ctnFct, xcenter, fb2, alpha2, cf,
      &       utau, retau
-      real*8 IDDESfun(blk%e,1)
+      real*8 IDDESfun(blk%e,5)
 
 c    For Debug
       real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
@@ -450,17 +450,17 @@ c               dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
                rdt = EV*saKappaP2Inv/dwallsqqfact
                rd = SclrNN*saKappaP2Inv/dwallsqqfact
                fdt = one-tanh((8.00d0*rdt)**3)
-               alpha = 0.25000d0-dwall(e)/hmax
-               fB = min(two*exp(-9.0000000000000000d0*alpha**2), one)
                if (iLocInterface.eq.0) then
+                  alpha = 0.25000d0-dwall(e)/hmax
+                  fB = min(two*exp(-9.0000000000000000d0*alpha**2),one)
                   fdtilde = max((one-fdt), fB)
                elseif (iLocInterface.eq.1) then
                   xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
                   tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
                   tmp = tmp/10
-                  alpha2 = 0.25000d0-dwall(e)/tmp
-                  fB2 = min(two*exp(-9.0000000000000000d0*alpha2**2),one)
-                  fdtilde = fB2
+                  alpha = 0.25000d0-dwall(e)/tmp
+                  fB = min(two*exp(-9.0000000000000000d0*alpha**2),one)
+                  fdtilde = fB
                elseif (iLocInterface.eq.2) then
                   xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
                   cf =  0.000016954*xcenter**2 ! Cf(x) for CRS flat plate with IDDES-SA
@@ -469,9 +469,9 @@ c               dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
                   retau = (0.01665*xcenter+0.16158)*utau/1.5d-5 ! ReTau=delta_995*uTau/nu
                   tmp = 3.9*sqrt(retau) ! h+ = 3.9*sqrt(ReTau)
                   tmp = tmp*1.5e-5/utau
-                  alpha2 = 0.25000d0-dwall(e)/tmp
-                  fB2 = min(two*exp(-9.0000000000000000d0*alpha2**2),one)
-                  fdtilde = fB2
+                  alpha = 0.25000d0-dwall(e)/tmp
+                  fB = min(two*exp(-9.0000000000000000d0*alpha**2),one)
+                  fdtilde = fB
                endif
                IDDESfun(e,1) = fdtilde
 C               fdtilde = fB
@@ -484,6 +484,9 @@ C               fdtilde = fB
                rdl = visc*saKappaP2Inv/dwallsqqfact
                fl = tanh((cl**2*rdl)**10)
                fe2 = one-max(ft,fl)
+               IDDESfun(e,2) = fe1
+               IDDESfun(e,3) = fe2
+               IDDESfun(e,4) = fe
                tmp = (one-ctnFct*fv2)/fv1
                tmp = min(100.0d0, tmp)
                Psi = sqrt(tmp)
@@ -493,6 +496,7 @@ c               dOld = dwall(e)
 c               Psi=one
                dwall(e) = fdtilde*(one+fe)*dwall(e)
      &                    + (one-fdtilde)*0.325*Psi*delta
+               IDDESfun(e,5) = dwall(e)
 c               if (maxval(xl(e,:,1)).lt.0.06 .and. 
 c     &              maxval(xl(e,:,3)).lt.0.03) then
 c                  write(*,*) dOld,dwall(e),hmax,hwn,delta,
