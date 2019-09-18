@@ -379,7 +379,7 @@ c ----  End of LES initial condition
           allocate(yphbar(1,1,1))
         endif
 
-        if (ispanIDDES.eq.1) allocate(IDDESfung(nshg,6))
+        if (ispanIDDES.eq.1) allocate(IDDESfung(nshg,nfun+1))
 
 !!!!!!!!!!!!!!!!!!!
 !END Init output fields

@@ -236,8 +236,9 @@ c
 c-----------------------------------------------------------------------
       use turbSA
       use turbKE
-      use  spat_var_eps ! for spatially varying epsilon_ls
-      use  eblock
+      use spat_var_eps ! for spatially varying epsilon_ls
+      use eblock
+      use spanStats
       include "common.h"
       type (LocalBlkData) blk
 c coming in      
@@ -275,7 +276,7 @@ c    IDDES
      &       alpha, fe, Psi, fe1, fe2, ft, fl, rdl, ct,
      &       cl, visc, ctnFct, xcenter, fb2, alpha2, cf,
      &       utau, retau
-      real*8 IDDESfun(blk%e,5)
+      real*8 IDDESfun(blk%e,nfun)
 
 c    For Debug
       real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
@@ -734,7 +735,8 @@ c        no source term in the LHS yet
               srcL(:)=zero
               call elm3SST(blk, yl, xl, shg, kay, omega,
      &                    dwall,   dwl, gradV,
-     &                    srcRat,  srcR,     srcJac,  add)
+     &                    srcRat,  srcR, srcJac, add,
+     &                    IDDESfun)
               if(isclr.eq.1) srcL = srcJac(:,1)
               if(isclr.eq.2) srcL = srcJac(:,4)
               if (isclr .eq. 2) then

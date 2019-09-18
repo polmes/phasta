@@ -175,7 +175,8 @@ c
      &            dwl(bsz,blk%n),             evl(bsz,blk%s),
      &            cfll(bsz,blk%s),            cfllold(bsz,blk%s),
      &            gradVl(bsz,blk%s,nsdsq)
-        real*8    IDDESfunl(bsz,blk%s,6)
+        real*8    IDDESfunl(bsz,blk%s,nfun+1)
+        integer   isz
 c        
         real*8    xmudmi(blk%e,blk%g) 
 #ifdef SP_LHS
@@ -230,7 +231,10 @@ c
 c.... assemble the residual
 c
         call local (blk,res,    rl,     ien,    1,  'scatter ')
-        call local (blk, IDDESfung, IDDESfunl, ien, 6, 'scatter ')
+        if (ispanIDDES.eq.1) then
+          isz = nfun+1
+          call local (blk, IDDESfung, IDDESfunl, ien, isz, 'scatter ')
+        endif
 c
 c.... assemble the CFL values.  cfl will contain the sum of
 c     all contributing integration points.  Will divide by

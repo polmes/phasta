@@ -848,16 +848,16 @@ cc
            fnameI = trim(fnameI) // cname(myrank+1)
            inquire(file=fnameI,exist=exlog)
            if (exlog) then
-             allocate(IDDESbar(nfath,1))
+             allocate(IDDESbar(nfath,nfun))
              open(unit=123,file=fnameI,status="old")
              do i=1,nfath
-                read(123,*) (IDDESbar(i,j),j=1,1)
+                read(123,*) (IDDESbar(i,j),j=1,nfun)
              enddo
              close(123)
              write(*,*) 'Read IDDESbar from file ',fnameI
            else ! did not find IDDESbar for current time step
              write(*,*) 'IDDESbar not read from file, setting to zero'
-             allocate(IDDESbar(nfath,1),STAT=IERR1)
+             allocate(IDDESbar(nfath,nfun),STAT=IERR1)
              if(IERR1.gt.0) write(*,*) 
      &                 'Not enough space to allocate IDDESbar'
              IDDESbar = zero

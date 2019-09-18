@@ -1,9 +1,10 @@
       subroutine elm3SST (blk, yl, xl, shg, kay , omega ,
      &     dwall, dwl, gradV,
-     &     srcRat1 , src1 , srcJac, add)
+     &     srcRat1 , src1 , srcJac, add, IDDESfun )
      
       use turbKW
       use eblock
+      use spanStats
       include "common.h"
       type (LocalBlkData) blk
 
@@ -38,8 +39,8 @@ c     DDES and IDDES variables
       real*8 dx, dy, dz, hmax, CDES, lLES, lRANS, qfac, dwallsqqfact,
      &       rd, fd, lDDES, hwn, delta, rdt, rdl, fl, ft, fe2, alphaI,
      &       fe1, fe, fbarg, fb, fdt, lIDDES, kP3, lIDDESInv, xcenter,
-     &       alphaI2, fb2, cf, utau, retau
-
+     &       cf, utau, retau
+      real*8 IDDESfun(blk%e,nfun)
 c     Density and molecular viscosity
       rho(:)=datmat(1,1,1)
       rmu(:)=datmat(1,2,1)
@@ -164,41 +165,48 @@ c                 hwn is the local step in the wall normal direction
                   dwallsqqfact = max(kappa**2*dwall(e)**2*qfac,1.0d-12)
                   rdt = (mut/Rou)/dwallsqqfact
                   rdl = (nu)/dwallsqqfact
+                  fdt = one-tanh((20.0d0*rdt)**3.0d0)
                   fl = tanh((5.0d0**2*rdl)**10.0d0)
                   ft = tanh((1.870d0**2*rdt)**3.0d0)
                   fe2 = one-max(ft,fl)
-                  alphaI = 0.250d0-dwall(e)/hmax ! y=dwall(e) above
+                  if (iLocInterface.eq.0) then
+                    alphaI = 0.250d0-dwall(e)/hmax ! y=dwall(e) above
+                    fbarg = two*exp(-9.0d0*alphaI**2)
+                    fb = min(fbarg,one)
+                    fd = max((one-fdt),fb)
+                  elseif (iLocInterface.eq.1) then
+                    xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                    tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
+                    tmp = tmp/10
+                    alphaI = 0.250d0-dwall(e)/tmp
+                    fbarg = two*exp(-9.0d0*alphaI**2)
+                    fb = min(fbarg,one)
+                    fd = fb
+                  elseif (iLocInterface.eq.2) then
+                    xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                    cf =  0.000016954*xcenter**2 ! Cf(x) for CRS flat plate with IDDES-SA
+     &                   - 0.000090025*xcenter+0.0038619
+                    utau = sqrt(cf*1.0**2/two) ! uTau=sqrt(Cf*Uinf^2/2) and Uinf=1
+                    retau = (0.01665*xcenter+0.16158)*utau/1.5d-5 ! ReTau=delta_995*uTau/nu
+                    tmp = 3.9*sqrt(retau) ! h+ = 3.9*sqrt(ReTau)
+                    tmp = tmp*1.5e-5/utau
+                    alphaI = 0.250d0-dwall(e)/tmp
+                    fbarg = two*exp(-9.0d0*alphaI**2)
+                    fb = min(fbarg,one)
+                    fd = fb
+                  endif
                   if (alphaI.ge.zero) then
                      fe1 = two*exp(-11.09d0*alphaI**2)
                   else
                      fe1 = two*exp(-9.0d0*alphaI**2)
                   endif
                   fe = fe2*max((fe1-one),zero)
-                  fbarg = two*exp(-9.0d0*alphaI**2)
-                  fb = min(fbarg,one)
-                  fdt = one-tanh((20.0d0*rdt)**3.0d0)
-                  if (iLocInterface.eq.0) then
-                     fd = max((one-fdt),fb)
-                  elseif (iLocInterface.eq.1) then
-                     xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
-                     tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
-                     tmp = tmp/10
-                     alphaI2 = 0.25000d0-dwall(e)/tmp
-                     fb2 = min(two*exp(-9.0000000000000000d0*alphaI2**2),one)
-                     fd = fb2
-                  elseif (iLocInterface.eq.2) then
-                     xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
-                     cf =  0.000016954*xcenter**2 ! Cf(x) for CRS flat plate with IDDES-SA
-     &                   - 0.000090025*xcenter+0.0038619
-                     utau = sqrt(cf*1.0**2/two) ! uTau=sqrt(Cf*Uinf^2/2) and Uinf=1
-                     retau = (0.01665*xcenter+0.16158)*utau/1.5d-5 ! ReTau=delta_995*uTau/nu
-                     tmp = 3.9*sqrt(retau) ! h+ = 3.9*sqrt(ReTau)
-                     tmp = tmp*1.5e-5/utau
-                     alphaI2 = 0.25000d0-dwall(e)/tmp
-                     fb2 = min(two*exp(-9.0000000000000000d0*alphaI2**2),one)
-                     fd = fb2
-                  endif
                   lIDDES = fd*(one+fe)*lRANS+(one-fd)*lLES
+                  IDDESfun(e,1) = fd
+                  IDDESfun(e,2) = fe1
+                  IDDESfun(e,3) = fe2
+                  IDDESfun(e,4) = fe
+                  IDDESfun(e,5) = lIDDES
                endif
            endif
 

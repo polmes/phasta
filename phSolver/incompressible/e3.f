@@ -277,6 +277,7 @@ c C. H. Whiting,  Winter 1999.   (advective form formulation)
 c----------------------------------------------------------------------
 c
       use eblock
+      use spanStats
       include "common.h"
       type (LocalBlkData) blk
 
@@ -315,7 +316,7 @@ c     stabilization terms, the new "modified" velocity (u_i-beta_i) is
 c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.
       real*8 uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
-      real*8 IDDESfun(blk%e,5), IDDEStmp(blk%e,5), IDDESfunl(bsz,blk%s,6)
+      real*8 IDDESfun(blk%e,nfun), IDDEStmp(blk%e,nfun), IDDESfunl(bsz,blk%s,nfun+1)
       integer aa, b
 
 c
@@ -429,12 +430,14 @@ c
       enddo
 c
 c.... Divide IDDEStmp by the number of integration points
-      IDDEStmp = IDDEStmp/real(blk%g)
-      do n=1,blk%s 
-         IDDESfunl(1:blk%e,n,1) = one
-         IDDESfunl(1:blk%e,n,2:6) = IDDEStmp(1:blk%e,1:5)
-      enddo
-
+      if (ispanIDDES.eq.1) then
+        IDDEStmp = IDDEStmp/real(blk%g)
+        isz = nfun+1
+        do n=1,blk%s 
+           IDDESfunl(1:blk%e,n,1) = one
+           IDDESfunl(1:blk%e,n,2:isz) = IDDEStmp(1:blk%e,1:nfun)
+        enddo
+      endif
 c
 c.... return
 c

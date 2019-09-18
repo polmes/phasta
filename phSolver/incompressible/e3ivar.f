@@ -330,6 +330,7 @@ c-----------------------------------------------------------------------
 c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
+      use spanStats
       include "common.h"
       type (LocalBlkData) blk
 
@@ -359,7 +360,7 @@ c
      &       rmu(blk%e),          ssq(blk%e)
       real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
       real*8 denominv(blk%e)
-      real*8 IDDESfun(blk%e,5)
+      real*8 IDDESfun(blk%e,nfun)
       integer comp
 
 c
