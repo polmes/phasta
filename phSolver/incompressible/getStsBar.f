@@ -223,7 +223,7 @@ c ----------------------------------------------------------------------
 
       dimension nsons(ndistsons), rinvsons(ndistsons),
      &          ifath(nshg), ilwork(nlwork), iBC(nshg),
-     &          tmp(nshg,5), tmpft(nfath), tmpf(nfath)
+     &          tmp(nshg,nfun), tmpft(nfath), tmpf(nfath)
       real*8 invtmp
       integer periodicity, sumper
 
@@ -252,12 +252,16 @@ c     Zero on processor periodic nodes so will not be added twice
       tmp(:,3) = IDDESfung(:,4)/IDDESfung(:,1)
       tmp(:,4) = IDDESfung(:,5)/IDDESfung(:,1)
       tmp(:,5) = IDDESfung(:,6)/IDDESfung(:,1)
+      tmp(:,6) = IDDESfung(:,7)/IDDESfung(:,1)
+      tmp(:,7) = IDDESfung(:,8)/IDDESfung(:,1)
       where(btest(iBC,10).or.btest(iBC,12))
          tmp(:,1) = zero
          tmp(:,2) = zero
          tmp(:,3) = zero
          tmp(:,4) = zero
          tmp(:,5) = zero
+         tmp(:,6) = zero
+         tmp(:,7) = zero
       endwhere
 
       if (numpe.gt.1) then
@@ -280,7 +284,7 @@ c     zero the nodes that are "solved" on the other processors
       endif  ! numpe.gt.1
 
 c     accumulate sum of sons to the fathers
-      maxsz = 5
+      maxsz = nfun
       do n=1,maxsz
          tmpf = zero
          tmpft = zero
@@ -398,7 +402,7 @@ c
 
       if((ispanAvg.eq.1).and.(ispanIDDES.eq.1)) then
         do i=1,nfath
-          write (irstou,*) (IDDESbar(i,j),j=1,5)
+          write (irstou,*) (IDDESbar(i,j),j=1,nfun)
         enddo              
       endif
       close (irstou)

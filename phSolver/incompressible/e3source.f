@@ -493,11 +493,13 @@ C               fdtilde = fB
 c               Psi = 1.0
                fe = max((fe1-one),zero)*Psi*fe2
                IDDESfun(e,4) = fe
+               IDDESfun(e,5) = rdl
+               IDDESfun(e,6) = rdt
 c               dOld = dwall(e)
 c               Psi=one
                dwall(e) = fdtilde*(one+fe)*dwall(e)
      &                    + (one-fdtilde)*0.325*Psi*delta
-               IDDESfun(e,5) = dwall(e)
+               IDDESfun(e,7) = dwall(e)
 c               if (maxval(xl(e,:,1)).lt.0.06 .and. 
 c     &              maxval(xl(e,:,3)).lt.0.03) then
 c                  write(*,*) dOld,dwall(e),hmax,hwn,delta,

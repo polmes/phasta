@@ -36,7 +36,7 @@ c-----------------------------------------------------------------------
       real*8, allocatable, dimension (:,:) :: stsBarKeq
       real*8, allocatable, dimension (:,:) :: IDDESbar
       real*8, allocatable, dimension (:,:) :: IDDESfung
-      integer, parameter :: nfun = 5 
+      integer, parameter :: nfun = 7 
 !      real*8, allocatable, dimension (:,:) :: velf
 !      real*8, allocatable, dimension (:,:) :: velftG
 !      real*8, allocatable, dimension (:,:) :: tmpStatsf
