@@ -338,8 +338,9 @@ c ----   Some constants for IDDES model
          if (iles.eq.-3) then
             visc = datmat(1,2,1) ! value of the viscosity 
             ctnFct = saCb1*saKappaP2Inv/(saCw1*0.424) ! for IDDES
-            ct = ddesConsts(2) !1.63  
-            cl = ddesConsts(1) !3.55
+            fe1max = ddesConsts(1)
+            ct = ddesConsts(3) !1.63  
+            cl = ddesConsts(2) !3.55
 c            if(myrank.eq.master) write(*,*) "cl=",cl," ct=",ct
          endif
 
@@ -477,9 +478,9 @@ c               dwallsqqfact = max(dwall(e)**2*qfac,1.0d-12)
                IDDESfun(e,1) = fdtilde
 C               fdtilde = fB
                if (alpha.ge.zero) then
-                  fe1 = two*exp(-11.0900d0*alpha**2)
+                  fe1 = fe1max*exp(-11.0900d0*alpha**2)
                elseif (alpha.lt.zero) then
-                  fe1 = two*exp(-9.00d0*alpha**2)
+                  fe1 = fe1max*exp(-9.00d0*alpha**2)
                endif
                ft = tanh((ct**2*rdt)**3)
                rdl = visc*saKappaP2Inv/dwallsqqfact

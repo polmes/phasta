@@ -63,7 +63,7 @@ c from different modules
      &                   rmutarget, pzero,  wtavei, 
      &                   dtavei, dke,  fwr1, flump, DES_SA_hmin,
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
-     &                   nlist, nintf(MAXTOP), ddesConsts(2),
+     &                   nlist, nintf(MAXTOP), ddesConsts(3),
      &                   STGDelBL, STGUo, STGModeGrow, STGMeshGrow, 
      &                   STGeps, STGdesol, STGdes(3), dist, sstU, sstL,
      &                   STGSSTuTau, STGSSTnut

@@ -356,7 +356,7 @@ int input_fform(phSolver::Input& inp)
 
     if (turbvari.iles==-3) {
        vec = inp.GetValue("IDDES Constants");
-       for(i=0; i<2 ; i++){
+       for(i=0; i<3 ; i++){
           turbvar.ddesConsts[i]=vec[i];
        }
     }

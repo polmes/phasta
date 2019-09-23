@@ -39,14 +39,15 @@ c     DDES and IDDES variables
       real*8 dx, dy, dz, hmax, CDES, lLES, lRANS, qfac, dwallsqqfact,
      &       rd, fd, lDDES, hwn, delta, rdt, rdl, fl, ft, fe2, alphaI,
      &       fe1, fe, fbarg, fb, fdt, lIDDES, kP3, lIDDESInv, xcenter,
-     &       cf, utau, retau, cl, ct
+     &       cf, utau, retau, cl, ct, fe1max
       real*8 IDDESfun(blk%e,nfun) 
 c     Density and molecular viscosity
       rho(:)=datmat(1,1,1)
       rmu(:)=datmat(1,2,1)
       if (iLES.eq.-3) then
-         cl = ddesConsts(1)
-         ct = ddesConsts(2)
+         fe1max = ddesConsts(1)
+         cl = ddesConsts(2)
+         ct = ddesConsts(3)
       endif
 
 c     Debug flag to do only advection diffusion problem
@@ -200,9 +201,9 @@ c                 hwn is the local step in the wall normal direction
                     fd = fb
                   endif
                   if (alphaI.ge.zero) then
-                     fe1 = two*exp(-11.09d0*alphaI**2)
+                     fe1 = fe1max*exp(-11.09d0*alphaI**2)
                   else
-                     fe1 = two*exp(-9.0d0*alphaI**2)
+                     fe1 = fe1max*exp(-9.0d0*alphaI**2)
                   endif
                   fe = fe2*max((fe1-one),zero)
                   lIDDES = fd*(one+fe)*lRANS+(one-fd)*lLES
