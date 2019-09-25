@@ -37,13 +37,13 @@ c-----------------------------------------------------------------------
       real*8, allocatable, dimension (:,:) :: IDDESbar
       real*8, allocatable, dimension (:,:) :: IDDESfung
       integer, parameter :: nfun = 7 
+      integer, allocatable, dimension (:) :: locifath
 !      real*8, allocatable, dimension (:,:) :: velf
 !      real*8, allocatable, dimension (:,:) :: velftG
 !      real*8, allocatable, dimension (:,:) :: tmpStatsf
 !      real*8, allocatable, dimension (:,:) :: tmpStatsftG
 !      real*8, allocatable, dimension (:,:) :: tmpKeqf
 !      real*8, allocatable, dimension (:,:) :: tmpKeqftG
-      integer, allocatable, dimension (:) :: locifath
 !      integer, allocatable, dimension (:) :: ifathG
 !      integer, allocatable, dimension (:) :: rcounts
 !      integer, allocatable, dimension (:) :: displs

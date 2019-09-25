@@ -1060,7 +1060,7 @@ c...  dump TIME SERIES
                    call getIDDESbar(ilwork, nsons, ifath, iBC)
                  endif
               elseif (ispanAvgMeth.eq.2) then
-                 call getvel2(yold, ilwork, iBC, nsons, ifath)
+                 call getvel2(yold, ilwork, iBC, ifath)
                  call getStsBar(yold, GradV, ilwork, nsons, ifath, iBC)
                  if (ispanIDDES.eq.1) then 
                    call getIDDESbar(ilwork, nsons, ifath, iBC)
