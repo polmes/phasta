@@ -316,6 +316,48 @@ c     add to current time and spanwise average
       end subroutine getIDDESbar
 
 c --------------------------------------------------------------------
+c     Write the flow statistics to file
+c --------------------------------------------------------------------
+      subroutine wvelbar(ifail)
+
+      use spanStats
+      include "common.h"
+  
+      character*20 fname1,fmt1
+      character*5 cname
+      integer itmp, irstou, nisz, njsz
+
+      itmp = 1
+      if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+      write (fmt1,"('(''velbar.'',i',i1,',1x)')") itmp
+      write (fname1,fmt1) lstep
+      fname1 = trim(fname1) // cname(myrank+1)
+c     
+      open (unit=irstou, file=fname1, status='unknown',
+     &     err=996)
+      
+      if (ispanAvgMeth.eq.1) then
+         nisz = nfath
+         njsz = ndof
+      elseif (ispanAvgMeth.eq.2) then
+         nisz = locnfath
+         njsz = ndof+1
+      endif
+
+      do i=1,nisz      
+        write (irstou,*) (velbar(i,j),j=1,njsz)
+      enddo
+
+      close (irstou)
+
+      return
+
+996   call error ('velbar  ','opening ', irstou)
+
+      end subroutine wvelbar
+
+
+c --------------------------------------------------------------------
 c     Write the stresses and K equation statistics to file
 c --------------------------------------------------------------------
       subroutine wstsBar(ifail)

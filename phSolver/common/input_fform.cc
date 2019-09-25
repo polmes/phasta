@@ -962,6 +962,7 @@ int input_fform(phSolver::Input& inp)
     turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
     if((string)inp.GetValue("Compute Spanwise Average") == "True") {
          turbvari.ispanAvg = 1;
+         turbvari.ispanAvgMeth = inp.GetValue("Spanwise Average Method");
          turbvari.istartSpanAvg = inp.GetValue("Start Spanwise Average");
          turbvari.ispanAvgWPer = inp.GetValue("Velbar Write Period");
          if((string)inp.GetValue("Spanwise Conservative Stresses") == "True") {
@@ -979,6 +980,7 @@ int input_fform(phSolver::Input& inp)
          } else { turbvari.ispanIDDES = 0; }
     } else {
          turbvari.ispanAvg = 0;
+         turbvari.ispanAvgMeth = 1;
          turbvari.istartSpanAvg = 0;
          turbvari.ispanAvgWPer = 0;
          turbvari.iConsStress = 0;

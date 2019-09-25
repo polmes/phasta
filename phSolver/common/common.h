@@ -75,7 +75,7 @@ c from different modules
      &                   ispanAvgWPer, iKeq, iConsStress, iConsStressSz,
      &                   irunTave, irunTaveSt, iclipCdelsq, iSAlowRe,
      &                   iClipKW, iSAIC, iClipKWMeth, iSTGSSTMeth,
-     &                   iLocInterface, ispanIDDES
+     &                   iLocInterface, ispanIDDES, ispanAvgMeth
         common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,

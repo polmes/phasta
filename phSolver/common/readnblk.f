@@ -80,6 +80,9 @@ c
       integer ny, nx
       real*8, allocatable :: ypoints(:)
       logical exlog
+      integer minifath, maxifath, ifathrng, ifathi, ind, c,
+     &        sumlocnfath, match
+      logical, allocatable, dimension (:) :: isonpart
 
       real*8, allocatable :: tpW(:,:),tpW2(:,:),tpC(:,:),tpC2(:,:)
 
@@ -535,8 +538,6 @@ c
      
             nsonmax=maxval(point2nsons)
 
-            if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
-            if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
             inquire(file="dynSmagY.dat",exist=exlog)
             if(exlog) then
               if(myrank.eq.master) write(*,*) 
@@ -560,15 +561,49 @@ c
               enddo
               deallocate(ypoints)
               close(123)
-              if(myrank.eq.master) write(*,*) 'Number of fathers is: ',nfath
-              if(myrank.eq.master) write(*,*) 'Number of sons is: ',nsonmax
             else
                if(myrank.eq.master) 
      &               write(*,*) 'Did not read file dynSmagY.dat'
             endif
-c            do i=1,nshg
-c               write(*,*) point2x(i,1),point2x(i,2),point2x(i,3),point2ifath(i)
-c            enddo
+
+            if (myrank.eq.master) write(*,*) 
+     &                 'Number of total fathers is: ',nfath
+            if (myrank.eq.master) write(*,*) 
+     &                 'Number of sons is: ',nsonmax
+
+c           Find number of local fathers for each process and make a local version of ifath
+            if (ispanAvgMeth.eq.2) then
+               minifath = minval(point2ifath)
+               maxifath = maxval(point2ifath)
+               ifathrng = maxifath-minifath+1
+               allocate(isonpart(ifathrng))
+               isonpart = .false.
+               locnfath = 0
+               do ii=1,nshg
+                  ifathi=point2ifath(ii)
+                  do jj=minifath,maxifath
+                     if (ifathi.eq.jj) then
+                        ind = jj-minifath+1
+                        if (.not.isonpart(ind)) then
+                           isonpart(ind) = .true.
+                           locnfath = locnfath+1
+                        endif
+                     endif
+                  enddo
+               enddo
+               deallocate(isonpart)
+               allocate(locifath(nshg))
+               c = 1
+               do ii=0,ifathrng-1
+                  match = minifath+ii
+                  if (any(point2ifath.eq.match)) then
+                    where (point2ifath.eq.match)
+                       locifath(:) = c
+                    endwhere
+                    c = c+1
+                  endif
+               enddo
+            endif
          else  ! this is the case where there is no homogeneity
                ! therefore ever node is a father (too itself).  sonfath
                ! (a routine in NSpre) will set this up but this gives
@@ -752,6 +787,7 @@ cc
 cc.... Read the velbar array if want spanwise average
 cc
       if (ispanAvg.eq.1) then
+       if (ispanAvgMeth.eq.1) then ! all of the reduced field is handled my master process
          if (myrank.eq.master) then 
            itmp = 1
            if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
@@ -775,7 +811,32 @@ cc
              velbar = zero
            endif
          endif
-         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+       elseif (ispanAvgMeth.eq.2) then ! each process only carries average of nodes it owns
+         itmp = 1
+         if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+         write (fmtv,"('(''velbar.'',i',i1,',1x)')") itmp
+         write (fnamev,fmtv) lstep
+         fnamev = trim(fnamev) // cname(myrank+1)
+         inquire(file=fnamev,exist=exlog)
+         if (exlog) then
+           allocate(velbar(locnfath,ndof+1))
+           open(unit=123,file=fnamev,status="old")
+           do i=1,locnfath
+              read(123,*) (velbar(i,j),j=1,(ndof+1))
+           enddo
+           close(123)
+           if (myrank.eq.master) write(*,*) 
+     &                 'Read velbar from file ',fnamev
+         else ! did not find velbar for current time step
+           if (myrank.eq.master) write(*,*) 
+     &                 'Velbar not read from file, setting to zero'
+           allocate(velbar(locnfath,ndof+1),STAT=IERR1)
+           if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate velbar'
+           velbar = zero
+         endif 
+       endif
+       if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of ispanAvg for velbar
 
 cc

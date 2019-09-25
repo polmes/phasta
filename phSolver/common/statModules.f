@@ -43,12 +43,12 @@ c-----------------------------------------------------------------------
 !      real*8, allocatable, dimension (:,:) :: tmpStatsftG
 !      real*8, allocatable, dimension (:,:) :: tmpKeqf
 !      real*8, allocatable, dimension (:,:) :: tmpKeqftG
-!      integer, allocatable, dimension (:) :: locifath
+      integer, allocatable, dimension (:) :: locifath
 !      integer, allocatable, dimension (:) :: ifathG
 !      integer, allocatable, dimension (:) :: rcounts
 !      integer, allocatable, dimension (:) :: displs
 
-!      integer locnfath, stacksz
+      integer locnfath !, stacksz
 
       end module spanStats
 
