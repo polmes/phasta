@@ -843,6 +843,7 @@ cc
 cc.... Read the stsbar array if want spanwise average and stats
 cc
       if (ispanAvg.eq.1) then
+       if (ispanAvgMeth.eq.1) then
          if (myrank.eq.master) then 
            itmp = 1
            if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
@@ -866,12 +867,37 @@ cc
              stsBar = zero
            endif
          endif
-         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+       elseif (ispanAvgMeth.eq.2) then
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmts,"('(''stsbar.'',i',i1,',1x)')") itmp
+           write (fnames,fmts) lstep
+           fnames = trim(fnames) // cname(myrank+1)
+           inquire(file=fnames,exist=exlog)
+           if (exlog) then
+             allocate(stsBar(locnfath,iConsStressSz))
+             open(unit=123,file=fnames,status="old")
+             do i=1,locnfath
+                read(123,*) (stsBar(i,j),j=1,iConsStressSz)
+             enddo
+             close(123)
+             if (myrank.eq.master) write(*,*) 'Read stsbar from file ',fnames
+           else ! did not find velbar for current time step
+             if (myrank.eq.master) write(*,*) 
+     &                 'stsbar not read from file, setting to zero'
+             allocate(stsBar(locnfath,iConsStressSz),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*)
+     &                    'Not enough space to allocate stsBar'
+             stsBar = zero
+           endif
+       endif
+       if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of ispanAvg for stsbar
 cc
 cc.... Read the stsbarKeq array if want spanwise average and K eq stats
 cc
       if (ispanAvg.eq.1.and.iKeq.eq.1) then
+       if (ispanAvgMeth.eq.1) then
          if (myrank.eq.master) then 
            itmp = 1
            if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
@@ -895,7 +921,32 @@ cc
              stsBarKeq = zero
            endif
          endif
-         if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+       elseif (ispanAvgMeth.eq.2) then
+           itmp = 1
+           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
+           write (fmtk,"('(''stsbarKeq.'',i',i1,',1x)')") itmp
+           write (fnamek,fmtk) lstep
+           fnamek = trim(fnamek) // cname(myrank+1)
+           inquire(file=fnamek,exist=exlog)
+           if (exlog) then
+             allocate(stsBarKeq(locnfath,10))
+             open(unit=123,file=fnamek,status="old")
+             do i=1,locnfath
+                read(123,*) (stsBarKeq(i,j),j=1,10)
+             enddo
+             close(123)
+             if (myrank.eq.master) write(*,*) 
+     &                     'Read stsbarKeq from file ',fnamek
+           else ! did not find stsbarKeq for current time step
+             if (myrank.eq.master) write(*,*) 
+     &               'stsBarKeq not read from file, setting to zero'
+             allocate(stsBarKeq(locnfath,10),STAT=IERR1)
+             if(IERR1.gt.0) write(*,*) 
+     &                 'Not enough space to allocate stsBarKeq'
+             stsBarKeq = zero
+           endif
+       endif
+       if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of if for ispanAvg and iKeq for K eq terms
 cc
 cc.... Read the IDDESbar array if want spanwise average of IDDES functions

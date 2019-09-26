@@ -367,7 +367,7 @@ c --------------------------------------------------------------------
   
       character*20 fname1,fmt1
       character*5 cname
-      integer itmp, irstou
+      integer itmp, irstou, nisz
 
       itmp = 1
       if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
@@ -377,14 +377,17 @@ c --------------------------------------------------------------------
 c     
       open (unit=irstou, file=fname1, status='unknown',
      &     err=996)
-              
-!      write (irstou,*) nfath, lstep
-      if((itwmod.gt.0) .or. (irscale.ge.0)
-     &   .or. (ispanAvg.eq.1)) then
-           do i=1,nfath      
-             write (irstou,*) (stsBar(i,j),j=1,iConsStressSz)
-           enddo
+      
+      if (ispanAvgMeth.eq.1) then
+         nisz = nfath
+      elseif (ispanAvgMeth.eq.2) then
+         nisz = locnfath
       endif
+
+      do i=1,nisz   
+         write (irstou,*) (stsBar(i,j),j=1,iConsStressSz)
+      enddo
+      
       close (irstou)
 
       return
@@ -400,7 +403,7 @@ c
   
       character*25 fname1,fmt1
       character*5 cname
-      integer itmp, irstou
+      integer itmp, irstou, nisz
 
       itmp = 1
       if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
@@ -410,13 +413,17 @@ c
 c     
       open (unit=irstou, file=fname1, status='unknown',
      &     err=996)
-              
-!      write (irstou,*) nfath, lstep
-      if((ispanAvg.eq.1).and.(iKeq.eq.1)) then
-        do i=1,nfath            
-          write (irstou,*) (stsBarKeq(i,j),j=1,10)
-        enddo
+      
+      if (ispanAvgMeth.eq.1) then
+         nisz = nfath
+      elseif (ispanAvgMeth.eq.2) then
+         nisz = locnfath
       endif
+
+      do i=1,nisz        
+        write (irstou,*) (stsBarKeq(i,j),j=1,10)
+      enddo
+       
       close (irstou)
 
       return
@@ -454,3 +461,167 @@ c
 996   call error ('IDDESbar  ','opening ', irstou)
 
       end subroutine wIDDESbar
+
+c ===============================================================================
+c    getvel2
+c ===============================================================================
+      subroutine getStsBar2 (y, GradV, ilwork, iBC, ifath)
+
+      use spanStats
+      use stats
+
+      include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
+
+      dimension tmpStats(nshg,iConsStressSz),  tmpStatsf(locnfath),
+     &          y(nshg,ndof), tmpKeq(nshg,10), tmpKeqf(locnfath),
+     &          ifath(nshg),
+     &          ilwork(nlwork), iBC(nshg), GradV(nshg,nsdsq)
+      real*8 den, tfact
+      real*8 tmp(nshg),S11(nshg),S22(nshg),S33(nshg),
+     &       S12(nshg),S13(nshg),S23(nshg), invtmp
+      real*4 tmpcount(nshg), locnsons(locnfath)
+      integer maxsz
+
+      den = max(1,lstep-istartSpanAvg)
+      tfact = one/den
+      tmpcount = one
+
+c     Assign the conservative statistics to a temporary array
+      if (iConsStress.eq.1) then 
+         tmpStats(:,1:3) = stsVelInst(:,:)
+         tmpStats(:,4:9) = stsVelSqInst(:,:) ! 11,22,33,12,23,31
+      else
+         tmpStats(:,1) = y(:,1)*y(:,1)
+         tmpStats(:,2) = y(:,2)*y(:,2)
+         tmpStats(:,3) = y(:,3)*y(:,3)
+         tmpStats(:,4) = y(:,1)*y(:,2)
+         tmpStats(:,5) = y(:,1)*y(:,3)
+         tmpStats(:,6) = y(:,2)*y(:,3)
+      endif
+      if (iKeq.eq.1) then
+         tmpKeq(:,1) = y(:,4)*y(:,1) ! p*u1
+         tmpKeq(:,2) = y(:,4)*y(:,2) ! p*u2
+         tmpKeq(:,3) = y(:,4)*y(:,3) ! p*u3
+         tmp = y(:,1)**2 + y(:,2)**2 + y(:,3)**2
+         tmpKeq(:,4) = y(:,1)*tmp ! u_i*u_j*u_j, i=1
+         tmpKeq(:,5) = y(:,2)*tmp ! u_i*u_j*u_j, i=2
+         tmpKeq(:,6) = y(:,3)*tmp ! u_i*u_j*u_j, i=3
+         if (ipord.eq.1) then
+           S11 = GradV(:,1)
+           S22 = GradV(:,5)
+           S33 = GradV(:,9)
+           S12 = 0.50d0*(GradV(:,2)+GradV(:,4))
+           S13 = 0.50d0*(GradV(:,3)+GradV(:,7))
+           S23 = 0.50d0*(GradV(:,6)+GradV(:,8))
+         endif
+         tmpKeq(:,7) = y(:,1)*S11+y(:,2)*S12+y(:,3)*S13 ! u_j*S_ij, i=1
+         tmpKeq(:,8) = y(:,1)*S12+y(:,2)*S22+y(:,3)*S23 ! u_j*S_ij, i=2
+         tmpKeq(:,9) = y(:,1)*S13+y(:,2)*S23+y(:,3)*S33 ! u_j*S_ij, i=3
+         tmpKeq(:,10) = S11**2 + S22**2 + S33**2 + 
+     &                  two*(S12**2 + S13**2 + S23**2) ! S_ij*S_ij
+      endif
+
+c     
+c     zero on processor periodic nodes so that they will not be added twice
+c    
+      if (iConsStress.eq.1) then
+        where(btest(iBC,10).or.btest(iBC,12))
+          tmpStats(:,1)=zero
+          tmpStats(:,2)=zero
+          tmpStats(:,3)=zero
+          tmpStats(:,4)=zero
+          tmpStats(:,5)=zero
+          tmpStats(:,6)=zero
+          tmpStats(:,7)=zero
+          tmpStats(:,8)=zero
+          tmpStats(:,9)=zero
+          tmpcount(:) = zero
+        endwhere
+      else
+        where(btest(iBC,10).or.btest(iBC,12))
+          tmpStats(:,1)=zero
+          tmpStats(:,2)=zero
+          tmpStats(:,3)=zero
+          tmpStats(:,4)=zero
+          tmpStats(:,5)=zero
+          tmpStats(:,6)=zero
+          tmpcount(:) = zero
+        endwhere
+      endif
+
+      if (iKeq.eq.1) then
+        where(btest(iBC,10).or.btest(iBC,12))
+          tmpKeq(:,1)=zero
+          tmpKeq(:,2)=zero
+          tmpKeq(:,3)=zero
+          tmpKeq(:,4)=zero
+          tmpKeq(:,5)=zero
+          tmpKeq(:,6)=zero
+          tmpKeq(:,7)=zero
+          tmpKeq(:,8)=zero
+          tmpKeq(:,9)=zero
+          tmpKeq(:,10)=zero
+        endwhere
+      endif
+
+c     zero the nodes that are "solved" on the other processors  
+      if (numpe.gt.1) then
+         numtask = ilwork(1)
+         itkbeg = 1
+         do itask = 1, numtask
+            iacc   = ilwork (itkbeg + 2)
+            numseg = ilwork (itkbeg + 4)
+            if (iacc .eq. 0) then
+               do is = 1,numseg
+                  isgbeg = ilwork (itkbeg + 3 + 2*is)
+                  lenseg = ilwork (itkbeg + 4 + 2*is)
+                  isgend = isgbeg + lenseg - 1
+                  tmpStats(isgbeg:isgend,:) = zero
+                  if (iKeq.eq.1) then
+                    tmpKeq(isgbeg:isgend,:) = zero
+                  endif
+                  tmpcount(isgbeg:isgend) = zero
+               enddo
+            endif
+            itkbeg = itkbeg + 4 + 2*numseg
+         enddo !itask
+      endif  ! numpe.gt.1
+
+c     
+c     accumulate sum of sons to the fathers and accumulate onto velbar
+c
+      maxsz = iConsStressSz
+      if (iKeq.eq.1) maxsz = max(10,iConsStressSz)
+      do n=1,maxsz
+         tmpStatsf = zero
+         tmpKeqf = zero
+         locnsons = zero
+         do i = 1,nshg
+            ifathi = ifath(i)
+            ind = locifath(i)
+            if (n.le.iConsStressSz) then
+               tmpStatsf(ind) = tmpStatsf(ind) + tmpStats(i,n)
+            endif
+            if (iKeq.eq.1) then
+               tmpKeqf(ind) = tmpKeqf(ind) + tmpKeq(i,n)
+            endif
+            locnsons(ind) = locnsons(ind) + tmpcount(i)
+         enddo
+!         velf(:) = velf(:) / locnsons(:)
+!         where (locnsons.eq.zero)
+!            velf(:) = zero
+!         endwhere
+         if (n.le.iConsStressSz) then
+           stsBar(:,n)=tfact*tmpStatsf+(one-tfact)*stsBar(:,n)
+         endif
+         if (iKeq.eq.1) then
+           stsBarKeq(:,n)=tfact*tmpKeqf+(one-tfact)*stsBarKeq(:,n)
+         endif
+      enddo
+
+
+      end subroutine getStsBar2
+
+
