@@ -350,6 +350,12 @@ void countfieldstowriterestart()
     nfields++;
     nfields++;
   }
+ 
+  /* Homogeneous Direction Average Arrays */
+  if(turbvari.ispanAvg==1 && turbvari.ispanAvgMeth==2) {
+    nfields = nfields+2; // for velbar and stsbar
+    if(turbvari.iKeq==1) nfields++; // for K equation terms
+  }
 
   outpar.nsynciofieldswriterestart = nfields;
 

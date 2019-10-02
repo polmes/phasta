@@ -48,13 +48,16 @@ c
       real*8, target, allocatable :: BCinpread(:,:)
       real*8, target, allocatable :: cdelsqread(:,:)
       real*8, target, allocatable :: lesnutread(:,:)
+      real*8, target, allocatable :: velbarread(:,:)
+      real*8, target, allocatable :: stsbarread(:,:)
+      real*8, target, allocatable :: stsbarKread(:,:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
       integer, target, allocatable :: fncorpread(:)
       integer, target, allocatable :: nsonsread(:)
       integer fncorpsize
-      integer irandVars, iSTGsiz
+      integer irandVars, iSTGsiz, isz
       integer iVelbsiz, nfath2, nflow2, istssiz
       character*5 cname
       character*10 cname2, cname2nd
@@ -812,29 +815,26 @@ cc
            endif
          endif
        elseif (ispanAvgMeth.eq.2) then ! each process only carries average of nodes it owns
-         itmp = 1
-         if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
-         write (fmtv,"('(''velbar.'',i',i1,',1x)')") itmp
-         write (fnamev,fmtv) lstep
-         fnamev = trim(fnamev) // cname(myrank+1)
-         inquire(file=fnamev,exist=exlog)
-         if (exlog) then
-           allocate(velbar(locnfath,ndof+1))
-           open(unit=123,file=fnamev,status="old")
-           do i=1,locnfath
-              read(123,*) (velbar(i,j),j=1,(ndof+1))
-           enddo
-           close(123)
-           if (myrank.eq.master) write(*,*) 
-     &                 'Read velbar from file ',fnamev
-         else ! did not find velbar for current time step
-           if (myrank.eq.master) write(*,*) 
-     &                 'Velbar not read from file, setting to zero'
-           allocate(velbar(locnfath,ndof+1),STAT=IERR1)
-           if(IERR1.gt.0) write(*,*) 
-     &                 'Not enough space to allocate velbar'
-           velbar = zero
-         endif 
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &              c_char_'velbar' // char(0), 
+     &              c_loc(intfromfile), ithree, dataInt, iotype)
+         if(intfromfile(1).ne.0) then
+            allocate(velbarread(locnfath,ndof+1))
+            allocate(velbar(locnfath,ndof+1))
+            isz = locnfath*(ndof+1)
+            call phio_readdatablock(fhandle,
+     &                    c_char_'velbar' // char(0),
+     &                    c_loc(velbarread),isz, dataDbl,iotype)
+            velbar = velbarread
+            deallocate(velbarread)
+         else
+            if (myrank.eq.master) then
+              write(*,*) 'velbar not read and set to zero'
+            endif
+            allocate(velbar(locnfath,ndof+1))
+            velbar = zero
+         endif
        endif
        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of ispanAvg for velbar
@@ -868,28 +868,26 @@ cc
            endif
          endif
        elseif (ispanAvgMeth.eq.2) then
-           itmp = 1
-           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
-           write (fmts,"('(''stsbar.'',i',i1,',1x)')") itmp
-           write (fnames,fmts) lstep
-           fnames = trim(fnames) // cname(myrank+1)
-           inquire(file=fnames,exist=exlog)
-           if (exlog) then
-             allocate(stsBar(locnfath,iConsStressSz))
-             open(unit=123,file=fnames,status="old")
-             do i=1,locnfath
-                read(123,*) (stsBar(i,j),j=1,iConsStressSz)
-             enddo
-             close(123)
-             if (myrank.eq.master) write(*,*) 'Read stsbar from file ',fnames
-           else ! did not find velbar for current time step
-             if (myrank.eq.master) write(*,*) 
-     &                 'stsbar not read from file, setting to zero'
-             allocate(stsBar(locnfath,iConsStressSz),STAT=IERR1)
-             if(IERR1.gt.0) write(*,*)
-     &                    'Not enough space to allocate stsBar'
-             stsBar = zero
-           endif
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &              c_char_'stsbar' // char(0), 
+     &              c_loc(intfromfile), ithree, dataInt, iotype)
+         if(intfromfile(1).ne.0) then
+            allocate(stsbarread(locnfath,iConsStressSz))
+            allocate(stsbar(locnfath,iConsStressSz))
+            isz = locnfath*iConsStressSz
+            call phio_readdatablock(fhandle,
+     &                    c_char_'stsbar' // char(0),
+     &                    c_loc(stsbarread),isz, dataDbl,iotype)
+            stsbar = stsbarread
+            deallocate(stsbarread)
+         else
+            if (myrank.eq.master) then
+              write(*,*) 'stsbar not read and set to zero'
+            endif
+            allocate(stsbar(locnfath,iConsStressSz))
+            stsbar = zero
+         endif
        endif
        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of ispanAvg for stsbar
@@ -922,29 +920,26 @@ cc
            endif
          endif
        elseif (ispanAvgMeth.eq.2) then
-           itmp = 1
-           if (lstep .gt. 0) itmp = int(log10(float(lstep)))+1
-           write (fmtk,"('(''stsbarKeq.'',i',i1,',1x)')") itmp
-           write (fnamek,fmtk) lstep
-           fnamek = trim(fnamek) // cname(myrank+1)
-           inquire(file=fnamek,exist=exlog)
-           if (exlog) then
-             allocate(stsBarKeq(locnfath,10))
-             open(unit=123,file=fnamek,status="old")
-             do i=1,locnfath
-                read(123,*) (stsBarKeq(i,j),j=1,10)
-             enddo
-             close(123)
-             if (myrank.eq.master) write(*,*) 
-     &                     'Read stsbarKeq from file ',fnamek
-           else ! did not find stsbarKeq for current time step
-             if (myrank.eq.master) write(*,*) 
-     &               'stsBarKeq not read from file, setting to zero'
-             allocate(stsBarKeq(locnfath,10),STAT=IERR1)
-             if(IERR1.gt.0) write(*,*) 
-     &                 'Not enough space to allocate stsBarKeq'
-             stsBarKeq = zero
-           endif
+         intfromfile=0
+         call phio_readheader(fhandle,
+     &              c_char_'stsbarKeq' // char(0), 
+     &              c_loc(intfromfile), ithree, dataInt, iotype)
+         if(intfromfile(1).ne.0) then
+            allocate(stsbarKread(locnfath,10))
+            allocate(stsbarKeq(locnfath,10))
+            isz = locnfath*10
+            call phio_readdatablock(fhandle,
+     &                    c_char_'stsbarKeq' // char(0),
+     &                    c_loc(stsbarKread),isz, dataDbl,iotype)
+            stsbarKeq = stsbarKread
+            deallocate(stsbarKread)
+         else
+            if (myrank.eq.master) then
+              write(*,*) 'stsbarKeq not read and set to zero'
+            endif
+            allocate(stsbarKeq(locnfath,10))
+            stsbarKeq = zero
+         endif
        endif
        if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       endif ! end of if for ispanAvg and iKeq for K eq terms

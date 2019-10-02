@@ -2637,15 +2637,16 @@ cc ....   Write velbar if wanted
      &           tcormr2-tcormr1
                 endif
              elseif (ispanAvgMeth.eq.2) then
-                ifail = 0
-                call wvelbar(ifail) ! write the velbar field to a file
-                if (ifail.ne.0) write(*,*) 
-     &                            'Problem writing velbar to file'
-                if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 if(myrank.eq.0)  then
-                 tcormr2 = TMRC()
-                 write(6,*) 'Time to write velbar to the disks = ',
-     &           tcormr2-tcormr1
+                  tcormr1 = TMRC()
+                endif
+                icolms = ndof+1
+                call write_field(myrank,'a','velbar',6,velbar,'d',
+     &                           locnfath,icolms,lstep)
+                if(myrank.eq.0)  then
+                  tcormr2 = TMRC()
+                  write(6,*) 'Time to write velbar to the disks = ',
+     &                     tcormr2-tcormr1
                 endif
              endif
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -2670,15 +2671,15 @@ cc ....   Write span avg stats if wanted
      &           tcormr2-tcormr1
                 endif
              elseif (ispanAvgMeth.eq.2) then
-                ifail = 0
-                call wstsBar(ifail) ! write the velbar field to a file
-                if (ifail.ne.0) write(*,*) 
-     &                            'Problem writing velbar to file'
-                if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 if(myrank.eq.0)  then
-                 tcormr2 = TMRC()
-                 write(6,*) 'Time to write velbar to the disks = ',
-     &           tcormr2-tcormr1
+                  tcormr1 = TMRC()
+                endif
+                call write_field(myrank,'a','stsbar',6,stsbar,'d',
+     &                           locnfath,iConsStressSz,lstep)
+                if(myrank.eq.0)  then
+                  tcormr2 = TMRC()
+                  write(6,*) 'Time to write stsbar to the disks = ',
+     &                     tcormr2-tcormr1
                 endif
              endif
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -2703,15 +2704,15 @@ cc ....   Write span avg stats for K eq if wanted
      &           tcormr2-tcormr1
                 endif
              elseif (ispanAvgMeth.eq.2) then
-                ifail = 0
-                call wstsBarKeq(ifail) ! write the velbar field to a file
-                if (ifail.ne.0) write(*,*) 
-     &                            'Problem writing velbar to file'
-                if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
                 if(myrank.eq.0)  then
-                 tcormr2 = TMRC()
-                 write(6,*) 'Time to write velbar to the disks = ',
-     &           tcormr2-tcormr1
+                  tcormr1 = TMRC()
+                endif
+                call write_field(myrank,'a','stsbarKeq',9,stsbarKeq,'d',
+     &                           locnfath,10,lstep)
+                if(myrank.eq.0)  then
+                  tcormr2 = TMRC()
+                  write(6,*) 'Time to write stsbarKeq to the disks = ',
+     &                     tcormr2-tcormr1
                 endif
              endif
              if (numpe .gt. 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
