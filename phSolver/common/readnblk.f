@@ -620,7 +620,11 @@ c           Find number of local fathers for each process and make a local versi
                    allocate(delta(nshg))
                    do n=1,nshg
                       ifathi = point2ifath(n)
-                      ix = ifathi/nyFath+1
+                      if (mod(ifathi,nyFath).eq.0) then
+                         ix = ifathi/nyFath
+                      else
+                         ix = ifathi/nyFath+1
+                      endif
                       delta(n) = deltaread(ix)
                    enddo
                    deallocate(deltaread)

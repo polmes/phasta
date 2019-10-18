@@ -265,7 +265,7 @@ c###################################################################
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
      &                     sgn,     xmudmi,  cfll,
-     &                   cfllold, evl, gradVl, IDDESfunl, ien )
+     &                   cfllold, evl, gradVl, IDDESfunl, deltal )
 c                                                                      
 c----------------------------------------------------------------------
 c
