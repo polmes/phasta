@@ -36,6 +36,7 @@ c-----------------------------------------------------------------------
       real*8, allocatable, dimension (:,:) :: stsBarKeq
       real*8, allocatable, dimension (:,:) :: IDDESbar
       real*8, allocatable, dimension (:,:) :: IDDESfung
+      real*8, allocatable, dimension (:) :: delta
       integer, parameter :: nfun = 7 
       integer, allocatable, dimension (:) :: locifath
 !      real*8, allocatable, dimension (:,:) :: velf
@@ -48,7 +49,7 @@ c-----------------------------------------------------------------------
 !      integer, allocatable, dimension (:) :: rcounts
 !      integer, allocatable, dimension (:) :: displs
 
-      integer locnfath !, stacksz
+      integer locnfath, nxFath, nyFath !, stacksz
 
       end module spanStats
 

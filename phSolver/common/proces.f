@@ -441,6 +441,7 @@ c
         if (allocated(stsBar)) deallocate(stsBar)
         if (allocated(stsBarKeq)) deallocate(stsBarKeq)
         if (allocated(IDDESbar)) deallocate(IDDESbar)
+        if (allocated(delta)) deallocate(IDDESbar)
         if (allocated(cdelsq)) deallocate(cdelsq)
         deallocate(uold)
         deallocate(wnrm)

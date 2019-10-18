@@ -326,7 +326,7 @@ c-----------------------------------------------------------------------
      &                      ql,          rLS ,       SrcR,
      &                      SrcL,        uMod,      dwl,
      &                      diffus,      srcRat,
-     &                      cfll, gradVl, IDDESfun )
+     &                      cfll, gradVl, IDDESfun, deltal )
 c
       use spat_var_eps   ! use spatially-varying epl_ls
       use eblock
@@ -337,20 +337,20 @@ c
 c
 c  passed arrays
 c
-      dimension yl(bsz,blk%s,ndof),        acl(bsz,blk%s,ndof), 
-     &          Sclr(blk%e),                Sdot(blk%e),
-     &          gradS(blk%e,nsd),           shpfun(blk%e,blk%s),
-     &          shgl(blk%e,nsd,blk%s),       xl(bsz,blk%n,nsd),
-     &          shg(blk%e,blk%s,nsd),        dxidx(blk%e,nsd,nsd),
+      dimension yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof), 
+     &          Sclr(blk%e),            Sdot(blk%e),
+     &          gradS(blk%e,nsd),       shpfun(blk%e,blk%s),
+     &          shgl(blk%e,nsd,blk%s),  xl(bsz,blk%n,nsd),
+     &          shg(blk%e,blk%s,nsd),   dxidx(blk%e,nsd,nsd),
      &          WdetJ(blk%e),              
-     &          u1(blk%e),                  u2(blk%e),
-     &          u3(blk%e),                  divS(blk%e),
-     &          ql(bsz,blk%s,nsd),         rLS(blk%e),
-     &          SrcR(blk%e),                 SrcL(blk%e),
-     &          dwl(bsz,blk%n),            diffus(blk%e),
-     &          umod(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd),
-     &          divqi(blk%e) ,
-     &          cfll(bsz,blk%s),   gradVl(bsz,blk%s,nsdsq) 
+     &          u1(blk%e),              u2(blk%e),
+     &          u3(blk%e),              divS(blk%e),
+     &          ql(bsz,blk%s,nsd),      rLS(blk%e),
+     &          SrcR(blk%e),            SrcL(blk%e),
+     &          dwl(bsz,blk%n),         diffus(blk%e),
+     &          umod(blk%e,nsd),        Temp(blk%e),
+     &          divqi(blk%e) ,          xx(blk%e,nsd),
+     &          cfll(bsz,blk%s),        gradVl(bsz,blk%s,nsdsq)
 c
       dimension tmp(blk%e), srcRat(blk%e)
       real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),
@@ -360,7 +360,7 @@ c
      &       rmu(blk%e),          ssq(blk%e)
       real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
       real*8 denominv(blk%e)
-      real*8 IDDESfun(blk%e,nfun)
+      real*8 IDDESfun(blk%e,nfun), deltal(bsz,blk%s)
       integer comp
 
 c
@@ -530,7 +530,7 @@ c
      &                      shpfun,       shg,       yl,     dxidx,
      &                      diffus,       u1,        u2,     u3,
      &                      xl,           srcR,      srcL,   uMod,
-     &                      srcRat,  cfll , gradVl, IDDESfun )
+     &                      srcRat,  cfll , gradVl, IDDESfun, deltal )
        else
         srcRat = zero
         srcR   = zero

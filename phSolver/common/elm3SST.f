@@ -1,6 +1,6 @@
       subroutine elm3SST (blk, yl, xl, shg, kay , omega ,
      &     dwall, dwl, gradV,
-     &     srcRat1 , src1 , srcJac, add, IDDESfun )
+     &     srcRat1 , src1 , srcJac, add, IDDESfun, deltabl )
      
       use turbKW
       use eblock
@@ -15,7 +15,8 @@
      &       shg(blk%e,blk%s,nsd),   xl(bsz,blk%n,nsd),
      &       dxidx(blk%e,nsd,nsd),   WdetJ(blk%e),
      &       gradK(blk%e,nsd),    gradW(blk%e,nsd), !!check v
-     &       add(blk%e,nsd),  dwl(bsz,blk%n)
+     &       add(blk%e,nsd),  dwl(bsz,blk%n),
+     &       deltabl(blk%e)
       real*8 rmu(blk%e), rho(blk%e)
       real*8 srcRat(blk%e,2), src(blk%e,2)
       integer advdiff, e, n ! n is possibly redundant. clean up required
@@ -37,7 +38,7 @@
       real*8 yloc, ysum
 c     DDES and IDDES variables
       real*8 dx, dy, dz, hmax, CDES, lLES, lRANS, qfac, dwallsqqfact,
-     &       rd, fd, lDDES, hwn, delta, rdt, rdl, fl, ft, fe2, alphaI,
+     &       rd, fd, lDDES, hwn, deltaSGS, rdt, rdl, fl, ft, fe2, alphaI,
      &       fe1, fe, fbarg, fb, fdt, lIDDES, kP3, lIDDESInv, xcenter,
      &       cf, utau, retau, cl, ct, fe1max
       real*8 IDDESfun(blk%e,nfun) 
@@ -159,9 +160,9 @@ c          Do some computations for DDES and IDDES models if desired
                   hmax = max(dx,max(dy,dz)) ! definition in IDDES paper
 c                 hwn is the local step in the wall normal direction
                   hwn = maxval(dwl(e,:)) - minval(dwl(e,:))
-                  delta=min(hmax,max(0.15*dwall(e),max(0.15*hmax,hwn))) !Cw=0.15
+                  deltaSGS=min(hmax,max(0.15*dwall(e),max(0.15*hmax,hwn))) !Cw=0.15
                   CDES = 0.780d0*F1+0.610d0*(one-F1)
-                  lLES = CDES*delta
+                  lLES = CDES*deltaSGS
                   lRANS = sqrt(k)*omgInv/CmuKW
                   qfac = sqrt(
      &                gradV(e,1,1)**2+gradV(e,1,2)**2+gradV(e,1,3)**2
@@ -180,9 +181,9 @@ c                 hwn is the local step in the wall normal direction
                     fb = min(fbarg,one)
                     fd = max((one-fdt),fb)
                   elseif (iLocInterface.eq.1) then
-                    xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
-                    tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
-                    tmp = tmp/10
+                    !xcenter = (minval(xl(e,:,1))+maxval(xl(e,:,1)))*0.50
+                    !tmp = 0.01665*xcenter+0.16158 ! delta_995(x) for CRS flat plate with IDDES-SA
+                    tmp = deltabl(e)/10
                     alphaI = 0.250d0-dwall(e)/tmp
                     fbarg = two*exp(-9.0d0*alphaI**2)
                     fb = min(fbarg,one)

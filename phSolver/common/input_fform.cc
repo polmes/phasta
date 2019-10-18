@@ -311,6 +311,11 @@ int input_fform(phSolver::Input& inp)
          turbvar.sstU = 1.0;
          turbvar.sstL = 1.0;
       }
+      if ((string)inp.GetValue("Load Delta for RANS-LES Interface") == "True") {
+         turbvari.iloadDelta = 1;
+      } else {
+         turbvari.iloadDelta = 0;
+      }
     } else if ((string)inp.GetValue("Turbulence Model") == "DNS-WallFunc" ) {
       turbvari.irans = 0;
       turbvari.iles  = 0;

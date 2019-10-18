@@ -265,7 +265,7 @@ c###################################################################
      &                     shgl,    xl,      dwl,
      &                     rl,      ql,      xSebe,   
      &                     sgn,     xmudmi,  cfll,
-     &                   cfllold, evl, gradVl, IDDESfunl )
+     &                   cfllold, evl, gradVl, IDDESfunl, ien )
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -282,12 +282,12 @@ c
       type (LocalBlkData) blk
 
 c
-      real*8    yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof),       
-     &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
-     &            xl(bsz,blk%n,nsd),      rl(bsz,blk%s),          
+      real*8    yl(bsz,blk%s,ndof),      acl(bsz,blk%s,ndof),       
+     &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
+     &            xl(bsz,blk%n,nsd),     rl(bsz,blk%s),          
      &            ql(bsz,blk%s,nsd),     
-     &            dwl(bsz,blk%n),         cfll(bsz,blk%s),
-     &          cfllold(bsz,blk%s),     evl(bsz,blk%s),
+     &            dwl(bsz,blk%n),        cfll(bsz,blk%s),
+     &          cfllold(bsz,blk%s),      evl(bsz,blk%s),
      &          gradVl(bsz,blk%s,nsdsq)
 #ifdef SP_LHS
       real*4    xSebe(bsz,blk%s,blk%s)
@@ -316,7 +316,8 @@ c     stabilization terms, the new "modified" velocity (u_i-beta_i) is
 c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.
       real*8 uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
-      real*8 IDDESfun(blk%e,nfun), IDDEStmp(blk%e,nfun), IDDESfunl(bsz,blk%s,nfun+1)
+      real*8 IDDESfun(blk%e,nfun), IDDEStmp(blk%e,nfun), 
+     &       IDDESfunl(bsz,blk%s,nfun+1), deltal(bsz,blk%s)
       integer aa, b
 
 c
@@ -363,7 +364,7 @@ c
      &                  ql,          rLS,       SrcR,
      &                  SrcL,        uMod,      dwl,
      &                  diffus,      srcRat,
-     &                  cfllold, gradVl, IDDESfun )
+     &                  cfllold, gradVl, IDDESfun, deltal )
 c
 c.... compute CFL number
 c

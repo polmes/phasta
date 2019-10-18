@@ -51,6 +51,7 @@ c
       real*8, target, allocatable :: velbarread(:,:)
       real*8, target, allocatable :: stsbarread(:,:)
       real*8, target, allocatable :: stsbarKread(:,:)
+      real*8, target, allocatable :: deltaread(:)
       real*8 :: iotime
       integer, target, allocatable :: iperread(:), iBCtmpread(:)
       integer, target, allocatable :: ilworkread(:), nBCread(:)
@@ -606,6 +607,26 @@ c           Find number of local fathers for each process and make a local versi
                     c = c+1
                   endif
                enddo
+            endif
+            if (iloadDelta.eq.1) then
+               inquire(file="delta.dat",exist=exlog)
+               if(exlog) then
+                   open (unit=123,file="delta.dat",status="old")
+                   read(123,*) nxFath, nyFath
+                   allocate(deltaread(nxFath))
+                   do i=1,nxFath
+                      read(123,*) deltaread(i)
+                   enddo
+                   allocate(delta(nshg))
+                   do n=1,nshg
+                      ifathi = point2ifath(n)
+                      ix = ifathi/nyFath+1
+                      delta(n) = deltaread(ix)
+                   enddo
+                   deallocate(deltaread)
+               else
+                   write(*,*) 'Did not find delta.dat'
+               endif
             endif
          else  ! this is the case where there is no homogeneity
                ! therefore ever node is a father (too itself).  sonfath

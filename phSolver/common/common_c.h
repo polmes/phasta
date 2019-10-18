@@ -195,6 +195,7 @@ extern "C" {
     int iLocInterface;
     int ispanIDDES;
     int ispanAvgMeth;
+    int iloadDelta;
 /*      int itwmod; */
 /*      double rtavei; */
 /*      int ierrcalc; */

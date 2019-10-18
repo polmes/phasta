@@ -175,7 +175,7 @@ c
      &            dwl(bsz,blk%n),             evl(bsz,blk%s),
      &            cfll(bsz,blk%s),            cfllold(bsz,blk%s),
      &            gradVl(bsz,blk%s,nsdsq)
-        real*8    IDDESfunl(bsz,blk%s,nfun+1)
+        real*8    IDDESfunl(bsz,blk%s,nfun+1), deltal(bsz,blk%s)
         integer   isz
 c        
         real*8    xmudmi(blk%e,blk%g) 
@@ -202,7 +202,9 @@ c
      &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
         call local (blk,qres,   ql,     ien,    nsd,    'gather  ')
         call local (blk,GradV,  gradVl,    ien,    nsdsq,  'gather  ')
-
+        if (iloadDelta.eq.1) then 
+           call local (blk, delta,  deltal, ien, 1,  'gather  ')
+        endif
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call local(blk,effvisc, evl,    ien,    1,      'gather  ')
         endif
@@ -226,7 +228,7 @@ c
      &              shgl,    xl,      dwl,
      &              rl,      ql,      xSebe,   
      &              sgn, xmudmi,  cfll,
-     &              cfllold, evl, gradVl, IDDESfunl )
+     &              cfllold, evl, gradVl, IDDESfunl, deltal)
 c
 c.... assemble the residual
 c

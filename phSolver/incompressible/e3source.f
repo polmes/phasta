@@ -209,12 +209,13 @@ c
 
 
 
-      subroutine e3sourceSclr ( blk, Sclr,      Sdot,      gradS,
-     &                          dwl,       shape_funct,     shg,   
-     &                          yl,        dxidx,     rmu,
-     &                          u1,        u2,        u3,   xl,
-     &                          srcR,      srcL,      uMod,
-     &                          srcRat,    cfll, gradVl, IDDESfun ) 
+      subroutine e3sourceSclr ( blk, Sclr, Sdot, gradS,
+     &                          dwl, shape_funct,     shg,   
+     &                          yl,  dxidx,     rmu,
+     &                          u1,  u2,        u3,   xl,
+     &                          srcR, srcL,      uMod,
+     &                          srcRat, cfll, gradVl, IDDESfun, 
+     &                          deltal ) 
 
 
 c-----------------------------------------------------------------------
@@ -249,7 +250,8 @@ c coming in
      &        rmu(blk%e),           u1(blk%e),
      &        u2(blk%e),            u3(blk%e),
      &        xl(bsz,blk%n,nsd),    add(blk%e,nsd),
-     &        cfll(bsz,blk%s),      gradVl(bsz,blk%s,nsdsq)
+     &        cfll(bsz,blk%s),      gradVl(bsz,blk%s,nsdsq),
+     &        deltal(bsz,blk%s)
 c going out
       real*8  srcR(blk%e),          srcL(blk%e),
      &        uMod(blk%e,nsd),      cfl_loc(blk%e)
@@ -272,11 +274,11 @@ c    Kay-Epsilon and Kay-Omega
       real*8 small,epsilon_lsd_tmp
 
 c    IDDES
-      real*8 delta, hmax, hwn, rdt, EV, fdt, fB, fdtilde,
+      real*8 deltaSGS, hmax, hwn, rdt, EV, fdt, fB, fdtilde,
      &       alpha, fe, Psi, fe1, fe2, ft, fl, rdl, ct,
      &       cl, visc, ctnFct, xcenter, fb2, alpha2, cf,
      &       utau, retau
-      real*8 IDDESfun(blk%e,nfun)
+      real*8 IDDESfun(blk%e,nfun), deltabl(blk%e)
 
 c    For Debug
       real*8 diffD(blk%e), dwallDDES(blk%e), dwallIDDES(blk%e), dOld
@@ -386,7 +388,7 @@ c                 at that location in the mesh
 c                  hmax = 0.05 ! hard codes for channel flow test case
 c                 hwn is the local step in the wall normal direction
                   hwn = maxval(dwl(e,:)) - minval(dwl(e,:))
-                  delta=min(hmax,max(0.15*dwall(e),max(0.15*hmax,hwn))) !Cw=0.15 
+                  deltaSGS=min(hmax,max(0.15*dwall(e),max(0.15*hmax,hwn))) !Cw=0.15 
                endif
 
                if(iles .eq. -1) then  ! Original  DES97
@@ -499,7 +501,7 @@ c               Psi = 1.0
 c               dOld = dwall(e)
 c               Psi=one
                dwall(e) = fdtilde*(one+fe)*dwall(e)
-     &                    + (one-fdtilde)*0.325*Psi*delta
+     &                    + (one-fdtilde)*0.325*Psi*deltaSGS
                IDDESfun(e,7) = dwall(e)
 c               if (maxval(xl(e,:,1)).lt.0.06 .and. 
 c     &              maxval(xl(e,:,3)).lt.0.03) then
@@ -728,18 +730,20 @@ c
                  dwall(:) = dwall(:) + shape_funct(:,n) * dwl(1:blk%e,n)
               enddo
 
-              kay=zero
-              omega=zero
+              kay = zero
+              omega = zero
+              deltabl = zero
               do n = 1, blk%s
                  kay(:) = kay(:) + shape_funct(:,n) * yl(1:blk%e,n,6)
                  omega(:) = omega(:) + shape_funct(:,n) * yl(1:blk%e,n,7)
+                 deltabl(:) = deltabl(:) + shape_funct(:,n) * deltal(1:blk%e,n)
               enddo
 c        no source term in the LHS yet
               srcL(:)=zero
               call elm3SST(blk, yl, xl, shg, kay, omega,
      &                    dwall,   dwl, gradV,
      &                    srcRat,  srcR, srcJac, add,
-     &                    IDDESfun)
+     &                    IDDESfun, deltabl)
               if(isclr.eq.1) srcL = srcJac(:,1)
               if(isclr.eq.2) srcL = srcJac(:,4)
               if (isclr .eq. 2) then
