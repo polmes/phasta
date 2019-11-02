@@ -288,15 +288,15 @@ c
 c
 c.... assemble the residual
 c
-          call localT (blk,res,    rl(:,:,:,ith),     mien(iblk)%p,    nflow,  'scatter ')
+          call localThread (blk,res,    rl(:,:,:,ith),     mien(iblk)%p,    nflow,  'scatter ')
 c
 c.... assemble the statistics residual
 c
           if ( stsResFlg .eq. 1 ) then 
-            call localT( blk, stsVec, StsVecl(:,:,:,ith), mien(iblk)%p, nResDims, 'scatter ')
+            call localThread( blk, stsVec, StsVecl(:,:,:,ith), mien(iblk)%p, nResDims, 'scatter ')
           endif
           if ( ierrcalc .eq. 1 ) then
-            call localT (blk, rerr, rerrl(:,:,:,ith),  
+            call localThread (blk, rerr, rerrl(:,:,:,ith),  
      &                  mien(iblk)%p, 6+isurf, 'scatter ')
           endif
           nshl=blk%s  !nshl still used in these routines...temp solution

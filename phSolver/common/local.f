@@ -1,7 +1,7 @@
 !
 ! new threaded blocks only node for local and local x
 !
-      subroutine localT (blk,global, rlocal, ientmp, n, code)
+      subroutine localThread (blk,global, rlocal, ientmp, n, code)
 c
 c----------------------------------------------------------------------
 c
