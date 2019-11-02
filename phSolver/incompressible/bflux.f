@@ -67,6 +67,7 @@ c
       integer, allocatable, dimension(:)      :: map
       real*8, allocatable, dimension(:,:)     :: xmu2
       real*8, allocatable, dimension(:,:,:)     :: xl
+      real*8, allocatable, dimension(:,:)     :: dwl
 c
 c....  calculate the flux nodes
 c
@@ -122,6 +123,7 @@ c
          ngauss = nint(lcsyst)       
          allocate ( ien2(npro,nshl) )
          allocate ( xl(npro,nenl,nsd))
+         allocate ( dwl(npro,nenl))
          allocate ( xmu2(npro,maxsh))
          allocate ( map(npro) )
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
@@ -146,7 +148,9 @@ c
             call mapArray( mxmudmi(iblk)%p, xmu2,    map,
      &                     maxsh,           nprold)
             call mapArray( mxl(iblk)%p, xl,    map,
-     &                     maxsh,           nprold)
+     &                     nsd*blk%n,           nprold)
+            call mapArray( mdwl(iblk)%p, dwl,    map,
+     &                     blk%n,           nprold)
 c
 c
 c.... allocate the element matrices (though they're not needed)
@@ -159,7 +163,7 @@ c
             blk%e=npro
             call AsIGMR (blk,y,                    ac,
      &                   xl(1:npro,1:nenl,:),                    xmu2(1:npro,:),
-     &                   shp(lcsyst,1:nshl,:),
+     &                   dwl(1:npro,1:nenl),              shp(lcsyst,1:nshl,:),
      &                   shgl(lcsyst,:,1:nshl,:),
      &                   ien2(1:npro,:),       
      &                   flxres,               qres,
@@ -171,6 +175,7 @@ c
          endif
          deallocate ( ien2  )
          deallocate ( xl  )
+         deallocate ( dwl  )
          deallocate ( xmu2  )
          deallocate ( map   )
 c     

@@ -209,10 +209,10 @@ cdir$ ivdep
       
       include "common.h"
 #ifdef SP_LHS
-      real*4    xSebe(bsz,nshl,nshl)
+      real*4    xSebe(npro,nshl,nshl)
       real*4    lhsS(nnz_tot)    
 #else  
-      real*8    xSebe(bsz,nshl,nshl)
+      real*8    xSebe(npro,nshl,nshl)
       real*8    lhsS(nnz_tot)   
 #endif
       integer    ien(npro,nshl),    col(nshg+1), row(nshg*nnz)

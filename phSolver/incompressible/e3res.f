@@ -308,7 +308,7 @@ c
      &          Sclr(blk%e),       Sdot(blk%e),	gradS(blk%e,nsd),
      &          WdetJ(blk%e),      rLS(blk%e),	rho(blk%e),
      &          tauS(blk%e),       shpfun(blk%e,blk%s), src(blk%e), 
-     &          shg(blk%e,blk%s,3), rl(bsz,blk%s)
+     &          shg(blk%e,blk%s,3), rl(blk%e,blk%s)
       
       real*8    diffus(blk%e)
 c

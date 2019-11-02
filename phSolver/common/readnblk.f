@@ -485,7 +485,7 @@ c
           blk%s   = lcblkb(9,iblk)
           blk%e   = lcblkb(1,iblk+1) - iel
           allocate (mxlb(iblk)%p(blk%e,blk%n,nsd))
-          call localx(blk,point2x, mxlb(iblk)%p,mien(iblk)%p,nsd, 'gather  ')  ! push the data into permanent local
+          call localx(blk,point2x, mxlb(iblk)%p,mienb(iblk)%p,nsd, 'gather  ')  ! push the data into permanent local
       enddo
 c
 c  Read in the nsons and ifath arrays if needed
