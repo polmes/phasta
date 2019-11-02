@@ -80,7 +80,7 @@ c
          tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
          tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 c   
-         call volcon (blk,ith,y,          x,             tmpshp,              
+         call volcon (blk,ith,y,          mxl(iblk)%p,             tmpshp,              
      &                tmpshgl,    mien(iblk)%p,  rmass,     
      &                v_lambda1,  hprime,        v_lambda2)
 
@@ -156,7 +156,7 @@ c
 c
 c
 
-      subroutine volcon (blk,ith, y,         x,      shp,      
+      subroutine volcon (blk,ith, y,         xl,      shp,      
      &                   shgl,      ien,    rmass, 
      &                   v_lambda1, hprime, v_lambda2)
 
@@ -171,7 +171,7 @@ c---------------------------------------------------------------------
       include "common.h"
       type (LocalBlkData) blk
 c     
-      dimension y(nshg,ndof),               x(numnp,nsd),              
+      dimension y(nshg,ndof), !              x(numnp,nsd),              
      &            shp(nshl,maxsh),  
      &            shgl(nsd,nshl,maxsh),
      &            ien(npro,nshl),
@@ -179,11 +179,11 @@ c
 c
 c.... element level declarations
 c
-      dimension ycl(bsz,nshl,ndof),      xl(bsz,nenl,nsd),         
-     &          rmassl(bsz,nshl)     
-      dimension sgn(npro,nshape),         v_lambdal1(bsz,nshl),
-     &          v_lambda1(nshg),          hprimel(bsz,nshl),
-     &          hprime(nshg),             v_lambdal2(bsz,nshl),
+      dimension ycl(blk%e,nshl,ndof),      xl(blk%e,nenl,nsd),         
+     &          rmassl(blk%e,nshl)     
+      dimension sgn(npro,nshape),         v_lambdal1(blk%e,nshl),
+     &          v_lambda1(nshg),          hprimel(blk%e,nshl),
+     &          hprime(nshg),             v_lambdal2(blk%e,nshl),
      &          v_lambda2(nshg)
 c
 c local arrays
@@ -219,7 +219,7 @@ c.... gather the variables
 c
 
       call localy(blk,y,      ycl,     ien,    ndof,   'gather  ')
-      call localx(blk,x,      xl,      ien,    nsd,    'gather  ')
+!      call localx(blk,x,      xl,      ien,    nsd,    'gather  ')
 c
 c.... get the element contributions of the numerator and denominator 
 c     of lambda 

@@ -1,4 +1,4 @@
-      subroutine getstrl(blk, y, x, ien, strnrm, shgl, shp )
+      subroutine getstrl(blk, y, xl, ien, strnrm, shgl, shp )
 
       use eblock
 
@@ -6,8 +6,8 @@
       type (LocalBlkData) blk
 
       dimension y(nshg,ndofl)
-      dimension x(numnp,nsd),            xl(bsz,blk%n,nsd)
-      dimension ien(blk%e,blk%s),        yl(bsz,blk%s,ndofl),
+      dimension x(numnp,nsd),            xl(blk%e,blk%n,nsd)
+      dimension ien(blk%e,blk%s),        yl(blk%e,blk%s,ndofl),
      &          u1(blk%e),              u2(blk%e),
      &          u3(blk%e),              dxdxi(blk%e,nsd,nsd),
      &          strnrm(blk%e,blk%g),    dxidx(blk%e,nsd,nsd),
@@ -16,7 +16,7 @@
       dimension tmp(blk%e),             fresli(blk%e,24)
 
       call localy (blk, y,      yl,     ien,    ndofl,  'gather  ')
-      call localx (blk, x,      xl,     ien,    nsd,  'gather  ')
+!      call localx (blk, x,      xl,     ien,    nsd,  'gather  ')
 c
 
       if(matflg(1,1).eq.0) then ! compressible

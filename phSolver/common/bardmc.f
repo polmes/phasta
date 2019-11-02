@@ -122,7 +122,7 @@ c                               suitable for the
         ngauss  = nint(lcsyst)
         ngaussf = nintf(lcsyst) 
         
-        call hfilter (yold, x, mien(iblk)%p, hfres, 
+        call hfilter (yold, mxl(iblk)%p, mien(iblk)%p, hfres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -212,7 +212,7 @@ c        inum  = iel + npro - 1
 
 c        ngauss = nint(lcsyst)
         
-c        call disPtion ( yold, x, mien(iblk)%p, 
+c        call disPtion ( yold, mxl(iblk)%p, mien(iblk)%p, 
 c     &               shgl(lcsyst,:,1:nshl,:), shp(lcsyst,1:nshl,:),
 c     &               eps, mxmudmi(iblk)%p )
 
@@ -246,7 +246,7 @@ c... Done w/ h-filtering. Begin 2h-filtering.
         ngauss  = nint(lcsyst)
         ngaussf = nintf(lcsyst) 
         
-        call twohfilter (yold, x, strl(iel:inum,:), mien(iblk)%p, 
+        call twohfilter (yold, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, 
      &               fres, hfres, shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -265,7 +265,7 @@ c
         ngauss  = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         if (ngauss .ne. ngaussf) then
-        call getstrl (yold, x,      mien(iblk)%p,  
+        call getstrl (yold, mxl(iblk)%p,      mien(iblk)%p,  
      &               strl(iel:inum,:), shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:))
         endif
@@ -669,12 +669,12 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
       
-      subroutine hfilter (y, x, ien, hfres, shgl, shp, Qwtf)
+      subroutine hfilter (y, xl, ien, hfres, shgl, shp, Qwtf)
 
       include "common.h"
 
       dimension y(nshg,5),             hfres(nshg,11)
-      dimension x(numnp,3),            xl(npro,nenl,3)
+      dimension xl(npro,nenl,3)
       dimension ien(npro,nshl),        yl(npro,nshl,nflow),
      &          fresl(npro,nshl,11),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -687,7 +687,7 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
 c
 c
       if(matflg(1,1).eq.0) then ! compressible
@@ -822,13 +822,13 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
 
-      subroutine twohfilter (y, x, strnrm, ien, fres, 
+      subroutine twohfilter (y, xl, strnrm, ien, fres, 
      &     hfres, shgl, shp, Qwtf)
 
       include "common.h"
 
       dimension y(nshg,ndof),            fres(nshg,33)
-      dimension x(numnp,nsd),            xl(npro,nenl,nsd)
+      dimension xl(npro,nenl,nsd)
       dimension ien(npro,nshl),        yl(npro,nshl,nflow),
      &          fresl(npro,33),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -842,7 +842,7 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
       call local (hfres,  hfresl, ien,   11,  'gather  ')
 c
       if(matflg(1,1).eq.0) then ! compressible
@@ -1057,14 +1057,14 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 
 
-      subroutine disPtion (y, x, ien, shgl, shp, eps, xmudmi) 
+      subroutine disPtion (y, xl, ien, shgl, shp, eps, xmudmi) 
 
       use rlssave  ! Use the resolved Leonard stresses at the nodes.
 
       include "common.h"
 
       dimension xmudmi(npro,ngauss),         y(nshg,ndof),
-     &          x(numnp,nsd),               ien(npro,nshl),
+     &          ien(npro,nshl),
      &          shg(npro,nshl,nsd),
      &          shgl(nsd,nshl,maxsh),       shp(nshl,maxsh),
      &          dxdxi(npro,nsd,nsd),        dxidx(npro,nsd,nsd),
@@ -1078,7 +1078,7 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
       call local (rls,    rlsl,   ien,    6,  'gather  ') 
 
       epsl = zero

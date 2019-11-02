@@ -294,9 +294,9 @@ c
      &          tauS(blk%e),       shpfun(blk%e,blk%s),  
      &          srcL(blk%e),        shg(blk%e,blk%s,3)
 #ifdef SP_LHS
-      real*4    xSebe(bsz,blk%s,blk%s)
+      real*4    xSebe(blk%e,blk%s,blk%s)
 #else
-      real*8    xSebe(bsz,blk%s,blk%s)
+      real*8    xSebe(blk%e,blk%s,blk%s)
 #endif
 
       

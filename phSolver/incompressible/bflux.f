@@ -66,6 +66,7 @@ c
       integer, allocatable, dimension(:,:)    :: ien2
       integer, allocatable, dimension(:)      :: map
       real*8, allocatable, dimension(:,:)     :: xmu2
+      real*8, allocatable, dimension(:,:,:)     :: xl
 c
 c....  calculate the flux nodes
 c
@@ -120,6 +121,7 @@ c
          npro   = lcblk(1,iblk+1) - iel 
          ngauss = nint(lcsyst)       
          allocate ( ien2(npro,nshl) )
+         allocate ( xl(npro,nenl,nsd))
          allocate ( xmu2(npro,maxsh))
          allocate ( map(npro) )
           blk%n   = lcblk(5,iblk) ! no. of vertices per element
@@ -143,6 +145,9 @@ c
 
             call mapArray( mxmudmi(iblk)%p, xmu2,    map,
      &                     maxsh,           nprold)
+            call mapArray( mxl(iblk)%p, xl,    map,
+     &                     maxsh,           nprold)
+c
 c
 c.... allocate the element matrices (though they're not needed)
 c
@@ -153,7 +158,7 @@ c.... compute and assemble the residuals
 c     
             blk%e=npro
             call AsIGMR (blk,y,                    ac,
-     &                   x,                    xmu2(1:npro,:),
+     &                   xl(1:npro,1:nenl,:),                    xmu2(1:npro,:),
      &                   shp(lcsyst,1:nshl,:),
      &                   shgl(lcsyst,:,1:nshl,:),
      &                   ien2(1:npro,:),       
@@ -165,6 +170,7 @@ c
 !lhs=0            deallocate ( xGoC  )
          endif
          deallocate ( ien2  )
+         deallocate ( xl  )
          deallocate ( xmu2  )
          deallocate ( map   )
 c     
@@ -205,8 +211,8 @@ c
 c.... compute and assemble the residuals
 c
          call AsBFlx (blk,u,                      y,
-     &                ac,                     x,
-     &                shpb(lcsyst,1:nshl,:),
+     &                ac,                     mxlb(iblk)%p,
+     &                mdwl(iblk)%p,   shpb(lcsyst,1:nshl,:),
      &                shglb(lcsyst,:,1:nshl,:),
      &                mienb(iblk)%p,
      &                miBCB(iblk)%p,           mBCB(iblk)%p,

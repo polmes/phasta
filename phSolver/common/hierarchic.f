@@ -252,7 +252,7 @@ c-----------------------------------------------------------------------
      &        intpnt(3,npts),      x(numnp,nsd)
       
       real*8, allocatable :: ycl(:,:,:)
-      real*8, allocatable :: xl(:,:,:)
+!      real*8, allocatable :: xl(:,:,:)
       real*8, allocatable :: yvl(:,:,:)
       real*8, allocatable :: sgn(:,:)
 
@@ -276,18 +276,18 @@ c
          ndofl  = lcblk(8,iblk)
          npro   = lcblk(1,iblk+1) - iel 
 
-         allocate ( ycl(bsz,nshl,ndof ) )
+         allocate ( ycl(blk%e,nshl,ndof ) )
          allocate ( yvl(npro,nshl,nvars) )
-         allocate ( xl(bsz,nenl,nsd   ) )
+!         allocate ( xl(blk%e,nenl,nsd   ) )
          allocate ( sgn(npro,nshl)       )
  
          write(*,*) 'blk not plumbed this far'
          call getsgn(blk,mien(iblk)%p,sgn)
          
          call localy( ycoeff, ycl, mien(iblk)%p, ndof,  'gather  ')
-         call localx( x,      xl,  mien(iblk)%p, nsd,   'gather  ')
+!         call localx( x,      xl,  mien(iblk)%p, nsd,   'gather  ')
 
-         call eval  ( blk, xl,       ycl,      yvl,      
+         call eval  ( blk, mxl(iblk)%p,       ycl,      yvl,      
      &                shp,      shgl,     sgn,      
      &                nvars,    npts    )
 
@@ -301,7 +301,7 @@ c
          deallocate ( ycl )
          deallocate ( yvl )
          deallocate ( sgn )
-         deallocate ( xl  )
+!         deallocate ( xl  )
 c
       enddo
 
@@ -335,7 +335,7 @@ c
       real*8  ycl(npro,nshl,ndof),   yvl(npro,nshl,nvars),
      &        sgn(npro,nshl),        shape(npro,nshl),
      &        shdrv(npro,nsd,nshl),  shp(nshl,npts),
-     &        shgl(nsd,nshl,npts),   xl(npro,nenl,nsd),
+     &        shgl(nsd,nshl,npts),   xl(blk%e,nenl,nsd),
      &        shg(npro,nshl,nsd),    gradV(npro,nsd,nsd),
      &        dxidx(npro,nsd,nsd),   tmp(npro), wtmp
       

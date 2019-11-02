@@ -55,7 +55,7 @@ c
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
          
 
-          call AsImass (blk,x,       tmpshp,     
+          call AsImass (blk,     mxl(iblk)%p,       tmpshp,     
      &                  tmpshgl, mien(iblk)%p,
      &                  gmass)
 
@@ -91,7 +91,7 @@ c
       return
       end
 
-        subroutine AsImass (blk,x,      shp,
+        subroutine AsImass (blk,    xl,      shp,
      &                     shgl,    ien,     
      &                     gmass)
 c
@@ -107,16 +107,15 @@ c
       include "common.h"
       type (LocalBlkData) blk
 c
-        real*8 x(numnp,nsd),              
-     &         shp(nshl,maxsh),       shgl(nsd,nshl,ngauss),
+        real*8 shp(nshl,maxsh),       shgl(nsd,nshl,ngauss),
      &         gmass(nshg)
 
         integer ien(npro,nshl)
 
 c
-        real*8    xl(bsz,nenl,nsd),    WdetJ(npro), 
+        real*8    xl(blk%e,nenl,nsd),    WdetJ(npro), 
      &            sgn(npro,nshl),       shape(npro,nshl),          
-     &            locmass(bsz,nshl),   shg(npro,nshl,nsd),
+     &            locmass(blk%e,nshl),   shg(npro,nshl,nsd),
      &            fmstot(npro),         temp(npro),
      &            dxidx(npro,nsd,nsd),  shdrv(npro,nsd,nshl)
 
@@ -130,12 +129,12 @@ c
 c.... get the matrix of mode signs for the hierarchic basis functions. 
 c
         if (ipord .gt. 1) then
-           write(*,*) 'blk not plumbed this far'
+           write(*,*) 'blk style uncertain for getsgn in AsImass'
 
            call getsgn(blk,ien,sgn)
         endif
         
-        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
+!        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... zero the matrices if they are being recalculated
 c
@@ -155,7 +154,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-           call e3metric(blk,intp, xl,         shdrv,       dxidx,  
+           call e3metric(blk,intp,    xl,         shdrv,       dxidx,  
      &                    shg,        WdetJ)
 
 c

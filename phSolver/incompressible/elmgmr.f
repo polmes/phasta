@@ -134,14 +134,14 @@ c     and lumped mass matrix, rmass
 
           if((iter == nitr .and. icomputevort == 1)
      &           .or. iRANS.eq.-5 ) then
-            call AsIqGradV (blk,y,                x,
+            call AsIqGradV (blk,y,                mxl(iblk)%p,
      &                   tmpshp,
      &                   tmpshgl,
      &                   mien(iblk)%p,
      &                   GradV)
           endif
-          call AsIq (blk,y,                x,                       
-     &                   tmpshp,
+          call AsIq (blk,y,                mxl(iblk)%p,                       
+     &                   mdwl(iblk)%p,     tmpshp,
      &                   tmpshgl,
      &                   mien(iblk)%p,     mxmudmi(iblk)%p,  
      &                   qres,             rmass )
@@ -255,8 +255,8 @@ c.... compute and assemble the residual and tangent matrix
 c
 
           call AsIGMR (blk, y,                   ac,
-     &                 x,                   mxmudmi(iblk)%p,      
-     &                 tmpshp,
+     &                 mxl(iblk)%p,              mxmudmi(iblk)%p,      
+     &                 mdwl(iblk)%p,             tmpshp,
      &                 tmpshgl,
      &                 mien(iblk)%p,
      &                 rl(:,:,:,ith),
@@ -288,15 +288,15 @@ c
 c
 c.... assemble the residual
 c
-          call local (blk,res,    rl(:,:,:,ith),     mien(iblk)%p,    nflow,  'scatter ')
+          call localT (blk,res,    rl(:,:,:,ith),     mien(iblk)%p,    nflow,  'scatter ')
 c
 c.... assemble the statistics residual
 c
           if ( stsResFlg .eq. 1 ) then 
-            call local( blk, stsVec, StsVecl(:,:,:,ith), mien(iblk)%p, nResDims, 'scatter ')
+            call localT( blk, stsVec, StsVecl(:,:,:,ith), mien(iblk)%p, nResDims, 'scatter ')
           endif
           if ( ierrcalc .eq. 1 ) then
-            call local (blk, rerr, rerrl(:,:,:,ith),  
+            call localT (blk, rerr, rerrl(:,:,:,ith),  
      &                  mien(iblk)%p, 6+isurf, 'scatter ')
           endif
           nshl=blk%s  !nshl still used in these routines...temp solution
@@ -457,8 +457,8 @@ c
           tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
 
           call AsBMFG (blk,u,                       y,
-     &                 ac,                      x,
-     &                 tmpshpb,
+     &                 ac,                      mxlb(iblk)%p,
+     &                 mdwl(iblk)%p,            tmpshpb,
      &                 tmpshglb,
      &                 mienb(iblk)%p,           mmatb(iblk)%p,
      &                 miBCB(iblk)%p,           mBCB(iblk)%p,
@@ -641,8 +641,8 @@ c
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
 
-              call AsIqSclr (blk,y,                   x,                       
-     &                       tmpshp, 
+              call AsIqSclr (blk,y,                   mxl(iblk)%p,                       
+     &                       mdwl(iblk)%p,            tmpshp, 
      &                       tmpshgl, 
      &                       mien(iblk)%p,     qres,                   
      &                       rmass, cfl, icflhits )
@@ -718,12 +718,12 @@ c
 c
 c.... allocate the element matrices
 c
-          allocate ( xSebe(bsz,nshl,nshl) )
+          allocate ( xSebe(blk%e,nshl,nshl) )
 c
 c.... compute and assemble the residual and tangent matrix
 c
           call AsIGMRSclr(blk,y,                   ac,
-     &                 x,
+     &                 mxl(iblk)%p,                mdwl(iblk)%p,
      &                 tmpshp,
      &                 tmpshgl,
      &                 mien(iblk)%p,        res,
@@ -858,8 +858,8 @@ c
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
           tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
 
-          call AsBSclr (blk,y,                       x,
-     &                  tmpshpb, 
+          call AsBSclr (blk,y,                       mxlb(iblk)%p,
+     &                  mdwl(iblk)%p,            tmpshpb, 
      &                  tmpshglb, 
      &                  mienb(iblk)%p,           mmatb(iblk)%p,
      &                  miBCB(iblk)%p,           mBCB(iblk)%p,

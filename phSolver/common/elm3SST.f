@@ -11,11 +11,11 @@
       real*8 kay(blk%e),    omega(blk%e),
      &       dwall(blk%e),  gradV(blk%e,nsd,nsd)
       real*8 srcRat1(blk%e) ,  src1(blk%e) , srcJac(blk%e,4)
-      real*8 yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
-     &       shg(blk%e,blk%s,nsd),   xl(bsz,blk%n,nsd),
+      real*8 yl(blk%e,blk%s,ndof),    shp(blk%e,blk%s),
+     &       shg(blk%e,blk%s,nsd),   xl(blk%e,blk%n,nsd),
      &       dxidx(blk%e,nsd,nsd),   WdetJ(blk%e),
      &       gradK(blk%e,nsd),    gradW(blk%e,nsd), !!check v
-     &       add(blk%e,nsd),  dwl(bsz,blk%n),
+     &       add(blk%e,nsd),  dwl(blk%e,blk%n),
      &       deltabl(blk%e)
       real*8 rmu(blk%e), rho(blk%e)
       real*8 srcRat(blk%e,2), src(blk%e,2)
@@ -404,7 +404,7 @@ c       Pick which scalar to pass out
       use eblock
       include "common.h"
       type (LocalBlkData) blk
-      real*8   yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
+      real*8   yl(blk%e,blk%s,ndof),    shp(blk%e,blk%s),
      &         shg(blk%e,blk%s,nsd),  
      &         gradK(blk%e,nsd),    gradW(blk%e,nsd)
       integer n

@@ -13,13 +13,13 @@ c
 c  This routine computes the variables at integration point.
 c
 c input:
-c  yl     (bsz,blk%s,ndof)      : primitive variables
-c  acl    (bsz,blk%s,ndof)      : prim.var. accel. 
+c  yl     (blk%e,blk%s,ndof)      : primitive variables
+c  acl    (blk%e,blk%s,ndof)      : prim.var. accel. 
 c  shp    (nen)                 : element shape-functions
 c  shgl   (nsd,nen)             : element local-grad-shape-functions
-c  xl     (bsz,blk%n,nsd)       : nodal coordinates at current step
-c  ql     (bsz,blk%s,nsd*nsd) : diffusive flux vector
-c  rlsl   (bsz,blk%s,6)       : resolved Leonard stresses
+c  xl     (blk%e,blk%n,nsd)       : nodal coordinates at current step
+c  ql     (blk%e,blk%s,nsd*nsd) : diffusive flux vector
+c  rlsl   (blk%e,blk%s,6)       : resolved Leonard stresses
 c
 c output:
 c  aci    (blk%e,3)              : primvar accel. variables 
@@ -56,9 +56,9 @@ c
 c
 c  passed arrays
 c
-      dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),       
-     &            acl(bsz,blk%s,ndof),       shpfun(blk%e,blk%s),
-     &            shgl(blk%e,nsd,blk%s),       xl(bsz,blk%n,nsd),
+      dimension yl(blk%e,blk%s,ndof),        dwl(blk%e,blk%n),       
+     &            acl(blk%e,blk%s,ndof),       shpfun(blk%e,blk%s),
+     &            shgl(blk%e,nsd,blk%s),       xl(blk%e,blk%n,nsd),
      &            aci(blk%e,nsd),             g1yi(blk%e,ndof),
      &            g2yi(blk%e,ndof),           g3yi(blk%e,ndof),
      &            shg(blk%e,blk%s,nsd),        dxidx(blk%e,nsd,nsd),
@@ -66,12 +66,12 @@ c
      &            rho(blk%e),                 pres(blk%e),
      &            u1(blk%e),                  u2(blk%e),
      &            u3(blk%e),                  divqi(blk%e,nflow-1+isurf),
-     &            ql(bsz,blk%s,idflx),       rLui(blk%e,nsd),
+     &            ql(blk%e,blk%s,idflx),       rLui(blk%e,nsd),
      &            src(blk%e,nsd), Temp(blk%e),xx(blk%e,nsd)
 c
         dimension tmp(blk%e), tmp1(blk%e), dkei(blk%e), dist2w(blk%e)
 c
-        dimension rlsl(bsz,blk%s,6),         rlsli(blk%e,6)
+        dimension rlsl(blk%e,blk%s,6),         rlsli(blk%e,6)
 c
         real*8    rerrl(bsz,blk%s,6+isurf), omega(3), divu(blk%e)
         dimension gyti(blk%e,nsd),            gradh(blk%e,nsd),
@@ -337,20 +337,20 @@ c
 c
 c  passed arrays
 c
-      dimension yl(bsz,blk%s,ndof),     acl(bsz,blk%s,ndof), 
-     &          Sclr(blk%e),            Sdot(blk%e),
-     &          gradS(blk%e,nsd),       shpfun(blk%e,blk%s),
-     &          shgl(blk%e,nsd,blk%s),  xl(bsz,blk%n,nsd),
-     &          shg(blk%e,blk%s,nsd),   dxidx(blk%e,nsd,nsd),
+      dimension yl(blk%e,blk%s,ndof),       acl(blk%e,blk%s,ndof), 
+     &          Sclr(blk%e),                Sdot(blk%e),
+     &          gradS(blk%e,nsd),           shpfun(blk%e,blk%s),
+     &          shgl(blk%e,nsd,blk%s),      xl(blk%e,blk%n,nsd),
+     &          shg(blk%e,blk%s,nsd),       dxidx(blk%e,nsd,nsd),
      &          WdetJ(blk%e),              
      &          u1(blk%e),              u2(blk%e),
      &          u3(blk%e),              divS(blk%e),
-     &          ql(bsz,blk%s,nsd),      rLS(blk%e),
+     &          ql(blk%e,blk%s,nsd),      rLS(blk%e),
      &          SrcR(blk%e),            SrcL(blk%e),
-     &          dwl(bsz,blk%n),         diffus(blk%e),
+     &          dwl(blk%e,blk%n),         diffus(blk%e),
      &          umod(blk%e,nsd),        Temp(blk%e),
      &          divqi(blk%e) ,          xx(blk%e,nsd),
-     &          cfll(bsz,blk%s),        gradVl(bsz,blk%s,nsdsq)
+     &          cfll(blk%e,blk%s),        gradVl(blk%e,blk%s,nsdsq)
 c
       dimension tmp(blk%e), srcRat(blk%e)
       real*8 rLui(blk%e,nsd),     aci(blk%e,nsd),
@@ -360,7 +360,7 @@ c
      &       rmu(blk%e),          ssq(blk%e)
       real*8 uBar(blk%e,nsd), xmudmi(blk%e,ngauss)
       real*8 denominv(blk%e)
-      real*8 IDDESfun(blk%e,nfun), deltal(bsz,blk%s)
+      real*8 IDDESfun(blk%e,nfun), deltal(blk%e,blk%s)
       integer comp
 
 c

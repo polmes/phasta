@@ -5,7 +5,7 @@
       include "common.h"
       type (LocalBlkData) blk
 
-      real*8 yl(bsz,blk%s,ndof), xl(bsz,blk%n,nsd), dwl(bsz,blk%n),
+      real*8 yl(blk%e,blk%s,ndof), xl(blk%e,blk%n,nsd), dwl(blk%e,blk%n),
      &       shape(blk%e,blk%s), rho(blk%e), ssq(blk%e), 
      &       shdrv(blk%e,nsd,blk%s), rmu(blk%e)
       real*8 kay, omega, dw, ssqInv, 

@@ -5,7 +5,7 @@
      &                   u1,      u2,      u3,      rmu,  
      &                   unm,     tau1n,   tau2n,   tau3n,
      &                   vdot,    rlKwall,         
-     &                   xKebe,   rKwall_glob, dwl )
+     &                   xKebe,   rKwall_glob)
 c
 c----------------------------------------------------------------------
 c
@@ -13,13 +13,13 @@ c   This routine computes the variables at integration points for
 c the boundary element routine.
 c
 c input:
-c  yl     (bsz,nshl,ndof)      : primitive variables (local)
+c  yl     (blk%e,nshl,ndof)      : primitive variables (local)
 c          ndof: 5[p,v1,v2,v3,T]+number of scalars solved 
-c  acl    (bsz,nshl,ndof)      : acceleration (local)
-c  ul     (bsz,nshlb,nsd)       : displacement (local)
+c  acl    (blk%e,nshl,ndof)      : acceleration (local)
+c  ul     (blk%e,nshlb,nsd)       : displacement (local)
 c  shpb   (nen)                 : boundary element shape-functions
 c  shglb  (nsd,nen)             : boundary element grad-shape-functions
-c  xlb    (bsz,nenl,nsd)       : nodal coordinates at current step
+c  xlb    (blk%e,nenl,nsd)       : nodal coordinates at current step
 c  lnode  (nenb)                : local nodes on the boundary
 c
 c output:
@@ -51,9 +51,9 @@ c
       type (LocalBlkData) blk
 
 c
-      dimension yl(bsz,nshl,ndof),        rmu(npro),
+      dimension yl(blk%e,nshl,ndof),        rmu(npro),
      &            shpb(npro,nshl),           shglb(npro,nsd,nshl),
-     &            xlb(bsz,nenl,nsd),         dwl(bsz,nenl),
+     &            xlb(blk%e,nenl,nsd),       dwl(blk%e,nenl),
      &            lnode(27),                 g1yi(npro,ndof),
      &            g2yi(npro,ndof),           g3yi(npro,ndof),
      &            WdetJb(npro),              bnorm(npro,nsd),
@@ -64,7 +64,7 @@ c
      &            shdrv(npro,nsd,nshl),
      &            tau1n(npro),               tau2n(npro),
      &            tau3n(npro),
-     &            acl(bsz,nshl,ndof),       ul(bsz,nshl,nsd),
+     &            acl(blk%e,nshl,ndof),       ul(blk%e,nshl,nsd),
      &            vdot(npro,nsd),            rlKwall(npro,nshlb,nsd)
 c
       dimension gl1yi(npro,ndof),          gl2yi(npro,ndof),
@@ -842,8 +842,8 @@ c---------------------------------------------------------------------
       type (LocalBlkData) blk
 
 c
-        dimension yl(bsz,nshl,ndof),        shdrv(npro,nsd,nshl),
-     &            xlb(bsz,nenl,nsd),        shape(npro,nshl),
+        dimension yl(blk%e,nshl,ndof),        shdrv(npro,nsd,nshl),
+     &            xlb(blk%e,nenl,nsd),        shape(npro,nshl),
      &            WdetJb(npro),              bnorm(npro,nsd),
      &            flux(npro)
 c
@@ -854,8 +854,8 @@ c
      &            v1(npro,nsd),              v2(npro,nsd),
      &            gradSl(npro,nsd),          gradS(npro,nsd)
 
-        real*8    diffus(npro),              dwl(bsz,nenl),
-     &            evl(bsz,blk%s),            mut(npro),
+        real*8    diffus(npro),              dwl(blk%e,nenl),
+     &            evl(blk%e,blk%s),            mut(npro),
      &            F1(npro),                  F2(npro)
         integer ith
 

@@ -112,12 +112,12 @@ c
           
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
 
-          call AsBNABI (blk,                       x,
+          call AsBNABI (blk,                       mxlb(iblk)%p,
      &                 tmpshpb,
      &                 mienb(iblk)%p,
      &                 miBCB(iblk)%p)
 
-          call AsBNASC(blk,                       x,
+          call AsBNASC(blk,                       mxlb(iblk)%p,
      &                 tmpshpb,
      &                 mienb(iblk)%p,
      &                 miBCB(iblk)%p)

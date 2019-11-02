@@ -1,5 +1,5 @@
-      subroutine AsBMFG (blk,u,       y,       ac,      x,       
-     &                   shpb,    shglb,
+      subroutine AsBMFG (blk,u,       y,       ac,      xlb,       
+     &                   dwl,    shpb,    shglb,
      &                   ienb,    materb,  iBCB,    BCB,
      &                   res,     xKebe)
 c
@@ -13,7 +13,7 @@ c Alberto Figueroa, Winter 2004.  CMM-FSI
 c Irene Vignon, Spring 2004.
 c----------------------------------------------------------------------
 c
-      use turbSA                ! access to d2wall
+      use turbSA                ! access to effvisc
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -25,12 +25,12 @@ c
      &            shglb(nsd,nshl,ngaussb),         
      &            ienb(npro,nshl),         materb(npro),
      &            iBCB(npro,ndiBCB),       BCB(npro,nshlb,ndBCB),
-     &            res(nshg,nflow),        dwl(bsz,nenl),
-     &            evl(bsz,blk%s)        
+     &            res(nshg,nflow),        dwl(blk%e,nenl),
+     &            evl(blk%e,blk%s)        
 c
-        dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
-     &            rl(bsz,nshl,nflow),     sgn(npro,nshl),
-     &            ul(bsz,nshl,nsd),       acl(bsz,nshl,ndofl)
+        dimension yl(blk%e,nshl,ndofl),     xlb(blk%e,nenl,nsd),
+     &            rl(blk%e,nshl,nflow),     sgn(npro,nshl),
+     &            ul(blk%e,nshl,nsd),       acl(blk%e,nshl,ndofl)
 c
 !disable        dimension xKebe(npro,9,nshl,nshl) 
      
@@ -45,11 +45,11 @@ c.... gather the variables
 c
         call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
         call localy(blk,ac,     acl,    ienb,   ndofl,  'gather  ')
-        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+!        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
         call localx(blk,u,      ul,     ienb,   nsd,    'gather  ')
-        if(iRANS.eq.-2 .or. iRANS.eq.-5) then !k-epsilon and SST
-           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
-        endif
+!        if(iRANS.eq.-2) then
+!           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
+!        endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call local(blk,effvisc, evl, ienb, 1, 'gather  ')
@@ -92,10 +92,10 @@ c     boundary elements for the temperature equation
 c
 c----------------------------------------------------------------------
 c
-      subroutine AsBSclr (blk,y,       x,       shpb,    shglb,
+      subroutine AsBSclr (blk,y,       xlb,  dwl,     shpb,    shglb,
      &                   ienb,    materb,  iBCB,    BCB,
      &                   res)
-      use turbSA ! access to d2wall
+      use turbSA ! access to effvisc
       use eblock
       include "common.h"
       type (LocalBlkData) blk
@@ -108,9 +108,9 @@ c
      &            iBCB(npro,ndiBCB),       BCB(npro,nshlb,ndBCB),
      &            res(nshg)         
 c
-        dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
-     &            rl(bsz,nshl),     sgn(npro,nshl)
-        real*8 dwl(bsz,nenl),          evl(bsz,blk%s)
+        dimension yl(blk%e,nshl,ndofl),     xlb(blk%e,nenl,nsd),
+     &            rl(blk%e,nshl),     sgn(npro,nshl)
+        real*8 dwl(blk%e,nshl),          evl(blk%e,blk%s)
 c
 c.... get the matrix of mode signs for the hierarchic basis functions
 c
@@ -121,10 +121,10 @@ c
 c.... gather the variables
 c
         call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
-        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
-        if(iRANS.eq.-2.or.iRANS.eq.-5) then
-           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
-        endif
+!        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+!        if(iRANS.eq.-2) then
+!           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
+!        endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call local(blk,effvisc, evl,    ienb,    1,      'gather  ')

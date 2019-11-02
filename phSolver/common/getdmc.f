@@ -96,7 +96,7 @@ c
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call asithf (blk, y, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (blk, y, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -123,7 +123,7 @@ c
         ngaussf = nintf(lcsyst)
 
         if (ngaussf .ne. ngauss) then
-        call getstrl (blk, y, x,      mien(iblk)%p,  
+        call getstrl (blk, y, mxl(iblk)%p,      mien(iblk)%p,  
      &               strl(iel:inum,:), shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:))
         endif

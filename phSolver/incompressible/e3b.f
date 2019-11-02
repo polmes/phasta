@@ -9,7 +9,7 @@ c   This routine calculates the 3D RHS residual of the fluid boundary
 c   elements.
 c
 c input:
-c  yl     (bsz,nshl,ndof)      : Y variables
+c  yl     (blk%e,nshl,ndof)      : Y variables
 c  iBCB   (npro,ndiBCB)         : boundary condition code (iBCB(:,1) is
 c      a bit tested boundary integral flag i.e.
 c                  if set to value of BCB      if set to floating value
@@ -33,11 +33,11 @@ c                                  BCB (5) : viscous flux in x3-direc.
 c                                  BCB (6) : heat flux
 c  shpb   (nen,ngaussb)           : boundary element shape-functions
 c  shglb  (nsd,nen,ngaussb)       : boundary element grad-shape-functions
-c  xlb    (bsz,nenl,nsd)       : nodal coordinates at current step
-c  evl    (bsz,nshl)           : eff. viscosity adder for eff. visc. turb wall function
+c  xlb    (blk%e,nenl,nsd)       : nodal coordinates at current step
+c  evl    (blk%e,nshl)           : eff. viscosity adder for eff. visc. turb wall function
 c
 c output:
-c  rl     (bsz,nshl,nflow)      : element residual
+c  rl     (blk%e,nshl,nflow)      : element residual
 c
 c Note: Always the first side of the element is on the boundary.  
 c       However, note that for higher-order elements the nodes on 
@@ -58,12 +58,12 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension yl(bsz,nshl,ndof),          iBCB(npro,ndiBCB),
+        dimension yl(blk%e,nshl,ndof),          iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,ngaussb),
      &            shglb(nsd,nshl,ngaussb),           
-     &            xlb(bsz,nenl,nsd),          ul(bsz,nshl,nsd),
-     &            acl(bsz,nshl,ndof),
-     &            rl(bsz,nshl,nflow)
+     &            xlb(blk%e,nenl,nsd),          ul(blk%e,nshl,nsd),
+     &            acl(blk%e,nshl,ndof),
+     &            rl(blk%e,nshl,nflow)
 c
         dimension g1yi(npro,ndof),             g2yi(npro,ndof),
      &            g3yi(npro,ndof),             WdetJb(npro),
@@ -83,8 +83,8 @@ c
      &            shape(npro,nshl),        shdrv(npro,nsd,nshl),
      &            rNa(npro,4)
 
-        real*8    xmudmi(npro,ngauss),      dwl(bsz,nenl),
-     &            evl(bsz,blk%s),           ssq(npro)
+        real*8    xmudmi(npro,ngauss),      dwl(blk%e,nenl),
+     &            evl(blk%e,blk%s),         ssq(npro)
 c
 !disable      	dimension xKebe(npro,9,nshl,nshl),  rKwall_glob(npro,9,nshl,nshl)
       	integer   intp
@@ -388,18 +388,18 @@ c*********************************************************************
       type (LocalBlkData) blk
 
 c
-        dimension yl(bsz,nshl,ndof),          iBCB(npro,ndiBCB),
+        dimension yl(npro,nshl,ndof),          iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,*),
      &            shglb(nsd,nshl,*),           
-     &            xlb(bsz,nenl,nsd),          
-     &            rl(bsz,nshl)
+     &            xlb(blk%e,nenl,nsd),          
+     &            rl(blk%e,nshl)
 c
         real*8    WdetJb(npro),                bnorm(npro,nsd)
 c
         dimension lnode(27),                   sgn(npro,nshl),
      &            shape(npro,nshl),            shdrv(npro,nsd,nshl),
      &            rNa(npro),                   flux(npro)
-        real*8    dwl(bsz,nenl),              evl(bsz,blk%s)
+        real*8    dwl(blk%e,nenl),              evl(blk%e,blk%s)
 
 c
 c.... compute the nodes which lie on the boundary (hierarchic)

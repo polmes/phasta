@@ -23,10 +23,10 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension yl(bsz,nshl,ndof),
+        dimension yl(blk%e,nshl,ndof),
      &            shp(nshl,ngauss),      shgl(nsd,nshl,ngauss),
-     &            xl(bsz,nenl,nsd),
-     &            ql(bsz,nshl,nsdsq)  
+     &            xl(blk%e,nenl,nsd),
+     &            ql(blk%e,nshl,nsdsq)  
 c
 c local arrays
 c

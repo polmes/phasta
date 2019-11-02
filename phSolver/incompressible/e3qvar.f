@@ -37,8 +37,8 @@ c
 c
 c  passed arrays
 c
-        dimension yl(bsz,blk%s,ndof), 
-     &            shgl(blk%e,nsd,blk%s), xl(bsz,blk%n,nsd),
+        dimension yl(blk%e,blk%s,ndof), 
+     &            shgl(blk%e,nsd,blk%s), xl(blk%e,blk%n,nsd),
      &            g1yi(blk%e,nflow),       g2yi(blk%e,nflow),
      &            g3yi(blk%e,nflow),       shg(blk%e,blk%s,nsd), 
      &            dxidx(blk%e,nsd,nsd),   WdetJ(blk%e)
@@ -161,8 +161,8 @@ c-----------------------------------------------------------------------
 c
 c  passed arrays
 c
-      real*8   yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
-     &         shgl(blk%e,nsd,blk%s),   xl(bsz,blk%n,nsd),
+      real*8   yl(blk%e,blk%s,ndof),    shp(blk%e,blk%s),
+     &         shgl(blk%e,nsd,blk%s),   xl(blk%e,blk%n,nsd),
      &         dxidx(blk%e,nsd,nsd),   WdetJ(blk%e),
      &         gradT(blk%e,nsd),       shape(blk%e,blk%s),
      &         u1(blk%e),
@@ -216,8 +216,8 @@ c-----------------------------------------------------------------------
        include "common.h"
        type (LocalBlkData) blk
 
-       real*8   yl(bsz,blk%s,ndof),    shp(blk%e,blk%s),
-     &         shgl(blk%e,nsd,blk%s),   xl(bsz,blk%n,nsd),
+       real*8   yl(blk%e,blk%s,ndof),    shp(blk%e,blk%s),
+     &         shgl(blk%e,nsd,blk%s),   xl(blk%e,blk%n,nsd),
      &         gradK(blk%e,nsd),    gradW(blk%e,nsd),
      &         WdetJ(blk%e)
        real*8   shg(blk%e,blk%s,nsd),

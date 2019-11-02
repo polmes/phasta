@@ -1,4 +1,4 @@
-        subroutine AsIq (blk, y,       x,       shp,
+        subroutine AsIq (blk, y,       xl, dwl,      shp,
      &                   shgl,    ien,     xmudmi,
      &                   qres,    rmass    )
 c
@@ -27,16 +27,16 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension y(nshg,ndof),               x(numnp,nsd),            
+        dimension y(nshg,ndof),     !          x(numnp,nsd),            
      &            shp(blk%s,blk%g),         shgl(nsd,blk%s,blk%g),
-     &            ien(blk%e,blk%s),      dwl(bsz,blk%n),
+     &            ien(blk%e,blk%s),      dwl(blk%e,blk%n),
      &            qres(nshg,idflx),    rmass(nshg)
 c
-        dimension yl(bsz,blk%s,ndof),          xl(bsz,blk%n,nsd),
-     &            ql(bsz,blk%s,idflx),  rmassl(bsz,blk%s),
+        dimension yl(blk%e,blk%s,ndof),          xl(blk%e,blk%n,nsd),
+     &            ql(blk%e,blk%s,idflx),  rmassl(blk%e,blk%s),
      &            xmudmi(blk%e,blk%g)
 c
-        dimension sgn(blk%e,blk%s),       evl(bsz,blk%s)
+        dimension sgn(blk%e,blk%s),       evl(blk%e,blk%s)
 c
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
@@ -54,10 +54,10 @@ c.... gather the variables
 c
 
         call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
-        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
-        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
-           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
-        endif
+!        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
+!        if (iRANS .eq. -2) then ! kay-epsilon
+!           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
+!        endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call local(blk,effvisc, evl,    ien,    1,      'gather  ')
@@ -93,27 +93,27 @@ c interior elements for the global reconstruction of the diffusive
 c flux vector.
 c
 c----------------------------------------------------------------------
-       subroutine AsIqSclr (blk,y,       x,       shp,
+       subroutine AsIqSclr (blk,y,       xl,   dwl,    shp,
      &                       shgl,    ien,     qres,    
      &                       rmass,   cfl,     icflhits   )
 c
-      use turbsa      ! access to d2wall
+      use turbsa      ! access to d2wall (no but effvisc does still need this)
       use eblock
       include "common.h"
       type (LocalBlkData) blk
 
 c
-        dimension y(nshg,ndof),             x(numnp,nsd),            
+        dimension y(nshg,ndof),     !        x(numnp,nsd),            
      &            shp(blk%s,blk%g),         shgl(nsd,blk%s,blk%g),
-     &            ien(blk%e,blk%s),      dwl(bsz,blk%n),
+     &            ien(blk%e,blk%s),      dwl(blk%e,blk%n),
      &            qres(nshg,nsd),           rmass(nshg),
      &            cfl(nshg),           icflhits(nshg)
 c
-        dimension yl(bsz,blk%s,ndof),       xl(bsz,blk%n,nsd),         
-     &            ql(bsz,blk%s,nsd),        rmassl(bsz,blk%s),
-     &            cfll(bsz,blk%s)
+        dimension yl(blk%e,blk%s,ndof),       xl(blk%e,blk%n,nsd),         
+     &            ql(blk%e,blk%s,nsd),        rmassl(blk%e,blk%s),
+     &            cfll(blk%e,blk%s)
 c
-        dimension sgn(blk%e,blk%s),       evl(bsz,blk%s)
+        dimension sgn(blk%e,blk%s),       evl(blk%e,blk%s)
 
         if (blk%o .gt. 1) then
            call getsgn(blk,ien,sgn)
@@ -122,10 +122,10 @@ c
 c.... gather the variables
 c
         call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
-        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
-        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
-           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
-        endif
+!        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
+!        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
+!           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
+!        endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call local(blk,effvisc, evl,    ien,    1,      'gather  ')

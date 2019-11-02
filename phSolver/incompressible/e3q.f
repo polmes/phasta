@@ -8,15 +8,15 @@ c This routine computes the element contribution to the
 c diffusive flux vector and the lumped mass matrix.
 c
 c input: 
-c  yl     (bsz,blk%s,ndof)       : Y variables
+c  yl     (blk%e,blk%s,ndof)       : Y variables
 c  shp    (nen,blk%g)            : element shape-functions
 c  shgl   (nsd,nen,blk%g)        : element local-grad-shape-functions
-c  xl     (bsz,blk%s,nsd)        : nodal coordinates at current step
-c  evl    (bsz,blk%s)            : eff. visc. adder for eff. visc. turb wall function
+c  xl     (blk%e,blk%s,nsd)        : nodal coordinates at current step
+c  evl    (blk%e,blk%s)            : eff. visc. adder for eff. visc. turb wall function
 c  
 c output:
-c  ql     (bsz,blk%s,idflx) : element RHS diffusion residual 
-c  rmassl     (bsz,blk%s)        : element lumped mass matrix
+c  ql     (blk%e,blk%s,idflx) : element RHS diffusion residual 
+c  rmassl     (blk%e,blk%s)        : element lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
@@ -27,11 +27,11 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension yl(bsz,blk%s,ndof),     dwl(bsz,blk%n),
+        dimension yl(blk%e,blk%s,ndof),     dwl(blk%e,blk%n),
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
-     &            xl(bsz,blk%n,nsd),
-     &            ql(bsz,blk%s,idflx),  rmassl(bsz,blk%s),
-     &            xmudmi(blk%e,blk%g),   evl(bsz,blk%s)
+     &            xl(blk%e,blk%n,nsd),
+     &            ql(blk%e,blk%s,idflx),  rmassl(blk%e,blk%s),
+     &            xmudmi(blk%e,blk%g),   evl(blk%e,blk%s)
 c
 c local arrays
 c
@@ -272,11 +272,11 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension yl(bsz,blk%s,ndof),    dwl(bsz,blk%n),
+        dimension yl(blk%e,blk%s,ndof),    dwl(blk%e,blk%n),
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
-     &            xl(bsz,blk%n,nsd),
-     &            ql(bsz,blk%s,nsd),     rmassl(bsz,blk%s),
-     &            evl(bsz,blk%s),        cfll(bsz,blk%s)
+     &            xl(blk%e,blk%n,nsd),
+     &            ql(blk%e,blk%s,nsd),     rmassl(blk%e,blk%s),
+     &            evl(blk%e,blk%s),        cfll(blk%e,blk%s)
 c
 c local arrays
 c

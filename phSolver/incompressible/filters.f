@@ -1,4 +1,4 @@
-      subroutine hfilterC (y, x, ien, hfres, shgl, shp, Qwtf)
+      subroutine hfilterC (y, xl, ien, hfres, shgl, shp, Qwtf)
 
 c...  The filter operator used here uses the generalized box 
 c...  kernel
@@ -7,7 +7,7 @@ c...  kernel
       include "common.h"
 
       dimension y(nshg,5),             hfres(nshg,16)
-      dimension x(numnp,3),            xl(npro,nenl,3)
+      dimension xl(npro,nenl,3)
       dimension ien(npro,nshl),        yl(npro,nshl,5),
      &          fresl(npro,16),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -23,7 +23,7 @@ c...  kernel
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
 c
 
       fresl = zero
@@ -174,13 +174,13 @@ c
 c... Here, the filter operation (denoted w/ a tilde) uses the generalized 
 c... box kernel.
 
-      subroutine twohfilterB (y, x, strnrm, ien, fres, 
+      subroutine twohfilterB (y, xl, strnrm, ien, fres, 
      &     hfres, shgl, shp, Qwtf)
 
       include "common.h"
 
       dimension y(nshg,ndof),            fres(nshg,33)
-      dimension x(numnp,nsd),            xl(npro,nenl,nsd)
+      dimension xl(npro,nenl,nsd)
       dimension ien(npro,nshl),        yl(npro,nshl,ndof),
      &          fresl(npro,33),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -201,7 +201,7 @@ c... box kernel.
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
       call local (hfres,  hfresl, ien,   16,  'gather  ')
 
       S(:,:) = sqrt(
@@ -401,12 +401,12 @@ c... scatter locally filtered quantities to the global nodes
 c...  The filter operator used here uses the generalized box 
 c...  kernel
 
-      subroutine hfilterCC (y, x, ien, hfres, shgl, shp, Qwtf)
+      subroutine hfilterCC (y, xl, ien, hfres, shgl, shp, Qwtf)
 
       include "common.h"
 
       dimension y(nshg,5),             hfres(nshg,22)
-      dimension x(numnp,3),            xl(npro,nenl,3)
+      dimension xl(npro,nenl,3)
       dimension ien(npro,nshl),        yl(npro,nshl,5),
      &          fresl(npro,22),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -423,7 +423,7 @@ c...  kernel
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
 c
 
       fresl = zero
@@ -590,13 +590,13 @@ c
 c... Here, the filter operation (denoted w/ a tilde) uses the generalized 
 c... box kernel.
 
-      subroutine twohfilterBB (y, x, strnrm, ien, fres, 
+      subroutine twohfilterBB (y, xl, strnrm, ien, fres, 
      &     hfres, shgl, shp, Qwtf)
 
       include "common.h"
 
       dimension y(nshg,ndof),            fres(nshg,33)
-      dimension x(numnp,nsd),            xl(npro,nenl,nsd)
+      dimension xl(npro,nenl,nsd)
       dimension ien(npro,nshl),        yl(npro,nshl,ndof),
      &          fresl(npro,33),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -614,7 +614,7 @@ c... box kernel.
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
       call local (hfres,  hfresl, ien,   22,  'gather  ')
 
       S(:,:) = sqrt(
@@ -779,12 +779,12 @@ c... scatter locally filtered quantities to the global nodes
 c...  The filter operator used here uses the generalized hat (witch hat) 
 c...  kernel
 
-      subroutine hfilterBB (y, x, ien, hfres, shgl, shp, Qwtf)
+      subroutine hfilterBB (y, xl, ien, hfres, shgl, shp, Qwtf)
 
       include "common.h"
 
       dimension y(nshg,5),             hfres(nshg,24)
-      dimension x(numnp,3),            xl(npro,nenl,3)
+      dimension xl(npro,nenl,3)
       dimension ien(npro,nshl),        yl(npro,nshl,5),
      &          fresl(npro,nshl,24),        WdetJ(npro),
      &          u1(npro),              u2(npro),
@@ -802,7 +802,7 @@ c...  kernel
       dimension tmp(npro)
 
       call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+!      call localx (x,      xl,     ien,    3,  'gather  ')
 c
 
       fresl = zero
@@ -1740,7 +1740,7 @@ c                               suitable for the
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst) 
         
-        call asithf (yold, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (yold, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -2487,7 +2487,7 @@ c... Done w/ h-filtering. Begin 2h-filtering.
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call twohfilterBB (yold, x, strl(iel:inum,:), mien(iblk)%p, 
+        call twohfilterBB (yold, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, 
      &               fres, hfres, shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 

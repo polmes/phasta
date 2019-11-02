@@ -42,8 +42,8 @@ c
          type (i2d), dimension(MAXBLK2) ::  mien
          type (i2d64), dimension(MAXBLK2) ::  mienG
          type (i2d), dimension(MAXBLK2) ::  mienb,  miBCB
-         type (r2d), dimension(MAXBLK2) ::  mxmudmi
-         type (r3d), dimension(MAXBLK2) ::  mBCB
+         type (r2d), dimension(MAXBLK2) ::  mxmudmi, mdwl
+         type (r3d), dimension(MAXBLK2) ::  mBCB, mxl,mxlb
 c
          real*8, allocatable :: gmass(:)
        end module

@@ -10,21 +10,21 @@ c     UBar formulation of the incompressible Navier Stokes equations.
 c
 c
 c input:    e    a   1..5   when we think of U^e_a  and U is 5 variables
-c  yl     (bsz,blk%s,ndof)      : Y variables (not U)
-c  acl    (bsz,blk%s,ndof)      : Y acceleration (Y_{,t})
+c  yl     (blk%e,blk%s,ndof)      : Y variables (not U)
+c  acl    (blk%e,blk%s,ndof)      : Y acceleration (Y_{,t})
 c  shp    (nen,blk%g)           : element shape-functions  N_a
 c  shgl   (nsd,nen,blk%g)       : element local-shape-functions N_{a,xi}
 c  wght   (blk%g)               : element weight (for quadrature)
-c  xl     (bsz,blk%n,nsd)       : nodal coordinates at current step (x^e_a)
-c  ql     (bsz,blk%s,nsd*nsd) : diffusive flux vector (don't worry)
-c  rlsl   (bsz,blk%s,6)       : resolved Leonard stresses
-c  evl    (bsz,blk%s)         : effective viscosity for turb. wall function
+c  xl     (blk%e,blk%n,nsd)       : nodal coordinates at current step (x^e_a)
+c  ql     (blk%e,blk%s,nsd*nsd) : diffusive flux vector (don't worry)
+c  rlsl   (blk%e,blk%s,6)       : resolved Leonard stresses
+c  evl    (blk%e,blk%s)         : effective viscosity for turb. wall function
 c
 c output:
 c  rl     (bsz,blk%s,nflow)      : element RHS residual    (G^e_a)
 c  rml    (bsz,blk%s,nflow)      : element modified residual  (G^e_a tilde)
 c  xlhs  (bsz,16,blk%s,blk%s)  : element LHS tangent mass matrix
-c  cfll   (bsz,blk%s) 		: CFL of the element
+c  cfll   (blk%e,blk%s) 		: CFL of the element
 c
 c Note: This routine will calculate the element matrices for the
 c        Hulbert's generalized alpha method integrator
@@ -44,12 +44,12 @@ c
 
 
 c
-        dimension yl(bsz,blk%s,ndof),
-     &            acl(bsz,blk%s,ndof),       
+        dimension yl(blk%e,blk%s,ndof),
+     &            acl(blk%e,blk%s,ndof),       
      &            shp(blk%s,blk%g),       shgl(nsd,blk%s,blk%g),
-     &            xl(bsz,blk%n,nsd),      dwl(bsz,blk%n),
-     &            rl(bsz,blk%s,nflow),     ql(bsz,blk%s,idflx),
-     &            cfll(bsz,blk%s),        evl(bsz,blk%s)
+     &            xl(blk%e,blk%n,nsd),      dwl(blk%e,blk%n),
+     &            rl(bsz,blk%s,nflow),     ql(blk%e,blk%s,idflx),
+     &            cfll(blk%e,blk%s),        evl(blk%e,blk%s)
 c      
         real*8, allocatable, dimension(:,:,:,:,:) :: xK_qp
         real*8, allocatable, dimension(:,:,:,:) :: rl_qp,rerrl_qp
@@ -77,7 +77,7 @@ c
      &            Sclr(blk%e),             mut(blk%e),
      &            ssq(blk%e)
 
-        dimension rlsl(bsz,blk%s,6),      rlsli(blk%e,6)
+        dimension rlsl(blk%e,blk%s,6),      rlsli(blk%e,6)
 
         real*8    rerrl(bsz,blk%s,6+isurf)
         integer   aa
@@ -282,17 +282,17 @@ c
       type (LocalBlkData) blk
 
 c
-      real*8    yl(bsz,blk%s,ndof),      acl(bsz,blk%s,ndof),       
+      real*8    yl(blk%e,blk%s,ndof),      acl(blk%e,blk%s,ndof),       
      &            shp(blk%s,blk%g),      shgl(nsd,blk%s,blk%g),
-     &            xl(bsz,blk%n,nsd),     rl(bsz,blk%s),          
-     &            ql(bsz,blk%s,nsd),     
-     &            dwl(bsz,blk%n),        cfll(bsz,blk%s),
-     &          cfllold(bsz,blk%s),      evl(bsz,blk%s),
-     &          gradVl(bsz,blk%s,nsdsq)
+     &            xl(blk%e,blk%n,nsd),     rl(blk%e,blk%s),          
+     &            ql(blk%e,blk%s,nsd),     
+     &            dwl(blk%e,blk%n),        cfll(blk%e,blk%s),
+     &          cfllold(blk%e,blk%s),      evl(blk%e,blk%s),
+     &          gradVl(blk%e,blk%s,nsdsq)
 #ifdef SP_LHS
-      real*4    xSebe(bsz,blk%s,blk%s)
+      real*4    xSebe(blk%e,blk%s,blk%s)
 #else
-      real*8    xSebe(bsz,blk%s,blk%s)
+      real*8    xSebe(blk%e,blk%s,blk%s)
 #endif
 c
 c.... local declarations
@@ -317,7 +317,7 @@ c     then used in place of the pure velocity for stabilization terms,
 c     and the source term sneaks into the RHS and LHS.
       real*8 uMod(blk%e,nsd), srcRat(blk%e), xmudmi(blk%e,blk%g)
       real*8 IDDESfun(blk%e,nfun), IDDEStmp(blk%e,nfun), 
-     &       IDDESfunl(bsz,blk%s,nfun+1), deltal(bsz,blk%s)
+     &       IDDESfunl(blk%e,blk%s,nfun+1), deltal(blk%e,blk%s)
       integer aa, b
 
 c

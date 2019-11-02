@@ -5,7 +5,7 @@ c
 c-----------------------------------------------------------------------
       module turbSA
 
-      real*8, allocatable ::  d2wall(:)
+      real*8, allocatable ::  d2wall(:) ! keeping it around for now since it is used in global form but should go away if global usage goes away
       real*8, allocatable ::  wnrm(:,:)
       integer, allocatable :: otwn(:)
       real*8, allocatable :: effvisc(:)
@@ -43,9 +43,11 @@ c-----------------------------------------------------------------------
       subroutine initTurb( x )
       
       use     pointer_data
+      use     eblock
       use     turbSA
       include "common.h"
       include "mpif.h"
+      type (LocalBlkData) blk
       
       character(len=20) fname1,  fmt1
       real*8   x(numnp,nsd)
@@ -270,6 +272,19 @@ c
       if(myrank.eq.master) then
         write (*,*) 'leaving initTurb maxval(d2wall)=',maxval(d2wall)
       endif
+! push dwall into block pointer data
+      do iblk = 1, nelblk
+          iel    = lcblk(1,iblk)
+          nenl   = lcblk(5,iblk) ! no. of vertices per element
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%e   = lcblk(1,iblk+1) - iel  
+          blk%s   = lcblk(10,iblk)
+
+          allocate (mdwl(iblk)%p(blk%e,blk%n))
+          call localx(blk,d2wall, mdwl(iblk)%p,mien(iblk)%p,1, 'gather  ')  ! push the data into permanent local
+      enddo
+! d2wall not deallocated since it is still being used globally
+
 
       return
 995     call error ('d2wall  ','opening ', 72)

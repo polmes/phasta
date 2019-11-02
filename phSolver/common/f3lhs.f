@@ -10,12 +10,12 @@ c input:
 c  shpb   (nen,nintg)           : boundary element shape-functions
 c  shglb  (nsd,nen,nintg)       : boundary element grad-shape-functions
 c  wghtb  (nintg)               : boundary element weight
-c  xlb    (bsz,nenl,nsd)       : nodal coordinates
+c  xlb    (blk%e,nenl,nsd)       : nodal coordinates
 c  sgn    (npro,nshl)           : mode signs for hierarchic basis
 c
 c output:
-c  flhsl  (bsz,nenl,1)         : element lumped lhs on flux boundary
-c  fnrml  (bsz,nenl,nsd)       : RHS of LS projection of normal to 
+c  flhsl  (blk%e,nenl,1)         : element lumped lhs on flux boundary
+c  fnrml  (blk%e,nenl,nsd)       : RHS of LS projection of normal to 
 c                                  flux boundary
 c
 c
@@ -37,8 +37,8 @@ c
 
 c
       dimension shpb(nshl,ngaussb),        shglb(nsd,nshl,ngaussb),
-     &          xlb(bsz,nenl,nsd),
-     &          flhsl(bsz,nshl,1),        fnrml(bsz,nshl,nsd)
+     &          xlb(blk%e,nenl,nsd),
+     &          flhsl(blk%e,nshl,1),        fnrml(blk%e,nshl,nsd)
 c
       dimension WdetJb(npro),
      &          bnorm(npro,nsd),           fmstot(npro),

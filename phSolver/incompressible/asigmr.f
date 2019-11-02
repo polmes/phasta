@@ -1,5 +1,5 @@
-        subroutine AsIGMR (blk,  y,       ac,      x,       xmudmi,
-     &                     shp,     shgl,    ien,     
+        subroutine AsIGMR (blk,  y,       ac,      xl,       xmudmi,
+     &                     dwl,  shp,     shgl,    ien,     
      &                     rl,     qres,
      &                     xlhs,   rerrl,   StsVecl,
      &                     cfl,     icflhits )
@@ -15,7 +15,7 @@ c
       use stats
       use rlssave  ! Use the resolved Leonard stresses at the nodes.
       use timedata    ! time series
-      use turbsa                ! access to d2wall
+      use turbsa                ! access to effvisc
       use eblock
 #ifdef HAVE_OMP
       use omp_lib
@@ -27,19 +27,20 @@ c
 
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
-     &            x(numnp,nsd),              
+!     &            x(numnp,nsd),              
      &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
      &            ien(blk%e,blk%s),
      &            qres(nshg,idflx),           cfl(nshg),
      &            icflhits(nshg)
 
 c
-        dimension yl(bsz,blk%s,ndofl),         acl(bsz,blk%s,ndofl),
-     &            xl(bsz,blk%n,nsd),           dwl(bsz,blk%n),      
+        dimension yl(blk%e,blk%s,ndofl),         acl(blk%e,blk%s,ndofl),
+     &            xl(blk%e,blk%n,nsd),
+     &            dwl(blk%e,blk%n),      
      &            rl(bsz,blk%s,nflow), 
-     &            ql(bsz,blk%s,idflx),
-     &            evl(bsz,blk%s),
-     &            cfll(bsz,blk%s)
+     &            ql(blk%e,blk%s,idflx),
+     &            evl(blk%e,blk%s),
+     &            cfll(blk%e,blk%s)
 c     
 #ifdef SP_LHS   
         real*4 xlhs(bsz,16,blk%s,blk%s)
@@ -47,7 +48,7 @@ c
         real*8 xlhs(bsz,16,blk%s,blk%s)
 #endif
 c
-        dimension rlsl(bsz,blk%s,6) 
+        dimension rlsl(blk%e,blk%s,6) 
 
 c
         real*8    StsVecl(bsz,blk%s,nResDims)
@@ -76,11 +77,11 @@ c
         
         call localy(blk,y,      yl,     ien,    ndofl,  'gather  ')
         call localy(blk,ac,    acl,     ien,    ndofl,  'gather  ')
-        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
+!        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
         call local (blk,qres,   ql,     ien,    idflx,  'gather  ')
-        if (iRANS.eq.-2 .or. iRANS.eq.-5) then ! kay-epsilon and SST
-           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
-        endif
+!        if (iRANS .eq. -2) then ! kay-epsilon
+!           call localx (blk,d2wall,   dwl,     ien,    1,     'gather  ')
+!        endif
  
         if( (iLES.gt.10).and.(iLES.lt.20)) then  ! bardina 
            call local (blk,rls, rlsl,     ien,       6, 'gather  ')  
@@ -141,10 +142,10 @@ c-----------------------------------------------------------------------
 c=======================================================================
 
 
-        subroutine AsIGMRSclr(blk, y,       ac,      x,       
-     &                     shp,     shgl,    ien,     
-     &                     res,     qres,    xSebe, xmudmi,
-     &                     cfl,     icflhits,  cflold, GradV )
+        subroutine AsIGMRSclr(blk, y,       ac,      xl,       
+     &                     dwl,    shp,     shgl,    ien,     
+     &                     res,    qres,    xSebe, xmudmi,
+     &                     cfl,    icflhits,  cflold, GradV )
 c
 c----------------------------------------------------------------------
 c
@@ -161,7 +162,7 @@ c
       type (LocalBlkData) blk
 c
         dimension y(nshg,ndofl),              ac(nshg,ndofl),
-     &            x(numnp,nsd),              
+!     &            x(numnp,nsd),              
      &            shp(blk%s,blk%g),            shgl(nsd,blk%s,blk%g),
      &            ien(blk%e,blk%s),
      &            res(nshg),                  qres(nshg,nsd),
@@ -169,20 +170,20 @@ c
      &            cflold(nshg),               GradV(nshg,nsdsq)
 
 c
-        real*8    yl(bsz,blk%s,ndofl),        acl(bsz,blk%s,ndofl),
-     &            xl(bsz,blk%n,nsd),         
-     &            rl(bsz,blk%s),              ql(bsz,blk%s,nsd),
-     &            dwl(bsz,blk%n),             evl(bsz,blk%s),
-     &            cfll(bsz,blk%s),            cfllold(bsz,blk%s),
-     &            gradVl(bsz,blk%s,nsdsq)
-        real*8    IDDESfunl(bsz,blk%s,nfun+1), deltal(bsz,blk%s)
+        real*8    yl(blk%e,blk%s,ndofl),        acl(blk%e,blk%s,ndofl),
+     &            xl(blk%e,blk%n,nsd),         
+     &            rl(blk%e,blk%s),              ql(blk%e,blk%s,nsd),
+     &            dwl(blk%e,blk%n),             evl(blk%e,blk%s),
+     &            cfll(blk%e,blk%s),            cfllold(blk%e,blk%s),
+     &            gradVl(blk%e,blk%s,nsdsq)
+        real*8    IDDESfunl(blk%e,blk%s,nfun+1), deltal(blk%e,blk%s)
         integer   isz
 c        
         real*8    xmudmi(blk%e,blk%g) 
 #ifdef SP_LHS
-        real*4    xSebe(bsz,blk%s,blk%s)
+        real*4    xSebe(blk%e,blk%s,blk%s)
 #else
-        real*8    xSebe(bsz,blk%s,blk%s)
+        real*8    xSebe(blk%e,blk%s,blk%s)
 #endif
 c
 c.... gather the variables
@@ -197,9 +198,9 @@ c
         
         call localy(blk,y,      yl,     ien,    ndofl,  'gather  ')
         call localy(blk,ac,    acl,     ien,    ndofl,  'gather  ')
-        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
-        if(iRANS.lt. 0) 
-     &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
+!        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
+!        if(iRANS.lt. 0) 
+!     &  call localx(blk,d2wall, dwl,    ien,    1,      'gather  ')
         call local (blk,qres,   ql,     ien,    nsd,    'gather  ')
         call local (blk,GradV,  gradVl,    ien,    nsdsq,  'gather  ')
         if (iloadDelta.eq.1) then 

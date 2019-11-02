@@ -1,5 +1,5 @@
       subroutine AsBFlx (blk,u,           y,           ac,      
-     &                   x,           shpb,    
+     &                   xlb,           dwl,       shpb,    
      &                   shglb,       ienb,        iBCB,    
      &                   BCB,         invflx,      flxres,
      &                   flxLHS,      flxnrm,      xKebe )
@@ -12,13 +12,13 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-      use turbSA ! access to d2wall
+      use turbSA ! access to effvisc
       use eblock
       include "common.h"
       type (LocalBlkData) blk
 
 c
-        dimension y(nshg,ndofl),           x(numnp,nsd),
+        dimension y(nshg,ndofl),    !       x(numnp,nsd),
      &            ac(nshg,ndofl),          u(nshg,nsd),
      &            shpb(nshl,ngaussb),
      &            shglb(nsd,nshl,ngaussb),         
@@ -27,12 +27,12 @@ c
      &            invflx(nshg),            flxres(nshg,nflow),
      &            flxLHS(nshg,1),          flxnrm(nshg,nsd)
 c
-        dimension yl(bsz,nshl,ndofl),     xlb(bsz,nenl,nsd),
-     &            rl(bsz,nshl,nflow),     sgn(npro,nshl),
-     &            flhsl(bsz,nshl,1),      fnrml(bsz,nshl,nsd),
+        dimension yl(blk%e,nshl,ndofl),     xlb(blk%e,nenl,nsd),
+     &            rl(blk%e,nshl,nflow),     sgn(npro,nshl),
+     &            flhsl(blk%e,nshl,1),      fnrml(blk%e,nshl,nsd),
      &            lnflx(npro),             lnode(27),
-     &            ul(bsz,nshl,nsd),       acl(bsz,nshl,ndofl)
-        real*8 dwl(bsz,nenl),          evl(bsz,blk%s)
+     &            ul(blk%e,nshl,nsd),       acl(blk%e,nshl,ndofl)
+        real*8 dwl(blk%e,nenl),          evl(blk%e,blk%s)
         
         dimension xKebe(npro,9,nshl,nshl) 
 
@@ -51,11 +51,11 @@ c.... gather the variables
 c
         call localy(blk,y,      yl,     ienb,   ndofl,  'gather  ')
         call localy(blk,ac,     acl,    ienb,   ndofl,  'gather  ')
-        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+!        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
         call localx(blk,u,      ul,     ienb,   nsd,    'gather  ')
-        if(iRANS.eq.-2 .or. iRANS.eq.-5) then !SST and k-epsilon
-           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
-        endif
+!        if(iRANS.eq.-2) then
+!           call localx(blk,d2wall, dwl, ienb, 1, 'gather  ')
+!        endif
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
           call localx(blk,effvisc, evl,    ien,    1,      'gather  ')
         endif

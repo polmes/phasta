@@ -12,8 +12,8 @@ c-----------------------------------------------------------------------
 
       
       integer i
-      real*8  lDir(blk%e,nshl,3), lStsVec(bsz,nshl,nResDims),
-     &        xl(bsz,nenl,3)
+      real*8  lDir(blk%e,nshl,3), lStsVec(blk%e,nshl,nResDims),
+     &        xl(blk%e,nenl,3)
 
       call e3StsDir(blk, xl,  lDir )
       
@@ -48,7 +48,7 @@ c-----------------------------------------------------------------------
       include "common.h"
       type (LocalBlkData) blk
       
-      real*8  xl(bsz,blk%n,3),  rl(bsz,blk%s,ndof)
+      real*8  xl(blk%e,blk%n,3),  rl(bsz,blk%s,ndof)
       real*8  lDir(blk%e,blk%s,3), lStsVec(bsz,blk%s,nResDims)
       
       call e3StsDir(blk, xl,  lDir )
@@ -85,7 +85,7 @@ c-----------------------------------------------------------------------
       include "common.h"
       type (LocalBlkData) blk
       
-      real*8  xl(bsz,blk%n,3), lDir(blk%e,blk%s,3)
+      real*8  xl(blk%e,blk%n,3), lDir(blk%e,blk%s,3)
       integer e
 
 c

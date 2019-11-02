@@ -1,4 +1,4 @@
-      subroutine asithf (blk, y, x, strnrm, ien, fres, shgl, shp, Qwtf)
+      subroutine asithf (blk, y, xl, strnrm, ien, fres, shgl, shp, Qwtf)
 
       use eblock
 
@@ -6,9 +6,9 @@
       type (LocalBlkData) blk
 
       dimension y(nshg,ndofl),            fres(nshg,24)
-      dimension x(numnp,nsd),            xl(bsz,blk%n,nsd)
-      dimension ien(blk%e,blk%s),        ycl(bsz,blk%s,ndofl),
-     &          fresl(bsz,24),        WdetJ(blk%e),
+      dimension x(numnp,nsd),            xl(blk%e,blk%n,nsd)
+      dimension ien(blk%e,blk%s),        ycl(blk%e,blk%s,ndofl),
+     &          fresl(blk%e,24),        WdetJ(blk%e),
      &          u1(blk%e),              u2(blk%e),
      &          u3(blk%e),              dxdxi(blk%e,nsd,nsd),
      &          strnrm(blk%e,blk%g),    dxidx(blk%e,nsd,nsd),
@@ -19,7 +19,7 @@
       dimension tmp(blk%e)
 
       call localy (blk, y,      ycl,     ien,    ndofl,  'gather  ')
-      call localx (blk, x,      xl,     ien,    nsd,  'gather  ')
+!      call localx (blk, x,      xl,     ien,    nsd,  'gather  ')
 c
 
       if(matflg(1,1).eq.0) then ! compressible

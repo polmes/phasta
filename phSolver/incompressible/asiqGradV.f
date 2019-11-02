@@ -1,4 +1,4 @@
-        subroutine AsIqGradV (blk,y,       x,       shp,
+        subroutine AsIqGradV (blk,y,       xl,       shp,
      &                   shgl,    ien,
      &                   qres )
 c
@@ -25,13 +25,13 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension y(nshg,ndof),               x(numnp,nsd),            
+        dimension y(nshg,ndof),     !          x(numnp,nsd),            
      &            shp(nshl,ngauss),         shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),  
      &            qres(nshg,nsdsq)
 c
-        dimension yl(bsz,nshl,ndof),          xl(bsz,nenl,nsd),
-     &            ql(bsz,nshl,nsdsq)
+        dimension yl(blk%e,nshl,ndof),          xl(blk%e,nenl,nsd),
+     &            ql(blk%e,nshl,nsdsq)
 c
         dimension sgn(npro,nshl)
 c
@@ -51,7 +51,7 @@ c.... gather the variables
 c
 
         call localy(blk,y,      yl,     ien,    ndof,   'gather  ')
-        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
+!        call localx (blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
 c

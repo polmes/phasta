@@ -6,8 +6,8 @@ c This subroutine performs a vector gather/scatter operation.
 c
 c input:
 c  global (nshg,n)              : global array
-c  rlocal (bsz,blk%s,n)         : local array
-c  ien    (bsz,blk%s)           : nodal connectivity
+c  rlocal (blk%e,blk%s,n)         : local array
+c  ien    (blk%e,blk%s)           : nodal connectivity
 c  n                            : number of d.o.f.'s to be copied
 c  code                         : the transfer code
 c                                  .eq. 'gather  ', from global to local
@@ -23,7 +23,7 @@ c
       type (LocalBlkData) blk
 
 
-        dimension global(nshg,n),           rlocal(bsz,blk%s,n),
+        dimension global(nshg,n),           rlocal(blk%e,blk%s,n),
      &            ien(blk%e,blk%s),           ientmp(blk%e,blk%s)
 c
         character*8 code

@@ -61,7 +61,7 @@ c
 c compute local element volume
 c
                call e3elsize (blk,tmpshp, tmpshgl,
-     &         x,mien(iblk)%p,elem_size(blk%i),
+     &         mxl(iblk)%p,mien(iblk)%p,elem_size(blk%i),
      &         elem_vol(blk%i) )
 
                deallocate(tmpshp)
@@ -107,7 +107,7 @@ c
 c compute local element volume
 c
            call e3elsize (blk,tmpshp,tmpshgl,
-     &         x,mienb(iblk)%p,elemb_size(blk%i),
+     &         mxlb(iblk)%p,mienb(iblk)%p,elemb_size(blk%i),
      &         elemb_vol(blk%i) )
 
           deallocate (tmpshp)
@@ -136,7 +136,7 @@ c
 c..***********************************************************
 c....this small routine just for calculate volume of the element
 c*************************************************************
-      subroutine e3elsize (blk,shp,shgl,x,ien,loc_el_size,loc_el_vol)
+      subroutine e3elsize (blk,shp,shgl,xl,ien,loc_el_size,loc_el_vol)
 
 c                                                                      
 c----------------------------------------------------------------------
@@ -161,7 +161,7 @@ c
 
 c....Passed arrays
         dimension shp(blk%s,blk%g), shgl(nsd,blk%s,blk%g),
-     &            x(numnp,nsd),ien(blk%e,blk%s)
+     &            ien(blk%e,blk%s)
 
 c
 c local arrays
@@ -175,7 +175,7 @@ c
         dimension dxdxi(blk%e,nsd,nsd)
 
         dimension sgn(blk%e,blk%s),  shape(blk%e,blk%s),
-     &  shdrv(blk%e,nsd,blk%s),   xl(bsz,blk%n,nsd)
+     &  shdrv(blk%e,nsd,blk%s),   xl(blk%e,blk%n,nsd)
 
 c
 c Initialize array
@@ -194,7 +194,7 @@ c
 c
 c*************Localizing coordinates*************
 c
-        call localx (blk,x,xl,ien,nsd,'gather  ')
+!        call localx (blk,x,xl,ien,nsd,'gather  ')
  
 c
 c.... loop through the integration points

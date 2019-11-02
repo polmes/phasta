@@ -1,4 +1,4 @@
-      subroutine AsBNABI (blk, x,       shpb,
+      subroutine AsBNABI (blk, xlb,       shpb,
      &                   ienb,  iBCB)
 c
 c----------------------------------------------------------------------
@@ -15,8 +15,8 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension xlb(bsz,nenl,nsd),    bnorm(npro,nsd),
-     &            rl(bsz,nshl,nsd),     WdetJb(npro),
+        dimension xlb(blk%e,nenl,nsd),    bnorm(npro,nsd),
+     &            rl(blk%e,nshl,nsd),     WdetJb(npro),
      &            Wfactor(npro)
 
         dimension x(numnp,nsd),
@@ -42,7 +42,7 @@ c
 c
 c.... gather the variables
 c
-        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+!        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
 c
 c.... get the boundary element residuals
 c
@@ -162,7 +162,7 @@ c
         end
 
 
-      subroutine AsBNASC (blk, x,       shpb,
+      subroutine AsBNASC (blk, xlb,       shpb,
      &                   ienb,  iBCB)
 c
 c----------------------------------------------------------------------
@@ -179,8 +179,8 @@ c
       type (LocalBlkData) blk
 
 c
-        dimension xlb(bsz,nenl,nsd),
-     &            rl(bsz,nshl),         WdetJb(npro),
+        dimension xlb(blk%e,nenl,nsd),
+     &            rl(blk%e,nshl),         WdetJb(npro),
      &            Wfactor(npro)
 
         dimension x(numnp,nsd),
@@ -206,7 +206,7 @@ c
 c
 c.... gather the variables
 c
-        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
+!        call localx(blk,x,      xlb,    ienb,   nsd,    'gather  ')
 c
 c.... get the boundary element residuals
 c

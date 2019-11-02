@@ -24,7 +24,7 @@ c.... return
 
 c------------------------------------------------------------------------------
 
-      subroutine aveprep(shp,x)
+      subroutine aveprep(shp)
 
       use pointer_data
       use aveall
@@ -32,7 +32,7 @@ c------------------------------------------------------------------------------
       include "common.h"
       
       dimension shp(MAXTOP,maxsh,MAXQPT)
-      dimension x(numnp,3)
+!      dimension x(numnp,3)
       integer   nlist
 
       nlist  = 0 
@@ -50,7 +50,7 @@ c------------------------------------------------------------------------------
         ngauss = nint(lcsyst)
 
         call getylist( ylist, ifathe(iel:inum,:), shp(lcsyst,1:nshl,:),
-     &       x, mien(iblk)%p)
+     &       mxl(iblk)%p, mien(iblk)%p)
         
 
       enddo
@@ -189,12 +189,12 @@ c         xdenli = xdenli
       include "common.h"
 
       dimension lfathe(npro,maxsh),    shp(nshl,maxsh), 
-     &          x(numnp,3),            ien(npro,nshl),
+     &          ien(npro,nshl),
      &          xl(npro,nenl,nsd),     ylist(idim)
       
       integer intp
       
-      call localx (x,      xl,     ien,    3,  'gather  ')      
+!      call localx (x,      xl,     ien,    3,  'gather  ')      
                 
 
       do nel  = 1, npro
@@ -305,7 +305,7 @@ c                               suitable for the
         ngauss  = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call asithf (yold, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (yold, mxlb(iblk)%p, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -398,7 +398,7 @@ c...  End of averaging over all directions.
         ngaussf = nintf(lcsyst)
  
         if (ngauss .ne. ngaussf) then
-        call getstrl (yold, x,      mien(iblk)%p,  
+        call getstrl (yold, mxl(iblk)%p,      mien(iblk)%p,  
      &               strl(iel:inum,:), shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:))
         endif

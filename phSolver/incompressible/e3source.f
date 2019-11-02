@@ -244,14 +244,14 @@ c-----------------------------------------------------------------------
       type (LocalBlkData) blk
 c coming in      
       real*8  Sclr(blk%e),          Sdot(blk%e),
-     &        gradS(blk%e,nsd),     dwl(bsz,blk%n),
+     &        gradS(blk%e,nsd),     dwl(blk%e,blk%n),
      &        shape_funct(blk%e,blk%s),    shg(blk%e,blk%s,nsd),
-     &        yl(bsz,blk%s,ndof),  dxidx(blk%e,nsd,nsd),
+     &        yl(blk%e,blk%s,ndof),  dxidx(blk%e,nsd,nsd),
      &        rmu(blk%e),           u1(blk%e),
      &        u2(blk%e),            u3(blk%e),
-     &        xl(bsz,blk%n,nsd),    add(blk%e,nsd),
-     &        cfll(bsz,blk%s),      gradVl(bsz,blk%s,nsdsq),
-     &        deltal(bsz,blk%s)
+     &        xl(blk%e,blk%n,nsd),    add(blk%e,nsd),
+     &        cfll(blk%e,blk%s),      gradVl(blk%e,blk%s,nsdsq),
+     &        deltal(blk%e,blk%s)
 c going out
       real*8  srcR(blk%e),          srcL(blk%e),
      &        uMod(blk%e,nsd),      cfl_loc(blk%e)
@@ -805,7 +805,7 @@ c-----------------------------------------------------------------------
 c coming in      
       real*8  gradS(blk%e,nsd), 
      &        shape_funct(blk%e,blk%s),
-     &        yl(bsz,blk%n,ndof), 
+     &        yl(blk%e,blk%n,ndof), 
      &        u1(blk%e),
      &        u2(blk%e),            u3(blk%e)
 c used locally

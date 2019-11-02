@@ -48,7 +48,7 @@ c
 
 c     
               call velocity_gradient ( blk, y,                
-     &                                 x,                       
+     &                                 mxl(iblk)%p,                       
      &                                 shp(lcsyst,1:nshl,:), 
      &                                 shgl(lcsyst,:,1:nshl,:),
      &                                 mien(iblk)%p,     
@@ -84,7 +84,7 @@ c
 c     
 
               call velocity_hessian (  blk,gradu,                
-     &                                 x,                       
+     &                                 mxl(iblk)%p,                       
      &                                 shp(lcsyst,1:nshl,:), 
      &                                 shgl(lcsyst,:,1:nshl,:),
      &                                 mien(iblk)%p,     
@@ -100,22 +100,22 @@ c
 
 c-----------------------------------------------------------------------------
 
-        subroutine velocity_gradient (blk, y,       x,       shp,     shgl, 
+        subroutine velocity_gradient (blk, y,       xl,       shp,     shgl, 
      &                                 ien,     gradu,   rmass    )
 
       use eblock
       include "common.h"
       type (LocalBlkData) blk
 c
-        dimension y(nshg,ndof),               x(numnp,nsd),            
+        dimension y(nshg,ndof),   !            x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),             gradu(nshg,9), 
      &            shdrv(npro,nsd,nshl),       shape( npro, nshl ),      
      &            gradul(npro,9) ,            rmass( nshg ) 
 c
-        dimension yl(bsz,nshl,ndof),          xl(bsz,nenl,nsd),
-     &            ql(bsz,nshl,9),             dxidx(npro,nsd,nsd),
-     &            WdetJ(npro),		       rmassl(bsz,nshl)
+        dimension yl(blk%e,nshl,ndof),          xl(blk%e,nenl,nsd),
+     &            ql(blk%e,nshl,9),             dxidx(npro,nsd,nsd),
+     &            WdetJ(npro),		       rmassl(blk%e,nshl)
 c
 c
         dimension sgn(npro,nshl)
@@ -138,7 +138,7 @@ c.... gather the variables
 c
 
         call localy (blk,y,    yl,     ien,    ndof,   'gather  ')
-        call localx (blk,x,    xl,     ien,    nsd,    'gather  ')
+!        call localx (blk,x,    xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
 c
@@ -179,21 +179,21 @@ c
 
 c-----------------------------------------------------------------------------
 
-        subroutine velocity_hessian ( blk,gradu,   x,     shp,   shgl, 
+        subroutine velocity_hessian ( blk,gradu,   xl,     shp,   shgl, 
      &                                ien,     uhess, rmass  )
 
       use eblock
       include "common.h"
       type (LocalBlkData) blk
 c
-        dimension gradu(nshg,9),              x(numnp,nsd),            
+        dimension gradu(nshg,9),    !          x(numnp,nsd),            
      &            shp(nshl,ngauss),           shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),             uhess(nshg,27), 
      &            shdrv(npro,nsd,nshl),       shape( npro, nshl ),
-     &            uhessl(bsz,27),            rmass( nshg ) 
+     &            uhessl(blk%e,27),            rmass( nshg ) 
 c
-        dimension gradul(npro,nshl,9),          xl(bsz,nenl,nsd),         
-     &            ql(bsz,nshl,27),             dxidx(npro,nsd,nsd),    
+        dimension gradul(npro,nshl,9),          xl(blk%e,nenl,nsd),         
+     &            ql(blk%e,nshl,27),             dxidx(npro,nsd,nsd),    
      &            WdetJ(npro),                  rmassl(npro, nshl)
 c
 c
@@ -217,7 +217,7 @@ c.... gather the variables
 c
 
         call local  (blk,gradu,  gradul, ien,    9 ,   'gather  ')
-        call localx (blk,x,      xl,     ien,    nsd,  'gather  ')
+!        call localx (blk,x,      xl,     ien,    nsd,  'gather  ')
 c
 c.... get the element residuals 
 c
@@ -322,7 +322,7 @@ c  passed arrays
         integer vsize
 c
         dimension vector(npro,nshl,vsize), 
-     &            shgl(npro,nsd,nshl),        xl(bsz,nenl,nsd),
+     &            shgl(npro,nsd,nshl),        xl(blk%e,nenl,nsd),
      &            gradient(npro,vsize*3),     shg(npro,nshl,nsd), 
      &            dxidx(npro,nsd,nsd),        WdetJ(npro)
 c

@@ -28,6 +28,8 @@ c
 
       subroutine readnblk
       use iso_c_binding 
+      use pointer_data
+      use eblock
       use readarrays
       use fncorpmod
       use phio
@@ -41,6 +43,7 @@ c
       use lesArrs
       include "common.h"
       include "mpif.h"
+      type (LocalBlkData) blk
 
       real*8, target, allocatable :: xread(:,:), qread(:,:), acread(:,:)
       real*8, target, allocatable :: STGread(:,:), BCrestartRead(:,:)
@@ -466,6 +469,24 @@ c
       else if( input_mode .ge. 1 ) then
         call genbkbSyncIO 
       end if
+! this could be done anywhere after the blocks are setup but at this point both interior and boundar blocks are done so... 
+      do iblk = 1, nelblk
+          iel    = lcblk(1,iblk)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%e   = lcblk(1,iblk+1) - iel  
+          blk%s   = lcblk(10,iblk)
+
+          allocate (mxl(iblk)%p(blk%e,blk%n,nsd))
+          call localx(blk,point2x, mxl(iblk)%p,mien(iblk)%p,nsd, 'gather  ')  ! push the data into permanent local
+      enddo
+      do iblk = 1, nelblb
+          iel    = lcblkb(1,iblk)
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(9,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel
+          allocate (mxlb(iblk)%p(blk%e,blk%n,nsd))
+          call localx(blk,point2x, mxlb(iblk)%p,mien(iblk)%p,nsd, 'gather  ')  ! push the data into permanent local
+      enddo
 c
 c  Read in the nsons and ifath arrays if needed
 c

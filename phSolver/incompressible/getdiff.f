@@ -11,10 +11,10 @@ c-----------------------------------------------------------------------
       type (LocalBlkData) blk
 
 
-      real*8  yl(bsz,blk%s,ndof), rmu(blk%e), xmudmi(blk%e,blk%g),
+      real*8  yl(blk%e,blk%s,ndof), rmu(blk%e), xmudmi(blk%e,blk%g),
      &        shape(blk%e,blk%s),   rho(blk%e),
-     &        dwl(bsz,blk%n),     sclr(blk%e),
-     &        xl(bsz,blk%n,nsd),  evl(bsz,blk%s)
+     &        dwl(blk%e,blk%n),     sclr(blk%e),
+     &        xl(blk%e,blk%n,nsd),  evl(blk%e,blk%s)
       real*8 elem_size(blk%e)
       integer n, e
 
@@ -133,7 +133,7 @@ c
       include "common.h"
       type (LocalBlkData) blk
       
-      real*8 xmut(blk%e),xl(bsz,blk%n,nsd),xmudmi(blk%e,blk%g)
+      real*8 xmut(blk%e),xl(blk%e,blk%n,nsd),xmudmi(blk%e,blk%g)
 
 
       do i=1,blk%e
@@ -164,7 +164,7 @@ c
       type (LocalBlkData) blk
       
       real*8   diffus(blk%e), rho(blk%e)
-      real*8   yl(bsz,blk%s,ndof), dwl(bsz,blk%n), shape(blk%e,blk%s)
+      real*8   yl(blk%e,blk%s,ndof), dwl(blk%e,blk%n), shape(blk%e,blk%s)
       integer n, e
       rho(:)  = datmat(1,1,1)	! single fluid model, i.e., only 1 density
       if(isclr.eq.0) then  ! solving the temperature equation
@@ -198,8 +198,8 @@ c
         type (LocalBlkData) blk
 
         real*8   diffus(blk%e), rho(blk%e), mut(blk%e), F1(blk%e), F2(blk%e)
-        real*8   yl(bsz,blk%s,ndof), dwl(bsz,blk%n), shape(blk%e,blk%s)
-        real*8  sigmacount, shgl(blk%e,nsd,blk%s), xl(bsz,blk%n,nsd)
+        real*8   yl(blk%e,blk%s,ndof), dwl(blk%e,blk%n), shape(blk%e,blk%s)
+        real*8  sigmacount, shgl(blk%e,nsd,blk%s), xl(blk%e,blk%n,nsd)
         real*8  g1yi(blk%e,nflow),  g2yi(blk%e,nflow),  g3yi(blk%e,nflow)
         real*8  ssq(blk%e), shg(blk%e,blk%s,nsd), WdetJ(blk%e)
         real*8  dxidx(blk%e,nsd,nsd) 
@@ -282,7 +282,7 @@ c
       include "common.h"
       type (LocalBlkData) blk
 c     INPUTS
-      double precision, intent(in), dimension(bsz,blk%s,ndof) ::
+      double precision, intent(in), dimension(blk%e,blk%s,ndof) ::
      &     yl
       double precision, intent(in), dimension(blk%e,blk%s) ::
      &     shape
@@ -455,7 +455,7 @@ c           write(*,*) "wall element visc = ", e, rmu(e)
       include "common.h"
       type (LocalBlkData) blk
 c     INPUTS
-      double precision, intent(in), dimension(bsz,blk%s,ndof) ::
+      double precision, intent(in), dimension(blk%e,blk%s,ndof) ::
      &     yl
       double precision, intent(in), dimension(blk%e,blk%s) ::
      &     shape
@@ -515,9 +515,9 @@ c in all these cases, the S-A variable is calculated normally
       include "common.h"
       type (LocalBlkData) blk
 c     INPUTS
-      double precision, intent(in), dimension(bsz,blk%s,ndof) ::
+      double precision, intent(in), dimension(blk%e,blk%s,ndof) ::
      &     yl
-      double precision, intent(in), dimension(bsz,blk%n) ::
+      double precision, intent(in), dimension(blk%e,blk%n) ::
      &     shape, dwl
       double precision, intent(in), dimension(blk%e) ::
      &     rho
@@ -574,7 +574,7 @@ c
       include "common.h"
       type (LocalBlkData) blk
 
-      real*8 yl(bsz,blk%s,ndof), xl(bsz,blk%n,nsd), dwl(bsz,blk%n),
+      real*8 yl(blk%e,blk%s,ndof), xl(blk%e,blk%n,nsd), dwl(blk%e,blk%n),
      &       shape(blk%e,blk%s), shgl(blk%e,nsd,blk%s), rho(blk%e),
      &       sigmacount, rmu(blk%e), mut(blk%e), ssq(blk%e),
      &       F1(blk%e), F2(blk%e)

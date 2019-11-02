@@ -7,8 +7,8 @@
       type (LocalBlkData) blk
 
 
-      dimension shape(blk%s), ycl(bsz,blk%s,ndofl),
-     &     ien(blk%e,blk%s), xl(bsz,blk%n,nsd),         
+      dimension shape(blk%s), ycl(blk%e,blk%s,ndofl),
+     &     ien(blk%e,blk%s), xl(blk%e,blk%n,nsd),         
      &     sgn(blk%e,blk%s)
       real*8 al(blk%e,blk%n,nsd), 
      &     zi0(blk%e,nsd), detaij(blk%e), dzi0(blk%e,nsd),

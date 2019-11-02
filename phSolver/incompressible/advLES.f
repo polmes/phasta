@@ -1,7 +1,7 @@
 
 c---------------------------------------------------------------------------
 
-      subroutine SUPGstress (y, ac, x, qres, ien, xmudmi,
+      subroutine SUPGstress (y, ac, xl, qres, ien, xmudmi,
      &     cdelsq, shgl, shp, Qwtf, shglo, shpo, stress, diss, vol)
 
       use stats
@@ -14,7 +14,7 @@ c---------------------------------------------------------------------------
       type (LocalBlkData) blk
 
       dimension y(nshg,5),                  ac(nshg,5),
-     &          x(numnp,nsd),               ien(npro,nshl),
+     &          ien(npro,nshl),
      &          shp(nshl,ngauss),            shpfun(npro,nshl),
      &          shgl(nsd,nshl,ngauss),       shg(npro,nshl,nsd),
      &          shglo(nsd,nshl,ngauss),      shpo(nshl,ngauss),
@@ -61,7 +61,7 @@ c.... Localization
       
       call localy(y,      yl,     ien,    ndofl,  'gather  ')
       call localy(ac,    acl,     ien,    ndofl,  'gather  ')
-      call localx(x,      xl,     ien,    nsd,    'gather  ')
+!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       if (idiff==1 .or. idiff==3) then ! global reconstruction of qdiff
          call local (qres,   ql,     ien, nsd*nsd, 'gather  ')
@@ -596,7 +596,7 @@ c                               suitable for the
 
            allocate ( em(npro,nshl,nshl) )
 
-           call getgram2 (x, mien(iblk)%p, 
+           call getgram2 (mxl(iblk)%p, mien(iblk)%p, 
      &          shgl(lcsyst,:,1:nshl,:),  shp(lcsyst,1:nshl,:),     
      &          shglf(lcsyst,:,1:nshl,:), shpf(lcsyst,1:nshl,:), em, 
      &          Qwtf(lcsyst,1:ngaussf))
@@ -887,16 +887,16 @@ c
       
 c-----------------------------------------------------
 
-      subroutine getgram (x, ien, shgl, shp, em, Qwtf)
+      subroutine getgram (xl, ien, shgl, shp, em, Qwtf)
 
       include "common.h"
 
-      dimension x(numnp,nsd),            xl(npro,nenl,nsd)      
+      dimension xl(npro,nenl,nsd)      
       dimension ien(npro,nshl),
      &          shgl(nsd,nshl,ngauss),    shp(nshl,ngauss),
      &          em(npro,nshl,nshl),      Qwtf(ngaussf)
       
-      call localx(x,      xl,     ien,    nsd,    'gather  ')
+!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       call cmass(shp,shgl,xl,em)
          
@@ -908,18 +908,18 @@ c-----------------------------------------------------
 c----------------------------------------------------------------------
 
 
-      subroutine getgram2 (x, ien, shgl, shp, shglf, shpf, em, Qwtf)
+      subroutine getgram2 (xl, ien, shgl, shp, shglf, shpf, em, Qwtf)
 
       include "common.h"
 
-      dimension x(numnp,nsd),            xl(npro,nenl,nsd)      
+      dimension xl(npro,nenl,nsd)      
       dimension ien(npro,nshl),
      &          shgl(nsd,nshl,ngauss),    shp(nshl,ngauss),
      &          shglf(nsd,nshl,ngauss),   shpf(nshl,ngauss),
      &          em(npro,nshl,nshl),      Qwtf(ngaussf) 
 
       
-      call localx(x,      xl,     ien,    nsd,    'gather  ')
+!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       call cmassl(shp,shgl,shpf,shglf,xl,em,Qwtf)
          
@@ -930,18 +930,18 @@ c----------------------------------------------------------------------
 
 c-----------------------------------------------------------------------
 
-      subroutine getgram3 (x, ien, shgl, shp, shglf, shpf, em, Qwtf)
+      subroutine getgram3 (xl, ien, shgl, shp, shglf, shpf, em, Qwtf)
 
       include "common.h"
 
-      dimension x(numnp,nsd),            xl(npro,nenl,nsd)      
+      dimension xl(npro,nenl,nsd)      
       dimension ien(npro,nshl),
      &          shgl(nsd,nshl,ngauss),    shp(nshl,ngauss),
      &          shglf(nsd,nshl,ngauss),   shpf(nshl,ngauss),
      &          em(npro,nshl,nshl),      Qwtf(ngaussf) 
 
       
-      call localx(x,      xl,     ien,    nsd,    'gather  ')
+!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       call cmasstl(shp,shgl,shpf,shglf,xl,em,Qwtf)
          
@@ -1070,7 +1070,7 @@ c... Done w/ h-filtering. Begin 2h-filtering.
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call twohfilterB (yold, x, strl(iel:inum,:), mien(iblk)%p, 
+        call twohfilterB (yold, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, 
      &               fres, hfres, shgl(lcsyst,:,1:nshl,:),
      &               shp(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -1463,7 +1463,7 @@ c...  and SUPG stabilization.
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
         
-        call SUPGstress (y, ac, x, qres, mien(iblk)%p, mxmudmi(iblk)%p, 
+        call SUPGstress (y, ac, mxl(iblk)%p, qres, mien(iblk)%p, mxmudmi(iblk)%p, 
      &                   cdelsq, shglf(lcsyst,:,1:nshl,:),
      &                   shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf),
      &                   shgl(lcsyst,:,1:nshl,:), shp(lcsyst,1:nshl,:),
@@ -1705,12 +1705,12 @@ c                               suitable for the
 
            allocate ( em(npro,nshl,nshl) )
 
-           call getgram2 (x, mien(iblk)%p, 
+           call getgram2 (mxl(iblk)%p, mien(iblk)%p, 
      &          shgl(lcsyst,:,1:nshl,:),  shp(lcsyst,1:nshl,:),     
      &          shglf(lcsyst,:,1:nshl,:), shpf(lcsyst,1:nshl,:), em, 
      &          Qwtf(lcsyst,1:ngaussf))
 
-c           call getgram (x, mien(iblk)%p, 
+c           call getgram (mxl(iblk)%p, mien(iblk)%p, 
 c     &          shgl(lcsyst,:,1:nshl,:),  shp(lcsyst,1:nshl,:),     
 c     &          em, Qwtf(lcsyst,1:ngaussf))
 
@@ -1898,7 +1898,7 @@ c...  and SUPG stabilization.
         allocate ( fakexmu(npro,ngauss) )              
         fakexmu = zero
 
-        call SUPGstress (y, ac, x, qres, mien(iblk)%p, fakexmu, 
+        call SUPGstress (y, ac, mxl(iblk)%p, qres, mien(iblk)%p, fakexmu, 
      &                   cdelsq, shglf(lcsyst,:,1:nshl,:),
      &                   shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf),
      &                   shgl(lcsyst,:,1:nshl,:), shp(lcsyst,1:nshl,:),
@@ -2184,7 +2184,7 @@ c                               suitable for the
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
 
-        call asithf (yold, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (yold, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 
@@ -2571,7 +2571,7 @@ c                               suitable for the
 
         ngauss = nint(lcsyst)
         
-        call asithf (yold, x, strl(iel:inum,:), mien(iblk)%p, fres, 
+        call asithf (yold, mxl(iblk)%p, strl(iel:inum,:), mien(iblk)%p, fres, 
      &               shglf(lcsyst,:,1:nshl,:),
      &               shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf))
 

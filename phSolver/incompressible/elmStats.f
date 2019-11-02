@@ -13,7 +13,7 @@ c-----------------------------------------------------------------------
       real*8  x(numnp,3)
       integer iBC(nshg), iper(nshg), ilwork(nlwork)
       
-      real*8, allocatable :: xl(:,:,:)
+!      real*8, allocatable :: xl(:,:,:)
       real*8, allocatable :: lStsVec(:,:,:)
 
 c
@@ -35,23 +35,23 @@ c
           blk%l = lcblk(3,iblk)
           blk%o = lcblk(4,iblk)
 
-         allocate ( xl(bsz,nenl,3)             )
-         allocate ( lStsVec(bsz,nshl,nResDims) )
+!         allocate ( xl(blk%e,nenl,3)             )
+         allocate ( lStsVec(blk%e,nshl,nResDims) )
 c
 c.... localize needed data
 c
-         call localx (blk, x,    xl,  mien(iblk)%p, nsd,   'gather  ' )
+!         call localx (blk, x,    xl,  mien(iblk)%p, nsd,   'gather  ' )
 c
 c.... form the Lhs
 c
-         call e3StsLhs(blk, xl, lStsVec )
+         call e3StsLhs(blk, mxl(iblk)%p, lStsVec )
 c
 c.... assemble
 c
          call local (blk,stsVec, lStsVec, mien(iblk)%p,
      &               nResDims, 'scatter ' ) 
 
-         deallocate ( xl       )
+!         deallocate ( xl       )
          deallocate ( lStsVec  )
 c
 c.... end loop over element blocks

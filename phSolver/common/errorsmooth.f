@@ -62,7 +62,7 @@ c     and lumped mass matrix, rmass
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call smooth (blk,ith, rerr,       x,                       
+          call smooth (blk,ith, rerr,       mxl(iblk)%p,                       
      &               tmpshp,              
      &               tmpshgl,
      &               mien(iblk)%p,
@@ -115,7 +115,7 @@ c
        return
        end
 
-        subroutine smooth (blk,ith, rerr,       x,       shp,
+        subroutine smooth (blk,ith, rerr,       xl,       shp,
      &                     shgl,       ien,          
      &                     rerrsm,     rmass    )
 c
@@ -151,8 +151,8 @@ c
 c
 c.... element level declarations
 c
-        dimension rerrl(bsz,nshl,numerr),        xl(bsz,nenl,nsd),         
-     &            rerrsml(bsz,nshl,numerr),       rmassl(bsz,nshl)
+        dimension rerrl(blk%e,nshl,numerr),        xl(blk%e,nenl,nsd),         
+     &            rerrsml(blk%e,nshl,numerr),       rmassl(blk%e,nshl)
 c
         dimension sgn(npro,nshl),          shape(npro,nshl),
      &            shdrv(npro,nsd,nshl),    WdetJ(npro),
@@ -171,7 +171,7 @@ c.... gather the variables
 c
 
         call local(blk,rerr,   rerrl,  ien,    numerr,   'gather  ')
-        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
+!        call localx(blk,x,      xl,     ien,    nsd,    'gather  ')
 c
 c.... get the element residuals 
 c

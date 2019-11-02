@@ -8,14 +8,14 @@ c This routine computes the local diffusive flux vector using a
 c local projection algorithm
 c
 c input: 
-c  yl     (bsz,blk%s,ndof)       : Y variables
+c  yl     (blk%e,blk%s,ndof)       : Y variables
 c  shp    (nen,ngauss)           : element shape-functions
 c  shgl   (nsd,nen,ngauss)       : element local-grad-shape-functions
-c  xl     (bsz,nshape,nsd)      : nodal coordinates at current step
+c  xl     (blk%e,nshape,nsd)      : nodal coordinates at current step
 c  sgn    (blk%e,blk%s)            : signs for reversed shape functions
 c  
 c output:
-c  ql     (bsz,blk%s,nsd*nsd) : element RHS diffusion residual 
+c  ql     (blk%e,blk%s,nsd*nsd) : element RHS diffusion residual 
 c
 c----------------------------------------------------------------------
 c
@@ -26,10 +26,10 @@ c
       type (LocalBlkData) blk
 
 c
-      dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),
+      dimension yl(blk%e,blk%s,ndof),        dwl(blk%e,blk%n),
      &          shp(blk%s,ngauss),          shgl(nsd,blk%s,ngauss),
-     &          xl(bsz,blk%n,nsd),         sgn(blk%e,blk%s),
-     &          ql(bsz,blk%s,idflx), xmudmi(blk%e,ngauss)
+     &          xl(blk%e,blk%n,nsd),         sgn(blk%e,blk%s),
+     &          ql(blk%e,blk%s,idflx), xmudmi(blk%e,ngauss)
 c
 c local arrays
 c
@@ -228,10 +228,10 @@ c
       include "common.h"
       type (LocalBlkData) blk
 c
-      dimension yl(bsz,blk%s,ndof),        dwl(bsz,blk%n),
+      dimension yl(blk%e,blk%s,ndof),        dwl(blk%e,blk%n),
      &          shp(blk%s,ngauss),          shgl(nsd,blk%s,ngauss),
-     &          xl(bsz,blk%n,nsd),         sgn(blk%e,blk%s),
-     &          ql(bsz,blk%s,nsd)
+     &          xl(blk%e,blk%n,nsd),         sgn(blk%e,blk%s),
+     &          ql(blk%e,blk%s,nsd)
 c
 c local arrays
 c
