@@ -9,7 +9,7 @@
      &                     EGmass,    stiff,       WdetJ,
      &                     giju,      rTLS,        raLS,
      &                     A0inv,     dVdY,        rerrl,
-     &                     compK,     pres,        PTau)
+     &                     compK,     pres,        PTau, dist2wi)
 c                                                                
 c----------------------------------------------------------------------
 c
@@ -82,6 +82,7 @@ c
      &            A0inv(npro,15),            dVdY(npro,15),
      &            compK(npro,10),            ac1(npro),
      &            ac2(npro),                 ac3(npro)
+        real*8  dist2wi(npro)
 c
         real*8    rerrl(npro,nshl,6), tmp(npro), tmp1(npro)
         ttim(24) = ttim(24) - secs(0.0)
@@ -212,7 +213,7 @@ c.... well advective) correction factors for 1-D a-d equation w/ hier. b.
      &         rLymi,           PTau,           rk,
      &         giju,            rTLS,           raLS,
      &         cv,              compK,          pres,
-     &         A0inv,           dVdY)
+     &         A0inv,           dVdY,    dist2wi)
 
        endif
        

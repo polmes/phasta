@@ -1,7 +1,7 @@
 
 c---------------------------------------------------------------------------
 
-      subroutine SUPGstress (y, ac, xl, qres, ien, xmudmi,
+      subroutine SUPGstress (blk,y, ac, xl, qres, ien, xmudmi,
      &     cdelsq, shgl, shp, Qwtf, shglo, shpo, stress, diss, vol)
 
       use stats
@@ -59,26 +59,25 @@ c      xmudmi = zero
 
 c.... Localization
       
-      call localy(y,      yl,     ien,    ndofl,  'gather  ')
-      call localy(ac,    acl,     ien,    ndofl,  'gather  ')
-!      call localx(x,      xl,     ien,    nsd,    'gather  ')
+      call localyc(y,      yl,     ien,    ndofl,  'gather  ')
+      call localyc(ac,    acl,     ien,    ndofl,  'gather  ')
 
       if (idiff==1 .or. idiff==3) then ! global reconstruction of qdiff
-         call local (qres,   ql,     ien, nsd*nsd, 'gather  ')
+         call localc (qres,   ql,     ien, nsd*nsd, 'gather  ')
       endif
 
         if ((iDNS.gt.0).and.(itwmod.eq.-2)) then
-          call local(effvisc, evl,    ien,    1,      'gather  ')
+          call localc(effvisc, evl,    ien,    1,      'gather  ')
         endif
 
       if ( idiff==2 .and. ires .eq. 1 ) then
-         call e3ql (yl,        shpo,       shglo, 
+         call e3ql (blk,yl,        shpo,       shglo, 
      &              xl,        ql,        xmudmi, 
      &              sgn,       evl)
       endif
 
       if( (iLES.gt.10).and.(iLES.lt.20)) then ! bardina 
-         call local (rls, rlsl,     ien,       6, 'gather  ')  
+         call localc (rls, rlsl,     ien,       6, 'gather  ')  
       else
          rlsl = zero
       endif      
@@ -896,7 +895,6 @@ c-----------------------------------------------------
      &          shgl(nsd,nshl,ngauss),    shp(nshl,ngauss),
      &          em(npro,nshl,nshl),      Qwtf(ngaussf)
       
-!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       call cmass(shp,shgl,xl,em)
          
@@ -919,7 +917,6 @@ c----------------------------------------------------------------------
      &          em(npro,nshl,nshl),      Qwtf(ngaussf) 
 
       
-!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       call cmassl(shp,shgl,shpf,shglf,xl,em,Qwtf)
          
@@ -941,7 +938,6 @@ c-----------------------------------------------------------------------
      &          em(npro,nshl,nshl),      Qwtf(ngaussf) 
 
       
-!      call localx(x,      xl,     ien,    nsd,    'gather  ')
 
       call cmasstl(shp,shgl,shpf,shglf,xl,em,Qwtf)
          
@@ -1295,12 +1291,15 @@ c                    Shpf and shglf are the shape funciotns and their
 c                    gradient evaluated using the quadrature rule desired 
 c                    for computing the dmod. Qwt contains the weights of the 
 c                    quad. points.  
+     use eblock
 
 
 
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
+        type (LocalBlkData) blk
+
 
 
       dimension y(nshg,ndof),                  ac(nshg,ndof), 
@@ -1462,8 +1461,15 @@ c...  and SUPG stabilization.
 
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
         
-        call SUPGstress (y, ac, mxl(iblk)%p, qres, mien(iblk)%p, mxmudmi(iblk)%p, 
+        call SUPGstress (blk,y, ac, mxl(iblk)%p, qres, mien(iblk)%p, mxmudmi(iblk)%p, 
      &                   cdelsq, shglf(lcsyst,:,1:nshl,:),
      &                   shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf),
      &                   shgl(lcsyst,:,1:nshl,:), shp(lcsyst,1:nshl,:),
@@ -1631,12 +1637,15 @@ c                    Shpf and shglf are the shape funciotns and their
 c                    gradient evaluated using the quadrature rule desired 
 c                    for computing the dmod. Qwt contains the weights of the 
 c                    quad. points.  
+      use eblock
 
 
 
       include "common.h"
       include "mpif.h"
       include "auxmpi.h"
+         type (LocalBlkData) blk
+
 
 
       dimension y(nshg,ndof),                  ac(nshg,ndof), 
@@ -1894,11 +1903,19 @@ c...  and SUPG stabilization.
 
         ngauss = nint(lcsyst)
         ngaussf = nintf(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel
+          blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
+
         
         allocate ( fakexmu(npro,ngauss) )              
         fakexmu = zero
 
-        call SUPGstress (y, ac, mxl(iblk)%p, qres, mien(iblk)%p, fakexmu, 
+        call SUPGstress (blk,y, ac, mxl(iblk)%p, qres, mien(iblk)%p, fakexmu, 
      &                   cdelsq, shglf(lcsyst,:,1:nshl,:),
      &                   shpf(lcsyst,1:nshl,:),Qwtf(lcsyst,1:ngaussf),
      &                   shgl(lcsyst,:,1:nshl,:), shp(lcsyst,1:nshl,:),

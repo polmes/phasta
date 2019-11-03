@@ -88,7 +88,7 @@ c
 c
 c.... RANS turbulence model
 c
-        if (iRANS .lt. 0.or.iSTG.eq.1) then
+        if (iRANS .lt. 0.or.iSTG.eq.1 .or. deltadc .gt. 0) then
            call initTurb( point2x )
            if (iRANS.eq.-5) then
 c            now add the correction for the k-w model to extend the wall BC for omega

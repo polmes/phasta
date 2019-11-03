@@ -117,9 +117,6 @@ c.... end
 c
         end
 c
-!
-! new threaded blocks only node for local above
-!
       subroutine local (blk,global, rlocal, ientmp, n, code)
 c
 c----------------------------------------------------------------------
@@ -218,6 +215,121 @@ c
           do j = 1, n
             do i = 1, blk%s
               do nel = 1,blk%e
+                global(ien(nel,i),j) = rlocal(nel,i,j)
+              enddo
+            enddo
+          enddo
+c
+c.... return
+c
+          return
+        endif
+c
+c.... --------------------------->  error  <---------------------------
+c
+        call error ('local   ', code, 0)
+c
+c.... end
+c
+        end
+c
+
+      subroutine localc (global, rlocal, ientmp, n, code)
+c
+c----------------------------------------------------------------------
+c
+c This subroutine performs a vector gather/scatter operation.
+c
+c input:
+c  global (nshg,n)             : global array
+c  rlocal (blk%e,blk%s,n)         : local array
+c  ien    (blk%e,blk%s)      : nodal connectivity
+c  n                            : number of d.o.f.'s to be copied
+c  code                         : the transfer code
+c                                  .eq. 'gather  ', from global to local
+c                                  .eq. 'scatter ', add  local to global 
+c                                  .eq. 'globaliz', from local to global
+c
+c
+c Zdenek Johan, Winter 1992.
+c----------------------------------------------------------------------
+c
+      include "common.h"
+
+
+        dimension global(nshg,n),           rlocal(npro,nshl,n),
+     &            ien(npro,nshl),           ientmp(npro,nshl)
+c
+        character*8 code
+        
+c
+c.... cubic basis has negatives in ien
+c
+        if (ipord > 2) then
+           ien = abs(ientmp)
+        else
+           ien = ientmp
+        endif
+c
+c.... ------------------------>  'localization  '  <--------------------
+c
+        if (code .eq. 'gather  ') then
+c
+c.... gather the data
+c
+
+          do j = 1, n
+            do i = 1, nshl
+              rlocal(:,i,j) = global(ien(:,i),j)
+            enddo
+          enddo
+
+
+c
+c.... transfer count
+c
+          gbytes = gbytes + n*npro*nshl
+c
+c.... return
+c
+          return
+        endif
+c
+c.... ------------------------->  'assembling '  <----------------------
+c
+        if (code .eq. 'scatter ') then
+c
+c.... scatter the data (possible collisions)
+c
+          do j = 1, n
+            do i = 1, nshl
+              do nel = 1,npro
+                global(ien(nel,i),j) = global(ien(nel,i),j) 
+     &                               + rlocal(nel,i,j)
+              enddo
+            enddo
+          enddo
+
+c
+c.... transfer and flop counts
+c
+          sbytes = sbytes + n*npro*nshl
+          flops  = flops  + n*npro*nshl
+c
+c.... return
+c
+          return
+        endif
+c
+c.... ------------------------->  'globalizing '  <----------------------
+c
+        if (code .eq. 'globaliz') then
+c
+c.... scatter the data (possible collisions)
+c
+          do j = 1, n
+            do i = 1, nshl
+              do nel = 1,npro
                 global(ien(nel,i),j) = rlocal(nel,i,j)
               enddo
             enddo

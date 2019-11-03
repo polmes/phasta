@@ -10,7 +10,7 @@
      &                     ql,      divqi,   sgn, tmp,
      &                     rmu,     rlm,     rlm2mu,
      &                     con,     rlsl,    rlsli, 
-     &                     xmudmi,  sforce,  cv) 
+     &                     xmudmi,  sforce,  cv, dwl,dist2wi) 
 c
 c----------------------------------------------------------------------
 c
@@ -89,12 +89,14 @@ c
      &            xmudmi(npro,ngauss)
         dimension gyti(npro,nsd),            gradh(npro,nsd),
      &            sforce(npro,3),            weber(npro) 
+        dimension dwl(npro,nenl), dist2wi(npro)
         ttim(20) = ttim(20) - secs(0.0)
 
 c
         ttim(10) = ttim(10) - secs(0.0)
 
         dui = zero
+        dist2wi=zero
 c
         do n = 1, nshl
            dui(:,1) = dui(:,1) + shape(:,n) * yl(:,n,1) ! p
@@ -102,6 +104,7 @@ c
            dui(:,3) = dui(:,3) + shape(:,n) * yl(:,n,3) ! u2
            dui(:,4) = dui(:,4) + shape(:,n) * yl(:,n,4) ! u3
            dui(:,5) = dui(:,5) + shape(:,n) * yl(:,n,5) ! T
+           dist2wi = dist2wi + shape(:,n) * dwl(:,n)
         enddo
 c     
 !      flops = flops + 10*nshl*npro

@@ -1,7 +1,7 @@
         subroutine e3 (blk, yl,      ycl,     acl,     shp,
      &                 shgl,    xl,      rl,      rml,    xmudmi,
      &                 BDiagl,  ql,      sgn,     rlsl,   EGmass,
-     &                 rerrl,   ytargetl)
+     &                 rerrl,   ytargetl, dwl)
 c                                                                      
 c----------------------------------------------------------------------
 c
@@ -93,6 +93,7 @@ c
         dimension x(npro,3),              bcool(npro)
 
         dimension rlsl(npro,nshl,6),      rlsli(npro,6)
+        dimension dwl(npro,nenl), dist2wi(npro)
         
         real*8    rerrl(npro,nshl,6)
         ttim(6) = ttim(6) - secs(0.0)
@@ -141,7 +142,7 @@ c
      &               rLyi,  !passed as a work array
      &               rmu,             rlm,             rlm2mu,
      &               con,             rlsl,            rlsli,
-     &               xmudmi,          sforce,          cv)
+     &               xmudmi,          sforce,          cv,dwl,dist2wi)
         ttim(8) = ttim(8) + secs(0.0)
         
 c
@@ -211,7 +212,7 @@ c
      &               EGmass,          stiff,         WdetJ,
      &               giju,            rTLS,          raLS,
      &               A0inv,           dVdY,          rerrl,
-     &               compK,           pres,          PTau)
+     &               compK,           pres,          PTau, dist2wi)
         ttim(16) = ttim(16) + secs(0.0)
 c        
 c....  Discontinuity capturing
@@ -220,7 +221,7 @@ c
           call e3dc  (g1yi,          g2yi,          g3yi,
      &                A0,            raLS,          rTLS,
      &                giju,          DC,            
-     &                ri,            rmi,           stiff, A0DC)
+     &                ri,            rmi,           stiff, A0DC,dist2wi)
         endif
 ! SAM wants a threshold here so we are going to take over this little used 
 ! error indictor for that purpose.  To revert note you will want to uncomment the original 

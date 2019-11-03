@@ -222,7 +222,7 @@ c
 
 
         subroutine e3eig2 (u,      c,      AR1,    AR2,    AR3,
-     &                     rlam,   Q,    eigmax)
+     &                     rlam,   Q,    eigmax,   dist2wi)
 c
 c----------------------------------------------------------------------
 c
@@ -267,6 +267,7 @@ c
 c
         dimension offd(npro),                t(npro),
      &            Rcs(npro),                 Rsn(npro)
+        dimension ttermSVar(npro), dist2wi(npro)
 c
 c.... set the reduced eigensystem
 c
@@ -281,9 +282,18 @@ c
 c.... modify for time dependent problems
 c
 ! consider time term if iremoveStabTimeTerm is set to zero
+!
+        delst=deltatts0
+        delfin=deltatts1
+        dtsfctLow=0.5  ! for now  we hard code this
+        aslp=(dtsfct-dtsfctLow)/(delfin-delst)
         if(iremoveStabTimeTerm.eq.0) then
-           tmp  = dtsfct * four * (Dtgl * Dtgl)
-           rlam(:,:) = rlam(:,:) + tmp
+           tmp  =  four * Dtgl * Dtgl
+           ttermSVar(:)= tmp*min(dtsfct,max(dtsfctLow,(dist2wi(:)-delst)*aslp))
+           do i =1,5
+              rlam(:,i) = rlam(:,i) + ttermSVar(:)
+           enddo
+!           where(dist2wi.lt. 0.2) rlam(:,:) = rlam(:,:) + tmp*(dist2wi(:)-delst)/ddel
         endif
 c
 c.... compute the rotation tangent ( IEEE arithmetic if offd=0 )

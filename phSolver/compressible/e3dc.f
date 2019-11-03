@@ -1,6 +1,6 @@
 	subroutine e3DC (g1yi,   g2yi,   g3yi,   A0,     raLS,
      &			 rtLS,   giju,   DC,     ri,
-     &                   rmi,    stiff, A0DC)
+     &                   rmi,    stiff, A0DC, dist2wi)
 c
 c----------------------------------------------------------------------
 c
@@ -42,6 +42,7 @@ c
         dimension ggyi(npro,nflow),         gAgyi(npro,15),
      &            gnorm(npro),              A0gyi(npro,15),
      &            yiA0DCyj(npro,6),         A0DC(npro,4)
+        dimension dist2wi(npro)
 c
 c ... -----------------------> initialize <----------------------------
 c
@@ -272,8 +273,11 @@ c
      &            + giju(:,3)*yiA0DCyj(:,3) 
      &            + epsM  )
 c
-c	    DC(:,intp)=dim((fact*sqrt(raLS*gnorm)),(rtLS*gnorm))
-	    DC(:,intp)=max(zero,(fact*sqrt(raLS*gnorm))-(rtLS*gnorm))
+	    DC(:,intp)=abs((fact*sqrt(raLS*gnorm))-(rtLS*gnorm))  
+! above is positive difference 
+! next two are same thing
+!	    DC(:,intp)=dim((fact*sqrt(raLS*gnorm)),(rtLS*gnorm))
+! prior	    DC(:,intp)=max(zero,(fact*sqrt(raLS*gnorm))-(rtLS*gnorm))
 c
 c.... flop count
 c
@@ -320,8 +324,12 @@ c
      &            + epsM  )
 
 c
-c	    DC(:,intp) = min( dim(fact * sqrt(raLS * gnorm),
-	    DC(:,intp) = min( max(zero,fact * sqrt(raLS * gnorm)-
+!	    DC(:,intp) = min( max(zero,fact * sqrt(raLS * gnorm)-
+! same as above	    DC(:,intp) = min( dim(fact * sqrt(raLS * gnorm),
+!     &                       rtLS * gnorm), two * rtLS * gnorm )
+!try postive differnce from the first factor to avoid zeroing DC when
+!differnce in Mallet part is negative for which above two zero for DC
+	    DC(:,intp) = min( abs(fact * sqrt(raLS * gnorm)-
      &                       rtLS * gnorm), two * rtLS * gnorm )
 c
 c.... flop count
@@ -331,6 +339,9 @@ c
 	  endif
 c
 c	endif
+!        if(deltadc.gt.0) DC(:,intp)=DC(:,intp)*min(one,(dist2wi(:)/deltadc)**3)
+        deltaBlendI=one/(deltatts0-deltatts1)
+        if(deltadc.gt.0 .and. deltaBlendI.gt.0) DC(:,intp)=DC(:,intp)*min(one,max(zero,(dist2wi(:)-deltatts1)*deltaBlendI))
 c
 c.... ---------------------------->  RHS  <----------------------------
 c

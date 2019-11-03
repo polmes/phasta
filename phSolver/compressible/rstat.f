@@ -15,6 +15,7 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use turbSA
         include "common.h"
         include "mpif.h"
         include "auxmpi.h"
@@ -94,7 +95,10 @@ c
         rtmp = zero
         do i = 1, nflow
           rtmp(:,1) = rtmp(:,1) + res(:,i)**2
-          rtmp(:,2) = rtmp(:,2) + b(:,i)**2
+!          rtmp(:,2) = rtmp(:,2) + b(:,i)**2
+          if(d2wall(i) .lt. deltatts1) then
+              rtmp(:,2) = rtmp(:,2) + res(:,i)**2
+          endif
         enddo
  
          eachproc(1)=sum(rtmp(:,1))      

@@ -124,6 +124,7 @@ extern "C" {
   extern struct {
     double zoutsponge, radsponge, zinsponge, grthosponge, grthisponge;
     double betamax;
+    double deltadc, deltatts1,deltatts0;
     int spongecontinuity, spongemomentum1, spongemomentum2;
     int spongeenergy, spongemomentum3;
   } spongevar ;

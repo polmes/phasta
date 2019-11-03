@@ -641,6 +641,9 @@ int input_fform(phSolver::Input& inp)
     else if ( (string)inp.GetValue("Body Force Option") == "Cooling Initial Condition" ) {
       for(i=0; i< matdat.nummat ; i++) matdat.matflg[i][4] = 5;
     }
+    spongevar.deltadc = inp.GetValue("dwall value below which to ramp DC down");
+    spongevar.deltatts0 = inp.GetValue("dwall value above which tau time constant is reduced");
+    spongevar.deltatts1 = inp.GetValue("dwall value where blend to requested tau time constant is 1");
 
     // the following block of stuff is common to all cooling type sponges. 
     // Specific stuff belongs in the conditionals above

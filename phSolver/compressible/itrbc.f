@@ -29,7 +29,8 @@ c
 
         real*8 tmp(nshg), y1(nshg),q1(nshg)
         dimension rn1(nshg), rmagn1(nshg)
-        real*8 limitcount(nflow)
+!        real*8 limitcount(nflow)
+        integer limitcount(nflow)
         integer locmax(1),locmin(1)
 c
 c  limiting...ugly but sometimes the only way
@@ -37,10 +38,10 @@ c
         limitcount=0
         do i=1,nflow
            if(ylimit(1,i).gt.0) then
-              locmax=maxloc(y(:,i))
-              locmin=minloc(y(:,i))
-              ymax=maxval(y(:,i))
-              ymin=minval(y(:,i))
+!              locmax=maxloc(y(:,i))
+!              locmin=minloc(y(:,i))
+!              ymax=maxval(y(:,i))
+!              ymin=minval(y(:,i))
 c              write(33,34)i,ymax,ymin,1.*locmax,1.*locmin
 c          call flush(33)
               do j=1,numnp      ! only limit linear modes for now
@@ -50,11 +51,13 @@ c          call flush(33)
               enddo
            endif
         enddo
-c        if(maxval(limitcount).gt.0) then
-c           write(33,34)myrank,(limitcount(j)/numnp,j=1,nflow)
-c           call flush(33)
-c        endif
- 34     format(i5,5(2x,e14.7))
+        if(maxval(limitcount).gt.0) then
+!!           write(*,34)myrank,(limitcount(j)/numnp,j=1,nflow)
+           write(*,34)myrank,(limitcount(j),j=1,nflow)
+!!           call flush(33)
+        endif
+ 34     format(i5,5(2x,i5))
+! 34     format(i5,5(2x,e14.7))
 c
 c.... ------------------------>  Temperature  <------------------------
 c.... temperature

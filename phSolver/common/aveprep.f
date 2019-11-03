@@ -28,8 +28,8 @@ c------------------------------------------------------------------------------
 
       use pointer_data
       use aveall
-
       include "common.h"
+
       
       dimension shp(MAXTOP,maxsh,MAXQPT)
 !      dimension x(numnp,3)
@@ -49,7 +49,7 @@ c------------------------------------------------------------------------------
         
         ngauss = nint(lcsyst)
 
-        call getylist( ylist, ifathe(iel:inum,:), shp(lcsyst,1:nshl,:),
+        call getylist(ylist, ifathe(iel:inum,:), shp(lcsyst,1:nshl,:),
      &       mxl(iblk)%p, mien(iblk)%p)
         
 
@@ -92,7 +92,7 @@ cc      xmudmi=max(xmudmi, -rmu) ! don't let (xmudmi + mu) < 0
 
       return
       end
-      subroutine getxnut (fres, xden, xnum, ien, shp)
+      subroutine getxnut (fres, xden, xnum, ien, shp) !not called in current code so not updating
 
       include "common.h"
 
@@ -106,7 +106,7 @@ cc      xmudmi=max(xmudmi, -rmu) ! don't let (xmudmi + mu) < 0
      &          xden(1),                 xnum(1)         
      
 
-      call local (fres, fresl, ien, 22, 'gather  ')
+      call localc (fres, fresl, ien, 22, 'gather  ')
 
       xnuml  = zero
       xdenl  = zero
@@ -184,7 +184,7 @@ c         xdenli = xdenli
 
       end
 
-      subroutine getylist (ylist, lfathe, shp, x, ien)
+      subroutine getylist (ylist, lfathe, shp, xl, ien)
 
       include "common.h"
 
@@ -194,7 +194,6 @@ c         xdenli = xdenli
       
       integer intp
       
-!      call localx (x,      xl,     ien,    3,  'gather  ')      
                 
 
       do nel  = 1, npro
@@ -352,6 +351,7 @@ c
         nenl = lcblk(5,iblk)
         inum  = iel + npro - 1
         ngauss = nint(lcsyst)
+
         call smagcoeff (fres(:,1:22), xden, xnum, mien(iblk)%p,
      &                  shp(lcsyst,1:nshl,:), ifathe(iel:inum,:))
 
@@ -424,7 +424,7 @@ c...  End of averaging over all directions.
 
 
 
-      subroutine smagcoeff (fres, xden, xnum, ien, shp, lfathe)
+      subroutine smagcoeff (blk,fres, xden, xnum, ien, shp, lfathe)
 
       include "common.h"
 
@@ -437,7 +437,7 @@ c...  End of averaging over all directions.
      &          xden(idim),              xnum(idim),         
      &          lfathe(npro,maxsh)
 
-      call local (fres, fresl, ien, 22, 'gather  ')
+      call localc (fres, fresl, ien, 22, 'gather  ')
 
       do intp = 1, ngauss
 

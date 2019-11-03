@@ -282,7 +282,7 @@ c
      &     rLymi,           Tau,            rk,
      &     giju,            rTLS,           raLS,
      &     cv,              compK,          pres,
-     &     A0inv,           dVdY)
+     &     A0inv,           dVdY,   dist2wi)
 c
 c----------------------------------------------------------------------
 c
@@ -335,6 +335,7 @@ c
      &            rlam(npro,5), eigmax(npro,5),   Pe(npro),
      &            Ak(npro),    B(npro),    D(npro),   E(npro),
      &            STau(npro,15),  Tau(npro,nflow,nflow)
+      dimension dist2wi(npro)
 
 
 c... build some necessary quantities at integration point:
@@ -374,7 +375,7 @@ c... the eigenvectors. Tau still remains in entropy variables.
 
       call e3eig2 (u,               c,               a1,
      &             a2,              a3,              rlam,
-     &             Q,               eigmax)
+     &             Q,               eigmax,  dist2wi)
 
 c
 c.... invert the eigenvalues

@@ -1,8 +1,11 @@
         subroutine vortGLB  (y, x, shp, shgl, ilwork, vortG)
 
+        use eblock
         use pointer_data
         include "common.h"
         include "mpif.h"
+       type (LocalBlkData) blk
+
 c
         real*8  y(nshg,ndof),  x(numnp,nsd)              
 c
@@ -34,6 +37,14 @@ c
           npro   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
+
 c
           allocate (tmpshp(nshl,MAXQPT))
           allocate (tmpshgl(nsd,nshl,MAXQPT))
@@ -45,7 +56,7 @@ c
                write(*,*)'Compute vortIntG:', real(iblk)/nelblk
             endif
           endif
-        call vortELE(y,x,tmpshp,tmpshgl,mien(iblk)%p,vortIntG,lpmassG)
+        call vortELE(blk,y,mxl(iblk)%p,tmpshp,tmpshgl,mien(iblk)%p,vortIntG,lpmassG)
           
           deallocate(tmpshp)
           deallocate(tmpshgl)
@@ -75,12 +86,14 @@ c
       end
 ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
-      subroutine vortELE(y,x,shp1,shgl1,ien,vortIntG,lpmassG)
+      subroutine vortELE(blk, y,xl,shp1,shgl1,ien,vortIntG,lpmassG)
 
-  
+       use eblock
        include "common.h"
+       type (LocalBlkData) blk
 
-       real*8 y(nshg,ndof), x(numnp,nsd)
+
+       real*8 y(nshg,ndof), xl(blk%e,blk%n,nsd)
        real*8 shp1(nshl,MAXQPT), shgl1(nsd,nshl,MAXQPT)
        real*8 shp2(nshl,ngauss), shgl2(nsd,nshl,ngauss) 
        real*8 shp(npro,nshl), shgl(npro,nsd,nshl)
@@ -105,8 +118,8 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        shp2(:,1:ngauss)=shp1(:,1:ngauss)
        shgl2(:,:,1:ngauss)=shgl1(:,:,1:ngauss)
   
-       call localy (y, yl, ien, ndof,  'gather  ')
-       call localx (x, xl, ien, nsd,   'gather  ')
+       call localy (blk, y, yl, ien, ndof,  'gather  ')
+       call localx (blk, x, xl, ien, nsd,   'gather  ')
 
       
        vortIntL=0
@@ -117,9 +130,9 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 
        do intp=1,ngauss
                 
-         call getshp (shp2, shgl2, sgn, shp, shgl )
+         call getshp (blk, intp, shp2, shgl2, sgn, shp, shgl )
     
-         call e3metric(intp, xl,         shgl,        dxidx,  
+         call e3metric(blk, intp, xl,         shgl,        dxidx,  
      &                shg,        WdetJ) 
       
          g1yi = zero

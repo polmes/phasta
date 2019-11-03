@@ -686,8 +686,7 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
+      call localc (y,      yl,     ien,    5,  'gather  ')
 c
 c
       if(matflg(1,1).eq.0) then ! compressible
@@ -800,7 +799,7 @@ c      enddo
 c      enddo
 c      enddo
 
-      call local (hfres, fresl, ien, 11, 'scatter ')
+      call localc (hfres, fresl, ien, 11, 'scatter ')
 
       return
       end
@@ -841,9 +840,8 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
-      call local (hfres,  hfresl, ien,   11,  'gather  ')
+      call localc (y,      yl,     ien,    5,  'gather  ')
+      call localc (hfres,  hfresl, ien,   11,  'gather  ')
 c
       if(matflg(1,1).eq.0) then ! compressible
       yl (:,:,1) = yl(:,:,1) / (Rgas * yl(:,:,5))  !get density
@@ -1077,9 +1075,8 @@ c|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
-      call local (rls,    rlsl,   ien,    6,  'gather  ') 
+      call localc (y,      yl,     ien,    5,  'gather  ')
+      call localc (rls,    rlsl,   ien,    6,  'gather  ') 
 
       epsl = zero
 

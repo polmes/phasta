@@ -57,6 +57,7 @@ c from different modules
         common /extrat/ ttim(100)
         common /spongevar/ zoutSponge, radSponge, zinSponge,
      &            grthOSponge,grthISponge,betamax,
+     &            deltadc, deltatts1,deltatts0,
      &            spongecontinuity, spongemomentum1, spongemomentum2,
      &            spongeenergy, spongemomentum3
         common /turbvar/ eles,ylimit(3,9), rampmdot(2,3),

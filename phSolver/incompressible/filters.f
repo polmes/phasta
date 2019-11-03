@@ -22,8 +22,7 @@ c...  kernel
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
+      call localc (y,      yl,     ien,    5,  'gather  ')
 c
 
       fresl = zero
@@ -200,9 +199,8 @@ c... box kernel.
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
-      call local (hfres,  hfresl, ien,   16,  'gather  ')
+      call localyc (y,      yl,     ien,    5,  'gather  ')
+      call localc (hfres,  hfresl, ien,   16,  'gather  ')
 
       S(:,:) = sqrt(
      &     two*(hfresl(:,:,10)**2 + hfresl(:,:,11)**2 +
@@ -422,8 +420,7 @@ c...  kernel
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
+      call localyc (y,      yl,     ien,    5,  'gather  ')
 c
 
       fresl = zero
@@ -613,9 +610,8 @@ c... box kernel.
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
-      call local (hfres,  hfresl, ien,   22,  'gather  ')
+      call localyc (y,      yl,     ien,    5,  'gather  ')
+      call localc (hfres,  hfresl, ien,   22,  'gather  ')
 
       S(:,:) = sqrt(
      &     two*(hfresl(:,:,10)**2 + hfresl(:,:,11)**2 +
@@ -801,8 +797,7 @@ c...  kernel
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-!      call localx (x,      xl,     ien,    3,  'gather  ')
+      call localyc (y,      yl,     ien,    5,  'gather  ')
 c
 
       fresl = zero
@@ -963,7 +958,7 @@ c                          element node
       enddo                     !end of loop over integration points
 
 
-      call local (hfres, fresl, ien, 24, 'scatter ')
+      call localc (hfres, fresl, ien, 24, 'scatter ')
 
       return
       end
@@ -1255,8 +1250,7 @@ c
 
       dimension tmp(npro)
 
-      call local (y,      yl,     ien,    5,  'gather  ')
-      call localx (x,      xl,     ien,    3,  'gather  ')
+      call localyc (y,      yl,     ien,    5,  'gather  ')
 c
 
       fresl = zero
@@ -1420,7 +1414,7 @@ c                          element node
       enddo                     !end of loop over integration points
 
 
-      call local (hfres, fresl, ien, 24, 'scatter ')
+      call localc (hfres, fresl, ien, 24, 'scatter ')
 
       return
       end
