@@ -93,7 +93,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
        type (LocalBlkData) blk
 
 
-       real*8 y(nshg,ndof), xl(blk%e,blk%n,nsd)
+       real*8 y(nshg,ndof)
        real*8 shp1(nshl,MAXQPT), shgl1(nsd,nshl,MAXQPT)
        real*8 shp2(nshl,ngauss), shgl2(nsd,nshl,ngauss) 
        real*8 shp(npro,nshl), shgl(npro,nsd,nshl)

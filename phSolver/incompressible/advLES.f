@@ -1291,7 +1291,7 @@ c                    Shpf and shglf are the shape funciotns and their
 c                    gradient evaluated using the quadrature rule desired 
 c                    for computing the dmod. Qwt contains the weights of the 
 c                    quad. points.  
-     use eblock
+      use eblock
 
 
 
