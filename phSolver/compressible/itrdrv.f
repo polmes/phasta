@@ -58,7 +58,9 @@ c
         real*8   almit, alfit, gamit
 
         dimension ifath(numnp),    velbar(nfath,ndof),  nsons(nfath)
-        real*8 rerr(nshg,numerr),ybar(nshg,ndof+8) ! 8 is for avg. of square as uu, vv, ww, pp, TT, uv, uw, and vw
+!        real*8 rerr(nshg,numerr),ybar(nshg,ndof+8) ! 8 is for avg. of square as uu, vv, ww, pp, TT, uv, uw, and vw
+        real*8 ybar(nshg,ndof+8) ! 8 is for avg. of square as uu, vv, ww, pp, TT, uv, uw, and vw
+        real*8, allocatable, dimension(:,:) :: rerr
         real*8, allocatable, dimension(:,:) :: vortG
         real*8, allocatable, dimension(:,:,:) :: BDiag
 
@@ -97,8 +99,10 @@ c
         real*8 vortmax, vortmaxg
         real*8 errmax, errmaxg
 
+
        iprec=0 !PETSc - Disable PHASTA's BDiag. TODO: Preprocssor Switch
        numerr=10+isurf
+       allocate(rerr(nshg,numerr))
 
 
        call findTurbWall(iTurbWall)
