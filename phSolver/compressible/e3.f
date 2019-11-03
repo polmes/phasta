@@ -1,4 +1,4 @@
-        subroutine e3 (yl,      ycl,     acl,     shp,
+        subroutine e3 (blk, yl,      ycl,     acl,     shp,
      &                 shgl,    xl,      rl,      rml,    xmudmi,
      &                 BDiagl,  ql,      sgn,     rlsl,   EGmass,
      &                 rerrl,   ytargetl)
@@ -45,7 +45,9 @@ c Kenneth Jansen, Winter 1997. (Primitive Variables)
 c Chris Whiting, Winter 1998.  (LHS matrix formation)
 c----------------------------------------------------------------------
 c
+      use eblock
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension yl(npro,nshl,nflow),     ycl(npro,nshl,ndof),
      &            acl(npro,nshl,ndof),     rmu(npro),    
@@ -98,7 +100,7 @@ c
 c.... local reconstruction of diffusive flux vector
 c (note: not currently included in mfg)
         if (idiff==2 .and. (ires==3 .or. ires==1)) then
-           call e3ql (ycl, shp, shgl, xl, ql, xmudmi, sgn)
+           call e3ql (blk,ycl, shp, shgl, xl, ql, xmudmi, sgn)
         endif
 c
 c.... loop through the integration points
@@ -113,7 +115,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c     
-        call getshp(intp, shp,          shgl,      sgn, 
+        call getshp(blk, intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
 c     
 c.... initialize
@@ -126,7 +128,7 @@ c
 c.... calculate the integration variables
 c
         ttim(8) = ttim(8) - secs(0.0)
-        call e3ivar (yl,              ycl,             acl,
+        call e3ivar (blk, yl,              ycl,             acl,
      &               Sclr,            shape,           shdrv,           
      &               xl,              dui,             aci,
      &               g1yi,            g2yi,            g3yi,
@@ -308,7 +310,7 @@ c
 c
 c
 c
-       subroutine e3Sclr (ycl,          acl,  
+       subroutine e3Sclr (blk, ycl,          acl,  
      &                    dwl,         elDwl,            
      &                    shp,         sgn,
      &                    shgl,        xl, 
@@ -354,7 +356,9 @@ c Kenneth Jansen, Winter 1997. (Primitive Variables)
 c Chris Whiting, Winter 1998.  (LHS matrix formation)
 c----------------------------------------------------------------------
 c
+      use eblock
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension ycl(npro,nshl,ndof),
      &            acl(npro,nshl,ndof),
@@ -409,7 +413,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c     
-        call getshp(shp,          shgl,      sgn, 
+        call getshp(blk, intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
 c     
 c.... initialize
@@ -426,7 +430,7 @@ c.... calculate the integration variables
 c
         ttim(8) = ttim(8) - tmr()
 c
-        call e3ivarSclr(ycl,              acl,        acti,
+        call e3ivarSclr(blk, ycl,              acl,        acti,
      &                  shape,           shdrv,      xl,
      &                  T,               cp,
      &                  dxidx,           Sclr,        

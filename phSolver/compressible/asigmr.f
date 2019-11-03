@@ -1,4 +1,4 @@
-        subroutine AsIGMR (y,       ac,      x,        xmudmi,   
+        subroutine AsIGMR (blk,y,       ac,  xl,dwl,        xmudmi,   
      &                     shp,     shgl,    ien,     
      &                     mater,   res,     rmes,    
      &                     BDiag,   qres,    EGmass,   rerr)
@@ -14,11 +14,12 @@ c
         use rlssave     ! Use the resolved Leonard stresses at the nodes.
         use timedataC    ! time series
         use specialBC    ! get ytarget to localize and send down
+        use eblock
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndofl),            ac(nshg,ndofl),
-     &            x(numnp,nsd),              
-     &            shp(nshl,MAXQPT),  
+     &            dwl(blk%e,blk%n),         shp(nshl,MAXQPT),  
      &            shgl(nsd,nshl,MAXQPT),
      &            ien(npro,nshl),  
      &            mater(npro),              res(nshg,nflow),
@@ -44,22 +45,23 @@ c     functions.
 c
 c
         if (ipord .gt. 1) then
-           call getsgn(ien,sgn)
+           call getsgn(blk, ien,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localy(y,      ycl,     ien,    ndofl,  'gather  ')
-        call localy(ac,    acl,     ien,    ndofl,  'gather  ')
-        call localx(x,      xl,     ien,    nsd,    'gather  ')
-        call local (qres,   ql,     ien,    idflx,  'gather  ')
+        call localy(blk,y,      ycl,     ien,    ndofl,  'gather  ')
+        call localy(blk,ac,    acl,     ien,    ndofl,  'gather  ')
+        call local (blk,qres,   ql,     ien,    idflx,  'gather  ')
 
-        if(matflg(5,1).ge.4 )
-     &   call localy (ytarget,   ytargetl,  ien,   nflow,  'gather  ')
+        if(matflg(5,1).ge.4 ) 
+     &   call localy (blk,ytarget,   ytargetl,  
+     &                ien,   nflow,  'gather  ')
 
 
         if( (iLES.gt.10).and.(iLES.lt.20)) then  ! bardina 
-           call local (rls, rlsl,     ien,       6, 'gather  ')  
+           call local (blk,rls, rlsl,     
+     &     ien,       6, 'gather  ')  
         else
            rlsl = zero
         endif      
@@ -72,7 +74,7 @@ c
         if(ierrcalc.eq.1) rerrl = zero
         ttim(31) = ttim(31) - secs(0.0)
 
-        call e3  (ycl,     ycl,     acl,     shp,
+        call e3  (blk,ycl,     ycl,     acl,     shp,
      &            shgl,    xl,      rl,      rml,   xmudmi,
      &            BDiagl,  ql,      sgn,     rlsl,  EGmass,
      &            rerrl,   ytargetl)
@@ -81,10 +83,10 @@ c
 c
 c.... assemble the residual and modified residual
 c
-        call local (res,    rl,     ien,    nflow,  'scatter ')
+        call local (blk,res,    rl,     ien,    nflow,  'scatter ')
 c
         if ( ierrcalc .eq. 1 ) then
-           call local (rerr, rerrl,  ien, 6, 'scatter ')
+           call local (blk,rerr, rerrl,  ien, 6, 'scatter ')
         endif
 c
 c.... extract and assemble the Block-Diagonal (see note in elmgmr, line 280)
@@ -99,7 +101,7 @@ c
                  enddo
               enddo
            enddo
-           call local (BDiag,  BDiagl, ien, nflow*nflow, 'scatter ')
+           call local (blk,BDiag,  BDiagl, ien, nflow*nflow, 'scatter ')
         endif
         
 c
@@ -108,7 +110,7 @@ c
 
         if (exts) then
            if ((iter.eq.1).and.(mod(lstep,freq).eq.0)) then
-              call timeseries(ycl,xl,ien,sgn)
+              call timeseries(blk,ycl,xl,ien,sgn)
            endif
         endif
         
@@ -120,8 +122,8 @@ c
 c
 c
 c
-        subroutine AsIGMRSclr (y,       ac,
-     &                         x,       elDwl,
+        subroutine AsIGMRSclr (blk, y,       ac,
+     &                         xl,       dwl,
      &                         shp,     shgl,      ien,     
      &                         mater,   rest,      rmest,    
      &                         qrest,   EGmasst,   Diag)
@@ -134,12 +136,13 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         use turbSA
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndof),             
      &            ac(nshg,ndof),
-     &            x(numnp,nsd),              
      &            shp(nshl,MAXQPT),        shgl(nsd,nshl,MAXQPT),
      &            ien(npro,nshl),
      &            mater(npro),            rest(nshg),
@@ -154,22 +157,17 @@ c
      &            qtl(npro,nshl),         sgn(npro,nshl)
 c        
         dimension EGmasst(npro,nshape, nshape)
-        real*8    elDwl(npro)
 c.... create the matrix of mode signs for the hierarchic basis 
 c     functions. 
 c
-        call getsgn(ien,sgn)
+        call getsgn(blk, ien,sgn)
 c
 c
 c.... gather the variables
 c
-        call localy (y,       ycl,      ien,    ndof,  'gather  ')
-        call localy (ac,      acl,     ien,    ndof,  'gather  ')
-        call localx (x,       xl,      ien,    nsd,   'gather  ')
+        call localy (blk, y,       ycl,      ien,    ndof,  'gather  ')
+        call localy (blk, ac,      acl,     ien,    ndof,  'gather  ')
 c       call local (qrest,   qtl,     ien,    1,     'gather  ')
-        if (iRANS .lt. 0) then
-           call localx (d2wall,   dwl,     ien,    1,     'gather  ')
-        endif
 c
 c.... get the element residuals, LHS matrix, and preconditioner
 c
@@ -178,8 +176,8 @@ c
         
         ttim(31) = ttim(31) - tmr()
 
-        call e3Sclr (ycl,     acl,  
-     &               dwl,    elDwl,   shp,
+        call e3Sclr (blk, ycl,     acl,  
+     &               dwl,     dwl,   shp,
      &               sgn,    shgl,    xl,
      &               rtl,    rmtl,
      &               qtl,    EGmasst )
@@ -188,7 +186,7 @@ c
 c
 c.... assemble the residual and modified residual
 c
-        call local (rest,    rtl,     ien,    1,  'scatter ')
+        call local (blk, rest,    rtl,     ien,    1,  'scatter ')
 c
 c.... extract and assemble the Diagonal
 c
@@ -196,7 +194,7 @@ c
            do i=1,nshl
               Diagl(:,i)=EGmassT(:,i,i)
            enddo
-           call local(Diag, Diagl, ien, 1, 'scatter ')
+           call local(blk,Diag, Diagl, ien, 1, 'scatter ')
         endif
 c
 c.... end

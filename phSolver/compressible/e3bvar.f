@@ -49,6 +49,7 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
         include "common.h"
+
 c
         dimension yl(npro,nshl,nflow),      BCB(npro,nshlb,ndBCB),
      &            ycl(npro,nshl,ndof),

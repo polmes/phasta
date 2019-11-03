@@ -1,4 +1,4 @@
-        subroutine AsBFlx (y,       x,       shpb,    shglb,
+        subroutine AsBFlx (blk, y,  xlb, dwl,       shpb,    shglb,
      &                     ienb,    materb,  iBCB,    BCB,
      &                     invflx,  flxres,  flxLHS,  flxnrm)
 c
@@ -10,17 +10,19 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+        type (LocalBlkData) blk
 c
-        dimension y(nshg,ndof),             x(numnp,nsd),
-     &            shpb(nshl,ngaussb),
+        dimension y(nshg,ndof),             xlb(blk%e,blk%n,nsd),
+     &            shpb(nshl,ngaussb),       dwl(blk%e,blk%n),
      &            shglb(nsd,nshl,ngaussb),
      &            ienb(npro,nshl),          materb(npro),
      &            iBCB(npro,ndiBCB),        BCB(npro,nshlb,ndBCB),
      &            invflx(numnp),            flxres(numnp,nflow),
      &            flxLHS(numnp,1),          flxnrm(numnp,nsd)
 c
-        dimension ycl(npro,nshl,ndof),       xlb(npro,nenl,nsd),
+        dimension ycl(npro,nshl,ndof),     
      &            rl(npro,nshl,nflow),      rml(npro,nshl,nflow),
      &            flhsl(npro,nshl,1),       fnrml(npro,nshl,nsd),
      &            lnflx(npro),              lnode(27)
@@ -36,26 +38,25 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk, ienb,sgn)
         endif
 c
 c.... ------------------------>  Residual  <---------------------------
 c
 c.... gather the variables
 c
-        call localy(y,      ycl, ienb,   ndofl,  'gather  ')
-        call localx(x,      xlb,ienb,   nsd,    'gather  ')
+        call localy(blk,y,      ycl, ienb,   ndofl,  'gather  ')
 c
 c
 c.... get the boundary element residual
 c
         rl = zero
-        call e3b (ycl, ycl,     iBCB,    BCB,     shpb,    shglb,
+        call e3b (blk, ycl, ycl,     iBCB,    BCB,     shpb,    shglb,
      &            xlb,     rl,      rml,      sgn)
 c
 c.... assemble the residual
 c 
-        call local (flxres, rl, ienb,   nflow,   'scatter ')
+        call local (blk,flxres, rl, ienb,   nflow,   'scatter ')
 c
 c.... --------------------->  LHS and Normal  <------------------------
 c
@@ -74,7 +75,7 @@ c
 c.... 3D
 c
 c       if (nsd .eq. 3) then
-          call f3lhs (shpb,   shglb,  xlb,    flhsl,
+          call f3lhs (blk,shpb,   shglb,  xlb,    flhsl,
      &                fnrml, sgn)
 c       endif
 c
@@ -96,9 +97,9 @@ c
 c
 c.... assemble the boundary LHS and normal
 c
-        call local (flxLHS, flhsl,  ienb,   1,      'scatter ')
+        call local (blk, flxLHS, flhsl,  ienb,   1,      'scatter ')
 c
-        call local (flxnrm, fnrml,  ienb,   nsd,    'scatter ')
+        call local (blk, flxnrm, fnrml,  ienb,   nsd,    'scatter ')
 c
 c.... end
 c

@@ -1,4 +1,4 @@
-        subroutine AsBMFG (y,       x,       shpb,    shglb,
+        subroutine AsBMFG (blk, y,       xlb, dwl,       shpb,    shglb,
      &                     ienb,    materb,  iBCB,    BCB,
      &                     res,     rmes,    EGmass)
 c
@@ -10,16 +10,18 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+        type (LocalBlkData) blk
 c
-        dimension y(nshg,ndofl),           x(numnp,nsd),
-     &            shpb(nshl,ngaussb),
+        dimension y(nshg,ndofl),           xlb(blk%e,blk%n,nsd),
+     &            shpb(nshl,ngaussb),      dwl(blk%e,blk%n),
      &            shglb(nsd,nshl,ngaussb),        
      &            ienb(npro,nshl),          materb(npro),
      &            iBCB(npro,ndiBCB),        BCB(npro,nshlb,ndBCB),
      &            res(nshg,nflow),         rmes(nshg,nflow)
 c
-        dimension ycl(npro,nshl,ndofl),  xlb(npro,nenl,nsd),
+        dimension ycl(npro,nshl,ndofl),  
      &            rl(npro,nshl,nflow),
      &            rml(npro,nshl,nflow),
      &            EGmass(npro, nshl, nshl) 
@@ -30,14 +32,13 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk, ienb,sgn)
         endif
 c
 c.... gather the variables
 c
 
-        call localy(y,      ycl,     ienb,   ndofl,  'gather  ')
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
+        call localy(blk,y,      ycl,     ienb,   ndofl,  'gather  ')
 c
 
         !get the boundary element residuals
@@ -51,13 +52,13 @@ c
  !  so both will access data
  !  properly from this location.
 c
-        call e3b  (ycl,     ycl,     iBCB,    BCB,     shpb,    shglb,
+        call e3b  (blk, ycl,     ycl,     iBCB,    BCB,     shpb,    shglb,
      &             xlb,     rl,      rml,     sgn,     EGmass)
 
         !assemble the residual and the modified residual
-        call local(res,    rl,     ienb,   nflow,  'scatter ')
+        call local(blk,res,    rl,     ienb,   nflow,  'scatter ')
         if (Navier .eq. 1 .and. ires.ne.1 )
-     &    call local(rmes,   rml,    ienb,   nflow,  'scatter ')
+     &    call local(blk,rmes,   rml,    ienb,   nflow,  'scatter ')
         
         !end
         return
@@ -65,7 +66,7 @@ c
 c
 c
 c
-        subroutine AsBMFGSclr (y,       x,       shpb,    shglb,
+        subroutine AsBMFGSclr (blk, y,  xlb, dwl,       shpb,    shglb,
      &                         ienb,    materb,  iBCB, 
      &                         BCB,     rest,    rmest)
 c
@@ -77,10 +78,12 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+        type (LocalBlkData) blk
 c
-        dimension y(nshg,ndofl),           x(numnp,nsd),
-     &            shpb(nshl,maxsh),         
+        dimension y(nshg,ndofl),           xl(blk%e,blk%n,nsd),
+     &            shpb(nshl,maxsh),        dwl(blk%e,blk%n), 
      &            shglb(nsd,nshl,maxsh),         
      &            ienb(npro,nshl),       materb(npro),
      &            iBCB(npro,ndiBCB),   BCB(npro,nshlb,ndBCB),
@@ -94,13 +97,12 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
         if (ipord .gt. 1) then
-           call getsgn(ienb,sgn)
+           call getsgn(blk, ienb,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localy (y,      ycl,     ienb,   ndofl,  'gather  ')
-        call localx (x,      xlb,    ienb,   nsd,    'gather  ')
+        call localy (blk,y,      ycl,     ienb,   ndofl,  'gather  ')
 c
 c.... get the boundary element residuals
 c
@@ -109,19 +111,19 @@ c
 c
 c.... 3D
 c
-            call e3bSclr (ycl,    iBCB,    BCB,     
+            call e3bSclr (blk,ycl,    iBCB,    BCB,     
      &                    shpb,  shglb,   sgn,
      &                    xlb,   rtl,     rmtl)
 c
 c.... assemble the residual and the modified residual
 c
 
-        call local (rest,    rtl,     ienb,   1,  'scatter ')
+        call local (blk,rest,    rtl,     ienb,   1,  'scatter ')
 
 
 c
         if (Navier .eq. 1)
-     &  call local (rmest,   rmtl,    ienb,   1,  'scatter ')
+     &  call local (blk,rmest,   rmtl,    ienb,   1,  'scatter ')
 c
 c.... end
 c

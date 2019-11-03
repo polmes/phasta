@@ -1,4 +1,4 @@
-        subroutine e3q (ycl,      shp,     shgl,
+        subroutine e3q (blk, ycl,      shp,     shgl,
      &                  xl,       ql,      rmassl, 
      &                  xmudmi,   sgn)
 c                                                                      
@@ -19,7 +19,9 @@ c  rmassl     (npro,nshl)        : element lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
+      use eblock
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension ycl(npro,nshl,ndof),  
      &            shp(nshl,ngauss),  
@@ -65,7 +67,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c
-        call getshp(intp, shp,          shgl,      sgn, 
+        call getshp(blk, intp, shp,          shgl,      sgn, 
      &              shape,        shdrv)
 c
 c.... initialize
@@ -77,7 +79,7 @@ c.... calculate the integration variables necessary for the
 c     formation of q
 c
 
-        call e3qvar   (ycl,        shape,        shdrv,   
+        call e3qvar   (blk, ycl,        shape,        shdrv,   
      &                 rho,       xl,           g1yi,
      &                 g2yi,      g3yi,         shg,
      &                 dxidx,     WdetJ,        T,
@@ -89,7 +91,7 @@ c
 c
 c.... get material properties
 c
-        call getDiff (T,        cp,       rho,        ycl,
+        call getDiff (blk, T,        cp,       rho,        ycl,
      &                rmu,      rlm,      rlm2mu,     con,  shape,
      &                xmudmi,   xl)
           

@@ -1,4 +1,4 @@
-        subroutine AsBRes (y, yc,      x,       shpb,    shglb,
+        subroutine AsBRes (blk, y, yc,      xlb,dwl,       shpb,    shglb,
      &                     ienb,    materb,  iBCB,    BCB,
      &                     rmes)
 c
@@ -10,9 +10,11 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+        type (LocalBlkData) blk
 c
-        dimension y(nshg,nflow),           x(numnp,nsd),
+        dimension y(nshg,nflow),           dwl(blk%e,blk%n),           
      &            yc(nshg,ndof),           shpb(nshl,ngaussb),
      &            shglb(nsd,nshl,ngaussb),
      &            ienb(npro,nshl),        materb(npro),
@@ -33,14 +35,13 @@ c
 c     
 c.... gather the variables
 c
-        call localy(y,      yl,     ienb,   nflow,  'gather  ')
-        call localy(yc,     ycl,    ienb,   ndof,  'gather  ')
-        call localx(x,      xlb,    ienb,   nsd,    'gather  ')
+        call localy(blk, y,      yl,     ienb,   nflow,  'gather  ')
+        call localy(blk, yc,     ycl,    ienb,   ndof,  'gather  ')
 c
 c.... get the boundary element residuals
 c
         rml = zero
-        call e3b  (yl,      ycl,     iBCB,    BCB,     shpb,    shglb,
+        call e3b  (blk, yl,      ycl,     iBCB,    BCB,     shpb,    shglb,
      &             xlb,     rml,     rml,     sgn)
 
 c
@@ -48,7 +49,7 @@ c.... assemble the residual and the modified residual
 c
         if (iabres .eq. 1) rml = abs(rml)
 c
-        call local(rmes,   rml,    ienb,   nflow,  'scatter ')
+        call local(blk, rmes,   rml,    ienb,   nflow,  'scatter ')
 c
 c.... end
 c

@@ -1,8 +1,10 @@
 
-      subroutine timeseries(ycl, xl, ien, sgn)
+      subroutine timeseries(blk, ycl, xl, ien, sgn)
 
       use timedataC
+      use eblock
       include "common.h"
+      type (LocalBlkData) blk
 
       dimension shape(nshl), ycl(npro,nshl,ndofl),
      &     ien(npro,nshl), xl(npro,nenl,nsd),         
@@ -37,7 +39,7 @@
 
             if(lcsyst.eq.2) then ! hex
 
-               call get_a_not_hex(xl,al) ! get mapping poly. coeff.
+               call get_a_not_hex(blk,xl,al) ! get mapping poly. coeff.
          
 c...  get initial guess for Newton Iteration procedure
          
@@ -156,7 +158,7 @@ c...  get solution
                enddo
             elseif (lcsyst.eq.1) then !tet
 
-               call get_a_not_tet(xl,al)
+               call get_a_not_tet(blk, xl,al)
                        
 c
 c solve for r, s, t  for each elements

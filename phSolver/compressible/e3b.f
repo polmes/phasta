@@ -1,4 +1,4 @@
-       subroutine e3b (yl,      ycl,  iBCB,    BCB,     shpb,    shglb,
+       subroutine e3b (blk, yl,      ycl,  iBCB,    BCB,     shpb,    shglb,
      &                 xlb,     rl,   rml,     sgn,     EGmass)
 c
 c----------------------------------------------------------------------
@@ -51,7 +51,9 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c Anilkumar Karanam Spring 2000 (Modified for Hierarchic Hexes)
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension yl(npro,nshl,nflow),          iBCB(npro,ndiBCB),
      &            ycl(npro,nshl,ndof),
@@ -119,7 +121,7 @@ c     element at this quadrature point. These arrays will contain
 c     the correct signs for the hierarchic basis
 c     
 c
-        call getshpb(shpb,        shglb,        sgn, 
+        call getshp(blk, intp, shpb,        shglb,        sgn, 
      &              shape,       shdrv)
 c     
 c.... calculate the integration variables
@@ -187,7 +189,7 @@ c
 c
 c.... get the material properties
 c
-        call getDiff (T,        cp,    rho,        ycl,
+        call getDiff (blk, T,        cp,    rho,        ycl,
      &                rmu,      rlm,   rlm2mu,     con, shape,
      &                xmudum,   xlb)
 c
@@ -385,7 +387,7 @@ c
 c
 c
 c
-        subroutine e3bSclr (ycl,      iBCB,     BCB,    
+        subroutine e3bSclr (blk, ycl,      iBCB,     BCB,    
      &                      shpb,    shglb,    sgn, 
      &                      xlb,     rtl,      rmtl)
 c
@@ -424,8 +426,10 @@ c Zdenek Johan, Summer 1990.  (Modified from e2b.f)
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         use turbSA ! for saSigma
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension ycl(npro,nshl,ndof),        iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),   shpb(nshl,ngaussb),
@@ -475,7 +479,7 @@ c.... create a matrix of shape functions (and derivatives) for each
 c     element at this quadrature point. These arrays will contain 
 c     the correct signs for the hierarchic basis
 c 
-        call getshpb(shpb,        shglb,        sgn, 
+        call getshp(blk, intp, shpb,        shglb,        sgn, 
      &       shape,       shdrv)
 c
 c.... calculate the integraton variables
@@ -570,7 +574,7 @@ c
 c.... get the material properties
 c
 
-        call getDiffSclr (T,          cp,         rmu,
+        call getDiffSclr (blk, T,          cp,         rmu,
      &                    rlm,        rlm2mu,     con, rho, Sclr)
 
 c

@@ -1,4 +1,4 @@
-        subroutine AsIRes (y,      yc,     x,      xmudmi,    
+        subroutine AsIRes (blk, y,      yc,     xl, dwl,      xmudmi,    
      &                     shp,    shgl,   ien,    mater,
      &                     rmes,    ac)
 c
@@ -10,11 +10,13 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         use rlssave     ! Use the resolved Leonard stresses at the nodes.
         include "common.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,nflow),            yc(nshg,ndofl),
-     &            x(numnp,nsd),             ac(nshg,nflow),
+     &            ac(nshg,nflow),
      &            shp(nshl,ngauss),  
      &            shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),       mater(npro),
@@ -22,7 +24,8 @@ c
 c
         dimension yl(npro,nshl,nflow),       ycl(npro,nshl,ndofl),
      &            xl(npro,nenl,nsd),         acl(npro,nshl,nflow),
-     &           rml(npro,nshl,nflow), ql(npro,nshl,(nflow-1)*nsd)
+     &           rml(npro,nshl,nflow), ql(npro,nshl,(nflow-1)*nsd),
+     &            dwl(blk%e,blk%n)
 c        
         dimension  xmudmi(npro,ngauss)        
         dimension sgn(npro,nshl)
@@ -45,21 +48,20 @@ c$$$           endwhere
 c$$$        enddo
 c
         if (ipord .gt. 1) then
-           call getsgn(ien,sgn)
+           call getsgn(blk, ien,sgn)
         endif
 c
 c.... gather the variables
 c
-        call localy(y,      yl,     ien,    nflow,  'gather  ')
-        call localx(x,      xl,     ien,    nsd,    'gather  ')
+        call localy(blk,y,      yl,     ien,    nflow,  'gather  ')
 c
-        call localy(yc,     ycl,    ien,    ndofl,  'gather  ')
-        call localy(ac,     acl,    ien,    nflow,  'gather  ')
+        call localy(blk,yc,     ycl,    ien,    ndofl,  'gather  ')
+        call localy(blk,ac,     acl,    ien,    nflow,  'gather  ')
        
 
         if( (iLES.gt.10).and.(iLES.lt.20)) then ! bardina 
 
-           call local (rls, rlsl,     ien,       6, 'gather  ')  
+           call local (blk,rls, rlsl,     ien,       6, 'gather  ')  
         else
            rlsl = zero
         endif
@@ -75,7 +77,7 @@ c
         ttim(31) = ttim(31) - secs(0.0)
 c	write(*,*) 'calling e3'
 
-            call e3  (yl,      ycl,     acl,     shp,
+            call e3  (blk,yl,      ycl,     acl,     shp,
      &                shgl,    xl,      rml,     rml,
      &                xmudmi,  BDiagl,  ql,      sgn, rlsl, EGmassd,
      &                rerrl)
@@ -86,7 +88,7 @@ c.... assemble the modified residual
 c
         if (iabres .eq. 1) rml = abs(rml)
 c
-        call local (rmes,   rml,    ien,    nflow,  'scatter ')
+        call local (blk,rmes,   rml,    ien,    nflow,  'scatter ')
 c
 c.... end
 c

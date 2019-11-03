@@ -1,4 +1,4 @@
-        subroutine e3qvar (ycl, shp,     shgl,    rho,
+        subroutine e3qvar (blk, ycl, shp,     shgl,    rho,
      &                     xl,  g1yi,    g2yi,    g3yi,
      &                     shg, dxidx,   WdetJ,   T, 
      &                     cp,  u1,      u2,      u3)
@@ -33,7 +33,9 @@ c Zdenek Johan, Winter 1991. (Fortran 90)
 c Kenneth Jansen, Winter 1997. Primitive Variables
 c----------------------------------------------------------------------
 c
+       use eblock
         include "common.h"
+       type (LocalBlkData) blk
 c
 c  passed arrays
 c
@@ -100,7 +102,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-        call e3metric(intp, xl,         shgl,        dxidx,  
+        call e3metric(blk, intp, xl,         shgl,        dxidx,  
      &                 shg,        WdetJ)
 
 c

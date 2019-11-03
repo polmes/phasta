@@ -1,4 +1,4 @@
-        subroutine AsIMFG (y,       ac,      x,     xmudmi,   shp,
+        subroutine AsIMFG (blk,y,       ac,      xl,dwl,     xmudmi,   shp,
      &                     shgl,    ien,     mater,
      &                     res,     rmes,    BDiag,   qres, rerr)
 c
@@ -11,11 +11,11 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
       use rlssave   ! Use the resolved Leonard stresses at the nodes.
-
+      use eblock
       include "common.h"
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndofl),            ac(nshg,ndofl),
-     &            x(numnp,nsd),              
      &            shp(nshl,MAXQPT),  
      &            shgl(nsd,nshl,MAXQPT),
      &            ien(npro,nshl),
@@ -25,7 +25,7 @@ c
 
 c
         dimension ycl(npro,nshl,ndofl),       acl(npro,nshl,ndofl),
-     &            xl(npro,nenl,nsd),         
+     &            xl(npro,nenl,nsd),         dwl(blk%e,blk%n),         
      &            rl(npro,nshl,nflow),       rml(npro,nshl,nflow),
      &            BDiagl(npro,nshl,nflow,nflow),
      &            ql(npro,nshl,idflx)
@@ -46,15 +46,14 @@ c
 c
 c.... gather the variables
 c
-        call localy(y,      ycl,     ien,    ndofl,  'gather  ')
-        call localy(ac,    acl,     ien,    ndofl,  'gather  ')
-        call localx(x,      xl,     ien,    nsd,    'gather  ')
+        call localy(blk, y,      ycl,     ien,    ndofl,  'gather  ')
+        call localy(blk, ac,    acl,     ien,    ndofl,  'gather  ')
         
         if (idiff >= 1 .or. isurf .eq. 1)
-     &    call local (qres,   ql,  ien, idflx, 'gather  ')
+     &    call local (blk,qres,   ql,  ien, idflx, 'gather  ')
 
         if( (iLES.gt.10).and.(iLES.lt.20)) then  ! bardina 
-           call local (rls, rlsl,     ien,       6, 'gather  ')  
+           call local (blk,rls, rlsl,     ien,       6, 'gather  ')  
         else
            rlsl = zero
         endif  
@@ -74,7 +73,7 @@ c
 !  there so both will access data
 !  properly from this location.
 
-            call e3  (ycl,     ycl,     acl,     shp,
+            call e3  (blk,ycl,     ycl,     acl,     shp,
      &                shgl,    xl,      rl,      rml, xmudmi,
      &                BDiagl,  ql,      sgn,     rlsl, EGmassd,
      &                rerrl)
@@ -84,19 +83,19 @@ c
 c.... assemble the residual and the modified residual
 c
 
-        call local (res,    rl,     ien,    nflow,  'scatter ')
-        call local (rmes,   rml,    ien,    nflow,  'scatter ')
+        call local (blk,res,    rl,     ien,    nflow,  'scatter ')
+        call local (blk,rmes,   rml,    ien,    nflow,  'scatter ')
 c
 c       res is G_A obtained using local  A_{e=1}^n_e G^e_a
 c
            if ( ierrcalc .eq. 1 ) then
-              call local (rerr, rerrl,  ien, 6, 'scatter ')
+              call local (blk,rerr, rerrl,  ien, 6, 'scatter ')
            endif
 c
 c.... assemble the Block-Diagonal
 c
         if (iprec .ne. 0)
-     &     call local (BDiag,  BDiagl, ien, nflow*nflow, 'scatter ')
+     &     call local (blk,BDiag,  BDiagl, ien, nflow*nflow, 'scatter ')
         
 c
 c.... end

@@ -1,4 +1,4 @@
-        subroutine AsIq (y,       x,       shp,
+        subroutine AsIq (blk, y,       xl,dwl,       shp,
      &                   shgl,    ien,     xmudmi,     
      &                   qres,    rmass    )
 c
@@ -21,9 +21,11 @@ c     rmass  (nshg)            : lumped mass matrix
 c
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+      type (LocalBlkData) blk
 c
-        dimension y(nshg,ndof),               x(numnp,nsd),              
+        dimension y(nshg,ndof), 
      &            shp(nshl,ngauss),  
      &            shgl(nsd,nshl,ngauss),
      &            ien(npro,nshl),
@@ -31,7 +33,8 @@ c
 c
 c.... element level declarations
 c
-        dimension ycl(npro,nshl,ndof),        xl(npro,nenl,nsd),         
+        dimension ycl(npro,nshl,ndof),        xl(npro,nenl,nsd),   
+     &            dwl(blk%e,blk%n),
      &            ql(npro,nshl,idflx),       rmassl(npro,nshl),
      &            xmudmi(npro,ngauss)
 c
@@ -41,29 +44,28 @@ c.... create the matrix of mode signs for the hierarchic basis
 c     functions. 
 c
         if (ipord .gt. 1) then
-           call getsgn(ien,sgn)
+           call getsgn(blk, ien,sgn)
         endif
 c
 c.... gather the variables
 c
 
-        call localy(y,      ycl,     ien,    ndof,   'gather  ')
-        call localx(x,      xl,     ien,    nsd,    'gather  ')
+        call localy(blk, y,      ycl,     ien,    ndof,   'gather  ')
 c
 c.... get the element residuals 
 c
         ql     = zero
         rmassl = zero
 
-        call e3q  (ycl,      shp,    shgl,    
+        call e3q  (blk, ycl,      shp,    shgl,    
      &             xl,       ql,     rmassl, 
      &             xmudmi,   sgn )
 
 c
 c.... assemble the diffusive flux residual 
 c
-        call local (qres,   ql,  ien,  idflx,'scatter ')
-        call local (rmass,  rmassl, ien,  1,      'scatter ')
+        call local (blk, qres,   ql,  ien,  idflx,'scatter ')
+        call local (blk, rmass,  rmassl, ien,  1,      'scatter ')
 c
 c.... end
 c

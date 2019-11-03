@@ -1,4 +1,4 @@
-        subroutine getDiff (T,      cp,     rho,    ycl,
+        subroutine getDiff (blk, T,      cp,     rho,    ycl,
      &                      rmu,    rlm,    rlm2mu, con, shp,
      &                      xmudmi, xl)
 
@@ -35,7 +35,10 @@ c----------------------------------------------------------------------
 c
       use turbSA
       use pointer_data
+      use eblock
       include "common.h"
+       type (LocalBlkData) blk
+
 c
       dimension T(npro),                   cp(npro),
      &     rho(npro),                 Sclr(npro),
@@ -270,7 +273,7 @@ c
 c
 c
 c
-      subroutine getDiffSclr (T,      cp,   rmu,   rlm,   
+      subroutine getDiffSclr (blk, T,      cp,   rmu,   rlm,   
      &     rlm2mu, con, rho, Sclr)
 c
 c----------------------------------------------------------------------
@@ -300,7 +303,10 @@ c Farzin Shakib, Winter 1987.
 c Zdenek Johan,  Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+       type (LocalBlkData) blk
+
 c
         dimension T(npro),                   cp(npro),
      &            rmu(npro),                 rlm(npro),

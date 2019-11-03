@@ -1,4 +1,4 @@
-        subroutine e3ivar (yl,      ycl,     acl,
+        subroutine e3ivar (blk, yl,      ycl,     acl,
      &                     Sclr,    shape,   shgl,    
      &                     xl,      dui,     aci,
      &                     g1yi,    g2yi,    g3yi,
@@ -56,7 +56,10 @@ c Zdenek Johan, Winter 1991. (Fortran 90)
 c Kenneth Jansen, Winter 1997. Primitive Variables
 c----------------------------------------------------------------------
 c
+        use eblock
         include "common.h"
+       type (LocalBlkData) blk
+
 c
 c  passed arrays
 c
@@ -226,7 +229,7 @@ c
 c
 c ........Get the material properties 
 c
-        call getDiff (T,        cp,       rho,        ycl, 
+        call getDiff (blk, T,        cp,       rho,        ycl, 
      &                rmu,      rlm,      rlm2mu,     con,  shape,
      &                xmudmi,   xl)
 
@@ -234,7 +237,7 @@ c.... --------------------->  Element Metrics  <-----------------------
 c
       ttim(26) = ttim(26) - secs(0.0)
 c
-        call e3metric(intp, xl,         shgl,        dxidx,  
+        call e3metric(blk, intp, xl,         shgl,        dxidx,  
      &                 shg,        WdetJ)
 c
 c       
@@ -546,7 +549,10 @@ c Zdenek Johan, Winter 1991. (Fortran 90)
 c Kenneth Jansen, Winter 1997. Primitive Variables
 c----------------------------------------------------------------------
 c
+      use eblock
         include "common.h"
+       type (LocalBlkData) blk
+
 c
 c  passed arrays
 c
@@ -647,7 +653,7 @@ c
 c
         if (iconvsclr.eq.2) rho=one
 c
-        call getDiffSclr(T,            cp,          rmu,
+        call getDiffSclr(blk, T,            cp,          rmu,
      &                   tmp,          tmp,         con, rho, Sclr)
 
         ttim(27) = ttim(27) + tmr()
@@ -656,7 +662,7 @@ c
 c
 c.... --------------------->  Element Metrics  <-----------------------
 c
-      call e3metric(intp, xl,         shgl,        dxidx,  
+      call e3metric(blk, intp, xl,         shgl,        dxidx,  
      &               shg,        WdetJ)
 
 

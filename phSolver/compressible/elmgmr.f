@@ -16,10 +16,13 @@ c----------------------------------------------------------------------
 c
         use pointer_data
         use timedataC
+      use eblock
 c
-        include "common.h"
-        include "mpif.h"
-c
+      include "common.h"
+      include "mpif.h"
+      include "auxmpi.h"
+      type (LocalBlkData) blk
+
         dimension y(nshg,ndof),         ac(nshg,ndof),
      &            x(numnp,nsd),               
      &            iBC(nshg),
@@ -80,6 +83,13 @@ c
           nsymdl = lcblk(9,iblk)
           npro   = lcblk(1,iblk+1) - iel
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
@@ -90,7 +100,7 @@ c     and lumped mass matrix, rmass
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call AsIq (y,                x,                       
+          call AsIq (blk, y,                mxl(iblk)%p,mdwl(iblk)%p,                       
      &               tmpshp,              
      &               tmpshgl,
      &               mien(iblk)%p,     mxmudmi(iblk)%p,
@@ -141,6 +151,15 @@ c
           npro   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
           ngauss = nint(lcsyst)
+          blk%b   = iblk
+          blk%t   = ith
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - lcblk(1,iblk) 
+          blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble the residual and tangent matrix
 c
@@ -151,8 +170,8 @@ c
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call AsIGMR (y,                   ac,
-     &                 x,                   mxmudmi(iblk)%p,
+          call AsIGMR (blk,    y,                   ac,
+     &                 mxl(iblk)%p, mdwl(iblk)%p,   mxmudmi(iblk)%p,
      &                 tmpshp,
      &                 tmpshgl,             mien(iblk)%p,
      &                 mmat(iblk)%p,        res,
@@ -193,7 +212,18 @@ c
           npro   = lcblkb(1,iblk+1) - iel 
           if(lcsyst.eq.3) lcsyst=nenbl
           ngaussb = nintb(lcsyst)
-          
+! note the following is the volume element characteristics as needed for 
+! routines like getdiff, getdiffsclr, getshpb which were already converted for
+! threading and thus need to dimension based on this data.  
+! debug to confirm
+
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(9,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel 
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)          
 c
 c.... compute and assemble the residuals corresponding to the 
 c     boundary integral
@@ -205,7 +235,7 @@ c
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
           tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
 
-          call AsBMFG (y,                       x,
+          call AsBMFG (blk, y,                  mxlb(iblk)%p, mdwl(iblk)%p,
      &                 tmpshpb,                 tmpshglb, 
      &                 mienb(iblk)%p,           mmatb(iblk)%p,
      &                 miBCB(iblk)%p,           mBCB(iblk)%p,
@@ -296,12 +326,16 @@ c----------------------------------------------------------------------
 c
         use pointer_data
         use timedataC
+        use eblock
 c
         include "common.h"
         include "mpif.h"
+
+      type (LocalBlkData) blk
 c
         integer col(nshg+1), row(nnz*nshg)
         real*8 lhsK(nflow*nflow,nnz_tot)
+
         
         dimension y(nshg,ndof),         ac(nshg,ndof),
      &            x(numnp,nsd),               
@@ -362,6 +396,14 @@ c
           nsymdl = lcblk(9,iblk)
           npro   = lcblk(1,iblk+1) - iel
           ngauss = nint(lcsyst)
+              
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble diffusive flux vector residual, qres,
 c     and lumped mass matrix, rmass
@@ -372,7 +414,7 @@ c     and lumped mass matrix, rmass
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call AsIq (y,                x,                       
+          call AsIq (blk, y,                mxl(iblk)%p,mdwl(iblk)%p,                       
      &               tmpshp,              
      &               tmpshgl,
      &               mien(iblk)%p,     mxmudmi(iblk)%p,
@@ -422,6 +464,13 @@ c
           npro   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble the residual and tangent matrix
 c
@@ -438,8 +487,8 @@ c
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call AsIGMR (y,                   ac,
-     &                 x,                   mxmudmi(iblk)%p,
+          call AsIGMR (blk, y,                   ac,
+     &                 mxl(iblk)%p, mdwl(iblk)%p,                   mxmudmi(iblk)%p,
      &                 tmpshp,
      &                 tmpshgl,             mien(iblk)%p,
      &                 mmat(iblk)%p,        res,
@@ -497,7 +546,13 @@ c
           npro   = lcblkb(1,iblk+1) - iel 
           if(lcsyst.eq.3) lcsyst=nenbl
           ngaussb = nintb(lcsyst)
-          
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(9,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel 
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)    
 c
 c.... compute and assemble the residuals corresponding to the 
 c     boundary integral
@@ -515,7 +570,7 @@ c
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
           tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
 
-          call AsBMFG (y,                       x,
+          call AsBMFG (blk, y,           mxlb(iblk)%p, mdwl(iblk)%p,
      &                 tmpshpb,                 tmpshglb, 
      &                 mienb(iblk)%p,           mmatb(iblk)%p,
      &                 miBCB(iblk)%p,           mBCB(iblk)%p,
@@ -633,8 +688,11 @@ c----------------------------------------------------------------------
 c
         use pointer_data
 c
+        use eblock
         include "common.h"
         include "mpif.h"
+
+      type (LocalBlkData) blk
 c
         dimension y(nshg,ndof),         ac(nshg,ndof),
      &            x(numnp,nsd),              
@@ -762,6 +820,13 @@ c
           npro   = lcblk(1,iblk+1) - iel 
           inum   = iel + npro - 1
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(9,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel 
+          blk%g = nint(lcsyst)
+          blk%l = lcblk(3,iblk)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
 c
 c.... compute and assemble the residual and tangent matrix
 c
@@ -771,11 +836,10 @@ c
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          allocate (elDwl(npro))
 c
-          call AsIGMRSclr(y,                   
+          call AsIGMRSclr(blk, y,                   
      &                    ac,
-     &                    x,               elDwl,                   
+     &                    mxl(iblk)%p,     mdwl(iblk)%p,                   
      &                    tmpshp,          tmpshgl,
      &                    mien(iblk)%p,
      &                    mmat(iblk)%p,    rest,
@@ -788,8 +852,6 @@ c.... satisfy the BC's on the implicit LHS
 c     
           call bc3LHSSclr (iBC, mien(iblk)%p, EGmasst(iel:inum,:,:) )
 c
-          elDw(iel:inum)=elDwl(1:npro)
-          deallocate ( elDwl )
           deallocate ( tmpshp )
           deallocate ( tmpshgl )
 c.... end of interior element loop
@@ -821,7 +883,14 @@ c
           nshlb  = lcblkb(10,iblk)
           npro   = lcblkb(1,iblk+1) - iel 
           if(lcsyst.eq.3) lcsyst=nenbl
-          ngaussb = nintb(lcsyst)          
+          ngaussb = nintb(lcsyst)  
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(9,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel 
+          blk%g = nintb(lcsyst)
+          blk%l = lcblkb(3,iblk)
+          blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)        
 c
 c.... compute and assemble the residuals corresponding to the 
 c     boundary integral
@@ -833,7 +902,7 @@ c
           tmpshpb(1:nshl,:) = shpb(lcsyst,1:nshl,:)
           tmpshglb(:,1:nshl,:) = shglb(lcsyst,:,1:nshl,:)
 c
-          call AsBMFGSclr (y,                  x,
+          call AsBMFGSclr (blk, y,         mxlb(iblk)%p, mdwl(iblk)%p,
      &                     tmpshpb,
      &                     tmpshglb, 
      &                     mienb(iblk)%p,      mmatb(iblk)%p,

@@ -13,10 +13,13 @@ c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
         use pointer_data
+        use eblock
 c
         include "common.h"
         include "mpif.h"
         include "auxmpi.h"
+
+      type (LocalBlkData) blk
 c
         dimension yp(nshg,nflow),             yc(nshg,ndof),
      &            x(numnp,nsd),             ac(nshg,ndof), 
@@ -65,6 +68,14 @@ c
           nsymdl = lcblk(9,iblk)
           npro   = lcblk(1,iblk+1) - iel
           ngauss = nint(lcsyst)
+          blk%n   = lcblk(5,iblk) ! no. of vertices per element
+          blk%s   = lcblk(10,iblk)
+          blk%e   = lcblk(1,iblk+1) - iel  
+          blk%l = lcblk(3,iblk)
+          blk%g = nint(blk%l)
+          blk%o = lcblk(4,iblk)
+          blk%i = lcblk(1,iblk)
+
 c
 c
 c.... compute and assemble the residuals and the preconditioner
@@ -75,8 +86,8 @@ c
           tmpshp(1:nshl,:) = shp(lcsyst,1:nshl,:)
           tmpshgl(:,1:nshl,:) = shgl(lcsyst,:,1:nshl,:)
 
-          call AsIRes (yp,                      yc,
-     &                 x,                       mxmudmi(iblk)%p,
+          call AsIRes (blk, yp,                      yc,
+     &                 mxl(iblk)%p, mdwl(iblk)%p,    mxmudmi(iblk)%p,
      &                 tmpshp,                  tmpshgl,
      &                 mien(iblk)%p,            mmat(iblk)%p,
      &                 rmes,                    ac)
@@ -120,6 +131,14 @@ c
           npro   = lcblkb(1,iblk+1) - iel 
           if(lcsyst.eq.3) lcsyst=nenbl
           ngaussb = nintb(lcsyst)
+          blk%n   = lcblkb(5,iblk) ! no. of vertices per element
+          blk%s   = lcblkb(10,iblk)
+          blk%e   = lcblkb(1,iblk+1) - iel  
+          blk%l = lcblkb(3,iblk)
+          blk%g = nintb(blk%l)
+          blk%o = lcblkb(4,iblk)
+          blk%i = lcblkb(1,iblk)
+
 c
           allocate (tmpshpb(nshl,MAXQPT))
           allocate (tmpshglb(nsd,nshl,MAXQPT))
@@ -131,7 +150,7 @@ c
 c.... compute and assemble the residuals
 c
 
-          call AsBRes (yp,   yc,              x,
+          call AsBRes (blk, yp,   yc,     mxlb(iblk)%p, mdwl(iblk)%p,
      &                 tmpshpb,           tmpshglb,
      &                 mienb(iblk)%p,     mmatb(iblk)%p,
      &                 miBCB(iblk)%p,     mBCB(iblk)%p,
