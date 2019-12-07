@@ -270,8 +270,23 @@ c     ------------------------------------------------------------------
 c                       <SLIP BOUNDARY CONDITIONS>
 c     ------------------------------------------------------------------
 
-      call testhere(testslip)
-      call getSlipVelocity1D(rmu, rho, T, g2yi(:, 2), uslip)
+      do n = 1, nshlb
+         nodlcl = lnode(n)
+         uslip = shape(:,nodlcl) ! same as shpb in e3bvar
+
+         call getSlipVelocity1D(rmu, rho, T, g2yi(:,2), uslip)
+      enddo
+      ! add duslip to F2
+
+!       rou = zero
+!       p   = zero
+! c
+!       do n = 1, nshlb
+!         nodlcl = lnode(n)
+! c
+!         rou = rou + shpb(:,nodlcl) * BCB(:,n,1)
+!         p   = p   + shpb(:,nodlcl) * BCB(:,n,2)
+!       enddo
 
 c     ------------------------------------------------------------------
 c                       </SLIP BOUNDARY CONDITIONS>

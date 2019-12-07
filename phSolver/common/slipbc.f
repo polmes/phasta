@@ -4,14 +4,6 @@ c                       by Pol Mesalles Ripoll
 c                       CU Boulder, Fall 2019
 c     ------------------------------------------------------------------
 
-      subroutine testhere(ans)
-         ! real*8 :: testhere
-         ! testhere = 23
-         character(len = 8) :: ans
-         ans = "Hell-oh!"
-         return ! just a quick test that we can load the module
-      end subroutine testhere
-
       subroutine getSlipVelocity1D(mu, rho, T, dudy, uslip)
 c     ------------------------------------------------------------------
 c        Computes Maxwell 1D slip velocity at the wall
