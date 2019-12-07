@@ -5,16 +5,16 @@ c
 c This program satisfies the boundary conditions on the Y-variables.
 c
 c input:
-c  y      (nshg,nflow)   : y variables 
+c  y      (nshg,nflow)   : y variables
 c  iBC    (nshg)        : Boundary Condition Code
 c  BC     (nshg,ndofBC) : boundary condition constraint parameters
 c  ylimit (3,nflow)     : (1,:) limiting flag
 c                         (2,:) lower bound
 c                         (3,:) upper bound
 c output:
-c  y      (nshg,nflow)   : Adjusted V value(s) corresponding to a 
+c  y      (nshg,nflow)   : Adjusted V value(s) corresponding to a
 c                           constraint d.o.f.
-c  
+c
 c
 c Farzin Shakib, Winter 1987.
 c Zdenek Johan,  Winter 1991.  (Fortran 90)
@@ -33,7 +33,7 @@ c
         integer locmax(1),locmin(1)
 c
 c  limiting...ugly but sometimes the only way
-c 
+c
         limitcount=0
         do i=1,nflow
            if(ylimit(1,i).gt.0) then
@@ -120,7 +120,7 @@ c
           where (ibits(iBC,3,3) .eq. 7)
             y(:,1) =  BC(:,3)
             y(:,2) =  BC(:,4)
-            y(:,3) =  BC(:,5) 
+            y(:,3) =  BC(:,5)
           endwhere
 c
 c       endif
@@ -143,7 +143,7 @@ c
 c
           npro = nshg
 c
-          ithm = 2  ! get pressure from rho and T 
+          ithm = 2  ! get pressure from rho and T
 c...when ithm=2 scalar is not used so tmp is in place
           call getthm (y1,        y(:,5),      tmp,
      &                 rk,         q1,         tmp,
@@ -171,14 +171,14 @@ c
         endif
 c
 c.... local periodic (and axisymmetric) boundary conditions (no communications)
-c 
+c
 	do i = 1,nflow
            y(:,i) = y(iper(:),i)
            if(ires.ne.2) ac(:,i) = ac(iper(:),i)
 	enddo
 c
 c.... communications
-c 
+c
         if (numpe > 1) then
            call commu (y, ilwork, nflow, 'out')
            if(ires.ne.2) call commu (ac, ilwork, nflow, 'out')
@@ -190,7 +190,15 @@ c
            call rotabc(y, iBC, 'out')
            if(ires.ne.2) call rotabc(ac, iBC, 'out')
         endif
-     
+
+c ---------------------------------------------------------------------
+c                       SLIP BOUNDARY CONDITIONS
+c ---------------------------------------------------------------------
+
+        if (btest(iBC, 9)) then
+            call slipbc(y, )
+        endif
+
 c
 c.... return
 c
@@ -218,12 +226,12 @@ c
            id=5+isclr
            ibb=6+isclr
            ib=4+isclr
-        endif 
+        endif
 c
 c  limiting...ugly but sometimes the only way
 c
-           if(ylimit(1,id).gt.0) 
-     &          y(:,id)=min(ylimit(3,id),max(ylimit(2,id),y(:,id))) 
+           if(ylimit(1,id).gt.0)
+     &          y(:,id)=min(ylimit(3,id),max(ylimit(2,id),y(:,id)))
 c
 c.... ------------------------>  Scalar  <------------------------
 c
@@ -233,7 +241,7 @@ c
         endwhere
 c
 c.... local periodic (and axisymmetric) boundary conditions (no communications)
-c 
+c
 	do i = 1,nshg
 c           if (btest(iBC(i),10)) then
               y(i,id) = y(iper(i),id)
@@ -242,7 +250,7 @@ c           end if
 	enddo
 c
 c.... communications
-c 
+c
         if (numpe > 1) then
            T=y(:,id)
            call commu (T, ilwork, 1, 'out')
@@ -251,9 +259,9 @@ c
            call commu (T, ilwork, 1, 'out')
            ac(:,id)=T
         endif
-      
+
         ttim(53) = ttim(53) + tmr()
-c     
+c
         return
         end
 
