@@ -195,9 +195,9 @@ c ---------------------------------------------------------------------
 c                       SLIP BOUNDARY CONDITIONS
 c ---------------------------------------------------------------------
 
-        if (btest(iBC, 9)) then
-            call slipbc(y, )
-        endif
+      !   if (btest(iBC, 9)) then
+      !       call slipbc(y, )
+      !   endif
 
 c
 c.... return

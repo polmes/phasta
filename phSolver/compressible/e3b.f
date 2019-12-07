@@ -3,7 +3,7 @@
 c
 c----------------------------------------------------------------------
 c
-c   This routine calculates the 3D RHS residual of the fluid boundary 
+c   This routine calculates the 3D RHS residual of the fluid boundary
 c   elements.
 c
 c input:
@@ -17,15 +17,15 @@ c                  pressure   flux * 2
 c                  viscous    flux * 4
 c                  heat       flux * 8
 c                  turbulence wall * 16
-c                  scalarI   flux  * 16*2^I 
+c                  scalarI   flux  * 16*2^I
 c                  (where I is the scalar number)
 c
 c      iBCB(:,2) is the srfID given by the user in MGI that we will
 c                collect integrated fluxes for.
 c
 c  BCB    (npro,nshlb,ndBCB)    : Boundary Condition values
-c                                  BCB (1) : mass flux 
-c                                  BCB (2) : pressure 
+c                                  BCB (1) : mass flux
+c                                  BCB (2) : pressure
 c                                  BCB (3) : viscous flux in x1-direc.
 c                                  BCB (4) : viscous flux in x2-direc.
 c                                  BCB (5) : viscous flux in x3-direc.
@@ -40,9 +40,9 @@ c  rml    (npro,nshl,nflow)      : element modified residual
 c  EGmass (npro,nshl,nshl)       : LHS from BC for energy-temperature diagonal
 c
 c
-c Note: Always the first side of the element is on the boundary.  
-c       However, note that for higher-order elements the nodes on 
-c       the boundary side are not the first nshlb nodes, see the 
+c Note: Always the first side of the element is on the boundary.
+c       However, note that for higher-order elements the nodes on
+c       the boundary side are not the first nshlb nodes, see the
 c       array lnode.
 c
 c
@@ -56,20 +56,20 @@ c
         dimension yl(npro,nshl,nflow),          iBCB(npro,ndiBCB),
      &            ycl(npro,nshl,ndof),
      &            BCB(npro,nshlb,ndBCB),       shpb(nshl,ngaussb),
-     &            shglb(nsd,nshl,ngaussb),         
-     &            xlb(npro,nenl,nsd),          
+     &            shglb(nsd,nshl,ngaussb),
+     &            xlb(npro,nenl,nsd),
      &            rl(npro,nshl,nflow),          rml(npro,nshl,nflow)
 c
         dimension g1yi(npro,nflow),             g2yi(npro,nflow),
      &            g3yi(npro,nflow),             WdetJb(npro),
-     &            bnorm(npro,nsd),              
+     &            bnorm(npro,nsd),
      &            dNadx(npro, nshl, nsd),  !shape function gradient
      &            dNadn(npro, nshl),       !dN_a/dx_i n_i, i.e. gradient normal to wall
      &            EGmass(npro, nshl, nshl)
 c
         dimension un(npro),                    rk(npro),
      &            u1(npro),                    u2(npro),
-     &            u3(npro),                    
+     &            u3(npro),
      &            rho(npro),                   pres(npro),
      &            T(npro),                     ei(npro),
      &            cp(npro)
@@ -93,6 +93,17 @@ c
         dimension xmudum(npro,ngauss)
         integer   aa, b
 
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+      character(len = 8) :: testslip
+      real*8 :: uslip(npro)
+
+c     ------------------------------------------------------------------
+c                       </SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
         ttim(40) = ttim(40) - secs(0.0)
 
 c
@@ -115,13 +126,13 @@ c
         if (Qwtb(lcsyst,intp) .eq. zero) cycle         ! precaution
 c
 c.... create a matrix of shape functions (and derivatives) for each
-c     element at this quadrature point. These arrays will contain 
+c     element at this quadrature point. These arrays will contain
 c     the correct signs for the hierarchic basis
-c     
 c
-        call getshpb(shpb,        shglb,        sgn, 
+c
+        call getshpb(shpb,        shglb,        sgn,
      &              shape,       shdrv)
-c     
+c
 c.... calculate the integration variables
 c
         call e3bvar (yl,   ycl,           BCB,          shape,
@@ -153,7 +164,7 @@ c
             un  = bnorm(:,1) * u1 + bnorm(:,2) * u2 + bnorm(:,3) * u3
             rou = rho * ( un )
           elsewhere
-            un  = (rou / rho) 
+            un  = (rou / rho)
           endwhere
 c
 c.... ------------------------->  pressure  <--------------------------
@@ -195,17 +206,17 @@ c.... ------------------------>  viscous flux <------------------------
 c
 c.... floating viscous flux
 c
-        tau1n = bnorm(:,1) * (rlm2mu* g1yi(:,2) + rlm   *g2yi(:,3) 
+        tau1n = bnorm(:,1) * (rlm2mu* g1yi(:,2) + rlm   *g2yi(:,3)
      &                                          + rlm   *g3yi(:,4))
      &        + bnorm(:,2) * (rmu   *(g2yi(:,2) + g1yi(:,3)))
      &        + bnorm(:,3) * (rmu   *(g3yi(:,2) + g1yi(:,4)))
         tau2n = bnorm(:,1) * (rmu   *(g2yi(:,2) + g1yi(:,3)))
-     &        + bnorm(:,2) * (rlm   * g1yi(:,2) + rlm2mu*g2yi(:,3) 
+     &        + bnorm(:,2) * (rlm   * g1yi(:,2) + rlm2mu*g2yi(:,3)
      &                                          + rlm   *g3yi(:,4))
      &        + bnorm(:,3) * (rmu   *(g3yi(:,3) + g2yi(:,4)))
         tau3n = bnorm(:,1) * (rmu   *(g3yi(:,2) + g1yi(:,4)))
      &        + bnorm(:,2) * (rmu   *(g3yi(:,3) + g2yi(:,4)))
-     &        + bnorm(:,3) * (rlm   * g1yi(:,2) + rlm   *g2yi(:,3) 
+     &        + bnorm(:,3) * (rlm   * g1yi(:,2) + rlm   *g2yi(:,3)
      &                                          + rlm2mu*g3yi(:,4))
 c
         where (.not.btest(iBCB(:,1),2) )
@@ -222,22 +233,22 @@ c.... floating heat flux
 c
         heat =  -con * ( bnorm(:,1) * g1yi(:,5) +
      &                   bnorm(:,2) * g2yi(:,5) +
-     &                   bnorm(:,3) * g3yi(:,5) ) 
+     &                   bnorm(:,3) * g3yi(:,5) )
 
         !Note that Fh5 already contains heat flux BCs from e3bvar
-        where (.not.btest(iBCB(:,1),3) ) Fh5 = heat 
+        where (.not.btest(iBCB(:,1),3) ) Fh5 = heat
 
 
 
         if(iLHScond > 0) then !compute contributions to the LHS matrix
           do aa = 1, nshl
-            dNadn(:,aa) = dNadx(:,aa,1)*bnorm(:,1) 
-     &                  + dNadx(:,aa,2)*bnorm(:,2) 
+            dNadn(:,aa) = dNadx(:,aa,1)*bnorm(:,1)
+     &                  + dNadx(:,aa,2)*bnorm(:,2)
      &                  + dNadx(:,aa,3)*bnorm(:,3)
           enddo
-        
+
           !EGmass(e, b, a) using the newer nomenclature, i.e. b indexes
-          !the matrix row and a indexes the matrix column. 
+          !the matrix row and a indexes the matrix column.
 
           !Calculate \kappa
           do aa = 1,nshl
@@ -245,8 +256,8 @@ c
               EGmass(:,b, aa) = con * WdetJb * shape(:,b) * dNadn(:,aa)
             enddo
           enddo
-          
-        endif !iLHScond >= 0 or contributions to lhsk are being computed. 
+
+        endif !iLHScond >= 0 or contributions to lhsk are being computed.
 c
 c.... add the Navier-Stokes contribution
 c
@@ -254,6 +265,18 @@ c
         F3  = F3 - Fv3
         F4  = F4 - Fv4
         F5  = F5 - Fv5 + Fh5
+
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+      call testhere(testslip)
+      call getSlipVelocity1D(rmu, rho, T, g2yi(:, 2), usip)
+
+c     ------------------------------------------------------------------
+c                       </SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
 c
 c.... flop count
 c
@@ -270,9 +293,9 @@ c
         if ((ires .eq. 1) .or. (ires .eq. 3)) then
 c
 c
-          do n = 1, nshlb  
+          do n = 1, nshlb
             !Note that nshlb is different from the dimension of rl and
-            !shape. For tets, the weight of the 4th node is zero. 
+            !shape. For tets, the weight of the 4th node is zero.
             nodlcl = lnode(n)
 c
             rl(:,nodlcl,1) = rl(:,nodlcl,1)
@@ -318,15 +341,15 @@ c
 c        do i=1,npro
 c           tnorm= sqrt(tau1n(i)*tau1n(i)
 c     &                +tau2n(i)*tau2n(i)+tau3n(i)*tau3n(i))
-c          
+c
 c           write(700+myrank,*) xlb(i,1,3),tnorm
 c        enddo
-        
+
 
        do iel = 1, npro
 c
 c  if we have a nonzero value then
-c  calculate the fluxes through this surface 
+c  calculate the fluxes through this surface
 c
            iface = abs(iBCB(iel,2))
            if (iface .ne. 0 .and. ires.ne.2) then
@@ -335,13 +358,13 @@ c              flxID(2,iface) =  flxID(2,iface) - WdetJb(iel) * un(iel)
               flxID(2,iface) =  flxID(2,iface) - WdetJb(iel) * rou(iel)
               flxID(3,iface) = flxID(3,iface)
      &                   - ( tau1n(iel) - bnorm(iel,1)*pres(iel))
-     &                   * WdetJb(iel) 
+     &                   * WdetJb(iel)
               flxID(4,iface) = flxID(4,iface)
      &                   - ( tau2n(iel) - bnorm(iel,2)*pres(iel))
-     &                   * WdetJb(iel) 
+     &                   * WdetJb(iel)
               flxID(5,iface) = flxID(5,iface)
      &                   - ( tau3n(iel) - bnorm(iel,3)*pres(iel))
-     &                   * WdetJb(iel) 
+     &                   * WdetJb(iel)
 
            endif
         enddo
@@ -385,21 +408,21 @@ c
 c
 c
 c
-        subroutine e3bSclr (ycl,      iBCB,     BCB,    
-     &                      shpb,    shglb,    sgn, 
+        subroutine e3bSclr (ycl,      iBCB,     BCB,
+     &                      shpb,    shglb,    sgn,
      &                      xlb,     rtl,      rmtl)
 c
 c----------------------------------------------------------------------
 c
-c   This routine calculates the 3D RHS residual of the fluid boundary 
+c   This routine calculates the 3D RHS residual of the fluid boundary
 c   elements.
 c
 c input:
 c  ycl     (npro,nshl,ndof)      : Y variables
 c  iBCB   (npro,ndiBCB)         : boundary condition code & surfID
 c  BCB    (npro,nenbl,ndBCB)    : Boundary Condition values
-c                                  BCB (1) : mass flux 
-c                                  BCB (2) : pressure 
+c                                  BCB (1) : mass flux
+c                                  BCB (2) : pressure
 c                                  BCB (3) : viscous flux in x1-direc.
 c                                  BCB (4) : viscous flux in x2-direc.
 c                                  BCB (5) : viscous flux in x3-direc.
@@ -414,9 +437,9 @@ c  rtl    (npro,nenl,nflow)      : element residual
 c  rmtl   (npro,nenl,nflow)      : element modified residual
 c
 c
-c Note: Always the first side of the element is on the boundary.  
-c       However, note that for higher-order elements the nodes on 
-c       the boundary side are not the first nenbl nodes, see the 
+c Note: Always the first side of the element is on the boundary.
+c       However, note that for higher-order elements the nodes on
+c       the boundary side are not the first nenbl nodes, see the
 c       array mnodeb.
 c
 c
@@ -429,8 +452,8 @@ c
 c
         dimension ycl(npro,nshl,ndof),        iBCB(npro,ndiBCB),
      &            BCB(npro,nshlb,ndBCB),   shpb(nshl,ngaussb),
-     &            shglb(nsd,nshl,ngaussb),   sgn(npro,nshl),         
-     &            xlb(npro,nenl,nsd),        shape(npro,nshl),  
+     &            shglb(nsd,nshl,ngaussb),   sgn(npro,nshl),
+     &            xlb(npro,nenl,nsd),        shape(npro,nshl),
      &            rtl(npro,nshl),          rmtl(npro,nshl),
      &            shdrv(npro,nsd,nshl)
 c
@@ -451,7 +474,7 @@ c
      &            heat(npro),                  srcp(npro)
 c
         dimension lnode(27)
-        real*8  sign_levelset(npro), sclr_ls(npro), mytmp(npro) 
+        real*8  sign_levelset(npro), sclr_ls(npro), mytmp(npro)
         ttim(40) = ttim(40) - tmr()
 c
 c.... get the boundary nodes
@@ -464,7 +487,7 @@ c
 c.... loop through the integration points
 c
         ngaussb = nintb(lcsyst)
-c        
+c
         do intp = 1, ngaussb
 c
 c.... if Det. .eq. 0, do not include this point
@@ -472,16 +495,16 @@ c
         if (Qwtb(lcsyst,intp) .eq. zero) cycle         ! precaution
 c
 c.... create a matrix of shape functions (and derivatives) for each
-c     element at this quadrature point. These arrays will contain 
+c     element at this quadrature point. These arrays will contain
 c     the correct signs for the hierarchic basis
-c 
-        call getshpb(shpb,        shglb,        sgn, 
+c
+        call getshpb(shpb,        shglb,        sgn,
      &       shape,       shdrv)
 c
 c.... calculate the integraton variables
 c
         call e3bvarSclr (ycl,            BCB,
-     &                   shape,         shdrv,        
+     &                   shape,         shdrv,
      &                   xlb,           lnode,         u1,
      &                   u2,            u3,            g1yti,
      &                   g2yti,         g3yti,         WdetJb,
@@ -500,29 +523,29 @@ CAD   If Sclr(:,1).lt.zero, result of sign_term function -1
             do ii=1,npro
 
            do jj = 1, nshl  ! first find the value of levelset at point ii
-                  
-                  sclr_ls(ii) =  sclr_ls(ii) 
+
+                  sclr_ls(ii) =  sclr_ls(ii)
      &                        + shape(ii,jj) * ycl(ii,jj,6)
 
                enddo
                if (sclr_ls(ii) .lt. - epsilon_ls)then
-            
+
                   sign_levelset(ii) = - one
-                  
+
                elseif  (abs(sclr_ls(ii)) .le. epsilon_ls)then
-c                 
-                 sign_levelset(ii) =sclr_ls(ii)/epsilon_ls 
+c
+                 sign_levelset(ii) =sclr_ls(ii)/epsilon_ls
      &              + sin(pi*sclr_ls(ii)/epsilon_ls)/pi
-                  
+
                elseif (sclr_ls(ii) .gt. epsilon_ls) then
-                  
+
                   sign_levelset(ii) = one
-                  
-               endif               
-c               
+
+               endif
+c
                srcp(ii) = sign_levelset(ii)
-c               
-            enddo  
+c
+            enddo
 c
 cad   The redistancing equation can be written in the following form
 cad
@@ -538,15 +561,15 @@ c$$$CAD   calculated as follows
 
 
 
-            mytmp = srcp / sqrt   ( g1yti * g1yti 
+            mytmp = srcp / sqrt   ( g1yti * g1yti
      &                            + g2yti * g2yti
-     &                            + g3yti * g3yti) 
+     &                            + g3yti * g3yti)
 
-            u1 = mytmp * g1yti 
+            u1 = mytmp * g1yti
             u2 = mytmp * g2yti
             u3 = mytmp * g3yti
         endif
-         
+
 c
 c.... ires = 1 or 3
 c
@@ -558,7 +581,7 @@ c
               un  = bnorm(:,1)*u1 + bnorm(:,2)*u2 + bnorm(:,3)*u3
               rou = rho * ( un )
            elsewhere
-              un  = (rou / rho) 
+              un  = (rou / rho)
            endwhere
 c
 c.... calculate flux where unconstrained
@@ -579,12 +602,12 @@ c
         if (ilset.ne.2) then
 
            where (.not.btest(iBCB(:,1),ib) )
-              Sclrn  = bnorm(:,1) * g1yti(:) 
+              Sclrn  = bnorm(:,1) * g1yti(:)
      &               + bnorm(:,2) * g2yti(:)
      &               + bnorm(:,3) * g3yti(:)
 C
-           
-c             F = F + rmu*Sclrn  !!!! CHECK THIS 
+
+c             F = F + rmu*Sclrn  !!!! CHECK THIS
 
           F = F + saSigmaInv*rho*((rmu/rho)+Sclr)*Sclrn!confirm the modificationc                                                      in getdiffsclr
 
