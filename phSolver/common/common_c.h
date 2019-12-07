@@ -664,11 +664,10 @@ extern "C" {
 
 // SLIP BOUNDARY CONDITIONS
 extern struct {
-  bool isSlipBC;
+  int isSlipBC; // bool
+  int slipNitsche; // bool, equivalent to slipDirichlet if false
   double slipSigma;
   double slipConst;
-  bool slipNitsche; // equivalent to slipDirichlet if false
-  // bool slipDirichlet;
 } slipvars;
 
 #ifdef __cplusplus

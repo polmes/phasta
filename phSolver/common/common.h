@@ -83,7 +83,7 @@ c from different modules
         common /sclrs/ scdiff(5),tdecay,nsclr,isclr,nsolt,nosource,
      &            consrv_sclr_conv_vel
 
-        common /slipvars/ isSlipBC, slipSigma, slipConst, slipNitsche
+        common /slipvars/ slipSigma, slipConst, slipNitsche, isSlipBC
 
 c
 c.... common blocks
