@@ -271,7 +271,7 @@ c                       <SLIP BOUNDARY CONDITIONS>
 c     ------------------------------------------------------------------
 
       call testhere(testslip)
-      call getSlipVelocity1D(rmu, rho, T, g2yi(:, 2), usip)
+      call getSlipVelocity1D(rmu, rho, T, g2yi(:, 2), uslip)
 
 c     ------------------------------------------------------------------
 c                       </SLIP BOUNDARY CONDITIONS>

@@ -32,7 +32,7 @@ c     ------------------------------------------------------------------
          real*8 :: mfp(npro) ! or dimension(npro)
 
          ! MFP = Mean Free Path, typically referred to as \lambda
-         mfp = mu / rho * sqrt(3 / (2 * 287 * T))
+         mfp = mu / rho * sqrt(pi / (2 * Rgas * T))
 
          ! Slip velocity at the wall
          uslip = mfp * dudy
