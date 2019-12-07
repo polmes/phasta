@@ -14,7 +14,8 @@ c           T:    temperature at the integration point
 c           dudy: du1/dx2 velocity gradient
 c        Output:
 c           uslip: slip velocity at the integration point
-c        Note: pi, Rgas, npro are constants defined in common.h
+c        Note: pi, Rgas, npro, slipSigma, slipConst
+c              are constants/parameters defined in common.h
 c     ------------------------------------------------------------------
 
          include "common.h"
@@ -27,7 +28,11 @@ c     ------------------------------------------------------------------
          mfp = mu / rho * sqrt(pi / (2 * Rgas * T))
 
          ! Slip velocity at the wall
-         uslip = mfp * dudy
+         uslip = slipConst * (2 - slipSigma) / slipSigma * mfp * dudy
 
          return
       end subroutine getSlipVelocity1D
+
+      subroutine setSlip(iBC, iBCB)
+
+      end subroutine setSlip

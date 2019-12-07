@@ -54,9 +54,10 @@
 #define sequence FortranCInterface_GLOBAL_(sequence,SEQUENCE)
 #define amgvarr FortranCInterface_GLOBAL_(amgvarr,AMGVARR)
 #define amgvari FortranCInterface_GLOBAL_(amgvari,AMGVARI)
+#define slipvars FortranCInterface_GLOBAL_(slipvars, SLIPVARS)
 
 #define MAXBLK   50000
-#define MAXSURF  1000  
+#define MAXSURF  1000
 #define MAXTS   100
 #define MAXTOP   6
 #define MAXQPT   125
@@ -87,18 +88,18 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  extern struct { 
+  extern struct {
     int master;
     int numpe;
     int myrank;
   } workfc ;
 
-  extern struct { 
+  extern struct {
     int maxfront;
     int nlwork;
   } fronts ;
 
-  extern struct { 
+  extern struct {
     long long int nshgt;
     long long int minowned;
     long long int maxowned;
@@ -107,13 +108,13 @@ extern "C" {
     int nshg0;
   } newdim ;
 
-  extern struct { 
+  extern struct {
     double birth;
     double death;
     double comtim;
   } timer4 ;
 
-  extern struct { 
+  extern struct {
     double ttim[100];
   } extrat ;
 
@@ -160,7 +161,7 @@ extern "C" {
 /*      int ierrcalc; */
   } turbvari ;
 
-  extern struct { 
+  extern struct {
     int iISend;
     int iISendScal;
     int iIRecv;
@@ -184,7 +185,7 @@ extern "C" {
     double rCommuScal;
   } mpistats ;
 
-  extern struct { 
+  extern struct {
     double rheap;
     double rheapavail;
     double rstack;
@@ -196,7 +197,7 @@ extern "C" {
   } memstats ;
 
 
-  extern struct { 
+  extern struct {
     int irscale;
     int intpres;
     double plandist;
@@ -215,7 +216,7 @@ extern "C" {
     int consrv_sclr_conv_vel;
   } sclrs;
 
-  extern struct { 
+  extern struct {
     double flxID[MAXSURF+1][10] ;
     double Force[3];
     double HFlux;
@@ -225,7 +226,7 @@ extern "C" {
     int irankfilesforce[MAXSURF+1];
   } aerfrc ;
 
-  extern struct { 
+  extern struct {
     int numnp;
     int numel;
     int numelb;
@@ -266,7 +267,7 @@ extern "C" {
     double AlphaFreq;
     double AlphaAmp;
   } nasavar;
- 
+
 /*chen Sep 25 2009  Flow Control Parameters*/
   extern struct{
     int iI2Binlet;
@@ -275,7 +276,7 @@ extern "C" {
   } ctrlvari;
 
 	extern struct{
-		double BlowingVelDuct; 
+		double BlowingVelDuct;
 		double BlowingIniMdotDuct;
 		double BlowingFnlMdotDuct;
 		double suctionVbottom;
@@ -295,13 +296,13 @@ extern "C" {
 		int isetEV_IC_BC;
 		int isetEVramp;
 		int isetBlowing_Duct;
-		int ifixBlowingVel_Duct;  
+		int ifixBlowingVel_Duct;
 		int nBlowingStepsDuct;
 	}ductvari;
 
   extern struct{
     double inletVelX;
-    double outPres1; 
+    double outPres1;
     double xvel_ini;
     double yvel_ini;
     double zvel_ini;
@@ -319,8 +320,8 @@ extern "C" {
 	} ductvar;
 //////////////////////////////////////////
 
- 
-  extern struct { 
+
+  extern struct {
     double epsilon_ls;
     double epsilon_lsd;
     double dtlset;
@@ -330,7 +331,7 @@ extern "C" {
     int iExpLSSclr2;
   } levlset;
 
-  extern struct { 
+  extern struct {
     int nshape;
     int nshapeb;
     int maxshb;
@@ -341,7 +342,7 @@ extern "C" {
     int nsonmax;
   } shpdat ;
 
-  extern struct { 
+  extern struct {
     int lelCat;
     int lcsyst;
     int iorder;
@@ -357,7 +358,7 @@ extern "C" {
     int mattyp;
   } elmpar ;
 
-  extern struct { 
+  extern struct {
     double E3nsd;
     int I3nsd;
     int nsymdf;
@@ -391,7 +392,7 @@ extern "C" {
 	int iLHScond;
   } genpar ;
 
-  extern struct { 
+  extern struct {
     double epstol[6];  /* 1+ max number of scalars  (beginning of the
                           end of time sequences) */
     double Delt[MAXTS];
@@ -409,7 +410,7 @@ extern "C" {
     int svLSType;
   } inpdat ;
 
-  extern struct { 
+  extern struct {
     int iin;
     int igeom;
     int ipar;
@@ -429,7 +430,7 @@ extern "C" {
     int itime;
   } mio ;
 
-  extern struct { 
+  extern struct {
     double fin;
     double fgeom;
     double fpar;
@@ -446,7 +447,7 @@ extern "C" {
     double ftime;
   } mioname ;
 
-  extern struct { 
+  extern struct {
     double eGMRES;
     int lGMRES;
     int lGMRESs;
@@ -456,14 +457,14 @@ extern "C" {
     int ntotGMs;
   } itrpar ;
 
-  extern struct { 
+  extern struct {
     double datmat[MAXTS][7][3];
     int matflg[MAXTS][6];
     int nummat;
     int mexist;
   } matdat ;
 
-  extern struct { 
+  extern struct {
     double pr, Planck, Stephan, Nh, Rh, Rgas;
     double gamma, gamma1, s0;
     /*, const, xN2, xO2;*/
@@ -472,7 +473,7 @@ extern "C" {
     /*double Tvib[5],g0s[5], dofs[5],ithm;*/
   } mmatpar ;
 
-  extern struct { 
+  extern struct {
     double ro;
     double vel;
     double temper;
@@ -492,34 +493,34 @@ extern "C" {
     int nsynciofiles;
     int nsynciofieldswriterestart;
     int iv_rankpercore;
-    int iv_corepernode; 
+    int iv_corepernode;
     int input_mode; //FIXME -1:streams, 0:posix, >0:syncio
     int output_mode; //FIXME -1:streams, 0:posix, >0:syncio
     /*  int iostats; */
 /*      int ipresref; */
   } outpar ;
 
-  extern struct { 
+  extern struct {
     int mbeg;
     int mend;
     int mprec;
   } point ;
 
-  extern struct { 
+  extern struct {
     double epsM;
     int iabres;
   } precis ;
 
-  extern struct { 
+  extern struct {
     int npro;
   } propar ;
 
-  extern struct { 
+  extern struct {
     double resfrt[2];
     double resfrts;
   } resdat ;
 
-  extern struct { 
+  extern struct {
     int imap;
     int ivart;
     int iDC;
@@ -531,7 +532,7 @@ extern "C" {
     int idcsclr[2];
   } solpar ;
 
-  extern struct { 
+  extern struct {
     double time;
     double CFLfld;
     double CFLsld;
@@ -555,12 +556,12 @@ extern "C" {
     int lskeep;
   } timdat ;
 
-  extern struct { 
+  extern struct {
     int LCtime;
     int ntseq;
   } timpar ;
 
-  extern struct { 
+  extern struct {
     int numeqns[100];
     int minIters;
     int maxIters;
@@ -574,11 +575,11 @@ extern "C" {
     int iverbose;
   } incomp ;
 
-  extern struct { 
+  extern struct {
     double ccode[13];
   } mtimer1 ;
 
-  extern struct { 
+  extern struct {
     double flops;
     double gbytes;
     double sbytes;
@@ -589,13 +590,13 @@ extern "C" {
     int icode3;
   } mtimer2 ;
 
-  extern struct { 
+  extern struct {
     double cpu[11];
     double cpu0[11];
     int nacess[11];
   } timer3 ;
 
-  extern struct { 
+  extern struct {
     double title;
     int ititle;
   } title ;
@@ -605,7 +606,7 @@ extern "C" {
   }intdat;
 
   extern struct {
-    double bcttimescale;    
+    double bcttimescale;
     double ValueListResist[MAXSURF+1];
     double rhovw;
     double thicknessvw;
@@ -624,10 +625,10 @@ extern "C" {
     int numRCRSrfs;
     int nsrflistRCR[MAXSURF+1];
     int ircrfile;
-    int ideformwall;  
+    int ideformwall;
     int iwallmassfactor;
     int iwallstiffactor;
-    int iviscflux;   
+    int iviscflux;
  } nomodule;
 
   extern struct {
@@ -642,7 +643,7 @@ extern "C" {
     double ramg_trunc;      /* truncation select */
     double ramg_chebyratio; /* Eigen ratio for chebyshev smoothing */
  } amgvarr ;
-  
+
   extern struct {
     int irun_amg;           /* Employ AMG feature solfar.f      */
     int irun_amg_prec;      /* Run AMG as preconditioner to CG */
@@ -659,6 +660,16 @@ extern "C" {
     int mlsdeg;             /* Polynomial Smoothing (MLS) degree */
     int iamg_reduce;        /* Run a reduced case */
  } amgvari ;
+
+
+// SLIP BOUNDARY CONDITIONS
+extern struct {
+  bool isSlipBC;
+  double slipSigma;
+  double slipConst;
+  bool slipNitsche; // equivalent to slipDirichlet if false
+  // bool slipDirichlet;
+} slipvars;
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,7 @@ c This file contains the common blocks and the data declaration needed
 c for the routines.
 c
 c Input variables that have been previously declared in common_c.h have to be
-c re-declared here, in a consistant block. 
+c re-declared here, in a consistant block.
 c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
@@ -23,10 +23,10 @@ c
 c  The two types of face topology are  1= tri, 2=quad
 c
         parameter     ( MAXTOP = 6, MAXSURF=1000 )
- 
+
 c the common block nomodule holds all the things which have been removed
 c from different modules
-     
+
         integer seqsize, stepseq
         integer consrv_sclr_conv_vel
         integer spongecontinuity, spongemomentum1, spongemomentum2
@@ -48,7 +48,7 @@ c from different modules
      &  icardio, itvn, ipvsq, numResistSrfs, nsrflistResist(0:MAXSURF),
      &  numImpSrfs, nsrflistImp(0:MAXSURF),impfile,
      &  numRCRSrfs, nsrflistRCR(0:MAXSURF),ircrfile,
-     &  ideformwall, iwallmassfactor, iwallstiffactor, iviscflux 
+     &  ideformwall, iwallmassfactor, iwallstiffactor, iviscflux
         common /sequence/ seqsize, stepseq(100)
 	common /workfc/ master, numpe, myrank
 	common /fronts/ maxfront, nlwork
@@ -60,18 +60,18 @@ c from different modules
      &            spongecontinuity, spongemomentum1, spongemomentum2,
      &            spongeenergy, spongemomentum3
         common /turbvar/ eles,ylimit(3,9), rampmdot(2,3),
-     &                   rmutarget, pzero,  wtavei, 
+     &                   rmutarget, pzero,  wtavei,
      &                   dtavei, dke,  fwr1, flump, DES_SA_hmin,
      &                   ierrcalc, ihessian, itwmod, ngaussf,idim,
      &                   nlist, nintf(MAXTOP)
         common /turbvari/iRANS, iLES, idistcalc, isubmod, ifproj,
      &                   i2filt, modlstats, idis, nohomog,
      &                   ierrsmooth, iramp
-        common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal, 
+        common /mpistats/iISend, iISendScal, iIRecv, iIRecvScal,
      &                   iWaitAll,iWaitAllScal, iAllR, iAllRScal,
      &                   impistat, impistat2, rmpitmr,
-     &                   rISend, rISendScal, rIRecv, rIRecvScal, 
-     &                   rWaitAll, rWaitAllScal, rAllR, rAllRScal, 
+     &                   rISend, rISendScal, rIRecv, rIRecvScal,
+     &                   rWaitAll, rWaitAllScal, rAllR, rAllRScal,
      &                   rCommu, rCommuScal
 
         common /memstats/rheap,rheapavail,rstack,rstackavail,rshared,
@@ -82,19 +82,22 @@ c from different modules
 
         common /sclrs/ scdiff(5),tdecay,nsclr,isclr,nsolt,nosource,
      &            consrv_sclr_conv_vel
-c 
+
+        common /slipvars/ isSlipBC, slipSigma, slipConst, slipNitsche
+
+c
 c.... common blocks
 c
       parameter (MAXQPT = 125)
 c
 c.... common blocks for hierarchic basis functions
 c
-      common /intpt/  Qpt (MAXTOP ,4,MAXQPT), Qwt (MAXTOP ,MAXQPT), 
-     &                Qptb(MAXTOP,4,MAXQPT),  Qwtb(MAXTOP,MAXQPT), 
+      common /intpt/  Qpt (MAXTOP ,4,MAXQPT), Qwt (MAXTOP ,MAXQPT),
+     &                Qptb(MAXTOP,4,MAXQPT),  Qwtb(MAXTOP,MAXQPT),
      &                nint(MAXTOP),           nintb(MAXTOP),
      &                ngauss,                 ngaussb,   intp,
      &                   maxnint
- 
+
 c nsrflist is a binary switch that tells us if a given srfID should be
 c included in the consistent flux calculation.  It starts from zero
 c since we need to be able to handle/ignore surfaces with no srfID attached
@@ -103,8 +106,8 @@ c flxID(numfluxes,nIDs+1)
 c numfluxes = area, mass, fx, fy, fz, heat, scalar_flux_{1,2,3,4}
 c nIDs currently set to MAXSURF, each surface has its own
 c
-        common /aerfrc/ flxID(10,0:MAXSURF), Force(3),HFlux, 
-     &                  nsrflist(0:MAXSURF), isrfIM, 
+        common /aerfrc/ flxID(10,0:MAXSURF), Force(3),HFlux,
+     &                  nsrflist(0:MAXSURF), isrfIM,
      &                  flxIDsclr(4,MAXSURF),
      &                  irankfilesforce(0:MAXSURF)
 c
@@ -129,52 +132,52 @@ c......................NASA Inlet Woolwine.................................
 c..........................................................................
 c...........................................................................
         common /ctrlvari/ iI2Binlet, isetOutPres, isetInitial
-        
+
         common /Ductvari/  BlowingVelDuct,
      &                    BlowingIniMdotDuct,
      &                    BlowingFnlMdotDuct,
-     &                    suctionVbottom, 
+     &                    suctionVbottom,
      &                    suctionVside_lower,
-     &                    suctionVside_upper, 
-     &                    suctionVtop, 
-     &                    blowerVelocity, 
-     &                    blowerTemperature, 
+     &                    suctionVside_upper,
+     &                    suctionVtop,
+     &                    blowerVelocity,
+     &                    blowerTemperature,
      &                    blowerEV,
-     &                    isetOutletID, 
+     &                    isetOutletID,
      &                    isetInitial_Duct,
-     &                    isetInlet_Duct, 
+     &                    isetInlet_Duct,
      &                    isetSuctionID_Duct,
-     &                    isetBlowerID_Duct,  
-     &                    iDuctgeometryType, 
+     &                    isetBlowerID_Duct,
+     &                    iDuctgeometryType,
      &                    iStraightPrint,
      &                    isetEV_IC_BC,
      &                    isetEVramp,
      &                    isetBlowing_Duct,
-     &                    ifixBlowingVel_Duct, 
+     &                    ifixBlowingVel_Duct,
      &                    nBlowingStepsDuct
         real*8 inletVelX
-        common /ctrlvar/  inletVelX,   outPres1, 
+        common /ctrlvar/  inletVelX,   outPres1,
      &                    xvel_ini,    yvel_ini,    zvel_ini,
      &                    temp_ini,    pres_ini,    evis_ini
 
         common /Ductvar/   evis_IC_BC,
-     &                    EVrampXmin, 
+     &                    EVrampXmin,
      &                    EVrampXmax,
      &                    EVrampMin,
      &                    EVrampMax
 c...........................................................................
 
 c
-        common /levlset/ epsilon_ls, epsilon_lsd, dtlset, iLSet, 
+        common /levlset/ epsilon_ls, epsilon_lsd, dtlset, iLSet,
      &                   ivconstraint, iExpLSSclr1, iExpLSSclr2
 
-c 
+c
         common /shpdat/ nshape, nshapeb, maxshb,
      &                  nshl, nshlb,nfath,  ntopsh,  nsonmax
 c
         common /melmcat/ mcsyst, melCat, nenCat(8,3),    nfaCat(8,3)
 c
-        common /elmpar/ lelCat, lcsyst, iorder, nenb,   
+        common /elmpar/ lelCat, lcsyst, iorder, nenb,
      &                  nelblk, nelblb, ndofl,  nsymdl, nenl,   nfacel,
      &                  nenbl,  intind, mattyp
 c
@@ -193,7 +196,7 @@ c
         common /inpdat/ epstol(6),  Delt(MAXTS),    CFLfl(MAXTS),
      &                  CFLsl(MAXTS),   nstep(MAXTS),   niter(MAXTS),
      &                  impl(MAXTS),    rhoinf(MAXTS),
-     &                  LHSupd(6),  loctim(MAXTS),  deltol(MAXTS,2), 
+     &                  LHSupd(6),  loctim(MAXTS),  deltol(MAXTS,2),
      &                  leslib,     svLSFlag,   svLSType
 c
         common /intdat/ intg(2,MAXTS),  intpt(3),       intptb(3)
@@ -209,7 +212,7 @@ c /*         common /andres/ fwr1,ngaussf,idim,nlist */
 
         character*80    fin,    fgeom,  fpar,   fbndc,  fmat,   fecho,
      &                  frstin, frstou, fhist,  ferror, ftable, fforce,
-     &                  fgraph, ftime,  iotype     
+     &                  fgraph, ftime,  iotype
         common /mioname/ fin,    fgeom,  fpar,   fbndc,  fmat,   fecho,
      &                  frstin, frstou, fhist,  ferror, ftable, fforce,
      &                  fgraph, ftime
@@ -230,10 +233,10 @@ c
         integer input_mode, output_mode
         common /outpar/ ro,     vel,    temper, press,  entrop, ntout,
      &                  ioform, iowflux, iofieldv, iotype, ioybar,
-     &                  nstepsincycle, nphasesincycle, 
+     &                  nstepsincycle, nphasesincycle,
      &                  ncycles_startphaseavg, ivort, icomputevort,
-     &                  nsynciofiles, nsynciofieldswriterestart, 
-     &                  iv_rankpercore, iv_corepernode, 
+     &                  nsynciofiles, nsynciofieldswriterestart,
+     &                  iv_rankpercore, iv_corepernode,
      &                  input_mode, output_mode
 
         common /point / mbeg,   mend,   mprec
@@ -256,7 +259,7 @@ c
 c
         common /timpar/ LCtime, ntseq
 c
-        common /incomp/ numeqns(100), minIters, maxIters, 
+        common /incomp/ numeqns(100), minIters, maxIters,
      &                  iprjFlag,     nPrjs,    ipresPrjFlag, nPresPrjs,
      &                  prestol,      statsflow(6), statssclr(6),
      &                  iverbose
@@ -276,8 +279,8 @@ c
         character*8     machin
         parameter     ( machin = 'RS/6000 ' )
         parameter     ( machfl = 4 )
- 
-        parameter 
+
+        parameter
      &           ( zero   = 0.0000000000000000000000000000000d0,
      &             pt125  = 0.1250000000000000000000000000000d0,
      &             pt25   = 0.2500000000000000000000000000000d0,
@@ -346,7 +349,7 @@ c ndof          : number of degrees of freedom per node
 c iALE          : ALE formulation flag
 c icoord        : coordinate system flag
 c navier        : Navier-Stokes calculation flag
-c irs           : restart option 
+c irs           : restart option
 c iexec         : execute flag
 c necho         : input echo parameter
 c ichem         : equilibrium chemistry flag (for outchem.step dump)
@@ -405,8 +408,8 @@ c ibound        : boundary element flag
 c idiff         : diffusive flux vector flag
 c                 ( = 0 not used; = 1 global reconstruction )
 c itau          : type of tau to be used
-c iLHScond      : add contributiosn from the heat flux BC to the LHS 
-c                 tangency matrix. 
+c iLHScond      : add contributiosn from the heat flux BC to the LHS
+c                 tangency matrix.
 c
 c----------------------------------------------------------------------
 c
@@ -662,10 +665,10 @@ c
 c----------------------------------------------------------------------
 c
 c.... common /avging / : nfath
-c 
+c
 c nfath         : total number of global fathers over which certain
 c                 quantities will be averaged
-c 
+c
 c----------------------------------------------------------------------
 c
 c.... parameters        : machine data
@@ -696,9 +699,9 @@ c three         : 3.0
 c four          : 4.0
 c five          : 5.0
 c pi            : the magical number :-)
-c 
-c---------------------------------------------------------------------- 
-c 
+c
+c----------------------------------------------------------------------
+c
 c Zdenek Johan, Winter 1991.
-c 
+c
 c----------------------------------------------------------------------

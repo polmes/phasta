@@ -18,11 +18,11 @@ void print_error_code(int ierr);
 int SONFATH=0;
 extern "C" char phasta_iotype[80];
 //extern "C"
-extern "C" void BC_setVars(		int*, 		int*, 		
-								int*,		int*, 
+extern "C" void BC_setVars(		int*, 		int*,
+								int*,		int*,
 								double*, 	double*,	double*,
 								double*, 	double*,	double*,
-								double*, 	double*,	double*, 
+								double*, 	double*,	double*,
 								double*		);
 
 int input_fform(phSolver::Input& inp)
@@ -38,30 +38,30 @@ int input_fform(phSolver::Input& inp)
     }
 
 #ifdef AMG
-    
-	// AMG PARAMETERS 
-	
+
+	// AMG PARAMETERS
+
 	if ((string)inp.GetValue("Employ AMG") == "True" ) {
-	  
+
 	    amgvari.irun_amg = 1;
 
         amgvari.irun_amg_prec = inp.GetValue("Run AMG As CG-preconditioner");
 
         amgvarr.strong_eps       = inp.GetValue("Strong Criterion Eps");
-        
-        amgvarr.ramg_eps         = inp.GetValue("AMG Convergence Eps");
-        
-        amgvarr.ramg_relax       = inp.GetValue("AMG Relaxation Omega");        
-        amgvarr.ramg_trunc       = inp.GetValue("AMG Truncation Set");
-        
-        amgvari.iamg_verb        = inp.GetValue("AMG Verbosity");
-        
-        amgvari.iamg_neg_sten    = inp.GetValue("AMG Neg_Sten");           
 
-        amgvari.iamg_nlevel      = inp.GetValue("AMG Nlevel"); 
-        
+        amgvarr.ramg_eps         = inp.GetValue("AMG Convergence Eps");
+
+        amgvarr.ramg_relax       = inp.GetValue("AMG Relaxation Omega");
+        amgvarr.ramg_trunc       = inp.GetValue("AMG Truncation Set");
+
+        amgvari.iamg_verb        = inp.GetValue("AMG Verbosity");
+
+        amgvari.iamg_neg_sten    = inp.GetValue("AMG Neg_Sten");
+
+        amgvari.iamg_nlevel      = inp.GetValue("AMG Nlevel");
+
         amgvari.iamg_c_solver  = inp.GetValue("AMG Coarsest Solver");
-        
+
         amgvari.iamg_init = 0;
         amgvari.iamg_setup_frez = inp.GetValue("AMG Freeze Setup");
         if ((string)inp.GetValue("AMG Interpolation Type")=="Standard")
@@ -70,7 +70,7 @@ int input_fform(phSolver::Input& inp)
             amgvari.iamg_interp = 0;
         amgvari.maxnev = inp.GetValue("AMG GGB nev");
         amgvari.maxncv = inp.GetValue("AMG GGB ncv");
-        
+
         if ((string)inp.GetValue("AMG Smoother Type")=="Gauss-Seidel")
             amgvari.iamg_smoother = 1;
         else if ((string)inp.GetValue("AMG Smoother Type")=="ChebyShev")
@@ -81,8 +81,8 @@ int input_fform(phSolver::Input& inp)
 
         amgvari.mlsdeg = inp.GetValue("AMG MLS Degree");
         amgvari.iamg_reduce = inp.GetValue("AMG Run Reduced Serial");
-	}	
-#endif    
+	}
+#endif
 
 /////////////////////////////chen Sep 25 2009  Flow Control Parameters ////////
 // Take BC from IC at inlet
@@ -98,7 +98,7 @@ int input_fform(phSolver::Input& inp)
     ductvari.isetOutletID  = (int)inp.GetValue("Duct Outlet ID");
     if(ductvari.isetOutletID > 0 )
 		ctrlvar.outPres1 = inp.GetValue("Duct Uniform Outlet Pressure");
-	
+
 // Override Eddy Vicosity IC and BC
 	ductvari.isetEV_IC_BC=(int)inp.GetValue("Override Eddy Viscosity");
 	if(ductvari.isetEV_IC_BC==1){
@@ -123,9 +123,9 @@ int input_fform(phSolver::Input& inp)
 		ctrlvar.evis_ini = inp.GetValue("Initial Scalar 1");
 	}
 
-    
 
-      
+
+
 //initial condition for duct
 	ductvari.isetInitial_Duct=(int)inp.GetValue("Set Initial Condition for Duct");
 //inlet condition for duct
@@ -140,24 +140,24 @@ int input_fform(phSolver::Input& inp)
 
 		for(i = 0; i < 3; i++)	ivec[i] = new vector<int>;
 		for(i = 0; i < 10; i++)	dvec[i] = new vector<double>;
-		
+
         *ivec[0] = inp.GetValue("Blower Mode");
-		*ivec[1] = inp.GetValue("Blower Surface ID");	
+		*ivec[1] = inp.GetValue("Blower Surface ID");
 		*ivec[2] = inp.GetValue("Blower Enable");
-		
+
 		*dvec[0] = inp.GetValue("Blower Cycle Period");
         *dvec[1] = inp.GetValue("Blower Full On Period");
 		*dvec[2] = inp.GetValue("Blower Rise Time");
 		*dvec[3] = inp.GetValue("Blower Fall Time");
         *dvec[4] = inp.GetValue("Blower Maximum u_normal");
         *dvec[5] = inp.GetValue("Blower Minimum u_normal");
-		*dvec[6] = inp.GetValue("Blower Temperature");	
+		*dvec[6] = inp.GetValue("Blower Temperature");
 		*dvec[7] = inp.GetValue("Blower Eddy Viscosity");
-		*dvec[8] = inp.GetValue("Blower BL Thickness");		
+		*dvec[8] = inp.GetValue("Blower BL Thickness");
 		*dvec[9] = inp.GetValue("Blower BL Thickness (scalar)");
-		
-		BC_setVars(	&n_tmp, 		
-					&(*ivec[0])[0], 	//mode	
+
+		BC_setVars(	&n_tmp,
+					&(*ivec[0])[0], 	//mode
 					&(*ivec[1])[0], 	//surfID
 					&(*ivec[2])[0],		//enable
 					&(*dvec[0])[0],		//t_cycle
@@ -172,23 +172,23 @@ int input_fform(phSolver::Input& inp)
 					&(*dvec[9])[0]	);	//delta BL scalar
 
 	}
-        
+
 //suction condition for duct
 	ductvari.isetSuctionID_Duct=(int)inp.GetValue("Duct Set Suction Surface ID");        //suction patch surface IDs
 	if(ductvari.isetSuctionID_Duct > 0){
 		ductvari.suctionVbottom     = inp.GetValue("Duct Bottom Suction Normal Velocity");
 		ductvari.suctionVside_lower = inp.GetValue("Duct Lower Side Suction Normal Velocity");
 		ductvari.suctionVside_upper = inp.GetValue("Duct Upper Side Surface Normal Velocity");
-		ductvari.suctionVtop        = inp.GetValue("Duct Top Surface Normal Velocity");	
+		ductvari.suctionVtop        = inp.GetValue("Duct Top Surface Normal Velocity");
 	}
 
-//  duct geometry type      
+//  duct geometry type
 	ductvari.iDuctgeometryType = (int)inp.GetValue("Duct Geometry Type");
 
 ///////////////////////////////////////////////////////////////////////////////
 
 
-    // Disabled Features 
+    // Disabled Features
 
     conpar.iALE = inp.GetValue("iALE");
     conpar.icoord = inp.GetValue("icoord");
@@ -205,7 +205,7 @@ int input_fform(phSolver::Input& inp)
     inpdat.Delt[0] = inp.GetValue("Time Step Size");
     inpdat.nstep[0] = inp.GetValue("Number of Timesteps");
     if((string)inp.GetValue("Viscous Control")=="Viscous") conpar.navier=1 ; else conpar.navier=0;
-   
+
     if ((string)inp.GetValue("Turbulence Model") == "No-Model" ) {
       turbvari.irans = 0;
       turbvari.iles  = 0;
@@ -227,7 +227,7 @@ int input_fform(phSolver::Input& inp)
     } else if ((string)inp.GetValue("Turbulence Model") == "DDES" ) {
       turbvari.iles  = -2;
       turbvari.irans = -1;
- 
+
     } else {
       cout << " Turbulence Model: Only Legal Values ( No-Model, LES, RANS-SA, RANS-KE, DES97, DDES )";
       cout << endl;
@@ -265,14 +265,14 @@ int input_fform(phSolver::Input& inp)
     levlset.iExpLSSclr2 = inp.GetValue("Explicit Solve for Redistance Field");
     levlset.iExpLSSclr1 = inp.GetValue("Explicit Solve for Scalar 1 Field");
     if ((string)inp.GetValue("Apply Volume Constraint") == "True" ) {
-      levlset.ivconstraint = 1; } 
+      levlset.ivconstraint = 1; }
     else if((string)inp.GetValue("Apply Volume Constraint") == "False" ) {
       levlset.ivconstraint = 0; }
     else {
       cout << "Apply Volume Constraint: Only Legal Values (True, False) ";
       cout << endl;
       exit(1);
-    }   
+    }
     }
 
     vector<double> vec;
@@ -284,7 +284,7 @@ int input_fform(phSolver::Input& inp)
     outpar.nsynciofiles = inp.GetValue("Number of SyncIO Files");
     if((string)inp.GetValue("Print Statistics") == "True") outpar.ioform = 2;
     else outpar.ioform = 1;
-  
+
     if((string)inp.GetValue("Print Wall Fluxes") == "True") outpar.iowflux = 1;
     else outpar.iowflux = 0;
 
@@ -304,10 +304,10 @@ int input_fform(phSolver::Input& inp)
     strcpy( outpar.iotype , ((string)inp.GetValue("Data Block Format")).c_str());
     strcpy( phasta_iotype , ((string)inp.GetValue("Data Block Format")).c_str());
     SONFATH = inp.GetValue("Number of Father Nodes");
-  
+
     if((string)inp.GetValue("Print Residual at End of Step") == "True") genpar.lstres = 1;
     else genpar.lstres = 0;
-  
+
     if((string)inp.GetValue("Print Error Indicators") == "True") turbvar.ierrcalc = 1;
     else turbvar.ierrcalc = 0;
 
@@ -339,11 +339,11 @@ int input_fform(phSolver::Input& inp)
 	vec = inp.GetValue("Mdot Ramp Inflow Start and Stop");
     	for(i=0; i<2 ; i++){
         	turbvar.rampmdot[0][i]=vec[i];
-    	}	
+    	}
     	vec = inp.GetValue("Mdot Ramp Lower FC Start and Stop");
     	for(i=0; i<2 ; i++){
          	turbvar.rampmdot[1][i]=vec[i];
-    	}	
+    	}
     	vec = inp.GetValue("Mdot Ramp Upper FC Start and Stop");
     	for(i=0; i<2 ; i++){
         	turbvar.rampmdot[2][i]=vec[i];
@@ -381,17 +381,17 @@ int input_fform(phSolver::Input& inp)
     }
     vec.erase(vec.begin(),vec.end());
 
-    //Material Properties Keywords 
+    //Material Properties Keywords
     matdat.nummat = levlset.iLSet+1;
-    if((string)inp.GetValue("Shear Law") == "Constant Viscosity") 
+    if((string)inp.GetValue("Shear Law") == "Constant Viscosity")
       for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][1] = 0;
 
-    if((string)inp.GetValue("Bulk Viscosity Law") == "Constant Bulk Viscosity") 
+    if((string)inp.GetValue("Bulk Viscosity Law") == "Constant Bulk Viscosity")
       for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][2] = 0;
 
-    mmatpar.pr = inp.GetValue("Prandtl Number"); 
+    mmatpar.pr = inp.GetValue("Prandtl Number");
 
-    if((string)inp.GetValue("Conductivity Law") == "Constant Conductivity") 
+    if((string)inp.GetValue("Conductivity Law") == "Constant Conductivity")
       for(i=0; i < levlset.iLSet+1; i++) matdat.matflg[i][3] = 0;
 
     vec = inp.GetValue("Density");
@@ -417,7 +417,7 @@ int input_fform(phSolver::Input& inp)
       matdat.datmat[i][3][0] = vec[i];
     }
     vec.erase(vec.begin(),vec.end());
-  
+
     vec = inp.GetValue("Scalar Diffusivity");
     for(i=0; i< solscalr ; i++){
       sclrs.scdiff[i] = vec[i];
@@ -448,7 +448,7 @@ int input_fform(phSolver::Input& inp)
       for(i=0; i< levlset.iLSet +1 ; i++) matdat.matflg[i][4] = 5;
     }
 
-    // the following block of stuff is common to all cooling type sponges. 
+    // the following block of stuff is common to all cooling type sponges.
     // Specific stuff belongs in the conditionals above
 
     if(matdat.matflg[0][4] >=4) {
@@ -465,7 +465,7 @@ int input_fform(phSolver::Input& inp)
       spongevar.spongemomentum2 = 0;
       spongevar.spongemomentum3 = 0;
       spongevar.spongeenergy = 0;
- 
+
       if((string)inp.GetValue("Sponge for Continuity Equation") == "True")
 	spongevar.spongecontinuity = 1;
       if((string)inp.GetValue("Sponge for x Momentum Equation") == "True")
@@ -476,7 +476,7 @@ int input_fform(phSolver::Input& inp)
 	spongevar.spongemomentum3 = 1;
       if((string)inp.GetValue("Sponge for Energy Equation") == "True")
 	spongevar.spongeenergy = 1;
-      
+
     }
 
     vec = inp.GetValue("Body Force");
@@ -512,7 +512,7 @@ int input_fform(phSolver::Input& inp)
 
     genpar.EntropyPressure = inp.GetValue("Entropy Form of Pressure Constraint on Weight Space");
 
-    
+
     if ( (string)inp.GetValue("Rotating Frame of Reference") == "True" ) {
       matdat.matflg[0][5] = 1;
       vec = inp.GetValue("Rotating Frame of Reference Rotation Rate");
@@ -543,11 +543,11 @@ int input_fform(phSolver::Input& inp)
       inpdat.leslib=1; incomp.iprjFlag = 1; incomp.ipresPrjFlag=0;}
     else if( (string)inp.GetValue("Solver Type") =="ACUSIM with Full Projection" ){
       inpdat.leslib=1; incomp.iprjFlag = 1; incomp.ipresPrjFlag=1;}
-    else if( (string)inp.GetValue("Solver Type") =="GMRES Matrix Free"){ 
+    else if( (string)inp.GetValue("Solver Type") =="GMRES Matrix Free"){
       inpdat.impl[0] += 10*solflow;}
-    else if( (string)inp.GetValue("Solver Type") =="GMRES EBE"){ 
+    else if( (string)inp.GetValue("Solver Type") =="GMRES EBE"){
       inpdat.impl[0] += 20*solflow;}
-    else if( (string)inp.GetValue("Solver Type") =="PETSc"){ 
+    else if( (string)inp.GetValue("Solver Type") =="PETSc"){
       conpar.usingpetsc=1;}
     //GMRES sparse is assumed default and has the value of 10, MFG 20,
     // EBE 30
@@ -558,23 +558,23 @@ int input_fform(phSolver::Input& inp)
     solpar.Kspace = inp.GetValue("Number of Krylov Vectors per GMRES Sweep");
     inpdat.LHSupd[0] = inp.GetValue("Number of Solves per Left-hand-side Formation");
     inpdat.epstol[0] = inp.GetValue("Tolerance on Momentum Equations");
-    incomp.prestol = inp.GetValue("Tolerance on ACUSIM Pressure Projection"); 
+    incomp.prestol = inp.GetValue("Tolerance on ACUSIM Pressure Projection");
     incomp.minIters = inp.GetValue("Minimum Number of Iterations per Nonlinear Iteration");
     incomp.maxIters = inp.GetValue("Maximum Number of Iterations per Nonlinear Iteration");
-    inpdat.deltol[0][0]=inp.GetValue("Velocity Delta Ratio"); 
-    inpdat.deltol[1][0]=inp.GetValue("Pressure Delta Ratio"); 
+    inpdat.deltol[0][0]=inp.GetValue("Velocity Delta Ratio");
+    inpdat.deltol[1][0]=inp.GetValue("Pressure Delta Ratio");
     incomp.nPrjs = inp.GetValue("Number of Velocity Projection Vectors");
     incomp.nPresPrjs = inp.GetValue("Number of Pressure Projection Vectors");
     incomp.iverbose = inp.GetValue("ACUSIM Verbosity Level");
 
-    if(solheat==1){ 
+    if(solheat==1){
       inpdat.epstol[1]=inp.GetValue("Temperature Solver Tolerance");
       inpdat.LHSupd[1]=inp.GetValue("Number of Solves of Temperature per Left-hand-side Formation");
     }
 
-    // The following is where you should put any inputs that are able to 
-    // input differently for each scalar.  It is a little tedious in the code 
-    // but it should make the solver.inp easier to understand. Note this will 
+    // The following is where you should put any inputs that are able to
+    // input differently for each scalar.  It is a little tedious in the code
+    // but it should make the solver.inp easier to understand. Note this will
     // require some care with regression tests.
 
 
@@ -587,7 +587,7 @@ int input_fform(phSolver::Input& inp)
         turbvar.ylimit[5][i] = vec[i];
       }
       vec.erase(vec.begin(),vec.end());
-    } 
+    }
 
     if(solscalr>1){
       inpdat.epstol[3]=inp.GetValue("Scalar 2 Solver Tolerance");
@@ -598,7 +598,7 @@ int input_fform(phSolver::Input& inp)
         turbvar.ylimit[6][i] = vec[i];
       }
       vec.erase(vec.begin(),vec.end());
-    } 
+    }
 
     if(solscalr>2){
       inpdat.epstol[4]=inp.GetValue("Scalar 3 Solver Tolerance");
@@ -609,7 +609,7 @@ int input_fform(phSolver::Input& inp)
         turbvar.ylimit[7][i] = vec[i];
       }
       vec.erase(vec.begin(),vec.end());
-    } 
+    }
 
     if(solscalr>3){
       inpdat.epstol[5]=inp.GetValue("Scalar 4 Solver Tolerance");
@@ -621,9 +621,9 @@ int input_fform(phSolver::Input& inp)
       }
       vec.erase(vec.begin(),vec.end());
     }
- 
+
     // DISCRETIZATION CONTROL
-    
+
     genpar.ipord = inp.GetValue("Basis Function Order");
     if((string)inp.GetValue("Time Integration Rule") == "First Order")
       inpdat.rhoinf[0] = -1 ;
@@ -636,7 +636,7 @@ int input_fform(phSolver::Input& inp)
       genpar.ipred = 3;
     if((string)inp.GetValue("Predictor at Start of Step")=="Same Delta")
       genpar.ipred = 4;
-    
+
     if((string)inp.GetValue("Weak Form") == "Galerkin")
       solpar.ivart = 1;
     if((string)inp.GetValue("Weak Form") == "SUPG")
@@ -654,16 +654,16 @@ int input_fform(phSolver::Input& inp)
       sclrs.consrv_sclr_conv_vel = 1;
     else if((string)inp.GetValue("Use Conservative Scalar Convection Velocity") == "False")
       sclrs.consrv_sclr_conv_vel = 0;
-    // TAU INPUT 
+    // TAU INPUT
     if((string)inp.GetValue("Tau Matrix") == "Diagonal-Shakib")
       genpar.itau = 0;
     else  if((string)inp.GetValue("Tau Matrix") == "Diagonal-Franca")
       genpar.itau =1;
-    else if((string)inp.GetValue("Tau Matrix") == "Diagonal-Jansen(dev)") 
+    else if((string)inp.GetValue("Tau Matrix") == "Diagonal-Jansen(dev)")
       genpar.itau = 2;
     else if((string)inp.GetValue("Tau Matrix") == "Diagonal-Compressible")
       genpar.itau = 3;
-    else if((string)inp.GetValue("Tau Matrix") == "Matrix-Mallet") 
+    else if((string)inp.GetValue("Tau Matrix") == "Matrix-Mallet")
       genpar.itau = 10;
     else if((string)inp.GetValue("Tau Matrix") == "Matrix-Modal")
       genpar.itau = 11;
@@ -678,7 +678,7 @@ int input_fform(phSolver::Input& inp)
       if((string)inp.GetValue("Discontinuity Capturing") == "Off") solpar.iDC = 0;
     else if((string)inp.GetValue("Discontinuity Capturing") == "DC-mallet") solpar.iDC = 1;
     else if((string)inp.GetValue("Discontinuity Capturing") == "DC-quadratic") solpar.iDC = 2;
-   else if((string)inp.GetValue("Discontinuity Capturing") == "DC-minimum") solpar.iDC = 3;    
+   else if((string)inp.GetValue("Discontinuity Capturing") == "DC-minimum") solpar.iDC = 3;
     else {
       cout<< "Condition not defined for Discontinuity Capturing \n ";
       exit(1);
@@ -689,17 +689,17 @@ int input_fform(phSolver::Input& inp)
       vector<int> ivec = inp.GetValue("Scalar Discontinuity Capturing");
       for(i=0; i< 2; i++)  solpar.idcsclr[i] = ivec[i];
       ivec.erase(ivec.begin(),ivec.end());
- 
+
 
 //        if((string)inp.GetValue("Scalar Discontinuity Capturing") == "No") solpar.idcsclr = 0;
-//      else if((string)inp.GetValue("Scalar Discontinuity Capturing") == "1") solpar.idcsclr = 1; 
-//   else if((string)inp.GetValue("Scalar Discontinuity Capturing") == "2") solpar.idcsclr = 2; 
+//      else if((string)inp.GetValue("Scalar Discontinuity Capturing") == "1") solpar.idcsclr = 1;
+//   else if((string)inp.GetValue("Scalar Discontinuity Capturing") == "2") solpar.idcsclr = 2;
 //   else {
 //        cout<< "Condition not defined for Scalar Discontinuity Capturing \n ";
 //        exit(1);
-//      }     
+//      }
     if((string)inp.GetValue("Include Viscous Correction in Stabilization") == "True")
-      {  
+      {
         if(genpar.ipord == 1 ) genpar.idiff = 1;
         else genpar.idiff = 2;
       }
@@ -724,7 +724,7 @@ int input_fform(phSolver::Input& inp)
     intdat.intg[0][1]=inp.GetValue("Quadrature Rule on Boundary");
     genpar.ibksiz = inp.GetValue("Number of Elements Per Block");
 
-    ((string)inp.GetValue("Turn Off Source Terms for Scalars") 
+    ((string)inp.GetValue("Turn Off Source Terms for Scalars")
          == "True") ? sclrs.nosource = 1 : sclrs.nosource = 0;
     sclrs.tdecay=inp.GetValue("Decay Multiplier for Scalars");
 
@@ -737,14 +737,14 @@ int input_fform(phSolver::Input& inp)
       turbvari.nohomog =inp.GetValue("Number of Homogenous Directions");
 
       if((string)inp.GetValue("Turbulence Wall Model Type") == "Slip Velocity") turbvar.itwmod = 1;
-      else if((string)inp.GetValue("Turbulence Wall Model Type") == "Effective Viscosity") turbvar.itwmod = 2; 
+      else if((string)inp.GetValue("Turbulence Wall Model Type") == "Effective Viscosity") turbvar.itwmod = 2;
       else  turbvar.itwmod = 0;
       if (turbvari.irans < 0) turbvar.itwmod = turbvar.itwmod*(-1);
       ifrule  = inp.GetValue("Velocity Averaging Steps");
       turbvar.wtavei =(ifrule >0)? 1.0/ifrule : -1.0/ifrule;
- 
+
       if(turbvari.iles == 1){
-        
+
         if((string)inp.GetValue("Dynamic Model Type") == "Bardina") turbvari.iles += 10;
         else if((string)inp.GetValue("Dynamic Model Type") == "Projection") turbvari.iles += 20;
 
@@ -757,46 +757,46 @@ int input_fform(phSolver::Input& inp)
 
 
         if ((string)inp.GetValue("Model Statistics") == "True" ) {
-          turbvari.modlstats = 1; } 
+          turbvari.modlstats = 1; }
         else {
-          turbvari.modlstats = 0; }   
- 
+          turbvari.modlstats = 0; }
+
         if ((string)inp.GetValue("Double Filter") == "True" ) {
-          turbvari.i2filt = 1; } 
+          turbvari.i2filt = 1; }
         else {
-          turbvari.i2filt = 0; }  
+          turbvari.i2filt = 0; }
 
         if ((string)inp.GetValue("Model/SUPG Dissipation") == "True" ) {
-          turbvari.idis = 1; } 
+          turbvari.idis = 1; }
         else {
           turbvari.idis = 0; }
 
 
         if((string)inp.GetValue("Dynamic Model Type") == "Standard") {
 
-          if((string)inp.GetValue("Dynamic Sub-Model Type") == "None") 
+          if((string)inp.GetValue("Dynamic Sub-Model Type") == "None")
             turbvari.isubmod = 0;
           else if((string)inp.GetValue("Dynamic Sub-Model Type") =="DFWR")
             turbvari.isubmod = 1;
-          else if((string)inp.GetValue("Dynamic Sub-Model Type") =="SUPG") 
+          else if((string)inp.GetValue("Dynamic Sub-Model Type") =="SUPG")
             turbvari.isubmod = 2;
         }
         else if((string)inp.GetValue("Dynamic Model Type") == "Projection") {
 
           if((string)inp.GetValue("Projection Filter Type") == "Linear")
             turbvari.ifproj = 0;
-          else if((string)inp.GetValue("Projection Filter Type") =="Quadratic") 
-            turbvari.ifproj = 1;          
+          else if((string)inp.GetValue("Projection Filter Type") =="Quadratic")
+            turbvari.ifproj = 1;
 
           if((string)inp.GetValue("Dynamic Sub-Model Type") == "None")
             turbvari.isubmod = 0;
-          else if((string)inp.GetValue("Dynamic Sub-Model Type") =="ConsistentProj") 
-            turbvari.isubmod = 1;          
+          else if((string)inp.GetValue("Dynamic Sub-Model Type") =="ConsistentProj")
+            turbvari.isubmod = 1;
         }
 
       }
     }
-  
+
     // SPEBC MODELING PARAMETERS
 
     if ( (spebcvr.irscale = inp.GetValue("SPEBC Model Active")) >= 0 ){
@@ -811,12 +811,12 @@ int input_fform(phSolver::Input& inp)
       spebcvr.radcyl = inp.GetValue("Radius of recycle plane");
       spebcvr.rbltin  = inp.GetValue("Inlet Boundary Layer Thickness");
       spebcvr.rvscal  = inp.GetValue("Vertical Velocity Scale Factor");
-    } 
-      
+    }
+
     // CARDIOVASCULAR MODELING PARAMETERS
-    if ( (string)inp.GetValue("Time Varying Boundary Conditions From File") == "True") 
+    if ( (string)inp.GetValue("Time Varying Boundary Conditions From File") == "True")
       nomodule.itvn = 1;
-    else 
+    else
       nomodule.itvn = 0;
 
     if ( nomodule.itvn ==1)
@@ -827,18 +827,18 @@ int input_fform(phSolver::Input& inp)
       if ( nomodule.icardio > MAXSURF ) {
         cout << "Number of Coupled Surfaces > MAXSURF \n";
         exit(1);
-      } 
-      if ( (string)inp.GetValue("Pressure Coupling") == "None") 
+      }
+      if ( (string)inp.GetValue("Pressure Coupling") == "None")
         nomodule.ipvsq=0;
-      if ( (string)inp.GetValue("Pressure Coupling") == "Explicit") 
+      if ( (string)inp.GetValue("Pressure Coupling") == "Explicit")
         nomodule.ipvsq=1;
-      if ( (string)inp.GetValue("Pressure Coupling") == "Implicit") 
+      if ( (string)inp.GetValue("Pressure Coupling") == "Implicit")
         nomodule.ipvsq=2;
-      if ( (string)inp.GetValue("Pressure Coupling") == "P-Implicit") 
+      if ( (string)inp.GetValue("Pressure Coupling") == "P-Implicit")
         nomodule.ipvsq=3;
 
       if( (nomodule.numResistSrfs=inp.GetValue("Number of Resistance Surfaces")) ){
-          ivec = inp.GetValue("List of Resistance Surfaces");          
+          ivec = inp.GetValue("List of Resistance Surfaces");
           for(i=0;i<MAXSURF+1; i++) nomodule.nsrflistResist[i] = 0;
           for(i=0; i< nomodule.numResistSrfs; i++){
               nomodule.nsrflistResist[i+1] = ivec[i];
@@ -878,13 +878,19 @@ int input_fform(phSolver::Input& inp)
         if((string)inp.GetValue("Wall Mass Matrix for LHS") == "True") nomodule.iwallmassfactor = 1;
         else nomodule.iwallmassfactor = 0;
         if((string)inp.GetValue("Wall Stiffness Matrix for LHS") == "True") nomodule.iwallstiffactor = 1;
-        else nomodule.iwallstiffactor = 0; 
+        else nomodule.iwallstiffactor = 0;
     }
     nomodule.iviscflux = 1;
     if((string)inp.GetValue("Viscous Flux Flag") == "True") nomodule.iviscflux = 1;
     if((string)inp.GetValue("Viscous Flux Flag") == "False") nomodule.iviscflux = 0;
 
-   
+    // SLIP BOUNDARY CONDITIONS
+    if (slipvars.isSlipBC = (inp.GetValue("Slip BC Enabled") == "True")) {
+      slipSigma = inp.GetValue("Slip Momentum Accommodation Coefficient");
+      slipConst = inp.GetValue("Slip Proportionality Constant");
+      slipNitsche = inp.GetValue("Slip BC Type") == "Nitsche"; // ? true : false
+    }
+
     // Scaling Parameters Keywords
 
     outpar.ro = inp.GetValue("Density");
@@ -894,13 +900,13 @@ int input_fform(phSolver::Input& inp)
     outpar.entrop = inp.GetValue("Entropy");
 
     // Step Sequencing
- 
+
 
     ivec = inp.GetValue("Step Construction");
     sequence.seqsize = ivec.size();
     if( sequence.seqsize > 100 || sequence.seqsize < 2 )
      cerr<<"Sequence size must be between 2 and 100 "<<endl;
-   
+
     for(i=0; i< sequence.seqsize; i++)
       sequence.stepseq[i] = ivec[i];
 
@@ -913,7 +919,7 @@ int input_fform(phSolver::Input& inp)
   }
 
   return ierr;
-  
+
 }
 
 void print_error_code(int ierr) {
