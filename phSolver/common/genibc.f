@@ -3,7 +3,7 @@ c
 c----------------------------------------------------------------------
 c This routine reads the boundary condition codes.
 c
-c output: 
+c output:
 c  iBC   (nshg)        : Boundary Condition code
 c
 c         = 1 * iBC_1 + 2 * iBC_2 + 4 * iBC_3
@@ -65,6 +65,28 @@ c
           enddo
         endif
 
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+      if (isSlipBC .eq. 1) then
+         ! where (btest(iBC, 6))
+         if (any(btest(iBC, 6))) then ! check if sclr1 (slip) is used
+            do iblk = 1, nelblb
+               iel = lcblkb(1,iblk)
+               nshl = lcblkb(9,iblk)
+               npro = lcblkb(1,iblk+1) - iel
+
+               call setSlipBC(iBC, miBCB(iblk)%p, mienb(iblk)%p)
+            enddo
+         endif
+      endif
+
+c     ------------------------------------------------------------------
+c                       </SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+
 c
 c.... for deformable wall case update iBC from iBCB information
 c
@@ -79,7 +101,7 @@ c
              nenbl  = lcblkb(6,iblk) ! no. of vertices per bdry. face
              nshl   = lcblkb(9,iblk)
              nshlb  = lcblkb(10,iblk)
-             npro   = lcblkb(1,iblk+1) - iel 
+             npro   = lcblkb(1,iblk+1) - iel
              call iBCupdate(iBCpart,  mienb(iblk)%p,   miBCB(iblk)%p)
           enddo
           iBC = iBC + iBCpart
@@ -88,8 +110,8 @@ c
 
         deallocate(iBCtmp)
 
-       
-          
+
+
 c
 c.... return
 c
