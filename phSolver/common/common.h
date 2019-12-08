@@ -84,8 +84,8 @@ c from different modules
      &            consrv_sclr_conv_vel
 
       ! SLIP BOUNDARY CONDITIONS
-      integer isSlipBC, slipNitsche
-      real*8 slipSigma, slipConst
+      integer :: isSlipBC, slipNitsche
+      real*8 :: slipSigma, slipConst
       common /slipvars/ isSlipBC, slipNitsche, slipSigma, slipConst
 
 c
