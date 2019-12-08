@@ -93,16 +93,9 @@ c
         dimension xmudum(npro,ngauss)
         integer   aa, b
 
-c     ------------------------------------------------------------------
-c                       <SLIP BOUNDARY CONDITIONS>
-c     ------------------------------------------------------------------
-
+      ! SLIP BOUNDARY CONDITIONS
       character(len = 8) :: testslip
       real*8 :: uslip(npro)
-
-c     ------------------------------------------------------------------
-c                       </SLIP BOUNDARY CONDITIONS>
-c     ------------------------------------------------------------------
 
         ttim(40) = ttim(40) - secs(0.0)
 
@@ -270,12 +263,24 @@ c     ------------------------------------------------------------------
 c                       <SLIP BOUNDARY CONDITIONS>
 c     ------------------------------------------------------------------
 
-      do n = 1, nshlb
-         nodlcl = lnode(n)
-         uslip = shape(:,nodlcl) ! same as shpb in e3bvar
+      ! do n = 1, nshlb
+      !    nodlcl = lnode(n) ! nodlcl = n for n = 1...nshlb if ipord = 1
+      !    uslip = shape(:,nodlcl) ! same as shpb in e3bvar
 
+      !    ! Find nodal values (.neq. integration points)
+      !    rhoA =
+      !    shape ! (npro,nshl)
+      !    yl(npro,nshl,nflow)
+
+      ! enddo
+
+      if (any(btest(iBCB(:,1), 5))) then
          call getSlipVelocity1D(rmu, rho, T, g2yi(:,2), uslip)
-      enddo
+         where (btest(iBCB(:,1), 5))
+            F2 = F2 + (u1 - uslip) ! add difference
+         endwhere
+      endif
+
       ! add duslip to F2
 
 !       rou = zero
