@@ -885,11 +885,10 @@ int input_fform(phSolver::Input& inp)
     if((string)inp.GetValue("Viscous Flux Flag") == "False") nomodule.iviscflux = 0;
 
     // SLIP BOUNDARY CONDITIONS
-    slipvars.isSlipBC = ((string)inp.GetValue("Slip BC Enabled") == "True") ? 1 : 0;
-    if (slipvars.isSlipBC) {
+    if (slipvars.isSlipBC = ((string)inp.GetValue("Slip BC Enabled") == "True")) { // ? 1 : 0
       slipvars.slipSigma = inp.GetValue("Slip Momentum Accommodation Coefficient");
       slipvars.slipConst = inp.GetValue("Slip Proportionality Constant");
-      slipvars.slipNitsche = ((string)inp.GetValue("Slip BC Type") == "Nitsche") ? 1 : 0;
+      slipvars.slipNitsche = ((string)inp.GetValue("Slip BC Type") == "Nitsche"); // ? 1 : 0
     }
 
     // Scaling Parameters Keywords
