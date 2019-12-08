@@ -83,9 +83,10 @@ c from different modules
         common /sclrs/ scdiff(5),tdecay,nsclr,isclr,nsolt,nosource,
      &            consrv_sclr_conv_vel
 
+      ! SLIP BOUNDARY CONDITIONS
       integer isSlipBC, slipNitsche
       real*8 slipSigma, slipConst
-      common /slipvars/ slipSigma, slipConst, slipNitsche, isSlipBC
+      common /slipvars/ isSlipBC, slipNitsche, slipSigma, slipConst
 
 c
 c.... common blocks
