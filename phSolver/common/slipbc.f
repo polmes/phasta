@@ -150,9 +150,9 @@ c     ------------------------------------------------------------------
          include "common.h"
 
          real*8, intent(in) :: y(nshg,nflow)
-         integer :: vrt, nod
+         integer :: vrt, nod, sd
          real*8, allocatable :: shpnod(:,:), shpnodtmp(:,:),
-     &                           shglnod(:,:,:), shglnodtmp(:,:,:)
+     &                          shglnod(:,:,:), shglnodtmp(:,:,:)
          ! real*8, allocatable :: ycl(:,:,:)
          ! real*8, allocatable :: xl(:,:,:)
          ! real*8, allocatable :: yvl(:,:,:)
@@ -182,22 +182,31 @@ c     ------------------------------------------------------------------
             ! Get boundary nodes shape functions for block topology
             call getNodalShapeFunctions(shpnodtmp, shglnodtmp)
 
-            ! Init local shape function arrays
+            ! Allocate local shape function arrays
             allocate(shpnod(npro,nshl))
             allocate(shglnod(npro,nshl,nsd))
-            shpnod = 0
-            shglnod = 0
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
+               ! Init local shape function arrays
+               shpnod = 0
+               shglnod = 0
+
                ! Loop over all vertices or element nodes
+               ! to reshape shpnod and shglnod matrices
                do vrt = 1, nshl
                   shpnod(:,vrt) = shpnodtmp(nod,vrt)
+                  do sd = 1, nsd
+                     shglnod(:,vrt,sd) = shglnodtmp(nod,sd,vrt)
+                  end do
                end do
 
                ! Stuff here
 
             end do ! </loop nodes>
+
+            ! Deallocate all arrays for next iteration
+            deallocate(shpnod, shglnod, shpnodtmp, shglnodtmp)
          enddo ! </loop blocks>
 
       endsubroutine slipCorrect
