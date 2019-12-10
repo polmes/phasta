@@ -89,9 +89,9 @@ c     ------------------------------------------------------------------
                ! 3 boundary vertices, bouondary nodes first
                call shpTet(ipord, (/1, 0, 0/), shpnod(1, 1:3),
      &                     shglnod(1, :, 1:4))
-               call shpTet(ipord, (/0, 1, 0/), shpnod(1, 1:3),
+               call shpTet(ipord, (/0, 1, 0/), shpnod(2, 1:3),
      &                     shglnod(2, :, 1:4))
-               call shpTet(ipord, (/0, 0, 1/), shpnod(1, 1:3),
+               call shpTet(ipord, (/0, 0, 1/), shpnod(3, 1:3),
      &                     shglnod(3, :, 1:4))
 
             case (2) ! hex's
@@ -99,12 +99,16 @@ c     ------------------------------------------------------------------
                ! TODO: check that order (parent space) is correct
                call shpHex(ipord, (/-1, -1, -1/), shpnod(1, 1:8),
      &                     shglnod(1, :, 1:8))
-               call shpHex(ipord, (/+1, -1, -1/), shpnod(1, 1:8),
+               call shpHex(ipord, (/+1, -1, -1/), shpnod(2, 1:8),
      &                     shglnod(2, :, 1:8))
-               call shpHex(ipord, (/+1, +1, -1/), shpnod(1, 1:8),
+               call shpHex(ipord, (/+1, +1, -1/), shpnod(3, 1:8),
      &                     shglnod(3, :, 1:8))
-               call shpHex(ipord, (/-1, +1, -1/), shpnod(1, 1:8),
+               call shpHex(ipord, (/-1, +1, -1/), shpnod(4, 1:8),
      &                     shglnod(4, :, 1:8))
+
+c     TODO: instead of explicitly passing the local array of
+c           nodal points, use  either a nodpt(MAXTOP,3,nenbl) array
+c           or find the values using a for loop
 
             case default
                call error('getNodalShapeFunctions',
