@@ -69,7 +69,7 @@ c     ------------------------------------------------------------------
 c                       <SLIP BOUNDARY CONDITIONS>
 c     ------------------------------------------------------------------
 
-      if (isSlipBC .eq. 1) then
+      if ((isSlipBC .eq. 1) .and. (slipNitsche .eq. 1)) then
          ! where (btest(iBC, 6))
          if (any(btest(iBC, 6))) then ! check if sclr1 (slip) is used
             do iblk = 1, nelblb
@@ -77,7 +77,7 @@ c     ------------------------------------------------------------------
                nshl = lcblkb(9,iblk)
                npro = lcblkb(1,iblk+1) - iel
 
-               call setSlipBC(iBC, miBCB(iblk)%p, mienb(iblk)%p)
+               call setSlipiBC(iBC, miBCB(iblk)%p, mienb(iblk)%p)
             enddo
          endif
       endif
