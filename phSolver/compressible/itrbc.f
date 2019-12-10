@@ -169,6 +169,19 @@ c
           endwhere
 c
         endif
+
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+      if ((isSlipBC .eq. 1) .and. (slipNitsche .eq. 0)) then
+         call slipCorrect(y)
+      end if
+
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
 c
 c.... local periodic (and axisymmetric) boundary conditions (no communications)
 c
@@ -190,14 +203,6 @@ c
            call rotabc(y, iBC, 'out')
            if(ires.ne.2) call rotabc(ac, iBC, 'out')
         endif
-
-c ---------------------------------------------------------------------
-c                       SLIP BOUNDARY CONDITIONS
-c ---------------------------------------------------------------------
-
-      !   if (btest(iBC, 9)) then
-      !       call slipbc(y, )
-      !   endif
 
 c
 c.... return
