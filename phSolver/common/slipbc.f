@@ -73,9 +73,10 @@ c     ------------------------------------------------------------------
 
          include "common.h"
 
-         real*8, intent(out) :: shpnod(nenbl, nshl),
-     &                          shglnod(nenbl, nsd, nshl)
+         real*8, intent(out) :: shpnod(nenbl,nshl),
+     &                          shglnod(nenbl,nsd, nshl)
          real*8, allocatable :: nodpt(:,:)
+         integer :: nod
 
          ! Only 1st order shape functions implemented for now
          if (ipord .gt. 1) then
@@ -92,6 +93,7 @@ c     ------------------------------------------------------------------
          select case (lcsyst) ! <toppology cases>
             case (1) ! tet's
                ! 3 boundary vertices, bouondary nodes first
+               ! TODO: check that order (in parent space) is correct
                nodpt(1,1) = 1
                nodpt(1,2) = 0
                nodpt(1,3) = 0
@@ -102,41 +104,31 @@ c     ------------------------------------------------------------------
                nodpt(3,2) = 0
                nodpt(3,3) = 1
 
-               call shpTet(ipord, (/1, 0, 0/), shpnod(1, 1:3),
-     &                     shglnod(1, :, 1:4))
-               call shpTet(ipord, (/0, 1, 0/), shpnod(2, 1:3),
-     &                     shglnod(2, :, 1:4))
-               call shpTet(ipord, (/0, 0, 1/), shpnod(3, 1:3),
-     &                     shglnod(3, :, 1:4))
+               do nod = 1, nenbl
+                  call shpTet(ipord, nodpt(nod,:), shpnod(nod,:),
+     &                        shglnod(nod,:,:))
+               end do
 
             case (2) ! hex's
                ! 4 boundary vertices, boundary nodes first
-               ! TODO: check that order (parent space) is correct
+               ! TODO: check that order (in parent space) is correct
                nodpt(1,1) = -1
                nodpt(1,2) = -1
                nodpt(1,3) = -1
-               nodpt(2,1) = +0
+               nodpt(2,1) = +1
                nodpt(2,2) = -1
                nodpt(2,3) = -1
                nodpt(3,1) = +1
                nodpt(3,2) = +1
                nodpt(3,3) = -1
-               nodpt(1,1) = -1
-               nodpt(1,2) = +1
-               nodpt(1,3) = -1
+               nodpt(4,1) = -1
+               nodpt(4,2) = +1
+               nodpt(4,3) = -1
 
-               call shpHex(ipord, nodpt(1,:), shpnod(1, 1:8),
-     &                     shglnod(1, :, 1:8))
-               call shpHex(ipord, nodpt(2,:), shpnod(2, 1:8),
-     &                     shglnod(2, :, 1:8))
-               call shpHex(ipord, nodpt(3,:), shpnod(3, 1:8),
-     &                     shglnod(3, :, 1:8))
-               call shpHex(ipord, nodpt(4,:), shpnod(4, 1:8),
-     &                     shglnod(4, :, 1:8))
-
-c     TODO: instead of explicitly passing the local array of
-c           nodal points, use  either a nodpt(MAXTOP,3,nenbl) array
-c           or find the values using a for loop
+               do nod = 1, nenbl
+                  call shpHex(ipord, nodpt(nod,:), shpnod(nod,:),
+     &                        shglnod(nod,:,:))
+               end do
 
             case default
                call error('getNodalShapeFunctions',
