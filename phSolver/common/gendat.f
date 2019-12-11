@@ -1,7 +1,7 @@
         subroutine gendat (y,       ac,       x,      iBC,     BC,
      &                     iper,    ilwork,
      &                     shp,     shgl,    shpb,    shglb,
-     &                     ifath,   velbar,   nsons ) 
+     &                     ifath,   velbar,   nsons )
 c
 c----------------------------------------------------------------------
 c
@@ -11,11 +11,12 @@ c
 c Zdenek Johan, Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-      
+
         use readarrays          ! used to acess nBC
         use dtnmod
         use pointer_data
         use wallData            ! give access to wnorm, findWallNOrm
+        use slipGeometry ! to allocate global x(s) for slip BC
         include "common.h"
         include "mpif.h"
 
@@ -30,15 +31,15 @@ c
      &            iper(nshg)
 c
 c.... shape function declarations
-c     
-        dimension shp(MAXTOP,maxsh,MAXQPT),  
-     &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
+c
+        dimension shp(MAXTOP,maxsh,MAXQPT),
+     &            shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &            shpb(MAXTOP,maxsh,MAXQPT),
-     &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
+     &            shglb(MAXTOP,nsd,maxsh,MAXQPT)
 c
 c  stuff for dynamic model s.w.avg and wall model
 c
-        dimension ifath(numnp),    velbar(nfath,nflow), nsons(nfath) 
+        dimension ifath(numnp),    velbar(nfath,nflow), nsons(nfath)
 
 ! Hack to get suction right on part boundaries
 !       dimension BC3(numnp,5)
@@ -52,7 +53,7 @@ c...
 
 c.... start the timer
 c
-        
+
 CAD        call timer ('PrProces')
 
 c
@@ -112,8 +113,13 @@ c
      &               point2ilwork, point2iper)
         deallocate(nBC)
 
+      ! SLIP BOUNDARY CONDITIONS
+      ! use slipGeometry
+      allocate(xs(nshg,nsd))
+      xs = x
+
 c=========================================================================================
-c Yi Chen 
+c Yi Chen
 c Duct geometry8
 c... updated, truly useful things.........
 
@@ -128,7 +134,7 @@ c         if(isetInlet_Duct.gt.0)then
 c           call setInlet_Duct(x,BC,iTurbWall) ! in BCprofile2.f
 c         endif
 
-c==== specify blowing conditions 
+c==== specify blowing conditions
          if(isetBlowing_Duct.gt.0)then
             if (ifixBlowingVel_Duct.eq.0)then
               call setBlowing_Duct(BC,iTurbWall)
@@ -137,7 +143,7 @@ c==== specify blowing conditions
             endif
          endif
 
-c====== specify wall conditions 
+c====== specify wall conditions
          call findTurbWall(iTurbWall)
 
 c==== apply suction patch on sides
@@ -147,7 +153,7 @@ c suction is applied at the end so it will overwrite the velocity at any nodes s
             call setSuction_Duct3(x, BC, y, ilwork)
          endif
 
-c==== 
+c====
          call MPI_BARRIER(MPI_COMM_WORLD,ierr)
 c.... Yi Chen
 c==========================================================================================
@@ -161,8 +167,8 @@ c  We now take care of Direchlet to Neumann BC's.  It had to move here
 c  so that the IBC array was of size nshg and ready to be marked.
 c
 
-        if(nsclr.gt.0) then 
-           call initDtN         ! Dirichlet to Neumann module: 
+        if(nsclr.gt.0) then
+           call initDtN         ! Dirichlet to Neumann module:
                                      ! initialize this once only
            do iblk = 1, nelblb  ! number of blocks
               iel    = lcblkb(1,iblk)
@@ -174,12 +180,12 @@ c
 c
 c if this element has the BCB AND it has not been found yet then mark it
 c
-                 if(miBCB(iblk)%p(i,2).lt.0) then  
+                 if(miBCB(iblk)%p(i,2).lt.0) then
                     idtn = 1    !set the flag for dtn bc's
                     do j=1,nshapeb
                        do isclr=1,nsclr
                           ignd=mienb(iblk)%p(i,j)
-                             ifeature(ignd) = abs(miBCB(iblk)%p(i,2))       
+                             ifeature(ignd) = abs(miBCB(iblk)%p(i,2))
                              iBC(ignd)=ior(iBC(ignd),2**13)
                                 ! must mark this as a Neumann BC now
                              miBCB(iblk)%p(i,1)=
@@ -215,7 +221,7 @@ c
 c        call genpzero(iBC,iper)
 c
       if((myrank.eq.master).and.(irscale.ge.0)) then
-         call setSPEBC(numnp,nsd) 
+         call setSPEBC(numnp,nsd)
          call eqn_plane(point2x, iBC)
       endif
 c
@@ -223,11 +229,11 @@ c.... --------------------->  Initial Conditions  <--------------------
 c
 c.... generate the initial conditions and initialize time varying BC
 c
-        call genini (iBC,      BC,         y, 
-     &               ac,       iper, 
-     &               ilwork,   ifath,      velbar,  
+        call genini (iBC,      BC,         y,
+     &               ac,       iper,
+     &               ilwork,   ifath,      velbar,
      &               nsons,    x,
-     &               shp,     shgl,    shpb,    shglb) 
+     &               shp,     shgl,    shpb,    shglb)
 c
 c.... close the geometry, boundary condition and material files
 c

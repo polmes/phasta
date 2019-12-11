@@ -4,6 +4,16 @@ c                       by Pol Mesalles Ripoll
 c                       CU Boulder, Fall 2019
 c     ------------------------------------------------------------------
 
+      module slipGeometry
+c     ------------------------------------------------------------------
+c        This module provides access to the global x nodal geometry,
+c        here called xs, for the slip BC subroutines
+c     ------------------------------------------------------------------
+
+         real*8, allocatable :: xs(:,:)
+
+      end module slipGeometry
+
       subroutine getSlipVelocity1D(mu, rho, T, dudy, uslip)
 c     ------------------------------------------------------------------
 c        Computes Maxwell 1D slip velocity at the wall
@@ -60,10 +70,6 @@ c     ------------------------------------------------------------------
          end do
 
       end subroutine setSlipiBC
-
-      module slipGeometry
-         real*8, allocatable :: xs(:,:)
-      end module slipGeometry
 
       subroutine getNodalShapeFunctions(shpnod, shglnod)
 c     ------------------------------------------------------------------

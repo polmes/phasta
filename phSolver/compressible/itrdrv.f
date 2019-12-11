@@ -36,7 +36,6 @@ c
       use turbSA
       use wallData
       use fncorpmod
-      use slipGeometry ! for slip BC
 
         include "common.h"
         include "mpif.h"
@@ -148,11 +147,6 @@ c
         time   = 0
         yold   = y
         acold  = ac
-
-      ! SLIP BOUNDARY CONDITIONS
-      ! use slipGeometry
-      allocate(xs(nshg,nsd))
-      xs = x
 
 !Blower Setup
        call BC_init(Delt, lstep, BC)  !Note: sets BC_enable
