@@ -76,8 +76,8 @@ c     ------------------------------------------------------------------
 c        Computes shape functios at element boundary nodes
 c        (NOT at the quadrature points)
 c        Output:
-c           shpnod  - Array of shape functions at boundary nodes
-c           shglnod - Array of local shape function gradients at
+c           shpnod  - array of shape functions at boundary nodes
+c           shglnod - array of local shape function gradients at
 c                     boundary nodes
 c     ------------------------------------------------------------------
 
@@ -153,10 +153,10 @@ c     ------------------------------------------------------------------
 c        Computes the deformation gradient and its inverse to find the
 c        array of global derivatives of shape functions
 c        Input:
-c           shglnod - Local gradient of shape functions (parent space)
-c           xl      - Local nodal positions
+c           shglnod - local gradient of shape functions (parent space)
+c           xl      - local nodal positions
 c        Output:
-c           shgnod - Global gradient of shape functions (real space)
+c           shgnod - global gradient of shape functions (real space)
 c     ------------------------------------------------------------------
 
          include "common.h"
@@ -232,13 +232,14 @@ c     ------------------------------------------------------------------
          end do
       end subroutine slipAssembly
 
-      subroutine slipCorrect(y)
+      subroutine slipCorrect(y, iBC)
 c     ------------------------------------------------------------------
 c        Modifies y variables to account for Dirichlet slip BC
 c        Input:
-c           y - Solution vector
+c           y   - solution vector (order: u v w P T)
+c           iBC - natural boundary condition codes
 c        Output:
-c           y - Corrected solution vector
+c           y - corrected solution vector
 c     ------------------------------------------------------------------
 
          use slipGeometry ! for global x(s)
@@ -246,6 +247,7 @@ c     ------------------------------------------------------------------
          include "common.h"
 
          real*8, intent(inout) :: y(nshg,nflow)
+         integer, intent(in) :: iBC(nshg)
          integer :: vrt, nod, i
          real*8, allocatable :: shpnod(:,:), shpnodtmp(:,:),
      &                          shglnod(:,:,:), shglnodtmp(:,:,:),
@@ -255,6 +257,9 @@ c     ------------------------------------------------------------------
          ! real*8, allocatable :: ycl(:,:,:)
          ! real*8, allocatable :: xl(:,:,:)
          ! real*8, allocatable :: yvl(:,:,:)
+
+         ! Init global slip velocity array
+         uslip = zero
 
          ! Loop over boudary element blocks
          do iblk = 1, nelblb ! <loop blocks>
@@ -352,5 +357,9 @@ c     ------------------------------------------------------------------
             deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp,
      &                 xl, yl, dudy, ul, rho, mu)
          end do ! </loop blocks>
+
+         where (btest(iBC, 6)) ! check where sclr1 (slip) is used
+            y(:,1) = uslip ! global Y array has u1 at position 1
+         end where
 
       end subroutine slipCorrect

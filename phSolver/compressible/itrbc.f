@@ -175,7 +175,9 @@ c                       <SLIP BOUNDARY CONDITIONS>
 c     ------------------------------------------------------------------
 
       if ((isSlipBC .eq. 1) .and. (slipNitsche .eq. 0)) then
-         call slipCorrect(y)
+         if (any(btest(iBC, 6))) then ! check if sclr1 (slip) is used
+            call slipCorrect(y, iBC)
+         end if
       end if
 
 c     ------------------------------------------------------------------
