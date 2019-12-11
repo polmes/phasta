@@ -1,12 +1,12 @@
-              subroutine itrdrv (y,         ac,   uold, x,         
-     &                   iBC,       BC,         
-     &                   iper,      ilwork,     shp,       
+              subroutine itrdrv (y,         ac,   uold, x,
+     &                   iBC,       BC,
+     &                   iper,      ilwork,     shp,
      &                   shgl,      shpb,       shglb,
-     &                   ifath,     velbar,     nsons ) 
+     &                   ifath,     velbar,     nsons )
 c
 c----------------------------------------------------------------------
 c
-c This iterative driver is the semi-discrete, predictor multi-corrector 
+c This iterative driver is the semi-discrete, predictor multi-corrector
 c algorithm. It contains the Hulbert Generalized Alpha method which
 c is 2nd order accurate for Rho_inf from 0 to 1.  The method can be
 c made  first-order accurate by setting Rho_inf=-1. It uses a
@@ -28,33 +28,34 @@ c
 c Zdenek Johan,  Winter 1991.  (Fortran 90)
 c----------------------------------------------------------------------
 c
-      use pvsQbi        !gives us splag (the spmass at the end of this run 
+      use pvsQbi        !gives us splag (the spmass at the end of this run
       use specialBC     !gives us itvn
       use timedataC      !allows collection of time series
-      use MachControl   !PID to control the inlet velocity. 
-      use blowerControl !gives us BC_enable 
+      use MachControl   !PID to control the inlet velocity.
+      use blowerControl !gives us BC_enable
       use turbSA
       use wallData
       use fncorpmod
+      use slipGeometry ! for slip BC
 
         include "common.h"
         include "mpif.h"
         include "auxmpi.h"
-      
+
 c
-        dimension y(nshg,ndof),            ac(nshg,ndof),  
-     &            yold(nshg,ndof),         acold(nshg,ndof),           
+        dimension y(nshg,ndof),            ac(nshg,ndof),
+     &            yold(nshg,ndof),         acold(nshg,ndof),
      &            x(numnp,nsd),            iBC(nshg),
      &            BC(nshg,ndofBC),         ilwork(nlwork),
      &            iper(nshg),              uold(nshg,nsd)
 c
-        dimension res(nshg,nflow),         
+        dimension res(nshg,nflow),
      &            rest(nshg),              solinc(nshg,ndof)
-c     
-        dimension shp(MAXTOP,maxsh,MAXQPT),  
-     &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
+c
+        dimension shp(MAXTOP,maxsh,MAXQPT),
+     &            shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &            shpb(MAXTOP,maxsh,MAXQPT),
-     &            shglb(MAXTOP,nsd,maxsh,MAXQPT) 
+     &            shglb(MAXTOP,nsd,maxsh,MAXQPT)
         real*8   almit, alfit, gamit
 
         dimension ifath(numnp),    velbar(nfath,ndof),  nsons(nfath)
@@ -87,8 +88,8 @@ c
         real*8, allocatable, dimension(:,:) :: lhsK
         real*8, allocatable, dimension(:,:) :: EGmass
         real*8, allocatable, dimension(:,:) :: EGmasst
- 
-        integer iTurbWall(nshg) 
+
+        integer iTurbWall(nshg)
         real*8 yInlet(3), yInletg(3)
         integer imapped, imapInlet(nshg)  !for now, used for setting Blower conditions
 !        real*8 M_th, M_tc, M_tt
@@ -105,26 +106,26 @@ c
 !-------
 
        !HACK for debugging suction
-!       call Write_Debug(myrank, 'wallNormal'//char(0), 
-!     &                          'wnorm'//char(0), wnorm, 
+!       call Write_Debug(myrank, 'wallNormal'//char(0),
+!     &                          'wnorm'//char(0), wnorm,
 !     &                          'd', nshg, 3, lstep)
 
        !Probe Point Setup
        call initProbePoints()
-       if(exts) then  !exts is set in initProbePoints 
-         write(fvarts, "('./varts/varts.', I0, '.dat')") lstep    
-         fvarts = trim(fvarts)  
+       if(exts) then  !exts is set in initProbePoints
+         write(fvarts, "('./varts/varts.', I0, '.dat')") lstep
+         fvarts = trim(fvarts)
 
-         if(myrank .eq. master) then 
+         if(myrank .eq. master) then
            call TD_writeHeader(fvarts)
          endif
        endif
-       
+
        !Mach Control Setup
        call MC_init(Delt, lstep, BC)
        exMC = exMC .and. exts   !If probe points aren't available, turn
                                 !the Mach Control off
-       if(exMC) then 
+       if(exMC) then
          call MC_applyBC(BC)
          call MC_printState()
        endif
@@ -148,6 +149,11 @@ c
         yold   = y
         acold  = ac
 
+      ! SLIP BOUNDARY CONDITIONS
+      ! use slipGeometry
+      allocate(xs(nshg,nsd))
+      xs = x
+
 !Blower Setup
        call BC_init(Delt, lstep, BC)  !Note: sets BC_enable
 ! fix the yold values to the reset BC
@@ -168,7 +174,7 @@ c
            allocate  (colm(nshg+1))
            call genadj(colm, rowp, icnt ) ! preprocess the adjacency list
 
-           nnz_tot=icnt         ! this is exactly the number of non-zero 
+           nnz_tot=icnt         ! this is exactly the number of non-zero
                                 ! blocks on this proc
            if(usingpetsc.eq.1) then
              allocate (BDiag(1,1,1))
@@ -208,10 +214,10 @@ c.........................................
         call vortGLB(yold, x, shp, shgl, ilwork, vortG)
         vortmax=maxval(abs(vortG(:,4)))  !column 4 is the magnitude of the shear tensor - should actually probably be calld shearmax instead of vortmax
         write(*,*) "vortmax = ", vortmax
-        
+
         !Find the maximum shear in the simulation
         if(numpe.gt.1) then
-           call MPI_ALLREDUCE(vortmax, vortmaxg, 1, 
+           call MPI_ALLREDUCE(vortmax, vortmaxg, 1,
      &          MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr )
            vortmax = vortmaxg
         endif
@@ -220,14 +226,14 @@ c.........................................
         do i=1,icountInlet ! for now only coded to catch primary inlet, not blower
            BC(imapInlet(i),7)=evis_IC_BC
         enddo
-    
+
         !Apply eddy viscosity through the quasi-inviscid portion of the domain
         do i = 1,nshg
           if(abs(vortG(i,4)).ge.vortmax*0.01) yold(i,6)=evis_IC_BC
         enddo
         isclr=1 ! fix scalar
         call itrBCsclr(yold,ac,iBC,BC,iper,ilwork)
-        
+
         deallocate(vortG)
       endif
 c
@@ -263,7 +269,7 @@ c
 
         if(nsclrsol.gt.0)allocate  (EGmasst(numel*nshape*nshape
      &                              ,nsclrsol))
- 
+
 c
 c.... loop through the time steps
 c
@@ -296,14 +302,14 @@ c        tcorewc1 = secs(0.0)
                 call itrBC (yold,  ac,  iBC,  BC,  iper, ilwork)
                 isclr=1 ! fix scalar
                 call itrBCsclr(yold,ac,iBC,BC,iper,ilwork)
-        endif   
+        endif
 c  Time Varying BCs------------------------------------(Kyle W 6-6-13)
 c        BCdtKW=0
         if(BCdtKW.gt.0) then
            call BCprofileInitKW(PresBase,VelBase,BC)
         endif
 c  Time Varying BCs------------------------------------(Kyle W 6-6-13)
-                                                        
+
 867     continue
 
 
@@ -314,7 +320,7 @@ c============ Start the loop of time steps============================c
         do 2000 istp = 1, nstp
            rerr=zero !extreme limit of 1 step window or error stats....later a variable
 
-!           if (myrank.eq.master) write(*,*) 'Time step of current run', 
+!           if (myrank.eq.master) write(*,*) 'Time step of current run',
 !     &                                    istp
 
 c  Time Varying BCs------------------------------------(Kyle W 6-6-13)
@@ -323,7 +329,7 @@ c  Time Varying BCs------------------------------------(Kyle W 6-6-13)
            endif
 c  Time Varying BCs------------------------------------(Kyle W 6-6-13)
 
-           if(iramp.eq.1) 
+           if(iramp.eq.1)
      &        call BCprofileScale(vbc_prof,BC,yold)
 
 c           call rerun_check(stopjob)
@@ -353,26 +359,26 @@ c
 c
 c.... get dynamic model coefficient
 c
-            ilesmod=iLES/10  
+            ilesmod=iLES/10
 c
 c digit bit set filter rule, 10 bit set model
 c
             if (ilesmod.eq.0) then ! 0 < iLES < 10 => dyn. model calculated
                                    ! at nodes based on discrete filtering
-               call getdmc (yold,       shgl,      shp, 
+               call getdmc (yold,       shgl,      shp,
      &                      iper,       ilwork,    nsons,
      &                      ifath,      x)
             endif
             if (ilesmod .eq. 1) then ! 10 < iLES < 20 => dynamic-mixed
                                      ! at nodes based on discrete filtering
-               call bardmc (yold,       shgl,      shp, 
-     &                      iper,       ilwork,    
-     &                      nsons,      ifath,     x) 
+               call bardmc (yold,       shgl,      shp,
+     &                      iper,       ilwork,
+     &                      nsons,      ifath,     x)
             endif
             if (ilesmod .eq. 2) then ! 20 < iLES < 30 => dynamic at quad
-                                     ! pts based on lumped projection filt. 
-               call projdmc (yold,       shgl,      shp, 
-     &                       iper,       ilwork,    x) 
+                                     ! pts based on lumped projection filt.
+               call projdmc (yold,       shgl,      shp,
+     &                       iper,       ilwork,    x)
             endif
 c
            endif ! endif of iLES
@@ -405,9 +411,9 @@ c
 cHACK to make it keep solving RANS until tolerance is reached
 c
        istop=0
-! blocking extra RANS steps for now       iMoreRANS=0 
-       iMoreRANS=6 
-c 
+! blocking extra RANS steps for now       iMoreRANS=0
+       iMoreRANS=6
+c
 c find the the RANS portion of the sequence
 c
        do istepc=1,seqsize
@@ -426,27 +432,27 @@ c
                      etol=epstol(1)
                      iter   = iter+1
                      ifuncs(1)  = ifuncs(1) + 1
-c     
+c
 c.... reset the aerodynamic forces
-c     
+c
                      Force(1) = zero
                      Force(2) = zero
                      Force(3) = zero
                      HFlux    = zero
-c     
+c
 c.... form the element data and solve the matrix problem
-c     
+c
 c.... explicit solver
-c     
+c
                      if (impl(itseq) .eq. 0) then
                         if (myrank .eq. master)
      &                       call error('itrdrv  ','impl ',impl(itseq))
                      endif
                      if (mod(impl(1),100)/10 .eq. 1) then  ! sparse solve
-c     
+c
 c.... preconditioned sparse matrix GMRES solver
-c     
-                        lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
+c
+                        lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1)))
                         iprec=lhs
                         nedof = nflow*nshape
 c                        write(*,*) 'lhs=',lhs
@@ -457,7 +463,7 @@ c                        write(*,*) 'lhs=',lhs
      &                       iBC,           BC,
      &                       colm,          rowp,          lhsk,
      &                       res,
-     &                       BDiag,         
+     &                       BDiag,
      &                       iper,          ilwork,
      &                       shp,           shgl,
      &                       shpb,          shglb,         solinc,
@@ -480,28 +486,28 @@ c                        write(*,*) 'lhs=',lhs
      &                       rerr)
                     endif
                       else if (mod(impl(1),100)/10 .eq. 2) then ! mfg solve
-c     
+c
 c.... preconditioned matrix-free GMRES solver
-c     
+c
                         lhs=0
-                        iprec = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
+                        iprec = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1)))
                         nedof = 0
                         call SolMFG (y,             ac,            yold,
      &                       acold,         x,
      &                       iBC,           BC,
-     &                       res,           
+     &                       res,
      &                       BDiag,         HBrg,          eBrg,
      &                       yBrg,          Rcos,          Rsin,
      &                       iper,          ilwork,
      &                       shp,           shgl,
-     &                       shpb,          shglb,         solinc, 
+     &                       shpb,          shglb,         solinc,
      &                       rerr)
-c     
+c
                      else if (mod(impl(1),100)/10 .eq. 3) then ! ebe solve
 c.... preconditioned ebe matrix GMRES solver
-c     
+c
 
-                        lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1))) 
+                        lhs = 1 - min(1,mod(ifuncs(1)-1,LHSupd(1)))
                         iprec = lhs
                         nedof = nflow*nshape
 c                        write(*,*) 'lhs=',lhs
@@ -516,28 +522,28 @@ c                        write(*,*) 'lhs=',lhs
      &                       shpb,          shglb,         solinc,
      &                       rerr)
                      endif
-c     
+c
                 else          ! solve a scalar  (encoded at isclr*10)
                      isclr=isolve
                      etol=epstol(isclr+2) ! note that for both epstol and LHSupd 1 is flow 2 temp isclr+2 for scalars
                      ifuncs(isclr+2)  = ifuncs(isclr+2) + 1
                      if((iLSet.eq.2).and.(ilss.eq.0)
-     &                    .and.(isclr.eq.2)) then 
+     &                    .and.(isclr.eq.2)) then
                         ilss=1  ! throw switch (once per step)
-c     
-c... copy the first scalar at t=n+1 into the second scalar of the 
+c
+c... copy the first scalar at t=n+1 into the second scalar of the
 c... level sets
-c     
+c
                      y(:,6)    = yold(:,6)  + (y(:,6)-yold(:,6))/alfi
                      y(:,7)    =  y(:,6)
                      yold(:,7) = y(:,7)
                      ac(:,7)   = zero
-c     
+c
                      call itrBCSclr (y, ac,  iBC, BC, iper, ilwork)
-c     
-c....store the flow alpha, gamma parameter values and assigm them the 
+c
+c....store the flow alpha, gamma parameter values and assigm them the
 c....Backward Euler parameters to solve the second levelset scalar
-c     
+c
                         alfit=alfi
                         gamit=gami
                         almit=almi
@@ -545,17 +551,17 @@ c
                         gami = 1
                         almi = 1
                      endif
-c     
+c
                      lhs = 1 - min(1,mod(ifuncs(isclr+2)-1,
      &                                       LHSupd(isclr+2)))
                      iprec = lhs
                      istop=0
                  if(usingPETSc.eq.1) then
 #if (HAVE_PETSC)
-                     call SolGMRpSclr(y,             ac,  
+                     call SolGMRpSclr(y,             ac,
      &                    x,             elDw,
-     &                    iBC,           BC,          
-     &                    colm,           rowp, 
+     &                    iBC,           BC,
+     &                    colm,           rowp,
      &                    iper,          ilwork,
      &                    shp,           shgl,
      &                    shpb,          shglb,     rest,
@@ -568,25 +574,25 @@ c
                      call SolGMRSclr(y,             ac,         yold,
      &                    acold,         EGmasst(1,isclr),
      &                    x,             elDw,
-     &                    iBC,           BC,          
-     &                    rest,           
+     &                    iBC,           BC,
+     &                    rest,
      &                    HBrg,          eBrg,
      &                    yBrg,          Rcos,      Rsin,
      &                    iper,          ilwork,
      &                    shp,           shgl,
      &                    shpb,          shglb, solinc(1,isclr+5))
                   endif
-c     
+c
                   endif         ! end of scalar type solve
-c     
-c     
+c
+c
 c.... end of the multi-corrector loop
-c     
+c
  1000             continue      !check this
 
                else             ! this is an update  (mod did not equal zero)
                   iupdate=icode/10 ! what to update
-                  if(iupdate.eq.0) then !update flow  
+                  if(iupdate.eq.0) then !update flow
                      call itrCorrect ( y, ac, yold, acold, solinc)
                      call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
                      call tnanq(y, 5, 'y_updbc')
@@ -603,20 +609,20 @@ c                       call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
                      if (ilset.eq.2 .and. isclr.eq.2)  then
                         fct2=one/almi
                         fct3=one/alfi
-                        acold(:,7) = acold(:,7) 
+                        acold(:,7) = acold(:,7)
      &                             + (ac(:,7)-acold(:,7))*fct2
-                        yold(:,7)  = yold(:,7)  
-     &                             + (y(:,7)-yold(:,7))*fct3  
-                        call itrBCSclr (  yold,  acold,  iBC,  BC, 
+                        yold(:,7)  = yold(:,7)
+     &                             + (y(:,7)-yold(:,7))*fct3
+                        call itrBCSclr (  yold,  acold,  iBC,  BC,
      &                                    iper,  ilwork)
                         ac(:,7) = acold(:,7)*(one-almi/gami)
                         y(:,7)  = yold(:,7)
-                        ac(:,7) = zero 
+                        ac(:,7) = zero
                         if (ivconstraint .eq. 1) then
-     &                       
+     &
 c ... applying the volume constraint
 c
-                           call solvecon (y,    x,      iBC,  BC, 
+                           call solvecon (y,    x,      iBC,  BC,
      &                                    iper, ilwork, shp,  shgl)
 c
                         endif   ! end of volume constraint calculations
@@ -631,68 +637,68 @@ c
        iseqStart=iLastRANS
        goto 9876
        endif
-c     
+c
 c     Find the solution at the end of the timestep and move it to old
-c  
+c
 c.... First to reassign the parameters for the original time integrator scheme
 c
-            if((iLSet.eq.2).and.(ilss.eq.1)) then 
+            if((iLSet.eq.2).and.(ilss.eq.1)) then
                alfi =alfit
                gami =gamit
-               almi =almit  
-            endif          
+               almi =almit
+            endif
             call itrUpdate( yold,  acold,   y,    ac)
-            call itrBC (yold, acold,  iBC,  BC, iper,ilwork)  
-c Elaine-SPEBC      
+            call itrBC (yold, acold,  iBC,  BC, iper,ilwork)
+c Elaine-SPEBC
             if((irscale.ge.0).and.(myrank.eq.master)) then
                 call genscale(yold, x, iBC)
 c               call itrBC (y,  ac,  iBC,  BC, iper, ilwork)
-            endif           
+            endif
             do isclr=1,nsclr
                call itrBCSclr (yold, acold,  iBC, BC, iper, ilwork)
             enddo
-c     
+c
             istep = istep + 1
             lstep = lstep + 1
-            ntoutv=max(ntout,100) 
+            ntoutv=max(ntout,100)
             !boundary flux output moved after the error calculation so
             !everything can be written out in a single chunk of code -
             !Nicholas Mati
-            
+
             !dump TIME SERIES
             if (exts) then
               !Write the probe data to disc. Note that IO to disc only
               !occurs when mod(lstep, nbuff) == 0. However, this
               !function also does data buffering and must be called
-              !every time step. 
+              !every time step.
               call TD_bufferData()
               call TD_writeData(fvarts, .false.)
             endif
-            
+
             !Update the Mach Control
             if(exts .and. exMC) then
               !Note: the function MC_updateState must be called after
               !the function TD_bufferData due to dependencies on
-              !vartsbuff(:,:,:). 
+              !vartsbuff(:,:,:).
               call MC_updateState()
               call MC_applyBC(BC)
               call MC_printState()
-                 
-              !Write the state if a restart is also being written. 
+
+              !Write the state if a restart is also being written.
               if(mod(lstep,ntout).eq.0 ) call MC_writeState(lstep)
             endif
 
             !update blower control
             if(BC_enable) then
-              !Update the blower boundary conditions for the next 
-              !iteration. 
+              !Update the blower boundary conditions for the next
+              !iteration.
               call BC_iter(BC)
 
-              !Also write the current phases of the blowers if a 
-              !restart is also being written. 
+              !Also write the current phases of the blowers if a
+              !restart is also being written.
               if(mod(lstep, ntout) == 0) call BC_writePhase(lstep)
             endif
-            
+
             !.... Yi Chen Duct geometry8
             if(isetBlowing_Duct.gt.0)then
               if(ifixBlowingVel_Duct.eq.0)then
@@ -726,14 +732,14 @@ c...  ybar(:,ndof+1:ndof+8) is for avg. of square as uu, vv, ww, pp, TT, uv, uw,
      &                          (one-tfact)*ybar(:,ndof+8)
 c... compute err
 c hack ShockError
-c  
+c
                errmax=maxval(rerr(:,6))
-               errswitch=0.1*errmax  
+               errswitch=0.1*errmax
 !
-! note this scalefactor will govern the thickness of the refinement band around the shock.  
+! note this scalefactor will govern the thickness of the refinement band around the shock.
 ! Higher values make it thinner (less refinement), lower -> thicker
 ! what is below is specific to SAM adapt's expectation to adapt when the 6th field is > 1.0e-6
-! note also that this field was altered in e3.f and e3ls.f to no longer be the traditional error 
+! note also that this field was altered in e3.f and e3ls.f to no longer be the traditional error
 ! indicator, rather it is based on element jump of Temperature to identify shocks
 !
                where(rerr(:,6).gt.errswitch)
@@ -746,33 +752,33 @@ c
                rerr(:, 9)=rerr(:, 9)+(yold(:,3)-ybar(:,3))**2
                rerr(:,10)=rerr(:,10)+(yold(:,4)-ybar(:,4))**2
             endif
-           
-c.. writing ybar field if requested in each restart file		
-            
+
+c.. writing ybar field if requested in each restart file
+
             !here is where we save our averaged field.  In some cases we want to
-            !write it less frequently		
+            !write it less frequently
             if( (irs >= 1) .and. (
      &        mod(lstep, ntout) == 0 .or. !Checkpoint
      &        istep == nstp) )then        !End of simulation
               if(output_mode .eq. -1 ) then ! this is an in-memory adapt case
                 if(istep == nstp) then ! go ahead and take care of it
-                  call checkpoint (nstp,yold, acold, ybar, rerr,  velbar, 
+                  call checkpoint (nstp,yold, acold, ybar, rerr,  velbar,
      &                       x, iper, ilwork, shp, shgl, iBC )
                 endif
                 if(ntout.le.lstep) then ! user also wants file output
                   output_mode=0
-                  call checkpoint (nstp,yold, acold, ybar, rerr,  velbar, 
+                  call checkpoint (nstp,yold, acold, ybar, rerr,  velbar,
      &                       x, iper, ilwork, shp, shgl, iBC )
-                  output_mode=-1 ! reset to stream 
+                  output_mode=-1 ! reset to stream
                 endif
               else
-                call checkpoint (nstp,yold, acold, ybar, rerr,  velbar, 
+                call checkpoint (nstp,yold, acold, ybar, rerr,  velbar,
      &                       x, iper, ilwork, shp, shgl, iBC )
-              endif   
-             endif   
+              endif
+             endif
 
  2000    continue  !end of NSTEP loop
- 2001    continue  
+ 2001    continue
 
          ttim(1) = REAL(secs(0.0)) / 100. - ttim(1)
          ttim(2) = secs(0.0)              - ttim(2)
@@ -784,22 +790,22 @@ c         tcorewc2 = secs(0.0)
             tcorecp2 = TMRC()
             write(6,*) 'T(core) cpu = ',tcorecp2-tcorecp1
          endif
-        
+
 c     call wtime
 
       call destroyWallData
       call destroyfncorp
 
  3000 continue !end of NTSEQ loop
-c     
+c
 c.... ---------------------->  Post Processing  <----------------------
-c     
+c
 c.... print out the last step
-c     
+c
 !      if ( (irs .ge. 1) .and. ((mod(lstep, ntout) .ne. 0) .or.
 !     &    (nstp .eq. 0))) then
 !          if( (mod(lstep, ntoutv) .eq. 0) .and.
-!     &        ((irscale.ge.0).or.(itwmod.gt.0) .or. 
+!     &        ((irscale.ge.0).or.(itwmod.gt.0) .or.
 !     &        ((nsonmax.eq.1).and.(iLES.gt.0))))
 !     &        call rwvelb  ('out ',  velbar  ,ifail)
 !
@@ -821,27 +827,27 @@ c     &                      elDw,'d'//char(0),numel,1,lstep)
 c
 c         call write_field(myrank,'a'//char(0),'dwal'//char(0),4,
 c     &                    d2wall,'d'//char(0),nshg,1,lstep)
-c     endif 
+c     endif
 
 c
 c.... close history and aerodynamic forces files
-c     
+c
       if (myrank .eq. master) then
          close (ihist)
          close (iforce)
-             
-         if(exMC) then 
-           call MC_writeState(lstep) 
+
+         if(exMC) then
+           call MC_writeState(lstep)
            call MC_finalize
          endif
-             
-         if(exts) then 
-           call TD_writeData(fvarts, .true.)    !force the flush of the buffer. 
+
+         if(exts) then
+           call TD_writeData(fvarts, .true.)    !force the flush of the buffer.
            call TD_finalize
          endif
       endif
 
-      if(BC_enable) then  !blower is allocated on all processes. 
+      if(BC_enable) then  !blower is allocated on all processes.
         if(mod(lstep, ntout) /= 0) then !May have already written file.
            call BC_writePhase(lstep)
         endif
@@ -857,58 +863,58 @@ c
       return
       end
 
-      subroutine checkpoint (nstp,yold, acold, ybar, rerr,  velbar, 
+      subroutine checkpoint (nstp,yold, acold, ybar, rerr,  velbar,
      &                       x, iper, ilwork, shp, shgl, iBC )
 c
       use turbSA
       include "common.h"
-      dimension shp(MAXTOP,maxsh,MAXQPT),  
-     &            shgl(MAXTOP,nsd,maxsh,MAXQPT), 
+      dimension shp(MAXTOP,maxsh,MAXQPT),
+     &            shgl(MAXTOP,nsd,maxsh,MAXQPT),
      &            iper(nshg),              iBC(nshg),
      &            x(nshg,nsd),         ilwork(nlwork)
       real*8  velbar(nfath,ndof),
-     &        yold(nshg,ndof),      acold(nshg,ndof),           
-     &        rerr(nshg,10),        ybar(nshg,ndof+8) 
+     &        yold(nshg,ndof),      acold(nshg,ndof),
+     &        rerr(nshg,10),        ybar(nshg,ndof+8)
 ! 8 is for avg. of square as uu, vv, ww, pp, TT, uv, uw, and vw
 
       if( (mod(lstep, ntout) .eq. 0) .and.
-     &              ((irscale.ge.0).or.(itwmod.gt.0) .or. 
+     &              ((irscale.ge.0).or.(itwmod.gt.0) .or.
      &              ((nsonmax.eq.1).and.(iLES.gt.0))))
      &              call rwvelb  ('out ',  velbar  ,ifail)
 
 !BUG: need to update new_interface to work with SyncIO.
       !Bflux is presently completely crippled. Note that restar
-      !has also been moved here for readability. 
+      !has also been moved here for readability.
 !              call Bflux  (yold,          acold,     x,  compute boundary fluxes and print out
 !    &              shp,           shgl,      shpb,
 !    &              shglb,         nodflx,    ilwork)
-                  
+
       call timer ('Output  ')      !set up the timer
 
-      !write the solution and time derivative 
-      call restar ('out ',  yold, acold)  
+      !write the solution and time derivative
+      call restar ('out ',  yold, acold)
 
       !Write the distance to wall field in each restart
       if((istep==nstp) .and. (irans < 0 )) then !d2wall is allocated
                  call write_field(myrank,'a'//char(0),'dwal'//char(0),4,
      &                            d2wall,'d'//char(0), nshg, 1, lstep)
-      endif 
-           
-      !Write the time average in each restart. 
+      endif
+
+      !Write the time average in each restart.
       if(ioybar.eq.1)then
                  call write_field(myrank,'a'//char(0),'ybar'//char(0),4,
      &                              ybar,'d'//char(0),nshg,ndof+8,lstep)
       endif
-                 
+
       !Write the error feild at the end of each step sequence
-      if(ierrcalc.eq.1 .and. istep == nstp) then 
+      if(ierrcalc.eq.1 .and. istep == nstp) then
         !smooth the error indicators
-      
+
         do i=1,ierrsmooth
          call errsmooth( rerr, x, iper, ilwork, shp, shgl, iBC )
         enddo
-                   
-        call write_field( myrank, 'a'//char(0), 'errors'//char(0), 6, 
+
+        call write_field( myrank, 'a'//char(0), 'errors'//char(0), 6,
      &                        rerr, 'd'//char(0), nshg, 10, lstep)
       endif
 
