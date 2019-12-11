@@ -56,10 +56,14 @@ c     ------------------------------------------------------------------
             if (any(btest(iBC(ienb(el,:)), 6))) then
                iBCB(el,1) = iBCB(el,1) + 32 ! enable sclr1 flux (2^5)
                ! iBCB(el,2) = 1 ! surfID = 1
-            endif
-         enddo
+            end if
+         end do
 
       end subroutine setSlipiBC
+
+      module slipGeometry
+         real*8, allocatable :: xs(:,:)
+      end module slipGeometry
 
       subroutine getNodalShapeFunctions(shpnod, shglnod)
 c     ------------------------------------------------------------------
@@ -74,7 +78,7 @@ c     ------------------------------------------------------------------
          include "common.h"
 
          real*8, intent(out) :: shpnod(nenbl,nshl),
-     &                          shglnod(nenbl,nsd, nshl)
+     &                          shglnod(nenbl,nsd,nshl)
          real*8, allocatable :: nodpt(:,:)
          integer :: nod
 
@@ -138,6 +142,71 @@ c     ------------------------------------------------------------------
 
       end subroutine getNodalShapeFunctions
 
+      subroutine gradNodalShapeFunctions(shglnod, shgnod)
+         use slipGeometry ! for global x(s)
+         use pointer_data ! for ienb array
+
+         include "common.h"
+
+         real*8, intent(in) :: shglnod(npro,nshl,nsd)
+         real*8, intent(out) :: shgnod(npro,nshl,nsd)
+         real*8 :: dxdxib(npro,nsd,nsd), dxidxb(npro,nsd,nsd),
+     &             temp(npro), xlb(npro,nshl,nsd)
+         integer :: vrt, i, j
+
+         ! Localize x node locations
+         call localx(xs, xlb, mienb(iblk)%p, nsd, 'gather')
+
+         ! Compute the deformation gradient
+         dxdxib = zero
+         do vrt = 1, nshl
+            do i = 1, nsd
+               do j = 1, nsd
+                  dxdxib(:,i,j) = dxdxib(:,i,j) + xlb(:,vrt,i)
+     &                            * shglnod(:,vrt,i)
+               end do
+            end do
+         end do
+
+         ! Compute the inverse deformation gradient
+         dxidxb(:,1,1) = dxdxib(:,2,2) * dxdxib(:,3,3)
+     &                   - dxdxib(:,3,2) * dxdxib(:,2,3)
+         dxidxb(:,1,2) = dxdxib(:,3,2) * dxdxib(:,1,3)
+     &                   - dxdxib(:,1,2) * dxdxib(:,3,3)
+         dxidxb(:,1,3) = dxdxib(:,1,2) * dxdxib(:,2,3)
+     &                   - dxdxib(:,1,3) * dxdxib(:,2,2)
+         temp = one / (dxidxb(:,1,1) * dxdxib(:,1,1)
+     &                 + dxidxb(:,1,2) * dxdxib(:,2,1)
+     &                 + dxidxb(:,1,3) * dxdxib(:,3,1))
+         dxidxb(:,1,1) = dxidxb(:,1,1) * temp
+         dxidxb(:,1,2) = dxidxb(:,1,2) * temp
+         dxidxb(:,1,3) = dxidxb(:,1,3) * temp
+         dxidxb(:,2,1) = (dxdxib(:,2,3) * dxdxib(:,3,1)
+     &                    - dxdxib(:,2,1) * dxdxib(:,3,3)) * temp
+         dxidxb(:,2,2) = (dxdxib(:,1,1) * dxdxib(:,3,3)
+     &                    - dxdxib(:,3,1) * dxdxib(:,1,3)) * temp
+         dxidxb(:,2,3) = (dxdxib(:,2,1) * dxdxib(:,1,3)
+     &                    - dxdxib(:,1,1) * dxdxib(:,2,3)) * temp
+         dxidxb(:,3,1) = (dxdxib(:,2,1) * dxdxib(:,3,2)
+     &                    - dxdxib(:,2,2) * dxdxib(:,3,1)) * temp
+         dxidxb(:,3,2) = (dxdxib(:,3,1) * dxdxib(:,1,2)
+     &                    - dxdxib(:,1,1) * dxdxib(:,3,2)) * temp
+         dxidxb(:,3,3) = (dxdxib(:,1,1) * dxdxib(:,2,2)
+     &                    - dxdxib(:,1,2) * dxdxib(:,2,1)) * temp
+
+         ! Compute real space shape function gradients: N_{a,i}
+         shgnod = zero
+         do vrt = 1, nshl
+            do i = 1, nsd
+               do j = 1, nsd
+               shgnod(:,vrt,i) = shgnod(:,vrt,i)
+     &                           + shglnod(:,vrt,j)
+     &                           * dxidxb(:,j,i)
+               end do
+            end do
+         end do
+      end subroutine gradNodalShapeFunctions
+
       subroutine slipCorrect(y)
 c     ------------------------------------------------------------------
 c        Modifies y variables to account for Dirichlet slip BC
@@ -150,9 +219,10 @@ c     ------------------------------------------------------------------
          include "common.h"
 
          real*8, intent(in) :: y(nshg,nflow)
-         integer :: vrt, nod, sd
+         integer :: vrt, nod, i
          real*8, allocatable :: shpnod(:,:), shpnodtmp(:,:),
-     &                          shglnod(:,:,:), shglnodtmp(:,:,:)
+     &                          shglnod(:,:,:), shglnodtmp(:,:,:),
+     &                          shgnod(:,:,:)
          ! real*8, allocatable :: ycl(:,:,:)
          ! real*8, allocatable :: xl(:,:,:)
          ! real*8, allocatable :: yvl(:,:,:)
@@ -173,7 +243,7 @@ c     ------------------------------------------------------------------
             ! if(lcsyst.eq.3) lcsyst=nenbl
             ! ngaussb = nintb(lcsyst)
 
-            ! Init element shape function arrays
+            ! Allocate and init element shape function arrays
             allocate(shpnodtmp(nenbl,nshl))
             allocate(shglnodtmp(nenbl,nsd,nshl))
             shpnodtmp = zero
@@ -185,28 +255,35 @@ c     ------------------------------------------------------------------
             ! Allocate local shape function arrays
             allocate(shpnod(npro,nshl))
             allocate(shglnod(npro,nshl,nsd))
+            allocate(shgnod(npro,nshl,nsd))
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
                ! Init local shape function arrays
                shpnod = 0
                shglnod = 0
+               shgnod = 0
 
                ! Loop over all vertices or element nodes
-               ! to reshape shpnod and shglnod matrices
+               ! to reshape shpnodtmp -> shpnod
+               !            shglnodtmo -> shglnod
                do vrt = 1, nshl
                   shpnod(:,vrt) = shpnodtmp(nod,vrt)
-                  do sd = 1, nsd
-                     shglnod(:,vrt,sd) = shglnodtmp(nod,sd,vrt)
+                  do i = 1, nsd
+                     shglnod(:,vrt,i) = shglnodtmp(nod,i,vrt)
                   end do
                end do
 
-               ! Stuff here
+               ! Compute real space shape function gradients
+               call gradNodalShapeFunctions(shglnodtmp, shgnod)
+
+               ! Stuff
+
 
             end do ! </loop nodes>
 
             ! Deallocate all arrays for next iteration
-            deallocate(shpnod, shglnod, shpnodtmp, shglnodtmp)
+            deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp)
          enddo ! </loop blocks>
 
-      endsubroutine slipCorrect
+      end subroutine slipCorrect
