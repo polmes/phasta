@@ -263,19 +263,12 @@ c     ------------------------------------------------------------------
 
          ! Loop over boudary element blocks
          do iblk = 1, nelblb ! <loop blocks>
+            ! Set up iteration parameters
             iel    = lcblkb(1,iblk)
-            ! lelCat = lcblkb(2,iblk)
             lcsyst = lcblkb(3,iblk)
-            ! iorder = lcblkb(4,iblk)
-            ! nenl   = lcblkb(5,iblk)  ! no. of vertices per element
             nenbl  = lcblkb(6,iblk)  ! no. of vertices per bdry. face
-            ! mattyp = lcblkb(7,iblk)
-            ! ndofl  = lcblkb(8,iblk)
             nshl   = lcblkb(9,iblk)
-            ! nshlb  = lcblkb(10,iblk)
             npro   = lcblkb(1,iblk+1) - iel
-            ! if(lcsyst.eq.3) lcsyst=nenbl
-            ! ngaussb = nintb(lcsyst)
 
             ! Allocate and init element shape function arrays
             allocate(shpnodtmp(nenbl,nshl))
@@ -358,6 +351,7 @@ c     ------------------------------------------------------------------
      &                 xl, yl, dudy, ul, rho, mu)
          end do ! </loop blocks>
 
+         ! Actually apply the Dirchlet slip BC
          where (btest(iBC, 6)) ! check where sclr1 (slip) is used
             y(:,1) = uslip ! global Y array has u1 at position 1
          end where
