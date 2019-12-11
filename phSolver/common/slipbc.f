@@ -274,7 +274,7 @@ c     ------------------------------------------------------------------
 
             ! Localize x node locations in current block
             xlb = zero
-            call localx(xs, xlb, mienb(iblk)%p, nsd, 'gather')
+            call localx(xs, xlb, mienb(iblk)%p, nsd, 'gather  ')
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
