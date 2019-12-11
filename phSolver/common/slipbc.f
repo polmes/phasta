@@ -148,20 +148,25 @@ c     ------------------------------------------------------------------
 
       end subroutine getNodalShapeFunctions
 
-      subroutine gradNodalShapeFunctions(shglnod, shgnod)
-         use slipGeometry ! for global x(s)
-         use pointer_data ! for ienb array
+      subroutine gradNodalShapeFunctions(shglnod, xlb, shgnod)
+c     ------------------------------------------------------------------
+c        Computes the deformation gradient and its inverse to find the
+c        array of global derivatives of shape functions
+c        Input:
+c           shglnod - Local gradient of shape functions (parent space)
+c           xlb     - Local nodal positions
+c        Output:
+c           shgnod - Global gradient of shape functions (real space)
+c     ------------------------------------------------------------------
 
          include "common.h"
 
-         real*8, intent(in) :: shglnod(npro,nshl,nsd)
+         real*8, intent(in) :: shglnod(npro,nshl,nsd),
+     &                         xlb(npro,nshl,nsd)
          real*8, intent(out) :: shgnod(npro,nshl,nsd)
          real*8 :: dxdxib(npro,nsd,nsd), dxidxb(npro,nsd,nsd),
-     &             temp(npro), xlb(npro,nshl,nsd)
+     &             temp(npro)
          integer :: vrt, i, j
-
-         ! Localize x node locations
-         call localx(xs, xlb, mienb(iblk)%p, nsd, 'gather')
 
          ! Compute the deformation gradient
          dxdxib = zero
@@ -175,6 +180,7 @@ c     ------------------------------------------------------------------
          end do
 
          ! Compute the inverse deformation gradient
+         dxidxb = zero
          dxidxb(:,1,1) = dxdxib(:,2,2) * dxdxib(:,3,3)
      &                   - dxdxib(:,3,2) * dxdxib(:,2,3)
          dxidxb(:,1,2) = dxdxib(:,3,2) * dxdxib(:,1,3)
@@ -222,13 +228,15 @@ c        Output:
 c           y - Corrected solution vector
 c     ------------------------------------------------------------------
 
+         use slipGeometry ! for global x(s)
+         use pointer_data ! for ienb array
          include "common.h"
 
          real*8, intent(in) :: y(nshg,nflow)
          integer :: vrt, nod, i
          real*8, allocatable :: shpnod(:,:), shpnodtmp(:,:),
      &                          shglnod(:,:,:), shglnodtmp(:,:,:),
-     &                          shgnod(:,:,:)
+     &                          shgnod(:,:,:), xlb(:,:,:)
          ! real*8, allocatable :: ycl(:,:,:)
          ! real*8, allocatable :: xl(:,:,:)
          ! real*8, allocatable :: yvl(:,:,:)
@@ -262,6 +270,11 @@ c     ------------------------------------------------------------------
             allocate(shpnod(npro,nshl))
             allocate(shglnod(npro,nshl,nsd))
             allocate(shgnod(npro,nshl,nsd))
+            allocate(xlb(npro,nshl,nsd))
+
+            ! Localize x node locations in current block
+            xlb = zero
+            call localx(xs, xlb, mienb(iblk)%p, nsd, 'gather')
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
@@ -281,7 +294,7 @@ c     ------------------------------------------------------------------
                end do
 
                ! Compute real space shape function gradients
-               call gradNodalShapeFunctions(shglnodtmp, shgnod)
+               call gradNodalShapeFunctions(shglnodtmp, xlb, shgnod)
 
                ! Stuff
 
@@ -289,7 +302,8 @@ c     ------------------------------------------------------------------
             end do ! </loop nodes>
 
             ! Deallocate all arrays for next iteration
-            deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp)
+            deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp,
+     &                 xlb)
          enddo ! </loop blocks>
 
       end subroutine slipCorrect
