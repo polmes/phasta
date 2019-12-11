@@ -219,6 +219,19 @@ c     ------------------------------------------------------------------
          end do
       end subroutine gradNodalShapeFunctions
 
+      subroutine slipAssembly(local, ien, dof, global)
+         include "common.h"
+
+         real*8, intent(in) :: local(npro,nenbl), ien(npro,nshl)
+         integer, intent(in) :: dof
+         real*8, intent(out) :: global(nshg, nflow)
+         integer :: nod, nel
+
+         do nod = 1, nenbl
+            global(ien(:,nod),dof) = local(:,nod)
+         end do
+      end subroutine slipAssembly
+
       subroutine slipCorrect(y)
 c     ------------------------------------------------------------------
 c        Modifies y variables to account for Dirichlet slip BC
@@ -314,7 +327,7 @@ c     ------------------------------------------------------------------
 
                ! Compute velocity gradient: dY2/dx2
                do vrt = 1, nshl
-                  dudy(:,nod) = dudy(:,nod) + yl(:,vrt,2)
+                  dudy(:,nod) = dudy(:,nod) + yl(:,nod,2)
      &                          * shgnod(:,vrt,2)
                end do
 
@@ -325,7 +338,7 @@ c     ------------------------------------------------------------------
             end do ! </loop nodes>
 
             ! Globalize dudy (as a test)
-            call local(dudyg, dudy, mienb(iblk)%p, nenbl, 'scatter ')
+            call slipAssembly(dudy, ien, 2, dudyg)
 
             ! Deallocate all arrays for next iteration
             deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp,
