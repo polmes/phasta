@@ -24,16 +24,16 @@ c
         include "common.h"
 c
         dimension y(nshg,ndof),             iBC(nshg),
-     &            BC(nshg,ndofBC),          
+     &            BC(nshg,ndofBC),
      &            BDiag(nshg,nflow,nflow),        ilwork(nlwork),
      &            iper(nshg)
 c
         real*8 a5(nshg)
 c
-c.... density 
+c.... density
 c
-          do i = 1, nshg 
-             a5(i) = - y(i,5) * (Rgas * gamma / gamma1) !IDEAL GAS ASSUMED 
+          do i = 1, nshg
+             a5(i) = - y(i,5) * (Rgas * gamma / gamma1) !IDEAL GAS ASSUMED
           end do
 
         where (btest(iBC,0))
@@ -43,12 +43,12 @@ c.... engbc was replaced for a5 by following
           BDiag(:,5,5) = BDiag(:,5,5) + a5 * a5 * BDiag(:,1,1) +
      &                                       a5 * BDiag(:,1,5) +
      &                                       a5 * BDiag(:,5,1)
-          BDiag(:,4,5) = BDiag(:,4,5) +  a5 * BDiag(:,4,1) 
-          BDiag(:,3,5) = BDiag(:,3,5) +  a5 * BDiag(:,3,1) 
-          BDiag(:,2,5) = BDiag(:,2,5) +  a5 * BDiag(:,2,1) 
-          BDiag(:,5,4) = BDiag(:,5,4) +  a5 * BDiag(:,1,4) 
-          BDiag(:,5,3) = BDiag(:,5,3) +  a5 * BDiag(:,1,3) 
-          BDiag(:,5,2) = BDiag(:,5,2) +  a5 * BDiag(:,1,2) 
+          BDiag(:,4,5) = BDiag(:,4,5) +  a5 * BDiag(:,4,1)
+          BDiag(:,3,5) = BDiag(:,3,5) +  a5 * BDiag(:,3,1)
+          BDiag(:,2,5) = BDiag(:,2,5) +  a5 * BDiag(:,2,1)
+          BDiag(:,5,4) = BDiag(:,5,4) +  a5 * BDiag(:,1,4)
+          BDiag(:,5,3) = BDiag(:,5,3) +  a5 * BDiag(:,1,3)
+          BDiag(:,5,2) = BDiag(:,5,2) +  a5 * BDiag(:,1,2)
           BDiag(:,1,2) = zero
           BDiag(:,1,3) = zero
           BDiag(:,1,4) = zero
@@ -77,7 +77,7 @@ c       where (btest(iBC,11)) ! pressure  to deactivate
 c
 c.... velocities
 c
-c.... x1-velocity   
+c.... x1-velocity
 c
         where (ibits(iBC,3,3) .eq. 1)
           BDiag(:,5,4) = BDiag(:,5,4) - BC(:,5) * BDiag(:,5,2)
@@ -135,7 +135,7 @@ c
      &                                -           BC(:,5) * BDiag(:,4,3)
           BDiag(:,2,4) = BDiag(:,2,4) + BC(:,4) * BC(:,5) * BDiag(:,3,3)
      &                                - 	  BC(:,5) * BDiag(:,2,3)
-     &                                - 	  BC(:,4) * BDiag(:,3,4) 
+     &                                - 	  BC(:,4) * BDiag(:,3,4)
           BDiag(:,4,2) = BDiag(:,4,2) + BC(:,4) * BC(:,5) * BDiag(:,3,3)
      &                                - 	  BC(:,5) * BDiag(:,3,2)
      &                                - 	  BC(:,4) * BDiag(:,4,3)
@@ -153,21 +153,21 @@ c
           BDiag(:,3,3) = one
         endwhere
 c
-c.... x1-velocity and x2-velocity 
+c.... x1-velocity and x2-velocity
 c
-      where (ibits(iBC,3,3) .eq. 3) 
-      BDiag(:,4,4) = BDiag(:,4,4) + BC(:,4) * BC(:,4) * BDiag(:,2,2) 
+      where (ibits(iBC,3,3) .eq. 3)
+      BDiag(:,4,4) = BDiag(:,4,4) + BC(:,4) * BC(:,4) * BDiag(:,2,2)
      &                            + BC(:,6) * BC(:,6) * BDiag(:,3,3)
      &           + BC(:,4) * BC(:,6) * ( BDiag(:,2,3) * BDiag(:,3,2))
      &           -           BC(:,6) * ( BDiag(:,4,3) * BDiag(:,3,4))
      &           -           BC(:,4) * ( BDiag(:,4,2) * BDiag(:,2,4))
-      BDiag(:,1,4) = BDiag(:,1,4) -           BC(:,4) * BDiag(:,1,2) 
+      BDiag(:,1,4) = BDiag(:,1,4) -           BC(:,4) * BDiag(:,1,2)
      &                            -           BC(:,6) * BDiag(:,1,3)
-      BDiag(:,4,1) = BDiag(:,4,1) -           BC(:,4) * BDiag(:,2,1) 
+      BDiag(:,4,1) = BDiag(:,4,1) -           BC(:,4) * BDiag(:,2,1)
      &                            -           BC(:,6) * BDiag(:,3,1)
-      BDiag(:,5,4) = BDiag(:,5,4) -           BC(:,4) * BDiag(:,5,2) 
+      BDiag(:,5,4) = BDiag(:,5,4) -           BC(:,4) * BDiag(:,5,2)
      &                            -           BC(:,6) * BDiag(:,5,3)
-      BDiag(:,4,5) = BDiag(:,4,5) -           BC(:,4) * BDiag(:,2,5) 
+      BDiag(:,4,5) = BDiag(:,4,5) -           BC(:,4) * BDiag(:,2,5)
      &                            -           BC(:,6) * BDiag(:,3,5)
           BDiag(:,2,1) = zero
           BDiag(:,2,3) = zero
@@ -233,13 +233,13 @@ c
      &                + BC(:,4) * BC(:,6) *(BDiag(:,2,4) + BDiag(:,4,2))
      &                -           BC(:,4) *(BDiag(:,2,3) + BDiag(:,3,2))
      &                -           BC(:,6) *(BDiag(:,4,3) + BDiag(:,3,4))
-          BDiag(:,1,3) = BDiag(:,1,3) -           BC(:,4) * BDiag(:,1,2) 
+          BDiag(:,1,3) = BDiag(:,1,3) -           BC(:,4) * BDiag(:,1,2)
      &                                -           BC(:,6) * BDiag(:,1,4)
-          BDiag(:,3,1) = BDiag(:,3,1) -           BC(:,4) * BDiag(:,2,1) 
+          BDiag(:,3,1) = BDiag(:,3,1) -           BC(:,4) * BDiag(:,2,1)
      &                                -           BC(:,6) * BDiag(:,4,1)
-          BDiag(:,5,3) = BDiag(:,5,3) -           BC(:,4) * BDiag(:,5,2) 
+          BDiag(:,5,3) = BDiag(:,5,3) -           BC(:,4) * BDiag(:,5,2)
      &                                -           BC(:,6) * BDiag(:,5,4)
-          BDiag(:,3,5) = BDiag(:,3,5) -           BC(:,4) * BDiag(:,2,5) 
+          BDiag(:,3,5) = BDiag(:,3,5) -           BC(:,4) * BDiag(:,2,5)
      &                                -           BC(:,6) * BDiag(:,4,5)
           BDiag(:,2,1) = zero
           BDiag(:,2,3) = zero
@@ -267,13 +267,13 @@ c
      &               + BC(:,4) * BC(:,6) * (BDiag(:,3,4) + BDiag(:,4,3))
      &               -            BC(:,4) *(BDiag(:,2,3) + BDiag(:,3,2))
      &               -            BC(:,6) *(BDiag(:,4,2) + BDiag(:,2,4))
-          BDiag(:,1,2) = BDiag(:,1,2) -           BC(:,4) * BDiag(:,1,3) 
+          BDiag(:,1,2) = BDiag(:,1,2) -           BC(:,4) * BDiag(:,1,3)
      &                                -           BC(:,6) * BDiag(:,1,4)
-          BDiag(:,2,1) = BDiag(:,2,1) -           BC(:,4) * BDiag(:,3,1) 
+          BDiag(:,2,1) = BDiag(:,2,1) -           BC(:,4) * BDiag(:,3,1)
      &                                -           BC(:,6) * BDiag(:,4,1)
-          BDiag(:,5,2) = BDiag(:,5,2) -           BC(:,4) * BDiag(:,5,3) 
+          BDiag(:,5,2) = BDiag(:,5,2) -           BC(:,4) * BDiag(:,5,3)
      &                                -           BC(:,6) * BDiag(:,5,4)
-          BDiag(:,2,5) = BDiag(:,2,5) -           BC(:,4) * BDiag(:,3,5) 
+          BDiag(:,2,5) = BDiag(:,2,5) -           BC(:,4) * BDiag(:,3,5)
      &                                -           BC(:,6) * BDiag(:,4,5)
           BDiag(:,3,1) = zero
           BDiag(:,3,2) = zero
@@ -318,6 +318,44 @@ c
           BDiag(:,3,3) = one
           BDiag(:,4,4) = one
         endwhere
+
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+      if ((isSlipBC .eq. 1) .and. (slipNitsche .eq. 0)) then
+         if (any(btest(iBC, 6))) then ! check if sclr1 (slip) is used
+            where (btest(iBC, 6))
+               ! Same as setting u1, u2, u3
+               BDiag(:,2,1) = zero
+               BDiag(:,2,3) = zero
+               BDiag(:,2,4) = zero
+               BDiag(:,2,5) = zero
+               BDiag(:,3,1) = zero
+               BDiag(:,3,2) = zero
+               BDiag(:,3,4) = zero
+               BDiag(:,3,5) = zero
+               BDiag(:,4,1) = zero
+               BDiag(:,4,2) = zero
+               BDiag(:,4,3) = zero
+               BDiag(:,4,5) = zero
+               BDiag(:,1,2) = zero
+               BDiag(:,5,2) = zero
+               BDiag(:,1,3) = zero
+               BDiag(:,5,3) = zero
+               BDiag(:,1,4) = zero
+               BDiag(:,5,4) = zero
+               BDiag(:,2,2) = one
+               BDiag(:,3,3) = one
+               BDiag(:,4,4) = one
+            end where
+         end if
+      end if
+
+c     ------------------------------------------------------------------
+c                       </SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
 c
 c.... temperature
 c
@@ -342,7 +380,7 @@ c
                  BDiag(i, :,:) = BDiag(i,:,:) + BDiag(j,:,:)
               endif
            enddo
-c     
+c
 c.... periodic slaves get the residual values of the masters
 c
            do j = 1,nshg
@@ -350,7 +388,7 @@ c
                  i=iper(j)
                  BDiag(j,:,:) = BDiag(i,:,:)
               endif
-           enddo  
+           enddo
 c$$$        endif
 
         if(numpe.gt.1) then
@@ -378,7 +416,7 @@ c
               BDiag(isgbeg:isgend,5,5) = one
             enddo
           endif
-          
+
           itkbeg = itkbeg + 4 + 2*numseg
 
         enddo
@@ -421,9 +459,9 @@ c
 c
       id = isclr+5
 c
-c.... scalar variable 
+c.... scalar variable
 c
-        where (btest(iBC,id)) 
+        where (btest(iBC,id))
           Diag(:) = one
         endwhere
 c
@@ -435,14 +473,14 @@ c
             Diag(i) = Diag(i) + Diag(j)
           endif
         enddo
-c     
+c
 c.... periodic slaves get the residual values of the masters
 c
       do i = 1,nshg
          if (btest(iBC(i),10)) then
             Diag(i) = Diag(iper(i))
          endif
-      enddo       
+      enddo
 c
 c.... nodes treated on another processor are eliminated
 c
@@ -463,7 +501,7 @@ c
                   Diag(isgbeg:isgend) = one
                enddo
             endif
-          
+
             itkbeg = itkbeg + 4 + 2*numseg
 
          enddo
