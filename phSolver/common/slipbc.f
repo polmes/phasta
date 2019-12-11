@@ -148,13 +148,13 @@ c     ------------------------------------------------------------------
 
       end subroutine getNodalShapeFunctions
 
-      subroutine gradNodalShapeFunctions(shglnod, xlb, shgnod)
+      subroutine gradNodalShapeFunctions(shglnod, xl, shgnod)
 c     ------------------------------------------------------------------
 c        Computes the deformation gradient and its inverse to find the
 c        array of global derivatives of shape functions
 c        Input:
 c           shglnod - Local gradient of shape functions (parent space)
-c           xlb     - Local nodal positions
+c           xl      - Local nodal positions
 c        Output:
 c           shgnod - Global gradient of shape functions (real space)
 c     ------------------------------------------------------------------
@@ -162,49 +162,49 @@ c     ------------------------------------------------------------------
          include "common.h"
 
          real*8, intent(in) :: shglnod(npro,nshl,nsd),
-     &                         xlb(npro,nshl,nsd)
+     &                         xl(npro,nshl,nsd)
          real*8, intent(out) :: shgnod(npro,nshl,nsd)
-         real*8 :: dxdxib(npro,nsd,nsd), dxidxb(npro,nsd,nsd),
+         real*8 :: dxdxi(npro,nsd,nsd), dxidx(npro,nsd,nsd),
      &             temp(npro)
          integer :: vrt, i, j
 
          ! Compute the deformation gradient
-         dxdxib = zero
+         dxdxi = zero
          do vrt = 1, nshl
             do i = 1, nsd
                do j = 1, nsd
-                  dxdxib(:,i,j) = dxdxib(:,i,j) + xlb(:,vrt,i)
+                  dxdxi(:,i,j) = dxdxi(:,i,j) + xl(:,vrt,i)
      &                            * shglnod(:,vrt,j)
                end do
             end do
          end do
 
          ! Compute the inverse deformation gradient
-         dxidxb = zero
-         dxidxb(:,1,1) = dxdxib(:,2,2) * dxdxib(:,3,3)
-     &                   - dxdxib(:,3,2) * dxdxib(:,2,3)
-         dxidxb(:,1,2) = dxdxib(:,3,2) * dxdxib(:,1,3)
-     &                   - dxdxib(:,1,2) * dxdxib(:,3,3)
-         dxidxb(:,1,3) = dxdxib(:,1,2) * dxdxib(:,2,3)
-     &                   - dxdxib(:,1,3) * dxdxib(:,2,2)
-         temp = one / (dxidxb(:,1,1) * dxdxib(:,1,1)
-     &                 + dxidxb(:,1,2) * dxdxib(:,2,1)
-     &                 + dxidxb(:,1,3) * dxdxib(:,3,1))
-         dxidxb(:,1,1) = dxidxb(:,1,1) * temp
-         dxidxb(:,1,2) = dxidxb(:,1,2) * temp
-         dxidxb(:,1,3) = dxidxb(:,1,3) * temp
-         dxidxb(:,2,1) = (dxdxib(:,2,3) * dxdxib(:,3,1)
-     &                    - dxdxib(:,2,1) * dxdxib(:,3,3)) * temp
-         dxidxb(:,2,2) = (dxdxib(:,1,1) * dxdxib(:,3,3)
-     &                    - dxdxib(:,3,1) * dxdxib(:,1,3)) * temp
-         dxidxb(:,2,3) = (dxdxib(:,2,1) * dxdxib(:,1,3)
-     &                    - dxdxib(:,1,1) * dxdxib(:,2,3)) * temp
-         dxidxb(:,3,1) = (dxdxib(:,2,1) * dxdxib(:,3,2)
-     &                    - dxdxib(:,2,2) * dxdxib(:,3,1)) * temp
-         dxidxb(:,3,2) = (dxdxib(:,3,1) * dxdxib(:,1,2)
-     &                    - dxdxib(:,1,1) * dxdxib(:,3,2)) * temp
-         dxidxb(:,3,3) = (dxdxib(:,1,1) * dxdxib(:,2,2)
-     &                    - dxdxib(:,1,2) * dxdxib(:,2,1)) * temp
+         dxidx = zero
+         dxidx(:,1,1) = dxdxi(:,2,2) * dxdxi(:,3,3)
+     &                   - dxdxi(:,3,2) * dxdxi(:,2,3)
+         dxidx(:,1,2) = dxdxi(:,3,2) * dxdxi(:,1,3)
+     &                   - dxdxi(:,1,2) * dxdxi(:,3,3)
+         dxidx(:,1,3) = dxdxi(:,1,2) * dxdxi(:,2,3)
+     &                   - dxdxi(:,1,3) * dxdxi(:,2,2)
+         temp = one / (dxidx(:,1,1) * dxdxi(:,1,1)
+     &                 + dxidx(:,1,2) * dxdxi(:,2,1)
+     &                 + dxidx(:,1,3) * dxdxi(:,3,1))
+         dxidx(:,1,1) = dxidx(:,1,1) * temp
+         dxidx(:,1,2) = dxidx(:,1,2) * temp
+         dxidx(:,1,3) = dxidx(:,1,3) * temp
+         dxidx(:,2,1) = (dxdxi(:,2,3) * dxdxi(:,3,1)
+     &                    - dxdxi(:,2,1) * dxdxi(:,3,3)) * temp
+         dxidx(:,2,2) = (dxdxi(:,1,1) * dxdxi(:,3,3)
+     &                    - dxdxi(:,3,1) * dxdxi(:,1,3)) * temp
+         dxidx(:,2,3) = (dxdxi(:,2,1) * dxdxi(:,1,3)
+     &                    - dxdxi(:,1,1) * dxdxi(:,2,3)) * temp
+         dxidx(:,3,1) = (dxdxi(:,2,1) * dxdxi(:,3,2)
+     &                    - dxdxi(:,2,2) * dxdxi(:,3,1)) * temp
+         dxidx(:,3,2) = (dxdxi(:,3,1) * dxdxi(:,1,2)
+     &                    - dxdxi(:,1,1) * dxdxi(:,3,2)) * temp
+         dxidx(:,3,3) = (dxdxi(:,1,1) * dxdxi(:,2,2)
+     &                    - dxdxi(:,1,2) * dxdxi(:,2,1)) * temp
 
          ! Compute real space shape function gradients: N_{a,i}
          shgnod = zero
@@ -213,7 +213,7 @@ c     ------------------------------------------------------------------
                do j = 1, nsd
                shgnod(:,vrt,i) = shgnod(:,vrt,i)
      &                           + shglnod(:,vrt,j)
-     &                           * dxidxb(:,j,i)
+     &                           * dxidx(:,j,i)
                end do
             end do
          end do
@@ -232,11 +232,13 @@ c     ------------------------------------------------------------------
          use pointer_data ! for ienb array
          include "common.h"
 
-         real*8, intent(in) :: y(nshg,nflow)
+         real*8, intent(inout) :: y(nshg,nflow)
          integer :: vrt, nod, i
          real*8, allocatable :: shpnod(:,:), shpnodtmp(:,:),
      &                          shglnod(:,:,:), shglnodtmp(:,:,:),
-     &                          shgnod(:,:,:), xlb(:,:,:)
+     &                          shgnod(:,:,:), xl(:,:,:), yl(:,:,:),
+     &                          dudy(:,:)
+         real*8 dudyg(nshg, nflow)
          ! real*8, allocatable :: ycl(:,:,:)
          ! real*8, allocatable :: xl(:,:,:)
          ! real*8, allocatable :: yvl(:,:,:)
@@ -270,18 +272,29 @@ c     ------------------------------------------------------------------
             allocate(shpnod(npro,nshl))
             allocate(shglnod(npro,nshl,nsd))
             allocate(shgnod(npro,nshl,nsd))
-            allocate(xlb(npro,nshl,nsd))
+
+            ! Allocate variables to be gathered
+            allocate(xl(npro,nshl,nsd))
+            allocate(yl(npro,nshl,nflow))
 
             ! Localize x node locations in current block
-            xlb = zero
-            call localx(xs, xlb, mienb(iblk)%p, nsd, 'gather  ')
+            xl = zero
+            call localx(xs, xl, mienb(iblk)%p, nsd, 'gather  ')
+
+            ! Localize Y variables in current block
+            yl = zero
+            call localy(y, yl, mienb(iblk)%p, nflow, 'gather  ')
+
+            ! Allocate and init velocity gradient
+            allocate(dudy(npro,nenbl))
+            dudy = zero
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
                ! Init local shape function arrays
-               shpnod = 0
-               shglnod = 0
-               shgnod = 0
+               shpnod = zero
+               shglnod = zero
+               shgnod = zero
 
                ! Loop over all vertices or element nodes
                ! to reshape shpnodtmp -> shpnod
@@ -294,16 +307,26 @@ c     ------------------------------------------------------------------
                end do
 
                ! Compute real space shape function gradients
-               call gradNodalShapeFunctions(shglnod, xlb, shgnod)
+               call gradNodalShapeFunctions(shglnod, xl, shgnod)
 
-               ! Stuff
+               ! Compute velocity gradient: dY2/dx2
+               do vrt = 1, nshl
+                  dudy(:,nod) = dudy(:,nod) + yl(:,vrt,2)
+     &                          * shgnod(:,vrt,2)
+               end do
+
+               ! Compute slip velocity at current node
+               ! call getSlipVelocity1D()
 
 
             end do ! </loop nodes>
 
+            ! Globalize dudy (as a test)
+            call local(dudyg, dudy, mienb(iblk)%p, nenbl, 'scatter ')
+
             ! Deallocate all arrays for next iteration
             deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp,
-     &                 xlb)
+     &                 xl, yl, dudy)
          enddo ! </loop blocks>
 
       end subroutine slipCorrect
