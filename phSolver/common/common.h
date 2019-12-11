@@ -130,6 +130,7 @@ c
      &                  nshg,   nnz,    istop,  nflow,  nnz_tot, idtn,
      &                  ncorpsize, iownnodes, usingpetsc, numerr
 c......................NASA Inlet Woolwine.................................
+        integer :: BCdtKW, tsBase
         common /nasavari/ BCdtKW, tsBase
         common /nasavar/  PresFreq, PresAmp, AlphaFreq, AlphaAmp
 c..........................................................................

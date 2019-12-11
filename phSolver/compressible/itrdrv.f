@@ -71,7 +71,7 @@ c
         real*8 vbc_prof(nshg,3)
         character(len=60) fvarts
         integer ifuncs(6), iarray(10)
-        integer BCdtKW, tsBase
+      !   integer BCdtKW, tsBase
 
         real*8 elDw(numel) ! element average of DES d variable
 

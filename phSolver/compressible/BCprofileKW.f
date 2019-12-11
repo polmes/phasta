@@ -1,13 +1,13 @@
 c-----------------------------------------------------------------------
         subroutine BCprofileScaleKW(PresBase,VelBase,BC,yold)
-       
+
         use pvsQbi
         include "common.h"
         real*8 PresBase, VelBase
         real*8 BC(nshg,ndofBC), yold(nshg,ndof)
         real*8 PresSin, PresAmp, PresFreq
         real*8 Alpha, AlphaAmp, AlphaFreq
-        integer tsBase, BCdtKW
+      !   integer tsBase, BCdtKW
 
 c        PresFreq=1000 ! frequency in Hz of pressure disturbance
 c        PresAmp=100 ! Amplitude of pressure disturbance
@@ -38,11 +38,11 @@ c              BC(kk,1)=PresBase+PresSin
         endif
 
         return
-        end 
+        end
 
 c--------------------------------------------------------------
         subroutine BCprofileInitKW(PresBase,VelBase,BC)
-      
+
         use pvsQbi
         include "common.h"
         real*8 PresBase, VelBase
@@ -50,8 +50,8 @@ c--------------------------------------------------------------
         real*8 AlphaAmp, AlphaFreq
         real*8 BC(nshg,ndofBC)
         integer iflagKW
-        integer tsBase, BCdtKW
- 
+      !   integer tsBase, BCdtKW
+
 c        open(unit=789, file='bcprofile.dat',status='unknown')
 c        tsBase=lstep
         iflagKW=1
