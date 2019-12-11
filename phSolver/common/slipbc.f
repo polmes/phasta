@@ -222,8 +222,8 @@ c     ------------------------------------------------------------------
       subroutine slipAssembly(local, ien, dof, global)
          include "common.h"
 
-         real*8, intent(in) :: local(npro,nenbl), ien(npro,nshl)
-         integer, intent(in) :: dof
+         real*8, intent(in) :: local(npro,nenbl)
+         integer, intent(in) :: ien(npro,nshl), dof
          real*8, intent(out) :: global(nshg, nflow)
          integer :: nod, nel
 
