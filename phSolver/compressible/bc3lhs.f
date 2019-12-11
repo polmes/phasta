@@ -2,7 +2,7 @@
 c
 c----------------------------------------------------------------------
 c
-c This routine satisfies the BC of LHS mass matrix for a single 
+c This routine satisfies the BC of LHS mass matrix for a single
 c element.
 c
 c input:
@@ -22,7 +22,7 @@ c
         include "common.h"
 c
 	dimension iBC(nshg),      ien(npro,nshl),
-     &		  BC(nshg,11),    EGmass(npro,nedof,nedof) 
+     &		  BC(nshg,11),    EGmass(npro,nedof,nedof)
 	integer iens(npro,nshl)
 c
 c prefer to show explicit absolute value needed for cubic modes and
@@ -72,15 +72,15 @@ c.... x1-velocity
 c
         if ( ibits(iBC(in),3,3) .eq. 1) then
            do i = 1, nedof
-              EGmass(iel,i3,i) = EGmass(iel,i3,i) 
-     &                         - BC(in,4) * EGmass(iel,i2,i) 
-              EGmass(iel,i4,i) = EGmass(iel,i4,i) 
+              EGmass(iel,i3,i) = EGmass(iel,i3,i)
+     &                         - BC(in,4) * EGmass(iel,i2,i)
+              EGmass(iel,i4,i) = EGmass(iel,i4,i)
      &                         - BC(in,5) * EGmass(iel,i2,i)
            enddo
            do i = 1, nedof
-              EGmass(iel,i,i3) = EGmass(iel,i,i3) 
-     &                         - BC(in,4) * EGmass(iel,i,i2) 
-              EGmass(iel,i,i4) = EGmass(iel,i,i4) 
+              EGmass(iel,i,i3) = EGmass(iel,i,i3)
+     &                         - BC(in,4) * EGmass(iel,i,i2)
+              EGmass(iel,i,i4) = EGmass(iel,i,i4)
      &                         - BC(in,5) * EGmass(iel,i,i2)
            enddo
            do i = 1, nedof
@@ -94,36 +94,36 @@ c.... x2-velocity
 c
         if ( ibits(iBC(in),3,3) .eq. 2 ) then
            do i = 1, nedof
-              EGmass(iel,i2,i) = EGmass(iel,i2,i) 
-     &                         - BC(in,4) * EGmass(iel,i3,i) 
-              EGmass(iel,i4,i) = EGmass(iel,i4,i) 
+              EGmass(iel,i2,i) = EGmass(iel,i2,i)
+     &                         - BC(in,4) * EGmass(iel,i3,i)
+              EGmass(iel,i4,i) = EGmass(iel,i4,i)
      &                         - BC(in,5) * EGmass(iel,i3,i)
            enddo
            do i = 1, nedof
-              EGmass(iel,i,i2) = EGmass(iel,i,i2) 
-     &                         - BC(in,4) * EGmass(iel,i,i3) 
-              EGmass(iel,i,i4) = EGmass(iel,i,i4) 
+              EGmass(iel,i,i2) = EGmass(iel,i,i2)
+     &                         - BC(in,4) * EGmass(iel,i,i3)
+              EGmass(iel,i,i4) = EGmass(iel,i,i4)
      &                         - BC(in,5) * EGmass(iel,i,i3)
            enddo
-           
+
            do i = 1, nedof
               EGmass(iel,i,i3) = zero
               EGmass(iel,i3,i) = zero
            enddo
            EGmass(iel,i3,i3) = one
         endif
-c     
+c
 c.... x1-velocity and x2-velocity
 c
         if ( ibits(iBC(in),3,3) .eq. 3 ) then
            do i = 1, nedof
-              EGmass(iel,i4,i) = EGmass(iel,i4,i) 
-     &                     - BC(in,4) * EGmass(iel,i2,i) 
+              EGmass(iel,i4,i) = EGmass(iel,i4,i)
+     &                     - BC(in,4) * EGmass(iel,i2,i)
      &                     - BC(in,6) * EGmass(iel,i3,i)
            enddo
            do i = 1, nedof
-              EGmass(iel,i,i4) = EGmass(iel,i,i4) 
-     &                     - BC(in,4) * EGmass(iel,i,i2) 
+              EGmass(iel,i,i4) = EGmass(iel,i,i4)
+     &                     - BC(in,4) * EGmass(iel,i,i2)
      &                     - BC(in,6) * EGmass(iel,i,i3)
            enddo
 
@@ -141,15 +141,15 @@ c.... x3-velocity
 c
         if ( ibits(iBC(in),3,3) .eq. 4 ) then
            do i = 1, nedof
-              EGmass(iel,i2,i) = EGmass(iel,i2,i) 
-     &                         - BC(in,4) * EGmass(iel,i4,i) 
-              EGmass(iel,i3,i) = EGmass(iel,i3,i) 
+              EGmass(iel,i2,i) = EGmass(iel,i2,i)
+     &                         - BC(in,4) * EGmass(iel,i4,i)
+              EGmass(iel,i3,i) = EGmass(iel,i3,i)
      &                         - BC(in,5) * EGmass(iel,i4,i)
            enddo
            do i = 1, nedof
-              EGmass(iel,i,i2) = EGmass(iel,i,i2) 
-     &                         - BC(in,4) * EGmass(iel,i,i4) 
-              EGmass(iel,i,i3) = EGmass(iel,i,i3) 
+              EGmass(iel,i,i2) = EGmass(iel,i,i2)
+     &                         - BC(in,4) * EGmass(iel,i,i4)
+              EGmass(iel,i,i3) = EGmass(iel,i,i3)
      &                         - BC(in,5) * EGmass(iel,i,i4)
            enddo
 
@@ -159,18 +159,18 @@ c
            enddo
            EGmass(iel,i4,i4) = one
         endif
-c     
+c
 c.... x1-velocity and x3-velocity
 c
         if ( ibits(iBC(in),3,3) .eq. 5 ) then
            do i = 1, nedof
-              EGmass(iel,i3,i) = EGmass(iel,i3,i) 
-     &                     - BC(in,4) * EGmass(iel,i2,i) 
+              EGmass(iel,i3,i) = EGmass(iel,i3,i)
+     &                     - BC(in,4) * EGmass(iel,i2,i)
      &                     - BC(in,6) * EGmass(iel,i4,i)
            enddo
            do i = 1, nedof
-              EGmass(iel,i,i3) = EGmass(iel,i,i3) 
-     &                     - BC(in,4) * EGmass(iel,i,i2) 
+              EGmass(iel,i,i3) = EGmass(iel,i,i3)
+     &                     - BC(in,4) * EGmass(iel,i,i2)
      &                     - BC(in,6) * EGmass(iel,i,i4)
            enddo
 
@@ -183,18 +183,18 @@ c
            EGmass(iel,i2,i2) = one
            EGmass(iel,i4,i4) = one
         endif
-c     
+c
 c.... x2-velocity and x3-velocity
 c
         if ( ibits(iBC(in),3,3) .eq. 6 ) then
            do i = 1, nedof
-              EGmass(iel,i2,i) = EGmass(iel,i2,i) 
-     &                     - BC(in,4) * EGmass(iel,i3,i) 
+              EGmass(iel,i2,i) = EGmass(iel,i2,i)
+     &                     - BC(in,4) * EGmass(iel,i3,i)
      &                     - BC(in,6) * EGmass(iel,i4,i)
            enddo
            do i = 1, nedof
-              EGmass(iel,i,i2) = EGmass(iel,i,i2) 
-     &                     - BC(in,4) * EGmass(iel,i,i3) 
+              EGmass(iel,i,i2) = EGmass(iel,i,i2)
+     &                     - BC(in,4) * EGmass(iel,i,i3)
      &                     - BC(in,6) * EGmass(iel,i,i4)
            enddo
 
@@ -223,9 +223,37 @@ c
            EGmass(iel,i3,i3) = one
            EGmass(iel,i4,i4) = one
         endif
+
+c     ------------------------------------------------------------------
+c                       <SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
+      if ((isSlipBC .eq. 1) .and. (slipNitsche .eq. 0)) then
+         if (any(btest(iBC, 6))) then ! check if sclr1 (slip) is used
+            if (btest(iBC(in), 6)) then
+               ! Same as setting u1, u2, u3
+               do i = 1, nedof
+                  EGmass(iel,i ,i2) = zero
+                  EGmass(iel,i2,i ) = zero
+                  EGmass(iel,i ,i3) = zero
+                  EGmass(iel,i3,i ) = zero
+                  EGmass(iel,i ,i4) = zero
+                  EGmass(iel,i4,i ) = zero
+               enddo
+               EGmass(iel,i2,i2) = one
+               EGmass(iel,i3,i3) = one
+               EGmass(iel,i4,i4) = one
+            endif
+         end if
+      end if
+
+c     ------------------------------------------------------------------
+c                       </SLIP BOUNDARY CONDITIONS>
+c     ------------------------------------------------------------------
+
 c
 c.... temperature
-c        
+c
 	if ( btest(iBC(in),1) ) then
            do i = 1, nedof
               EGmass(iel,i,i5) = zero
@@ -239,7 +267,7 @@ c.... scaled plane extraction boundary conditions
 c
         if(intpres.eq.1) then
 	  if ( btest(iBC(in),11) ) then
-            do i = 1, nedof 
+            do i = 1, nedof
               EGmass(iel,i ,i1) = zero
               EGmass(iel,i1,i ) = zero
               EGmass(iel,i ,i2) = zero
@@ -259,7 +287,7 @@ c
           endif
 	else
 	  if ( btest(iBC(in),11) ) then
-            do i = 1, nedof 
+            do i = 1, nedof
               EGmass(iel,i ,i2) = zero
               EGmass(iel,i2,i ) = zero
               EGmass(iel,i ,i3) = zero
@@ -275,18 +303,18 @@ c
             EGmass(iel,i5,i5) = one
           endif
 	endif
-      
+
  5000 continue
-        
-c        
+
+c
 c.... end loop over shape functions (nodes)
-c        
+c
       enddo
 c
 c.... end loop over elements
 c
       enddo
-c     
+c
 c.... return
 c
       return
@@ -298,7 +326,7 @@ c
 c
 c----------------------------------------------------------------------
 c
-c This routine satisfies the BC of LHS mass matrix for a single 
+c This routine satisfies the BC of LHS mass matrix for a single
 c element.
 c
 c input:
@@ -318,7 +346,7 @@ c
         include "common.h"
 c
 	dimension iBC(nshg),      ien(npro,nshl),
-     &		  EGmasst(npro,nshape,nshape) 
+     &		  EGmasst(npro,nshape,nshape)
 c
 	integer iens(npro,nshl)
 c
@@ -355,18 +383,18 @@ c
 	endif
 
 c
-      
+
  5000 continue
-        
-c        
+
+c
 c.... end loop over shape functions (nodes)
-c        
+c
       enddo
 c
 c.... end loop over elements
 c
       enddo
-c     
+c
 c.... return
 c
       return
