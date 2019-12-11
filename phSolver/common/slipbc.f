@@ -354,6 +354,8 @@ c     ------------------------------------------------------------------
          ! Actually apply the Dirchlet slip BC
          where (btest(iBC, 6)) ! check where sclr1 (slip) is used
             y(:,1) = uslip ! global Y array has u1 at position 1
+            y(:,2) = zero ! no-penetration condition
+            y(:,3) = zero ! 2D problem
          end where
 
       end subroutine slipCorrect
