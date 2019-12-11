@@ -327,7 +327,7 @@ c     ------------------------------------------------------------------
 
                ! Compute velocity gradient: dY2/dx2
                do vrt = 1, nshl
-                  dudy(:,nod) = dudy(:,nod) + yl(:,nod,2)
+                  dudy(:,nod) = dudy(:,nod) + yl(:,vrt,2)
      &                          * shgnod(:,vrt,2)
                end do
 
