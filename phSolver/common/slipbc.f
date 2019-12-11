@@ -169,27 +169,15 @@ c     ------------------------------------------------------------------
          integer :: vrt, i, j
 
          ! Compute the deformation gradient
-   !       dxdxib = zero
-   !       do vrt = 1, nshl
-   !          do i = 1, nsd
-   !             do j = 1, nsd
-   !                dxdxib(:,i,j) = dxdxib(:,i,j) + xlb(:,vrt,i)
-   !   &                            * shglnod(:,vrt,i)
-   !             end do
-   !          end do
-   !       end do
-
-      do vrt = 1, nshl
-         dxdxib(:,1,1) = dxdxib(:,1,1) + xlb(:,vrt,1) * shglnod(:,vrt,1)
-         dxdxib(:,1,2) = dxdxib(:,1,2) + xlb(:,vrt,1) * shglnod(:,vrt,2)
-         dxdxib(:,1,3) = dxdxib(:,1,3) + xlb(:,vrt,1) * shglnod(:,vrt,3)
-         dxdxib(:,2,1) = dxdxib(:,2,1) + xlb(:,vrt,2) * shglnod(:,vrt,1)
-         dxdxib(:,2,2) = dxdxib(:,2,2) + xlb(:,vrt,2) * shglnod(:,vrt,2)
-         dxdxib(:,2,3) = dxdxib(:,2,3) + xlb(:,vrt,2) * shglnod(:,vrt,3)
-         dxdxib(:,3,1) = dxdxib(:,3,1) + xlb(:,vrt,3) * shglnod(:,vrt,1)
-         dxdxib(:,3,2) = dxdxib(:,3,2) + xlb(:,vrt,3) * shglnod(:,vrt,2)
-         dxdxib(:,3,3) = dxdxib(:,3,3) + xlb(:,vrt,3) * shglnod(:,vrt,3)
-      end do
+         dxdxib = zero
+         do vrt = 1, nshl
+            do i = 1, nsd
+               do j = 1, nsd
+                  dxdxib(:,i,j) = dxdxib(:,i,j) + xlb(:,vrt,i)
+     &                            * shglnod(:,vrt,j)
+               end do
+            end do
+         end do
 
          ! Compute the inverse deformation gradient
          dxidxb = zero
