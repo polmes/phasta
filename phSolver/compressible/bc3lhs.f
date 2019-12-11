@@ -239,11 +239,11 @@ c     ------------------------------------------------------------------
                   EGmass(iel,i3,i ) = zero
                   EGmass(iel,i ,i4) = zero
                   EGmass(iel,i4,i ) = zero
-               enddo
+               end do
                EGmass(iel,i2,i2) = one
                EGmass(iel,i3,i3) = one
                EGmass(iel,i4,i4) = one
-            endif
+            end if
          end if
       end if
 

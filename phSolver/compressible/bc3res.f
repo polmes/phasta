@@ -136,6 +136,7 @@ c     ------------------------------------------------------------------
       if ((isSlipBC .eq. 1) .and. (slipNitsche .eq. 0)) then
          if (any(btest(iBC, 6))) then ! check if sclr1 (slip) is used
             where (btest(iBC, 6))
+               ! Same as setting u1, u2, u3
                res(:,2) = zero
                res(:,3) = zero
                res(:,4) = zero
