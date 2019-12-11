@@ -30,7 +30,7 @@ c     ------------------------------------------------------------------
 
          include "common.h"
 
-         real*8, intent(in) :: mu, rho(npro), T(npro), dudy(npro)
+         real*8, intent(in) :: mu(npro), rho(npro), T(npro), dudy(npro)
          real*8, intent(out) :: uslip(npro)
          real*8 :: mfp(npro) ! or dimension(npro)
 
@@ -174,7 +174,7 @@ c     ------------------------------------------------------------------
             do i = 1, nsd
                do j = 1, nsd
                   dxdxi(:,i,j) = dxdxi(:,i,j) + xl(:,vrt,i)
-     &                            * shglnod(:,vrt,j)
+     &                           * shglnod(:,vrt,j)
                end do
             end do
          end do
@@ -182,11 +182,11 @@ c     ------------------------------------------------------------------
          ! Compute the inverse deformation gradient
          dxidx = zero
          dxidx(:,1,1) = dxdxi(:,2,2) * dxdxi(:,3,3)
-     &                   - dxdxi(:,3,2) * dxdxi(:,2,3)
+     &                  - dxdxi(:,3,2) * dxdxi(:,2,3)
          dxidx(:,1,2) = dxdxi(:,3,2) * dxdxi(:,1,3)
-     &                   - dxdxi(:,1,2) * dxdxi(:,3,3)
+     &                  - dxdxi(:,1,2) * dxdxi(:,3,3)
          dxidx(:,1,3) = dxdxi(:,1,2) * dxdxi(:,2,3)
-     &                   - dxdxi(:,1,3) * dxdxi(:,2,2)
+     &                  - dxdxi(:,1,3) * dxdxi(:,2,2)
          temp = one / (dxidx(:,1,1) * dxdxi(:,1,1)
      &                 + dxidx(:,1,2) * dxdxi(:,2,1)
      &                 + dxidx(:,1,3) * dxdxi(:,3,1))
@@ -194,17 +194,17 @@ c     ------------------------------------------------------------------
          dxidx(:,1,2) = dxidx(:,1,2) * temp
          dxidx(:,1,3) = dxidx(:,1,3) * temp
          dxidx(:,2,1) = (dxdxi(:,2,3) * dxdxi(:,3,1)
-     &                    - dxdxi(:,2,1) * dxdxi(:,3,3)) * temp
+     &                   - dxdxi(:,2,1) * dxdxi(:,3,3)) * temp
          dxidx(:,2,2) = (dxdxi(:,1,1) * dxdxi(:,3,3)
-     &                    - dxdxi(:,3,1) * dxdxi(:,1,3)) * temp
+     &                   - dxdxi(:,3,1) * dxdxi(:,1,3)) * temp
          dxidx(:,2,3) = (dxdxi(:,2,1) * dxdxi(:,1,3)
-     &                    - dxdxi(:,1,1) * dxdxi(:,2,3)) * temp
+     &                   - dxdxi(:,1,1) * dxdxi(:,2,3)) * temp
          dxidx(:,3,1) = (dxdxi(:,2,1) * dxdxi(:,3,2)
-     &                    - dxdxi(:,2,2) * dxdxi(:,3,1)) * temp
+     &                   - dxdxi(:,2,2) * dxdxi(:,3,1)) * temp
          dxidx(:,3,2) = (dxdxi(:,3,1) * dxdxi(:,1,2)
-     &                    - dxdxi(:,1,1) * dxdxi(:,3,2)) * temp
+     &                   - dxdxi(:,1,1) * dxdxi(:,3,2)) * temp
          dxidx(:,3,3) = (dxdxi(:,1,1) * dxdxi(:,2,2)
-     &                    - dxdxi(:,1,2) * dxdxi(:,2,1)) * temp
+     &                   - dxdxi(:,1,2) * dxdxi(:,2,1)) * temp
 
          ! Compute real space shape function gradients: N_{a,i}
          shgnod = zero
@@ -250,8 +250,8 @@ c     ------------------------------------------------------------------
          real*8, allocatable :: shpnod(:,:), shpnodtmp(:,:),
      &                          shglnod(:,:,:), shglnodtmp(:,:,:),
      &                          shgnod(:,:,:), xl(:,:,:), yl(:,:,:),
-     &                          dudy(:,:)
-         real*8 dudyg(nshg, nflow)
+     &                          dudy(:,:), rho(:), mu(:), ul(:,:)
+         real*8 uslip(nshg)
          ! real*8, allocatable :: ycl(:,:,:)
          ! real*8, allocatable :: xl(:,:,:)
          ! real*8, allocatable :: yvl(:,:,:)
@@ -298,12 +298,17 @@ c     ------------------------------------------------------------------
             yl = zero
             call localy(y, yl, mienb(iblk)%p, nflow, 'gather  ')
 
-            ! Allocate and init local velocity gradient
+            ! Allocate and init local velocity gradient and slip
             allocate(dudy(npro,nenbl))
+            allocate(ul(npro,nenbl))
             dudy = zero
+            ul = zero
 
-            ! Init global velocity gradient
-            dudyg = zero
+            ! Allocate and init thermodynamic and material properties
+            allocate(rho(npro))
+            allocate(mu(npro))
+            rho = zero
+            mu = datmat(1,2,1) ! constant viscosity (same as getdiff)
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
@@ -331,18 +336,21 @@ c     ------------------------------------------------------------------
      &                          * shgnod(:,vrt,2)
                end do
 
+               ! Compute thermodynamic properties
+               ! rho = P / (Rgas * T) (same as getthm)
+               rho = yl(:,nod,1) / (Rgas * yl(:,nod,5)) ! density
+
                ! Compute slip velocity at current node
-               ! call getSlipVelocity1D()
-
-
+               call getSlipVelocity1D(mu, rho, yl(:,nod,5), dudy(:,nod),
+     &                                ul(:,nod))
             end do ! </loop nodes>
 
-            ! Globalize dudy (as a test)
-            call slipAssembly(dudy, mienb(iblk)%p, 2, dudyg)
+            ! Globalize uslip
+            call slipAssembly(ul, mienb(iblk)%p, 1, uslip)
 
             ! Deallocate all arrays for next iteration
             deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp,
-     &                 xl, yl, dudy)
-         enddo ! </loop blocks>
+     &                 xl, yl, dudy, ul, rho, mu)
+         end do ! </loop blocks>
 
       end subroutine slipCorrect
