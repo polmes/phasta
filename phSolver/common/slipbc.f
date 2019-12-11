@@ -294,7 +294,7 @@ c     ------------------------------------------------------------------
                end do
 
                ! Compute real space shape function gradients
-               call gradNodalShapeFunctions(shglnodtmp, xlb, shgnod)
+               call gradNodalShapeFunctions(shglnod, xlb, shgnod)
 
                ! Stuff
 
