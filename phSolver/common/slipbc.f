@@ -285,9 +285,12 @@ c     ------------------------------------------------------------------
             yl = zero
             call localy(y, yl, mienb(iblk)%p, nflow, 'gather  ')
 
-            ! Allocate and init velocity gradient
+            ! Allocate and init local velocity gradient
             allocate(dudy(npro,nenbl))
             dudy = zero
+
+            ! Init global velocity gradient
+            dudyg = zero
 
             ! Loop over each boundary node
             do nod = 1, nenbl ! <loop nodes>
