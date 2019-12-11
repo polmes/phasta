@@ -338,7 +338,7 @@ c     ------------------------------------------------------------------
             end do ! </loop nodes>
 
             ! Globalize dudy (as a test)
-            call slipAssembly(dudy, ien, 2, dudyg)
+            call slipAssembly(dudy, mienb(iblk)%p, 2, dudyg)
 
             ! Deallocate all arrays for next iteration
             deallocate(shpnod, shglnod, shgnod, shpnodtmp, shglnodtmp,
