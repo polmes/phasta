@@ -220,6 +220,16 @@ c     ------------------------------------------------------------------
       end subroutine gradNodalShapeFunctions
 
       subroutine slipAssembly(local, ien, dof, global)
+c     ------------------------------------------------------------------
+c        Assembles the elemental slip velocities into a global array
+c        Input:
+c           local - elemental values array
+c           ien   - nodal connectivity matrix
+c           dof   - which dof of the global array to assemble onto
+c        Output:
+c           global - global values array
+c     ------------------------------------------------------------------
+
          include "common.h"
 
          real*8, intent(in) :: local(npro,nenbl)
